@@ -153,8 +153,12 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
-  } catch (error) {
-    console.error("Registration error:", error);
+    } catch (error) {
+    console.error("Registration error:", {
+      name: error instanceof Error ? error.name : "UnknownError",
+      message: error instanceof Error ? error.message : String(error),
+      cause: error instanceof Error ? error.cause : undefined,
+    });
 
     return NextResponse.json(
       {
