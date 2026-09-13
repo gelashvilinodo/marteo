@@ -1,26 +1,101 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* MARTEO Brand */
+  --marteo-primary: #0F1C2E;
+  --marteo-primary-hover: #16263C;
+  --marteo-accent: #5A8DEE;
+  --marteo-accent-hover: #4A7FE4;
+
+  /* Backgrounds */
+  --marteo-background: #F8FAFC;
+  --marteo-surface: #FFFFFF;
+
+  /* Borders */
+  --marteo-border: #D7DEE8;
+
+  /* Text */
+  --marteo-text-primary: #0F1C2E;
+  --marteo-text-secondary: #667085;
+
+  /* Overlay */
+  --marteo-overlay: rgb(15 28 46 / 0.18);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: var(--marteo-primary);
+  --color-primary-hover: var(--marteo-primary-hover);
+  --color-accent: var(--marteo-accent);
+  --color-accent-hover: var(--marteo-accent-hover);
+
+  --color-background: var(--marteo-background);
+  --color-surface: var(--marteo-surface);
+
+  --color-border: var(--marteo-border);
+
+  --color-text-primary: var(--marteo-text-primary);
+  --color-text-secondary: var(--marteo-text-secondary);
+
+  --font-sans: "FiraGO", Arial, sans-serif;
+}
+
+@font-face {
+  font-family: "FiraGO";
+  src: url("/fonts/FiraGO-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "FiraGO";
+  src: url("/fonts/FiraGO-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "FiraGO";
+  src: url("/fonts/FiraGO-SemiBold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "FiraGO";
+  src: url("/fonts/FiraGO-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --marteo-background: #08111E;
+    --marteo-surface: #0F1C2E;
+    --marteo-border: #243447;
+
+    --marteo-text-primary: #F8FAFC;
+    --marteo-text-secondary: #98A2B3;
+
+    --marteo-primary: #16263C;
+    --marteo-primary-hover: #243B59;
+
+    --marteo-accent: #5A8DEE;
+    --marteo-accent-hover: #6D9AF2;
+
+    --marteo-overlay: rgb(8 17 30 / 0.18);
   }
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--marteo-background);
+  color: var(--marteo-text-primary);
+  font-family: "FiraGO", Arial, sans-serif;
 }

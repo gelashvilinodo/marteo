@@ -1,8 +1,18 @@
-export default function DashboardPage() {
+import { redirect } from "next/navigation";
+
+import { getCurrentUser } from "@/lib/auth/session";
+
+export default async function DashboardPage() {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   return (
     <main>
       <h1>MARTEO Dashboard</h1>
-      <p>Dashboard-ის მთავარი გვერდი</p>
+      <p>მოგესალმები, {user.firstName || user.email}</p>
     </main>
   );
 }

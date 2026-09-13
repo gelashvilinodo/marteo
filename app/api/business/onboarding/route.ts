@@ -1,13 +1,22 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth/session";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const user = await getCurrentUser();
 
-    const userId =
-      typeof body.userId === "string" ? body.userId.trim() : "";
+    if (!user) {
+      return NextResponse.json(
+        {
+          error: "ავტორიზაცია საჭიროა.",
+        },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
 
     const name =
       typeof body.name === "string" ? body.name.trim() : "";
@@ -16,7 +25,9 @@ export async function POST(request: Request) {
       typeof body.phone === "string" ? body.phone.trim() : "";
 
     const email =
-      typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+      typeof body.email === "string"
+        ? body.email.trim().toLowerCase()
+        : "";
 
     const address =
       typeof body.address === "string" ? body.address.trim() : "";
@@ -29,40 +40,17 @@ export async function POST(request: Request) {
         ? body.description.trim()
         : "";
 
-    if (!userId || !name) {
+    if (!name) {
       return NextResponse.json(
         {
-          error: "მომხმარებლის ID და ბიზნესის სახელი აუცილებელია.",
+          error: "ბიზნესის სახელი აუცილებელია.",
         },
         { status: 400 }
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-      select: {
-        id: true,
-        status: true,
-        emailVerifiedAt: true,
-        phoneVerifiedAt: true,
-      },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        {
-          error: "მომხმარებელი ვერ მოიძებნა.",
-        },
-        { status: 404 }
-      );
-    }
-
     if (
-      user.status !== "ACTIVE" ||
-      !user.emailVerifiedAt ||
-      !user.phoneVerifiedAt
+      user.status !== "ACTIVE"
     ) {
       return NextResponse.json(
         {
