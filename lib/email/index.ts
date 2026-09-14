@@ -1,40 +1,44 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 type SendVerificationEmailParams = {
-    to: string;
-    firstName: string;
-    token: string;
-    userId: string;
+  to: string;
+  firstName: string;
+  token: string;
+  userId: string;
 };
 
 export async function sendVerificationEmail({
-    to,
-    firstName,
-    token,
-    userId,
+  to,
+  firstName,
+  token,
+  userId,
 }: SendVerificationEmailParams) {
-    const appUrl = process.env.APP_URL;
+  const apiKey = process.env.RESEND_API_KEY;
+  const appUrl = process.env.APP_URL;
+  const fromEmail = process.env.RESEND_FROM_EMAIL;
 
-    if (!appUrl) {
-        throw new Error("APP_URL is not configured");
-    }
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not configured");
+  }
 
-    if (!process.env.RESEND_FROM_EMAIL) {
-        throw new Error("RESEND_FROM_EMAIL is not configured");
-    }
+  if (!appUrl) {
+    throw new Error("APP_URL is not configured");
+  }
 
-    const verificationUrl =
-        `${appUrl}/verify-email?userId=${encodeURIComponent(
-            userId
-        )}&token=${encodeURIComponent(token)}`;
+  if (!fromEmail) {
+    throw new Error("RESEND_FROM_EMAIL is not configured");
+  }
 
-    const { data, error } = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL,
-        to: [to],
-        subject: "MARTEO — ელფოსტის დადასტურება",
-        html: `
+  const resend = new Resend(apiKey);
+
+  const verificationUrl =
+    `${appUrl}/verify-email?userId=${encodeURIComponent(userId)}&token=${encodeURIComponent(token)}`;
+
+  const { data, error } = await resend.emails.send({
+    from: fromEmail,
+    to: [to],
+    subject: "MARTEO — ელფოსტის დადასტურება",
+    html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>მოგესალმებით MARTEO-ში, ${firstName}!</h2>
 
@@ -65,11 +69,11 @@ export async function sendVerificationEmail({
         <p>MARTEO.GE</p>
       </div>
     `,
-    });
+  });
 
-    if (error) {
-        throw new Error(error.message);
-    }
+  if (error) {
+    throw new Error(error.message);
+  }
 
-    return data;
+  return data;
 }
