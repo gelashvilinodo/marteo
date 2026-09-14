@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { cookies } from "next/headers";
 
-import { prisma } from "@/lib/prisma";
+import { createPrismaClient } from "@/lib/prisma";
 
 function hashSessionToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -10,6 +10,8 @@ function hashSessionToken(token: string) {
 
 export async function POST() {
   try {
+    const prisma = createPrismaClient();
+
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get("marteo_session")?.value;
 

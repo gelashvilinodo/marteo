@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 
-import { prisma } from "@/lib/prisma";
+import { createPrismaClient } from "@/lib/prisma";
+import { sendVerificationEmail } from "@/lib/email";
 
 function hashVerificationToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -18,7 +19,15 @@ function normalizePhone(phone: string) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const prisma = createPrismaClient();
+
+    const body = (await request.json()) as {
+      firstName?: unknown;
+      lastName?: unknown;
+      email?: unknown;
+      phone?: unknown;
+      password?: unknown;
+    };
 
     const firstName =
       typeof body.firstName === "string" ? body.firstName.trim() : "";
@@ -138,11 +147,12 @@ export async function POST(request: Request) {
       return createdUser;
     });
 
-    /*
-     * TODO:
-     * აქ მოგვიანებით დავამატებთ email provider-ს,
-     * რომელიც მომხმარებელს რეალურად გაუგზავნის emailToken-ს.
-     */
+    await sendVerificationEmail({
+      to: user.email,
+      firstName: user.firstName ?? "",
+      token: emailToken,
+      userId: user.id,
+    });
 
     return NextResponse.json(
       {
@@ -153,7 +163,7 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
-    } catch (error) {
+  } catch (error) {
     console.error("Registration error:", {
       name: error instanceof Error ? error.name : "UnknownError",
       message: error instanceof Error ? error.message : String(error),

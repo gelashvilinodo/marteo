@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
+import { createPrismaClient } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
 
 export async function POST(request: Request) {
   try {
+    const prisma = createPrismaClient();
     const user = await getCurrentUser();
 
     if (!user) {
@@ -16,7 +17,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
+    const body = (await request.json()) as {
+      name?: unknown;
+      phone?: unknown;
+      email?: unknown;
+      address?: unknown;
+      website?: unknown;
+      description?: unknown;
+    };
 
     const name =
       typeof body.name === "string" ? body.name.trim() : "";

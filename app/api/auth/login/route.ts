@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 
-import { prisma } from "@/lib/prisma";
+import { createPrismaClient } from "@/lib/prisma";
 
 const SESSION_DURATION_DAYS = 30;
 
@@ -16,7 +16,11 @@ function normalizeEmail(email: string) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const prisma = createPrismaClient();
+    const body = (await request.json()) as {
+      email?: unknown;
+      password?: unknown;
+    };
 
     const email =
       typeof body.email === "string" ? normalizeEmail(body.email) : "";

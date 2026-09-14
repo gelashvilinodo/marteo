@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createHash } from "crypto";
 
-import { prisma } from "@/lib/prisma";
+import { createPrismaClient } from "@/lib/prisma";
 
 function hashVerificationToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -9,7 +9,11 @@ function hashVerificationToken(token: string) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const prisma = createPrismaClient();
+    const body = (await request.json()) as {
+      userId?: unknown;
+      code?: unknown;
+    };
 
     const userId =
       typeof body.userId === "string" ? body.userId.trim() : "";

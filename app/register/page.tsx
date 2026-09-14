@@ -136,7 +136,10 @@ export default function RegisterPage() {
                 }),
             });
 
-            const data = await response.json();
+            const data = (await response.json()) as {
+                error?: string;
+                userId?: string;
+            };
 
             if (!response.ok) {
                 setApiError(data.error || "რეგისტრაცია ვერ შესრულდა");
@@ -144,6 +147,11 @@ export default function RegisterPage() {
             }
 
             console.log("Registration successful:", data);
+
+            if (!data.userId) {
+                setApiError("მომხმარებლის მონაცემი ვერ მოიძებნა.");
+                return;
+            }
 
             setUserId(data.userId);
             setStep(2);
@@ -188,19 +196,124 @@ export default function RegisterPage() {
         <main className="min-h-screen bg-background">
             {step === 2 ? (
                 <div className="flex min-h-screen items-center justify-center px-4 py-8">
-                    <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
-                        <div className="mb-8 text-center">
-                            <h1 className="text-2xl font-semibold text-text-primary">
-                                ანგარიშის ვერიფიკაცია
-                            </h1>
+                    <div className="w-full max-w-md">
+                        {/* Logo */}
+                        <div className="mb-8 flex justify-center">
+                            <Link href="/" aria-label="MARTEO.GE">
+                                <img
+                                    src="/images/marteo-08.svg"
+                                    alt="MARTEO.GE"
+                                    className="h-12 w-auto dark:hidden"
+                                />
 
-                            <p className="mt-2 text-sm leading-6 text-text-secondary">
-                                ელფოსტაზე გამოგზავნილი კოდით დაადასტურეთ თქვენი ანგარიში.
-                            </p>
+                                <img
+                                    src="/images/logo.svg"
+                                    alt="MARTEO.GE"
+                                    className="hidden h-12 w-auto dark:block"
+                                />
+                            </Link>
                         </div>
 
-                        <div className="rounded-xl border border-border bg-background p-4 text-sm text-text-secondary">
-                            ვერიფიკაციის ფორმა შემდეგ ეტაპზე დაემატება.
+                        {/* Progress */}
+                        <div className="mb-5">
+                            <div className="mb-3 flex items-center justify-between text-xs font-medium text-text-secondary">
+                                <span>ნაბიჯი 2 / 3</span>
+                                <span>ვერიფიკაცია</span>
+                            </div>
+
+                            <div className="h-1.5 overflow-hidden rounded-full bg-border">
+                                <div className="h-full w-2/3 rounded-full bg-accent" />
+                            </div>
+                        </div>
+
+                        {/* Card */}
+                        <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+                            <div className="mb-7 text-center">
+                                <h1 className="text-2xl font-semibold text-text-primary">
+                                    ანგარიშის ვერიფიკაცია
+                                </h1>
+
+                                <p className="mt-2 text-sm leading-6 text-text-secondary">
+                                    თქვენი ანგარიშის დასაცავად საჭიროა ელფოსტისა და
+                                    ტელეფონის ნომრის დადასტურება.
+                                </p>
+                            </div>
+
+                            {/* Email verification */}
+                            <div className="rounded-xl border border-border bg-background p-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+                                        ✉
+                                    </div>
+
+                                    <div className="min-w-0">
+                                        <h2 className="text-sm font-semibold text-text-primary">
+                                            ელფოსტის დადასტურება
+                                        </h2>
+
+                                        <p className="mt-1 text-sm leading-6 text-text-secondary">
+                                            გამოგიგზავნით დამადასტურებელ ბმულს თქვენს
+                                            ელფოსტაზე.
+                                        </p>
+
+                                        <p className="mt-2 break-all text-sm font-medium text-text-primary">
+                                            {form.email}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 flex items-center gap-2 text-xs text-text-secondary">
+                                    <span className="flex h-5 w-5 items-center justify-center rounded-full border border-border">
+                                        1
+                                    </span>
+
+                                    <span>
+                                        გახსენით ელფოსტაზე მიღებული ბმული
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Phone verification */}
+                            <div className="mt-4 rounded-xl border border-border bg-background p-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+                                        📱
+                                    </div>
+
+                                    <div className="min-w-0">
+                                        <h2 className="text-sm font-semibold text-text-primary">
+                                            ტელეფონის დადასტურება
+                                        </h2>
+
+                                        <p className="mt-1 text-sm leading-6 text-text-secondary">
+                                            ელფოსტის დადასტურების შემდეგ მიიღებთ
+                                            6-ნიშნა SMS კოდს.
+                                        </p>
+
+                                        <p className="mt-2 text-sm font-medium text-text-primary">
+                                            +995 {form.phone}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 flex items-center gap-2 text-xs text-text-secondary">
+                                    <span className="flex h-5 w-5 items-center justify-center rounded-full border border-border">
+                                        2
+                                    </span>
+
+                                    <span>
+                                        შეიყვანეთ SMS-ით მიღებული კოდი
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Information */}
+                            <div className="mt-5 rounded-xl bg-accent/5 px-4 py-3">
+                                <p className="text-xs leading-5 text-text-secondary">
+                                    ვერიფიკაციის დასრულების შემდეგ გადახვალთ ბიზნესის
+                                    ინფორმაციის შევსებაზე.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
