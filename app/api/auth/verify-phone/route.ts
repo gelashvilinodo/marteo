@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
-import { createHash } from "crypto";
+import { createHash, randomBytes } from "crypto";
 
 import { createPrismaClient } from "@/lib/prisma";
 
 function hashVerificationToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+const SESSION_DURATION_DAYS = 30;
+
+function hashSessionToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
@@ -123,7 +129,22 @@ export async function POST(request: Request) {
       });
     });
 
-    return NextResponse.json(
+    const sessionToken = randomBytes(32).toString("hex");
+    const tokenHash = hashSessionToken(sessionToken);
+
+    const expiresAt = new Date(
+      Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000
+    );
+
+    await prisma.session.create({
+      data: {
+        userId: verifiedUser.id,
+        tokenHash,
+        expiresAt,
+      },
+    });
+
+    const response = NextResponse.json(
       {
         message:
           "ტელეფონი წარმატებით დადასტურდა. თქვენი ანგარიში აქტიურია.",
@@ -134,6 +155,17 @@ export async function POST(request: Request) {
       },
       { status: 200 }
     );
+
+    response.cookies.set("marteo_session", sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      expires: expiresAt,
+      path: "/",
+    });
+
+    return response;
+    
   } catch (error) {
     console.error("Phone verification error:", error);
 

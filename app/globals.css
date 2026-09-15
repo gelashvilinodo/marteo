@@ -2,20 +2,20 @@
 
 :root {
   /* MARTEO Brand */
-  --marteo-primary: #0F1C2E;
-  --marteo-primary-hover: #16263C;
-  --marteo-accent: #5A8DEE;
-  --marteo-accent-hover: #4A7FE4;
+  --marteo-primary: #0f1c2e;
+  --marteo-primary-hover: #16263c;
+  --marteo-accent: #5a8dee;
+  --marteo-accent-hover: #4a7fe4;
 
   /* Backgrounds */
-  --marteo-background: #F8FAFC;
-  --marteo-surface: #FFFFFF;
+  --marteo-background: #f8fafc;
+  --marteo-surface: #ffffff;
 
   /* Borders */
-  --marteo-border: #D7DEE8;
+  --marteo-border: #d7dee8;
 
   /* Text */
-  --marteo-text-primary: #0F1C2E;
+  --marteo-text-primary: #0f1c2e;
   --marteo-text-secondary: #667085;
 
   /* Overlay */
@@ -73,18 +73,18 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --marteo-background: #08111E;
-    --marteo-surface: #0F1C2E;
+    --marteo-background: #08111e;
+    --marteo-surface: #0f1c2e;
     --marteo-border: #243447;
 
-    --marteo-text-primary: #F8FAFC;
-    --marteo-text-secondary: #98A2B3;
+    --marteo-text-primary: #f8fafc;
+    --marteo-text-secondary: #98a2b3;
 
-    --marteo-primary: #16263C;
-    --marteo-primary-hover: #243B59;
+    --marteo-primary: #16263c;
+    --marteo-primary-hover: #243b59;
 
-    --marteo-accent: #5A8DEE;
-    --marteo-accent-hover: #6D9AF2;
+    --marteo-accent: #5a8dee;
+    --marteo-accent-hover: #6d9af2;
 
     --marteo-overlay: rgb(8 17 30 / 0.18);
   }
@@ -98,4 +98,21 @@ body {
   background: var(--marteo-background);
   color: var(--marteo-text-primary);
   font-family: "FiraGO", Arial, sans-serif;
+}
+
+@keyframes successPop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+
+  70% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }

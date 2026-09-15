@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Icon } from "@iconify/react";
+
 
 type FormData = {
     firstName: string;
@@ -30,6 +32,77 @@ export default function RegisterPage() {
     const [apiError, setApiError] = useState("");
     const [step, setStep] = useState(1);
     const [userId, setUserId] = useState("");
+
+    const [emailVerified, setEmailVerified] = useState(false);
+
+    const [phoneCode, setPhoneCode] = useState(["", "", "", "", "", ""]);
+    const [phoneVerifyLoading, setPhoneVerifyLoading] = useState(false);
+    const [resendLoading, setResendLoading] = useState(false);
+    const [resendCooldown, setResendCooldown] = useState(60);
+    const [phoneVerifyError, setPhoneVerifyError] = useState("");
+
+    useEffect(() => {
+        if (userId) return;
+
+        const params = new URLSearchParams(window.location.search);
+
+        const urlStep = params.get("step");
+        const urlUserId = params.get("userId");
+
+        if (!urlUserId) return;
+
+        const timer = setTimeout(() => {
+            setUserId(urlUserId);
+
+            if (urlStep === "phone") {
+                setStep(2);
+            }
+        }, 0);
+
+        return () => clearTimeout(timer);
+    }, [userId]);
+
+    useEffect(() => {
+        if (!emailVerified || resendCooldown <= 0) return;
+
+        const timer = setInterval(() => {
+            setResendCooldown((prev) => prev - 1);
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [emailVerified, resendCooldown]);
+
+    useEffect(() => {
+        if (!userId) return;
+
+        const checkStatus = async () => {
+            try {
+                const response = await fetch(
+                    `/api/auth/verification-status?userId=${userId}`
+                );
+
+                if (!response.ok) return;
+
+                const data = (await response.json()) as {
+                    emailVerified: boolean;
+                    phoneVerified: boolean;
+                    status: string;
+                };
+
+                setEmailVerified(data.emailVerified);
+
+                if (data.emailVerified) {
+                    setStep(2);
+                }
+            } catch { }
+        };
+
+        checkStatus();
+
+        const interval = setInterval(checkStatus, 2000);
+
+        return () => clearInterval(interval);
+    }, [userId]);
 
     const updateField = (field: keyof FormData, value: string) => {
         setForm((prev) => ({
@@ -164,6 +237,86 @@ export default function RegisterPage() {
         }
     };
 
+    const handleVerifyPhone = async () => {
+        const code = phoneCode.join("");
+
+        if (!userId || !/^\d{6}$/.test(code) || phoneVerifyLoading) {
+            return;
+        }
+
+        setPhoneVerifyLoading(true);
+
+        try {
+            const response = await fetch("/api/auth/verify-phone", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    userId,
+                    code,
+                }),
+            });
+
+            const data = (await response.json()) as {
+                error?: string;
+                message?: string;
+                status?: string;
+            };
+
+            if (!response.ok) {
+                setPhoneVerifyError(
+                    data.error || "ტელეფონის დადასტურება ვერ მოხერხდა."
+                );
+                return;
+            }
+
+            window.location.href = "/business/onboarding";
+        } catch {
+            setPhoneVerifyError("დაფიქსირდა ტექნიკური შეცდომა.");
+        } finally {
+            setPhoneVerifyLoading(false);
+        }
+    }
+
+    const handleResendPhoneCode = async () => {
+        if (!userId || resendCooldown > 0 || resendLoading) return;
+
+        setResendLoading(true);
+
+        try {
+            const response = await fetch("/api/auth/resend-phone-code", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    userId,
+                }),
+            });
+
+            const data = (await response.json()) as {
+                error?: string;
+            };
+
+            if (!response.ok) {
+                setPhoneVerifyError(
+                    data.error || "კოდის ხელახლა გაგზავნა ვერ მოხერხდა."
+                );
+                return;
+            }
+
+            setResendCooldown(60);
+            setPhoneVerifyError("");
+        } catch {
+            setPhoneVerifyError(
+                "კოდის ხელახლა გაგზავნა ვერ მოხერხდა."
+            );
+        } finally {
+            setResendLoading(false);
+        }
+    }
+
     const formatPhone = (value: string) => {
         const digits = value.replace(/\D/g, "").slice(0, 9);
 
@@ -242,8 +395,20 @@ export default function RegisterPage() {
                             {/* Email verification */}
                             <div className="rounded-xl border border-border bg-background p-4">
                                 <div className="flex items-start gap-3">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
-                                        ✉
+                                    <div
+                                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${emailVerified
+                                            ? "bg-green-500/10 text-green-600"
+                                            : "bg-accent/10 text-accent"
+                                            }`}
+                                    >
+                                        <Icon
+                                            icon={
+                                                emailVerified
+                                                    ? "solar:check-circle-bold"
+                                                    : "solar:letter-bold"
+                                            }
+                                            className="h-5 w-5"
+                                        />
                                     </div>
 
                                     <div className="min-w-0">
@@ -251,10 +416,15 @@ export default function RegisterPage() {
                                             ელფოსტის დადასტურება
                                         </h2>
 
-                                        <p className="mt-1 text-sm leading-6 text-text-secondary">
-                                            გამოგიგზავნით დამადასტურებელ ბმულს თქვენს
-                                            ელფოსტაზე.
-                                        </p>
+                                        {emailVerified ? (
+                                            <p className="mt-1 text-sm font-medium text-green-600">
+                                                ელფოსტა წარმატებით დადასტურდა.
+                                            </p>
+                                        ) : (
+                                            <p className="mt-1 text-sm leading-6 text-text-secondary">
+                                                გახსენით ელფოსტაზე მიღებული დამადასტურებელი ბმული.
+                                            </p>
+                                        )}
 
                                         <p className="mt-2 break-all text-sm font-medium text-text-primary">
                                             {form.email}
@@ -262,22 +432,29 @@ export default function RegisterPage() {
                                     </div>
                                 </div>
 
-                                <div className="mt-4 flex items-center gap-2 text-xs text-text-secondary">
-                                    <span className="flex h-5 w-5 items-center justify-center rounded-full border border-border">
-                                        1
-                                    </span>
-
-                                    <span>
-                                        გახსენით ელფოსტაზე მიღებული ბმული
-                                    </span>
-                                </div>
+                                {emailVerified ? (
+                                    <div className="mt-4 flex items-center gap-2 text-xs font-medium text-green-600">
+                                        <Icon icon="solar:check-circle-bold" className="h-4 w-4" />
+                                        <span>დადასტურებულია</span>
+                                    </div>
+                                ) : (
+                                    <div className="mt-4 flex items-center gap-2 text-xs text-text-secondary">
+                                        <Icon icon="solar:letter-bold" className="h-4 w-4" />
+                                        <span>ველოდებით ელფოსტის დადასტურებას</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Phone verification */}
-                            <div className="mt-4 rounded-xl border border-border bg-background p-4">
+                            <div
+                                className={`mt-4 rounded-xl border p-4 transition-all ${emailVerified
+                                    ? "border-border bg-background"
+                                    : "border-border/60 bg-background/50 opacity-60"
+                                    }`}
+                            >
                                 <div className="flex items-start gap-3">
                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
-                                        📱
+                                        <Icon icon="solar:phone-bold" className="h-5 w-5" />
                                     </div>
 
                                     <div className="min-w-0">
@@ -286,8 +463,9 @@ export default function RegisterPage() {
                                         </h2>
 
                                         <p className="mt-1 text-sm leading-6 text-text-secondary">
-                                            ელფოსტის დადასტურების შემდეგ მიიღებთ
-                                            6-ნიშნა SMS კოდს.
+                                            {emailVerified
+                                                ? "შეიყვანეთ SMS-ით მიღებული 6-ნიშნა კოდი."
+                                                : "ჯერ დაადასტურეთ ელფოსტა."}
                                         </p>
 
                                         <p className="mt-2 text-sm font-medium text-text-primary">
@@ -296,14 +474,93 @@ export default function RegisterPage() {
                                     </div>
                                 </div>
 
-                                <div className="mt-4 flex items-center gap-2 text-xs text-text-secondary">
-                                    <span className="flex h-5 w-5 items-center justify-center rounded-full border border-border">
-                                        2
-                                    </span>
+                                <div className="mt-4 flex items-center gap-2 text-xs font-medium text-accent">
+                                    <Icon icon="solar:shield-keyhole-bold" className="h-4 w-4" />
+                                    <span>ველოდებით SMS კოდის დადასტურებას</span>
+                                </div>
+                                <div className="mt-5">
+                                    <div className="mt-5 flex justify-center gap-2">
+                                        {phoneCode.map((digit, index) => (
+                                            <input
+                                                key={index}
+                                                type="text"
+                                                inputMode="numeric"
+                                                maxLength={1}
+                                                value={digit}
+                                                disabled={!emailVerified}
+                                                onChange={(e) => {
+                                                    const value = e.target.value.replace(/\D/g, "");
 
-                                    <span>
-                                        შეიყვანეთ SMS-ით მიღებული კოდი
-                                    </span>
+                                                    const next = [...phoneCode];
+                                                    next[index] = value;
+                                                    setPhoneCode(next);
+
+                                                    if (value && index < 5) {
+                                                        const nextInput = document.getElementById(
+                                                            `otp-${index + 1}`
+                                                        ) as HTMLInputElement | null;
+
+                                                        nextInput?.focus();
+                                                    }
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (
+                                                        e.key === "Backspace" &&
+                                                        !phoneCode[index] &&
+                                                        index > 0
+                                                    ) {
+                                                        const prevInput = document.getElementById(
+                                                            `otp-${index - 1}`
+                                                        ) as HTMLInputElement | null;
+
+                                                        prevInput?.focus();
+                                                    }
+                                                }}
+                                                id={`otp-${index}`}
+                                                className="h-12 w-12 rounded-xl border border-border bg-background text-center text-lg font-semibold outline-none transition-all focus:border-accent focus:ring-2 focus:ring-accent/10 disabled:opacity-50"
+                                            />
+                                        ))}
+                                    </div>
+
+                                    {phoneVerifyError && (
+                                        <p className="mt-2 text-sm text-red-500">
+                                            {phoneVerifyError}
+                                        </p>
+                                    )}
+
+                                    <div className="mt-4 text-center text-sm">
+                                        {resendCooldown > 0 ? (
+                                            <span className="text-text-secondary">
+                                                კოდის ხელახლა გაგზავნა შესაძლებელი იქნება {resendCooldown} წამში
+                                            </span>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={handleResendPhoneCode}
+                                                disabled={resendLoading}
+                                                className="font-medium text-accent hover:underline disabled:opacity-50"
+                                            >
+                                                {resendLoading
+                                                    ? "იგზავნება..."
+                                                    : "კოდის ხელახლა გაგზავნა"}
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleVerifyPhone}
+                                        disabled={
+                                            !emailVerified ||
+                                            phoneCode.join("").length !== 6 ||
+                                            phoneVerifyLoading
+                                        }
+                                        className="mt-4 w-full rounded-xl bg-accent px-4 py-3 font-medium text-white disabled:opacity-50"
+                                    >
+                                        {phoneVerifyLoading
+                                            ? "მიმდინარეობს..."
+                                            : "ტელეფონის დადასტურება"}
+                                    </button>
                                 </div>
                             </div>
 

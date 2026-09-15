@@ -19,39 +19,36 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as {
       name?: unknown;
-      phone?: unknown;
-      email?: unknown;
-      address?: unknown;
-      website?: unknown;
-      description?: unknown;
+      category?: unknown;
+      logoUrl?: unknown;
     };
 
     const name =
       typeof body.name === "string" ? body.name.trim() : "";
 
-    const phone =
-      typeof body.phone === "string" ? body.phone.trim() : "";
-
-    const email =
-      typeof body.email === "string"
-        ? body.email.trim().toLowerCase()
+    const category =
+      typeof body.category === "string"
+        ? body.category.trim()
         : "";
 
-    const address =
-      typeof body.address === "string" ? body.address.trim() : "";
-
-    const website =
-      typeof body.website === "string" ? body.website.trim() : "";
-
-    const description =
-      typeof body.description === "string"
-        ? body.description.trim()
+    const logoUrl =
+      typeof body.logoUrl === "string"
+        ? body.logoUrl.trim()
         : "";
 
     if (!name) {
       return NextResponse.json(
         {
           error: "ბიზნესის სახელი აუცილებელია.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!category) {
+      return NextResponse.json(
+        {
+          error: "ბიზნესის ტიპი აუცილებელია.",
         },
         { status: 400 }
       );
@@ -88,11 +85,8 @@ export async function POST(request: Request) {
       const business = await tx.business.create({
         data: {
           name,
-          phone: phone || null,
-          email: email || null,
-          address: address || null,
-          website: website || null,
-          description: description || null,
+          category,
+          logoUrl: logoUrl || null,
         },
       });
 

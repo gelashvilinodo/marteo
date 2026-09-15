@@ -75,6 +75,9 @@ model Session {
 model Business {
   id          String   @id @default(cuid())
   name        String
+  category    String @default("OTHER")
+  logoUrl     String?
+
   phone       String?
   email       String?
   address     String?
