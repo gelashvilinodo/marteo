@@ -14,7 +14,10 @@
     "enabled": true
   },
   "vars": {
-    "APP_URL": "https://marteo.ge"
+    "APP_URL": "https://marteo.ge",
+    "RESEND_FROM_EMAIL": "MARTEO <auth@marteo.ge>",
+    "SENDSMS_BASE_URL": "https://sendsms.ge/api",
+    "SENDSMS_SENDER": "MARTEO"
   },
   "hyperdrive": [
     {
