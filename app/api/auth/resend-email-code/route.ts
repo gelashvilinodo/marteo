@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { createHash, randomInt } from "crypto";
 
 import { createPrismaClient } from "@/lib/prisma";
-import { sendSms } from "@/lib/sms";
+import { sendVerificationEmail } from "@/lib/email";
 
-const COOLDOWN_SECONDS = 60;
+const RESEND_COOLDOWN_SECONDS = 60;
 const CODE_LIFETIME_MS = 10 * 60 * 1000;
 
 class RequestError extends Error {
@@ -46,29 +46,32 @@ export async function POST(request: Request) {
         typeof body.userId !== "string" ||
         !body.userId.trim()
     ) {
-        return errorResponse("მომხმარებლის მონაცემი არასწორია.", 400);
+        return errorResponse(
+            "მომხმარებლის მონაცემი არასწორია.",
+            400
+        );
     }
 
     const userId = body.userId.trim();
 
     try {
         const prisma = createPrismaClient();
-        const code = randomInt(100000, 1000000).toString();
 
+        const code = randomInt(100000, 1000000).toString();
         const codeHash = createHash("sha256")
             .update(code)
             .digest("hex");
 
-        const phone = await prisma.$transaction(
+        const delivery = await prisma.$transaction(
             async (tx) => {
                 const user = await tx.user.findUnique({
                     where: { id: userId },
                     select: {
                         id: true,
-                        phone: true,
-                        status: true,
+                        email: true,
+                        firstName: true,
                         emailVerifiedAt: true,
-                        phoneVerifiedAt: true,
+                        status: true,
                     },
                 });
 
@@ -79,35 +82,33 @@ export async function POST(request: Request) {
                     );
                 }
 
-                if (user.status !== "PENDING_VERIFICATION") {
+                if (user.emailVerifiedAt) {
                     throw new RequestError(
-                        "ამ ანგარიშისთვის რეგისტრაციის კოდის გაგზავნა დაუშვებელია.",
-                        403
-                    );
-                }
-
-                if (!user.emailVerifiedAt) {
-                    throw new RequestError(
-                        "ჯერ დაადასტურეთ ელფოსტა.",
-                        400
-                    );
-                }
-
-                if (user.phoneVerifiedAt) {
-                    throw new RequestError(
-                        "ტელეფონი უკვე დადასტურებულია.",
+                        "ელფოსტა უკვე დადასტურებულია.",
                         409
                     );
                 }
 
+                if (user.status !== "PENDING_VERIFICATION") {
+                    throw new RequestError(
+                        "ამ ანგარიშისთვის კოდის გაგზავნა დაუშვებელია.",
+                        403
+                    );
+                }
+
+                // Includes the first code created during registration.
                 const latestToken =
                     await tx.verificationToken.findFirst({
                         where: {
                             userId: user.id,
-                            type: "PHONE",
+                            type: "EMAIL",
                         },
-                        orderBy: { createdAt: "desc" },
-                        select: { createdAt: true },
+                        orderBy: {
+                            createdAt: "desc",
+                        },
+                        select: {
+                            createdAt: true,
+                        },
                     });
 
                 const now = new Date();
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
                     const retryAfter = Math.ceil(
                         (
                             latestToken.createdAt.getTime() +
-                            COOLDOWN_SECONDS * 1000 -
+                            RESEND_COOLDOWN_SECONDS * 1000 -
                             now.getTime()
                         ) / 1000
                     );
@@ -130,10 +131,11 @@ export async function POST(request: Request) {
                     }
                 }
 
+                // Replace previous unused Email codes atomically.
                 await tx.verificationToken.deleteMany({
                     where: {
                         userId: user.id,
-                        type: "PHONE",
+                        type: "EMAIL",
                         usedAt: null,
                     },
                 });
@@ -141,7 +143,7 @@ export async function POST(request: Request) {
                 await tx.verificationToken.create({
                     data: {
                         userId: user.id,
-                        type: "PHONE",
+                        type: "EMAIL",
                         token: codeHash,
                         createdAt: now,
                         expiresAt: new Date(
@@ -150,32 +152,36 @@ export async function POST(request: Request) {
                     },
                 });
 
-                return user.phone;
+                return {
+                    email: user.email,
+                    firstName: user.firstName ?? "",
+                };
             },
             {
                 isolationLevel: "Serializable",
             }
         );
 
-        // External delivery happens after the transaction commits.
+        // Send only after the database transaction commits.
         try {
-            await sendSms({
-                phone,
-                message:
-                    `MARTEO: თქვენი ტელეფონის დასადასტურებელი კოდია ${code}`,
+            await sendVerificationEmail({
+                to: delivery.email,
+                firstName: delivery.firstName,
+                token: code,
             });
         } catch {
-            // Keep the cooldown if delivery failed or is uncertain.
+            // Keep the cooldown even if delivery fails or is uncertain.
+            // A provider may have accepted the email before a timeout.
             return errorResponse(
-                "SMS-ის გაგზავნა ვერ დადასტურდა. შეამოწმეთ შეტყობინებები ან სცადეთ ხელახლა 60 წამში.",
+                "ელფოსტის გაგზავნა ვერ დადასტურდა. შეამოწმეთ შემოსული წერილები ან სცადეთ ხელახლა 60 წამში.",
                 502,
-                COOLDOWN_SECONDS
+                RESEND_COOLDOWN_SECONDS
             );
         }
 
         return NextResponse.json({
             success: true,
-            message: "SMS კოდი გაიგზავნა.",
+            message: "ელფოსტის კოდი ხელახლა გაიგზავნა.",
         });
     } catch (error) {
         if (error instanceof RequestError) {
@@ -186,6 +192,8 @@ export async function POST(request: Request) {
             );
         }
 
+        // Concurrent resend requests can conflict under Serializable.
+        // The failed transaction sends no email.
         if (
             error !== null &&
             typeof error === "object" &&
@@ -199,6 +207,9 @@ export async function POST(request: Request) {
             );
         }
 
-        return errorResponse("SMS კოდის გაგზავნა ვერ მოხერხდა.", 500);
+        return errorResponse(
+            "ელფოსტის კოდის ხელახლა გაგზავნა ვერ მოხერხდა.",
+            500
+        );
     }
 }

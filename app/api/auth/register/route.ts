@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createHash, randomBytes } from "crypto";
+import { createHash, randomInt } from "crypto";
 import bcrypt from "bcryptjs";
 
 import { createPrismaClient } from "@/lib/prisma";
@@ -114,13 +114,13 @@ export async function POST(request: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // მხოლოდ EMAIL verification-ისთვის ვქმნით token-ს.
-    // PHONE OTP ამ ეტაპზე ჯერ არ იქმნება.
-    const emailToken = randomBytes(32).toString("hex");
-    const emailTokenHash = hashVerificationToken(emailToken);
+    // EMAIL verification-ისთვის ვქმნით 6-ნიშნა OTP კოდს.
+    // PHONE OTP შეიქმნება მხოლოდ Email-ის წარმატებული დადასტურების შემდეგ.
+    const emailCode = randomInt(100000, 1000000).toString();
+    const emailCodeHash = hashVerificationToken(emailCode);
 
     const verificationExpiresAt = new Date(
-      Date.now() + 15 * 60 * 1000
+      Date.now() + 10 * 60 * 1000
     );
 
     const user = await prisma.$transaction(async (tx) => {
@@ -139,7 +139,7 @@ export async function POST(request: Request) {
         data: {
           userId: createdUser.id,
           type: "EMAIL",
-          token: emailTokenHash,
+          token: emailCodeHash,
           expiresAt: verificationExpiresAt,
         },
       });
@@ -150,8 +150,7 @@ export async function POST(request: Request) {
     await sendVerificationEmail({
       to: user.email,
       firstName: user.firstName ?? "",
-      token: emailToken,
-      userId: user.id,
+      token: emailCode,
     });
 
     return NextResponse.json(

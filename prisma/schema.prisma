@@ -129,6 +129,7 @@ model VerificationToken {
   expiresAt  DateTime
   createdAt  DateTime         @default(now())
   usedAt     DateTime?
+  attempts Int @default(0)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
