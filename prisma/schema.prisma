@@ -1,138 +1,552 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
-  runtime  = "cloudflare"
+provider = "prisma-client"
+output = "../generated/prisma"
+runtime = "cloudflare"
 }
 
 datasource db {
-  provider = "postgresql"
+provider = "postgresql"
 }
 
 enum MembershipRole {
-  OWNER
-  ADMIN
-  MEMBER
+OWNER
+ADMIN
+MEMBER
 }
 
 enum SubscriptionStatus {
-  ACTIVE
-  TRIALING
-  CANCELED
-  EXPIRED
-  PAST_DUE
+ACTIVE
+TRIALING
+CANCELED
+EXPIRED
+PAST_DUE
 }
 
 enum SubscriptionPlan {
-  FREE
-  START
-  BUSINESS
-  PRO
+FREE
+START
+BUSINESS
+PRO
 }
 
 enum UserStatus {
-  PENDING_VERIFICATION
-  ACTIVE
-  SUSPENDED
+PENDING_VERIFICATION
+ACTIVE
+SUSPENDED
 }
 
 enum VerificationType {
-  EMAIL
-  PHONE
+EMAIL
+PHONE
+}
+
+enum OrderStatus {
+PROCESSING
+COMPLETED
+CANCELED
+}
+
+enum PaymentStatus {
+UNPAID
+PAID
+COURIER_ONLY_PAID
+PARTIALLY_PAID
+}
+
+enum PaymentMethod {
+CASH
+BANK_TRANSFER
+CARD
+}
+
+enum OrderItemSource {
+MANUAL
+INVENTORY
+}
+
+enum PricingMethod {
+FIXED_PROFIT
+MARKUP_PERCENT
+MARGIN_PERCENT
+MANUAL
+}
+
+enum InventoryMovementType {
+PURCHASE_IN
+SALE_OUT
+CUSTOMER_RETURN_IN
+SUPPLIER_RETURN_OUT
+ADJUSTMENT_IN
+ADJUSTMENT_OUT
+}
+
+enum ExpenseCategory {
+ADVERTISING
+RENT
+SALARY
+TAX
+UTILITIES
+SOFTWARE
+PACKAGING
+TRANSPORT
+COMMISSION
+OTHER
+}
+
+enum ContentType {
+POST
+REEL
+STORY
+VIDEO
+ARTICLE
+OTHER
+}
+
+enum ContentStatus {
+IDEA
+DRAFT
+SCHEDULED
+PUBLISHED
+CANCELED
+}
+
+enum ContentPlatform {
+INSTAGRAM
+FACEBOOK
+TIKTOK
+YOUTUBE
+LINKEDIN
+WEBSITE
+OTHER
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  firstName String?
-  lastName  String?
-  phone     String   @unique
-  status    UserStatus @default(PENDING_VERIFICATION)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+id String @id @default(cuid())
+email String @unique
+password String
+firstName String?
+lastName String?
+phone String @unique
+status UserStatus @default(PENDING_VERIFICATION)
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
 
-  emailVerifiedAt DateTime?
-  phoneVerifiedAt DateTime?
+emailVerifiedAt DateTime?
+phoneVerifiedAt DateTime?
 
-  memberships  BusinessMembership[]
-  verifications VerificationToken[]
-  sessions Session[]
+memberships BusinessMembership[]
+verifications VerificationToken[]
+sessions Session[]
 }
 
 model Session {
-  id        String   @id @default(cuid())
-  userId    String
-  tokenHash String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+id String @id @default(cuid())
+userId String
+tokenHash String @unique
+expiresAt DateTime
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+@@index([userId])
 }
 
 model Business {
-  id          String   @id @default(cuid())
-  name        String
-  category    String @default("OTHER")
-  logoUrl     String?
+id String @id @default(cuid())
+name String
+category String @default("OTHER")
+logoUrl String?
 
-  phone       String?
-  email       String?
-  address     String?
-  website     String?
-  description String?
+phone String?
+email String?
+address String?
+website String?
+description String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
 
-  memberships  BusinessMembership[]
-  subscription Subscription?
+memberships BusinessMembership[]
+subscription Subscription?
+customers Customer[]
+orders Order[]
+products Product[]
+inventoryItems InventoryItem[]
+purchases Purchase[]
+expenses Expense[]
+contentItems ContentItem[]
+contentCampaigns ContentCampaign[]
 }
 
 model BusinessMembership {
-  id         String         @id @default(cuid())
-  userId     String
-  businessId String
-  role       MembershipRole @default(MEMBER)
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+id String @id @default(cuid())
+userId String
+businessId String
+role MembershipRole @default(MEMBER)
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, businessId])
-  @@index([businessId])
-  @@index([userId])
+@@unique([userId, businessId])
+@@index([businessId])
+@@index([userId])
 }
 
 model Subscription {
-  id          String           @id @default(cuid())
-  businessId  String           @unique
-  plan        SubscriptionPlan @default(FREE)
-  status      SubscriptionStatus @default(ACTIVE)
-  startedAt   DateTime         @default(now())
-  expiresAt   DateTime?
-  canceledAt  DateTime?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+id String @id @default(cuid())
+businessId String @unique
+plan SubscriptionPlan @default(FREE)
+status SubscriptionStatus @default(ACTIVE)
+startedAt DateTime @default(now())
+expiresAt DateTime?
+canceledAt DateTime?
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
-  id         String           @id @default(cuid())
-  userId     String
-  type       VerificationType
-  token      String
-  expiresAt  DateTime
-  createdAt  DateTime         @default(now())
-  usedAt     DateTime?
-  attempts Int @default(0)
+id String @id @default(cuid())
+userId String
+type VerificationType
+token String
+expiresAt DateTime
+createdAt DateTime @default(now())
+usedAt DateTime?
+attempts Int @default(0)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([token])
+@@index([userId])
+@@index([token])
+}
+
+model Customer {
+id String @id @default(cuid())
+businessId String
+
+phone String
+firstName String?
+lastName String?
+address String?
+
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+orders Order[]
+
+@@unique([businessId, phone])
+@@index([businessId])
+@@index([phone])
+}
+
+model Order {
+id String @id @default(cuid())
+businessId String
+customerId String
+recipientPhone String
+recipientFirstName String?
+recipientLastName String?
+shippingAddress String?
+
+status OrderStatus @default(PROCESSING)
+paymentStatus PaymentStatus @default(UNPAID)
+
+courierFee Decimal @default(0) @db.Decimal(12, 2)
+
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+items OrderItem[]
+payments OrderPayment[]
+
+@@index([businessId])
+@@index([customerId])
+@@index([status])
+@@index([paymentStatus])
+@@index([createdAt])
+}
+
+model OrderItem {
+id String @id @default(cuid())
+orderId String
+
+inventoryItemId String?
+source OrderItemSource @default(MANUAL)
+
+name String
+quantity Int @default(1)
+description String?
+imageUrl String?
+color String?
+size String?
+
+unitPrice Decimal @db.Decimal(12, 2)
+unitCost Decimal @db.Decimal(12, 2)
+
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+inventoryItem InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+allocations OrderItemAllocation[]
+inventoryMovements InventoryMovement[]
+
+@@index([orderId])
+@@index([inventoryItemId])
+}
+
+model OrderPayment {
+id String @id @default(cuid())
+orderId String
+
+amount Decimal @db.Decimal(12, 2)
+
+method PaymentMethod
+bankName String?
+
+createdAt DateTime @default(now())
+
+order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+@@index([orderId])
+@@index([createdAt])
+}
+
+model Product {
+id String @id @default(cuid())
+businessId String
+
+name String
+brand String?
+description String?
+category String?
+
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+variants InventoryItem[]
+
+@@index([businessId])
+@@index([name])
+}
+
+model InventoryItem {
+id String @id @default(cuid())
+businessId String
+productId String
+
+sku String
+color String?
+size String?
+imageUrl String?
+
+salePrice Decimal? @db.Decimal(12, 2)
+pricingMethod PricingMethod?
+pricingValue Decimal? @db.Decimal(12, 2)
+
+currentStock Int @default(0)
+isActive Boolean @default(true)
+
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+orderItems OrderItem[]
+purchaseItems PurchaseItem[]
+movements InventoryMovement[]
+
+@@unique([businessId, sku])
+@@index([businessId])
+@@index([productId])
+@@index([isActive])
+}
+
+model Purchase {
+id String @id @default(cuid())
+businessId String
+
+number Int
+
+name String?
+supplierName String?
+note String?
+
+purchaseDate DateTime @default(now())
+
+shippingCost Decimal @default(0) @db.Decimal(12, 2)
+customsCost Decimal @default(0) @db.Decimal(12, 2)
+otherCost Decimal @default(0) @db.Decimal(12, 2)
+
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+items PurchaseItem[]
+
+@@unique([businessId, number])
+@@index([businessId])
+@@index([purchaseDate])
+}
+
+model PurchaseItem {
+id String @id @default(cuid())
+purchaseId String
+inventoryItemId String
+
+quantity Int
+remainingQuantity Int
+
+unitPurchasePrice Decimal @db.Decimal(12, 2)
+
+allocatedExtraCostTotal Decimal @default(0) @db.Decimal(12, 2)
+finalUnitCost Decimal @db.Decimal(12, 2)
+
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+orderAllocations OrderItemAllocation[]
+inventoryMovements InventoryMovement[]
+
+@@index([purchaseId])
+@@index([inventoryItemId])
+}
+
+model InventoryMovement {
+id String @id @default(cuid())
+inventoryItemId String
+purchaseItemId String?
+orderItemId String?
+
+type InventoryMovementType
+quantity Int
+
+note String?
+
+createdAt DateTime @default(now())
+
+inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+purchaseItem PurchaseItem? @relation(fields: [purchaseItemId], references: [id], onDelete: SetNull)
+orderItem OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+
+@@index([inventoryItemId])
+@@index([purchaseItemId])
+@@index([orderItemId])
+@@index([type])
+@@index([createdAt])
+}
+
+model Expense {
+id String @id @default(cuid())
+businessId String
+
+category ExpenseCategory
+amount Decimal @db.Decimal(12, 2)
+
+title String?
+note String?
+
+expenseDate DateTime @default(now())
+
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+@@index([businessId])
+@@index([category])
+@@index([expenseDate])
+}
+
+model ContentCampaign {
+id String @id @default(cuid())
+businessId String
+
+name String
+description String?
+
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+items ContentItem[]
+
+@@index([businessId])
+}
+
+model ContentItem {
+id String @id @default(cuid())
+businessId String
+campaignId String?
+
+title String
+description String?
+
+type ContentType
+status ContentStatus @default(IDEA)
+
+scheduledAt DateTime?
+
+cta String?
+hashtags String?
+goal String?
+budget Decimal? @db.Decimal(12, 2)
+
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+campaign ContentCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+channels ContentChannel[]
+
+@@index([businessId])
+@@index([campaignId])
+@@index([status])
+@@index([scheduledAt])
+}
+
+model ContentChannel {
+id String @id @default(cuid())
+contentItemId String
+
+platform ContentPlatform
+
+createdAt DateTime @default(now())
+
+contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+
+@@unique([contentItemId, platform])
+@@index([contentItemId])
+@@index([platform])
+}
+
+model OrderItemAllocation {
+id String @id @default(cuid())
+orderItemId String
+purchaseItemId String
+
+quantity Int
+
+unitCost Decimal @db.Decimal(12, 2)
+
+createdAt DateTime @default(now())
+
+orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+purchaseItem PurchaseItem @relation(fields: [purchaseItemId], references: [id], onDelete: Restrict)
+
+@@unique([orderItemId, purchaseItemId])
+@@index([orderItemId])
+@@index([purchaseItemId])
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Icon } from "@iconify/react";
 
 export default function LogoutButton() {
     const [loading, setLoading] = useState(false);
@@ -35,14 +36,19 @@ export default function LogoutButton() {
     };
 
     return (
-        <div>
+        <div className="w-full">
             <button
                 type="button"
                 onClick={handleLogout}
                 disabled={loading}
-                className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text-primary transition hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-12 w-full items-center gap-3 rounded-xl border border-border bg-surface px-4 text-sm font-medium text-text-primary transition hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
             >
-                {loading ? "მიმდინარეობს..." : "გამოსვლა"}
+                <Icon
+                    icon="solar:logout-2-bold-duotone"
+                    className="h-5 w-5 shrink-0"
+                    aria-hidden="true"
+                />
+                <span>{loading ? "მიმდინარეობს..." : "გამოსვლა"}</span>
             </button>
 
             {error && (

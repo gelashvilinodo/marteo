@@ -93,9 +93,6 @@ export default function LoginForm() {
                     </Link>
 
                     <div className="max-w-md">
-                        <p className="mb-4 text-sm font-medium text-accent">
-                            MARTEO.GE
-                        </p>
 
                         <h1 className="text-4xl font-semibold leading-tight text-white xl:text-5xl">
                             თქვენი ბიზნესი.
@@ -104,7 +101,7 @@ export default function LoginForm() {
                         </h1>
 
                         <p className="mt-6 max-w-sm text-base leading-7 text-white/65">
-                            შედით თქვენს ანგარიშში და გააგრძელეთ
+                            შედით თქვენს ანგარიშზე და გააგრძელეთ
                             ბიზნესის მართვა.
                         </p>
                     </div>
@@ -141,7 +138,7 @@ export default function LoginForm() {
                         >
                             <div className="mb-7">
                                 <h2 className="text-2xl font-semibold text-text-primary">
-                                    შედით თქვენს ანგარიშში
+                                    მოგესალმებით MARTEO-ზე
                                 </h2>
 
                                 <p className="mt-2 text-sm leading-6 text-text-secondary">

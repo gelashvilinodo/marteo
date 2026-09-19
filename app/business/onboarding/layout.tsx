@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
-import LogoutButton from "@/components/auth/LogoutButton";
 
 export default async function OnboardingLayout({
     children,
@@ -31,12 +30,5 @@ export default async function OnboardingLayout({
         redirect("/dashboard");
     }
 
-    return (
-        <>
-            <div className="flex justify-end bg-background px-4 pt-4 sm:px-6">
-                <LogoutButton />
-            </div>
-            {children}
-        </>
-    );
+    return <>{children}</>;
 }

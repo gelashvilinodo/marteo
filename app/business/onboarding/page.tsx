@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 
-import { supabase } from "@/lib/supabase/client";
-
 const businessTypes = [
     "ტანსაცმელი და მოდა",
     "ფეხსაცმელი და აქსესუარები",
@@ -83,24 +81,43 @@ export default function BusinessOnboardingPage() {
             let logoUrl = "";
 
             if (logoFile) {
-                const extension = logoFile.name.split(".").pop();
-                const fileName = `${crypto.randomUUID()}.${extension}`;
+                const uploadForm = new FormData();
+                uploadForm.append("file", logoFile);
 
-                const { error: uploadError } = await supabase.storage
-                    .from("business-logos")
-                    .upload(fileName, logoFile);
+                const uploadResponse = await fetch(
+                    "/api/business/upload-logo",
+                    {
+                        method: "POST",
+                        credentials: "same-origin",
+                        body: uploadForm,
+                    }
+                );
 
-                if (uploadError) {
-                    setError("ლოგოს ატვირთვა ვერ მოხერხდა.");
-                    setLoading(false);
+                const uploadData = (await uploadResponse
+                    .json()
+                    .catch(() => null)) as {
+                        logoUrl?: string;
+                        error?: string;
+                    } | null;
+
+                if (!uploadResponse.ok) {
+                    setError(
+                        typeof uploadData?.error === "string"
+                            ? uploadData.error
+                            : "ლოგოს ატვირთვა ვერ მოხერხდა."
+                    );
                     return;
                 }
 
-                const { data } = supabase.storage
-                    .from("business-logos")
-                    .getPublicUrl(fileName);
+                if (
+                    typeof uploadData?.logoUrl !== "string" ||
+                    !uploadData.logoUrl
+                ) {
+                    setError("სერვერმა ფოტოს მისამართი ვერ დააბრუნა.");
+                    return;
+                }
 
-                logoUrl = data.publicUrl;
+                logoUrl = uploadData.logoUrl;
             }
 
             const response = await fetch("/api/business/onboarding", {
