@@ -43,8 +43,10 @@ export default function DashboardShell({
             <DashboardSidebar />
 
             <div
+                id="mobile-dashboard-sidebar"
+                inert={!sidebarOpen}
                 className={[
-                    "fixed inset-0 z-40 lg:hidden",
+                    "fixed inset-x-0 bottom-0 top-16 z-40 lg:hidden",
                     sidebarOpen
                         ? "pointer-events-auto"
                         : "pointer-events-none",
@@ -70,13 +72,17 @@ export default function DashboardShell({
                             : "-translate-x-full",
                     ].join(" ")}
                 >
-                    <DashboardSidebar mobile />
+                    <DashboardSidebar
+                        mobile
+                        onSelect={() => setSidebarOpen(false)}
+                    />
                 </div>
             </div>
 
             <div className="min-w-0 flex-1">
                 <DashboardHeader
-                    onMenuClick={() => setSidebarOpen(true)}
+                    menuOpen={sidebarOpen}
+                    onMenuClick={() => setSidebarOpen((current) => !current)}
                     businessName={businessName}
                     businessLogoUrl={businessLogoUrl}
                     userName={userName}

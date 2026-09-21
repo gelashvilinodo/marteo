@@ -14,6 +14,11 @@ import {
     removeUncommittedProductImages,
 } from "./product-images";
 
+import {
+    saveProductAttributes,
+    normalizeAttributeName,
+} from "./save-product-attributes";
+
 export type PurchaseImageChange =
     | { action: "keep" }
     | { action: "remove" }
@@ -222,6 +227,11 @@ export async function savePurchase(
                     _max: { number: true },
                 });
 
+                const isReceived =
+                    input.receiptStatus === "RECEIVED";
+
+                const receivedAt = isReceived ? new Date() : null;
+
                 const purchase = await tx.purchase.create({
                     data: {
                         id: requestId,
@@ -229,6 +239,8 @@ export async function savePurchase(
                         number: (previous._max.number ?? 0) + 1,
                         name: input.name || null,
                         note: input.note || null,
+                        receiptStatus: input.receiptStatus,
+                        receivedAt,
                         purchaseDate: new Date(
                             `${input.purchaseDate}T00:00:00+04:00`,
                         ),
@@ -238,7 +250,18 @@ export async function savePurchase(
                     },
                 });
 
-                for (const [index, item] of input.items.entries()) {
+                for (const [index, originalItem] of input.items.entries()) {
+                    const attributes = await saveProductAttributes(
+                        tx,
+                        businessId,
+                        originalItem,
+                    );
+
+                    const item = {
+                        ...originalItem,
+                        ...attributes,
+                    };
+
                     const calculated = input.calculation.items[index];
 
                     const source = item.sourceInventoryItemId
@@ -261,8 +284,10 @@ export async function savePurchase(
                     const sameProduct =
                         source !== null &&
                         normalize(source.product.name) === item.name &&
-                        normalize(source.product.brand) === item.brand &&
-                        normalize(source.product.category) === item.category &&
+                        normalizeAttributeName(source.product.brand ?? "") ===
+                        normalizeAttributeName(item.brand) &&
+                        normalizeAttributeName(source.product.category ?? "") ===
+                        normalizeAttributeName(item.category) &&
                         normalize(source.product.description) === item.description;
 
                     let productId: string;
@@ -293,8 +318,10 @@ export async function savePurchase(
                     const exactSource =
                         source &&
                             sameProduct &&
-                            normalize(source.color) === item.color &&
-                            normalize(source.size) === item.size
+                            normalizeAttributeName(source.color ?? "") ===
+                            normalizeAttributeName(item.color) &&
+                            normalizeAttributeName(source.size ?? "") ===
+                            normalizeAttributeName(item.size)
                             ? source
                             : null;
 
@@ -302,8 +329,10 @@ export async function savePurchase(
                         exactSource ??
                         variants.find(
                             (variant) =>
-                                normalize(variant.color) === item.color &&
-                                normalize(variant.size) === item.size,
+                                normalizeAttributeName(variant.color ?? "") ===
+                                normalizeAttributeName(item.color) &&
+                                normalizeAttributeName(variant.size ?? "") ===
+                                normalizeAttributeName(item.size),
                         );
 
                     const cost = new Prisma.Decimal(
@@ -344,12 +373,25 @@ export async function savePurchase(
 
                     checkedMoney(cost);
 
+                    const receivedQuantity = isReceived
+                        ? calculated.quantity
+                        : 0;
+
+                    const receivedDefectiveQuantity = isReceived
+                        ? item.defectiveQuantity
+                        : 0;
+
+                    const receivedGoodQuantity =
+                        receivedQuantity - receivedDefectiveQuantity;
+
                     if (
                         inventory &&
-                        inventory.currentStock + calculated.quantity >
+                        inventory.currentStock + receivedQuantity >
                         2147483647
                     ) {
-                        fail("მარაგის რაოდენობა დასაშვებ ზღვარს აღემატება.");
+                        fail(
+                            "მარაგის რაოდენობა დასაშვებ ზღვარს აღემატება.",
+                        );
                     }
 
                     const imageChange = imageChanges[index];
@@ -378,12 +420,19 @@ export async function savePurchase(
                         ? await tx.inventoryItem.update({
                             where: { id: inventory.id },
                             data: {
-                                ...pricingData,
                                 imageUrl,
-                                isActive: true,
-                                currentStock: {
-                                    increment: calculated.quantity,
-                                },
+
+                                // გზაში მყოფი პარტია არსებული
+                                // მარაგის ფასსა და ნაშთს არ ცვლის.
+                                ...(isReceived
+                                    ? {
+                                        ...pricingData,
+                                        isActive: true,
+                                        currentStock: {
+                                            increment: receivedQuantity,
+                                        },
+                                    }
+                                    : {}),
                             },
                         })
                         : await tx.inventoryItem.create({
@@ -394,8 +443,12 @@ export async function savePurchase(
                                 color: item.color || null,
                                 size: item.size || null,
                                 imageUrl,
-                                ...pricingData,
-                                currentStock: calculated.quantity,
+
+                                // ახალი პროდუქტის ჩანაწერი იქმნება,
+                                // მაგრამ მიღებამდე ნაშთი ნულია.
+                                currentStock: receivedQuantity,
+
+                                ...(isReceived ? pricingData : {}),
                             },
                         });
 
@@ -403,25 +456,51 @@ export async function savePurchase(
                         data: {
                             purchaseId: purchase.id,
                             inventoryItemId: savedInventory.id,
+
                             quantity: calculated.quantity,
-                            remainingQuantity: calculated.quantity,
+                            remainingQuantity: receivedQuantity,
+
+                            defectiveQuantity: item.defectiveQuantity,
+                            remainingDefectiveQuantity:
+                                receivedDefectiveQuantity,
+                            defectNote: item.defectNote || null,
+
                             unitPurchasePrice:
                                 calculated.unitPurchasePrice,
                             allocatedExtraCostTotal:
                                 calculated.allocatedExtraCostTotal,
                             finalUnitCost:
                                 calculated.finalUnitCost,
+
+                            plannedPricingMethod: item.pricingMethod,
+                            plannedPricingValue: pricingData.pricingValue,
                         },
                     });
 
-                    await tx.inventoryMovement.create({
-                        data: {
-                            inventoryItemId: savedInventory.id,
-                            purchaseItemId: purchaseItem.id,
-                            type: "PURCHASE_IN",
-                            quantity: calculated.quantity,
-                        },
-                    });
+                    if (receivedGoodQuantity > 0) {
+                        await tx.inventoryMovement.create({
+                            data: {
+                                inventoryItemId: savedInventory.id,
+                                purchaseItemId: purchaseItem.id,
+                                type: "PURCHASE_IN",
+                                condition: "GOOD",
+                                quantity: receivedGoodQuantity,
+                            },
+                        });
+                    }
+
+                    if (receivedDefectiveQuantity > 0) {
+                        await tx.inventoryMovement.create({
+                            data: {
+                                inventoryItemId: savedInventory.id,
+                                purchaseItemId: purchaseItem.id,
+                                type: "PURCHASE_IN",
+                                condition: "DEFECTIVE",
+                                quantity: receivedDefectiveQuantity,
+                                note: item.defectNote || null,
+                            },
+                        });
+                    };
                 }
 
                 return {

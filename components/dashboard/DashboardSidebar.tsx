@@ -56,15 +56,17 @@ const navigationItems = [
         icon: "solar:calendar-bold-duotone",
         locked: false,
     },
-    
+
 ];
 
 type DashboardSidebarProps = {
     mobile?: boolean;
+    onSelect?: () => void;
 };
 
 export default function DashboardSidebar({
     mobile = false,
+    onSelect,
 }: DashboardSidebarProps) {
     const pathname = usePathname();
 
@@ -80,6 +82,7 @@ export default function DashboardSidebar({
             <div className="px-3">
                 <Link
                     href="/dashboard"
+                    onClick={onSelect}
                     className="flex items-center gap-3"
                 >
                     <Image
@@ -87,6 +90,7 @@ export default function DashboardSidebar({
                         alt="MARTEO"
                         width={200}
                         height={60}
+                        loading="eager"
                         className="h-16 w-auto"
                     />
                 </Link>
@@ -132,6 +136,7 @@ export default function DashboardSidebar({
                         <Link
                             key={item.href}
                             href={item.href}
+                            onClick={onSelect}
                             className={[
                                 "relative flex h-[52px] items-center gap-3 px-4 text-sm font-medium transition-all duration-200",
                                 isActive
@@ -153,6 +158,7 @@ export default function DashboardSidebar({
             <div className="mt-6 border-t border-white/10 pt-4">
                 <Link
                     href="/dashboard/settings"
+                    onClick={onSelect}
                     className="flex h-12 items-center gap-3 rounded-2xl px-4 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
                 >
                     <Icon

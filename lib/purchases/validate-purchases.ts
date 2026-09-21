@@ -9,6 +9,8 @@ const pricingMethods = [
 
 type PricingMethod = (typeof pricingMethods)[number];
 
+type ReceiptStatus = "IN_TRANSIT" | "RECEIVED";
+
 export class PurchaseValidationError extends Error {
     constructor(message: string) {
         super(message);
@@ -103,6 +105,22 @@ function purchaseDate(value: unknown): string {
 export function validatePurchase(value: unknown) {
     const input = object(value, "პარტია");
 
+    // არსებული ფორმა სტატუსს ჯერ არ აგზავნის.
+    // ამიტომ ძველი მოთხოვნები კვლავ ჩამოსულად ჩაითვლება.
+    const rawReceiptStatus =
+        input.receiptStatus === undefined
+            ? "RECEIVED"
+            : input.receiptStatus;
+
+    if (
+        rawReceiptStatus !== "IN_TRANSIT" &&
+        rawReceiptStatus !== "RECEIVED"
+    ) {
+        fail("პარტიის მიღების სტატუსი არასწორია.");
+    }
+
+    const receiptStatus: ReceiptStatus = rawReceiptStatus;
+
     if (
         !Array.isArray(input.items) ||
         input.items.length === 0 ||
@@ -111,9 +129,28 @@ export function validatePurchase(value: unknown) {
         fail("პარტიაში უნდა იყოს 1-დან 200-მდე ჩანაწერი.");
     }
 
+    const purchaseItemIds = new Set<string>();
+
     const items = input.items.map((value, index) => {
         const item = object(value, `პროდუქტი ${index + 1}`);
         const label = `პროდუქტი ${index + 1}`;
+
+        const purchaseItemId =
+            text(
+                item.purchaseItemId,
+                `${label} — პარტიის პროდუქტის ჩანაწერი`,
+                100,
+            ) || null;
+
+        if (purchaseItemId) {
+            if (purchaseItemIds.has(purchaseItemId)) {
+                fail(
+                    `${label}: პარტიის პროდუქტის ჩანაწერი მეორდება.`,
+                );
+            }
+
+            purchaseItemIds.add(purchaseItemId);
+        }
 
         const quantity = text(
             item.quantity,
@@ -129,6 +166,44 @@ export function validatePurchase(value: unknown) {
         ) {
             fail(
                 `${label}: რაოდენობა უნდა იყოს მთელი რიცხვი 1-დან 1 000 000-მდე.`,
+            );
+        }
+
+        const defectiveQuantityText = text(
+            item.defectiveQuantity,
+            `${label} — წუნდებული რაოდენობა`,
+            7,
+        ) || "0";
+
+        if (
+            !/^\d+$/.test(defectiveQuantityText) ||
+            Number(defectiveQuantityText) > Number(quantity)
+        ) {
+            fail(
+                `${label}: წუნდებული რაოდენობა უნდა იყოს მთელი რიცხვი 0-დან საერთო რაოდენობამდე.`,
+            );
+        }
+
+        const defectiveQuantity = Number(defectiveQuantityText);
+
+        const defectNote = text(
+            item.defectNote,
+            `${label} — წუნის აღწერა`,
+            2000,
+        );
+
+        if (
+            receiptStatus === "IN_TRANSIT" &&
+            (defectiveQuantity > 0 || defectNote)
+        ) {
+            fail(
+                `${label}: წუნდებული რაოდენობა და აღწერა პარტიის მიღებისას მიუთითე.`,
+            );
+        }
+
+        if (defectiveQuantity === 0 && defectNote) {
+            fail(
+                `${label}: წუნის აღწერისთვის მიუთითე წუნდებული რაოდენობაც.`,
             );
         }
 
@@ -167,6 +242,7 @@ export function validatePurchase(value: unknown) {
         }
 
         return {
+            purchaseItemId,
             sourceInventoryItemId:
                 text(
                     item.sourceInventoryItemId,
@@ -191,6 +267,8 @@ export function validatePurchase(value: unknown) {
             size: text(item.size, `${label} — ზომა`, 100),
 
             quantity,
+            defectiveQuantity,
+            defectNote,
             unitPurchasePrice,
             pricingMethod: method as PricingMethod,
             pricingValue,
@@ -198,6 +276,7 @@ export function validatePurchase(value: unknown) {
     });
 
     const result = {
+        receiptStatus,
         name: text(input.name, "პარტიის სახელი", 200),
         note: text(input.note, "შენიშვნა", 2000),
         purchaseDate: purchaseDate(input.purchaseDate),

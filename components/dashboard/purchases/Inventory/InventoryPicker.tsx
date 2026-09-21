@@ -353,7 +353,6 @@ export default function InventoryPicker({
                                                     item.brand,
                                                     item.color,
                                                     item.size,
-                                                    item.sku,
                                                 ]
                                                     .filter(Boolean)
                                                     .join(" · ")}

@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 
 type DashboardHeaderProps = {
     onMenuClick: () => void;
+    menuOpen: boolean;
     businessName: string;
     businessLogoUrl: string | null;
     userName: string;
@@ -14,6 +15,7 @@ type DashboardHeaderProps = {
 
 export default function DashboardHeader({
     onMenuClick,
+    menuOpen,
     businessName,
     businessLogoUrl,
     userName,
@@ -26,11 +28,17 @@ export default function DashboardHeader({
                     type="button"
                     onClick={onMenuClick}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-300 transition hover:bg-white/10 hover:text-white lg:hidden"
-                    aria-label="მენიუს გახსნა"
+                    aria-label={menuOpen ? "მენიუს დახურვა" : "მენიუს გახსნა"}
+                    aria-expanded={menuOpen}
+                    aria-controls="mobile-dashboard-sidebar"
                 >
                     <Icon
-                        icon="solar:hamburger-menu-linear"
-                        className="h-5 w-5"
+                        icon={
+                            menuOpen
+                                ? "solar:close-circle-linear"
+                                : "solar:hamburger-menu-linear"
+                        }
+                        className="h-6 w-6"
                     />
                 </button>
             </div>

@@ -2,6 +2,7 @@
 
 import {
     useEffect,
+    useId,
     useRef,
     useState,
     type ReactNode,
@@ -10,6 +11,7 @@ import {
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import InventoryPicker from "@/components/dashboard/purchases/Inventory/InventoryPicker";
+import AttributeInput from "@/components/dashboard/purchases/AttributeInput";
 
 type PricingMethod =
     | "MANUAL"
@@ -19,6 +21,7 @@ type PricingMethod =
 
 type ProductDraft = {
     id: string;
+    purchaseItemId: string | null;
     sourceInventoryItemId: string | null;
     sourceProductId: string | null;
     name: string;
@@ -31,9 +34,42 @@ type ProductDraft = {
     imageFile: File | null;
     imageAction: "keep" | "remove" | "upload";
     quantity: string;
+    defectiveQuantity: string;
+    defectNote: string;
     unitPurchasePrice: string;
     pricingMethod: PricingMethod;
     pricingValue: string;
+};
+
+type EditablePurchase = {
+    id: string;
+    number: number;
+    updatedAt: string;
+    name: string;
+    note: string;
+    receiptStatus: "IN_TRANSIT";
+    purchaseDate: string;
+    shippingCost: string;
+    customsCost: string;
+    otherCost: string;
+    items: Array<{
+        purchaseItemId: string;
+        sourceInventoryItemId: string;
+        sourceProductId: string;
+        name: string;
+        category: string;
+        brand: string;
+        description: string;
+        color: string;
+        size: string;
+        imageUrl: string;
+        quantity: string;
+        defectiveQuantity: string;
+        defectNote: string;
+        unitPurchasePrice: string;
+        pricingMethod: PricingMethod;
+        pricingValue: string;
+    }>;
 };
 
 type InventoryOption = {
@@ -52,52 +88,6 @@ type InventoryOption = {
     pricingMethod: PricingMethod;
     pricingValue: string;
 };
-
-const categoryOptions = [
-    "ჩანთები",
-    "ფეხსაცმელი",
-    "ტანსაცმელი",
-    "აქსესუარები",
-    "სამკაულები",
-    "საათები",
-    "კოსმეტიკა და მოვლა",
-    "პარფიუმერია",
-    "ელექტრონიკა",
-    "საყოფაცხოვრებო ტექნიკა",
-    "სახლი და სამზარეულო",
-    "ავეჯი",
-    "სათამაშოები",
-    "საბავშვო პროდუქტები",
-    "სპორტი და დასვენება",
-    "ავტონაწილები",
-    "ავტომობილის აქსესუარები",
-    "ხელსაწყოები",
-    "წიგნები და საკანცელარიო",
-    "საკვები და სასმელი",
-    "ცხოველების პროდუქტები",
-    "სხვა",
-];
-
-const colorOptions = [
-    "შავი",
-    "თეთრი",
-    "ნაცრისფერი",
-    "ვერცხლისფერი",
-    "ოქროსფერი",
-    "კრემისფერი",
-    "ბეჟი",
-    "ყავისფერი",
-    "წითელი",
-    "ვარდისფერი",
-    "ნარინჯისფერი",
-    "ყვითელი",
-    "მწვანე",
-    "ცისფერი",
-    "ლურჯი",
-    "იისფერი",
-    "გამჭვირვალე",
-    "ფერადი",
-];
 
 const inputClass =
     "h-9 lg:h-8 w-full min-w-0 rounded-lg border border-border bg-surface px-2.5 text-xs text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15";
@@ -127,6 +117,7 @@ function today() {
 function createProduct(): ProductDraft {
     return {
         id: crypto.randomUUID(),
+        purchaseItemId: null,
         sourceInventoryItemId: null,
         sourceProductId: null,
         name: "",
@@ -139,6 +130,8 @@ function createProduct(): ProductDraft {
         imageFile: null,
         imageAction: "keep",
         quantity: "1",
+        defectiveQuantity: "",
+        defectNote: "",
         unitPurchasePrice: "",
         pricingMethod: "MANUAL",
         pricingValue: "",
@@ -333,9 +326,21 @@ function AnimatedProductCard({
 
 export default function NewPurchasePanel({
     inventoryOptions,
+    attributeOptions,
+    editPurchaseId,
 }: {
+    editPurchaseId?: string;
     inventoryOptions: InventoryOption[];
+    attributeOptions: {
+        category: string[];
+        brand: string[];
+        color: string[];
+        size: string[];
+    };
 }) {
+    const panelId = useId();
+    const titleId = `${panelId}-title`;
+    const formId = `${panelId}-form`;
     const [mounted, setMounted] = useState(false);
     const [visible, setVisible] = useState(false);
     const [dirty, setDirty] = useState(false);
@@ -345,6 +350,16 @@ export default function NewPurchasePanel({
     const [saving, setSaving] = useState(false);
     const [retryPending, setRetryPending] = useState(false);
     const [success, setSuccess] = useState("");
+    const [loadingEdit, setLoadingEdit] = useState(false);
+
+    const [editingPurchase, setEditingPurchase] = useState<{
+        id: string;
+        number: number;
+        updatedAt: string;
+    } | null>(null);
+
+    const editLoadLocked = useRef(false);
+    const isEditing = editingPurchase !== null;
 
     const formRef = useRef<HTMLFormElement>(null);
     const requestLocked = useRef(false);
@@ -352,11 +367,31 @@ export default function NewPurchasePanel({
 
     const [name, setName] = useState("");
     const [date, setDate] = useState(today);
+    const [receiptStatus, setReceiptStatus] = useState<
+        "IN_TRANSIT" | "RECEIVED"
+    >("RECEIVED");
     const [note, setNote] = useState("");
     const [shipping, setShipping] = useState("0");
     const [customs, setCustoms] = useState("0");
     const [other, setOther] = useState("0");
     const [products, setProducts] = useState<ProductDraft[]>([]);
+
+    function getAttributeOptions(
+        field: "category" | "brand" | "color" | "size",
+        currentProductId: string,
+    ) {
+        return [
+            ...attributeOptions[field],
+
+            // ძველ პროდუქტებში არსებული მნიშვნელობებიც გამოჩნდეს.
+            ...inventoryOptions.map((item) => item[field]),
+
+            // სხვა ბარათებში ახლახან შეყვანილი მნიშვნელობები.
+            ...products
+                .filter((item) => item.id !== currentProductId)
+                .map((item) => item[field]),
+        ];
+    }
 
     const openButton = useRef<HTMLButtonElement>(null);
     const heading = useRef<HTMLHeadingElement>(null);
@@ -368,11 +403,15 @@ export default function NewPurchasePanel({
     const pendingProductFocus = useRef(false);
 
     useEffect(() => {
-        if (!saving && !retryPending) return;
+        const hasUnsavedChanges = mounted && dirty;
+
+        if (!hasUnsavedChanges && !saving && !retryPending) {
+            return;
+        }
 
         function warnBeforeLeaving(event: BeforeUnloadEvent) {
             event.preventDefault();
-            event.returnValue = "";
+            event.returnValue = "Unsaved changes";
         }
 
         window.addEventListener("beforeunload", warnBeforeLeaving);
@@ -383,7 +422,7 @@ export default function NewPurchasePanel({
                 warnBeforeLeaving,
             );
         };
-    }, [saving, retryPending]);
+    }, [mounted, dirty, saving, retryPending]);
 
     useEffect(() => {
         const urls = photoUrls.current;
@@ -474,17 +513,133 @@ export default function NewPurchasePanel({
         };
     }, [mounted]);
 
+    async function openEditPanel() {
+        if (
+            !editPurchaseId ||
+            editLoadLocked.current ||
+            requestLocked.current ||
+            pendingSubmission.current
+        ) {
+            return;
+        }
+
+        editLoadLocked.current = true;
+        setLoadingEdit(true);
+        setError("");
+        setSuccess("");
+
+        try {
+            const response = await fetch(
+                `/api/purchases/${encodeURIComponent(editPurchaseId)}`,
+                {
+                    credentials: "same-origin",
+                    cache: "no-store",
+                },
+            );
+
+            const raw: unknown = await response.json().catch(() => null);
+
+            const body =
+                typeof raw === "object" &&
+                    raw !== null &&
+                    !Array.isArray(raw)
+                    ? raw as Record<string, unknown>
+                    : null;
+
+            if (!response.ok || body?.success !== true) {
+                throw new Error(
+                    typeof body?.error === "string"
+                        ? body.error
+                        : "პარტიის მონაცემები ვერ ჩაიტვირთა.",
+                );
+            }
+
+            const rawPurchase = body.purchase;
+
+            if (
+                typeof rawPurchase !== "object" ||
+                rawPurchase === null ||
+                Array.isArray(rawPurchase)
+            ) {
+                throw new Error("პარტიის მონაცემების ფორმატი არასწორია.");
+            }
+
+            const candidate = rawPurchase as Record<string, unknown>;
+
+            if (
+                candidate.id !== editPurchaseId ||
+                candidate.receiptStatus !== "IN_TRANSIT" ||
+                typeof candidate.number !== "number" ||
+                typeof candidate.updatedAt !== "string" ||
+                !Number.isFinite(Date.parse(candidate.updatedAt)) ||
+                !Array.isArray(candidate.items) ||
+                candidate.items.length === 0
+            ) {
+                throw new Error("პარტიის მონაცემები არასრულია.");
+            }
+
+            // მონაცემები ჩვენი GET API-ის კონტრაქტიდან მოდის.
+            const purchase = rawPurchase as EditablePurchase;
+
+            const nextProducts: ProductDraft[] = purchase.items.map(
+                (item) => ({
+                    ...createProduct(),
+                    ...item,
+                    id: crypto.randomUUID(),
+                    imageFile: null,
+                    imageAction: "keep",
+                }),
+            );
+
+            if (closeTimer.current) {
+                clearTimeout(closeTimer.current);
+            }
+
+            setEditingPurchase({
+                id: purchase.id,
+                number: purchase.number,
+                updatedAt: purchase.updatedAt,
+            });
+
+            setName(purchase.name);
+            setDate(purchase.purchaseDate);
+            setReceiptStatus("IN_TRANSIT");
+            setNote(purchase.note);
+            setShipping(purchase.shippingCost);
+            setCustoms(purchase.customsCost);
+            setOther(purchase.otherCost);
+            setProducts(nextProducts);
+
+            setSaving(false);
+            setRetryPending(false);
+            setDirty(false);
+            setVisible(false);
+            setMounted(true);
+        } catch (caught) {
+            setError(
+                caught instanceof Error
+                    ? caught.message
+                    : "პარტიის მონაცემები ვერ ჩაიტვირთა.",
+            );
+        } finally {
+            editLoadLocked.current = false;
+            setLoadingEdit(false);
+        }
+    }
+
     function openPanel() {
         if (requestLocked.current || pendingSubmission.current) return;
 
         setSaving(false);
         setRetryPending(false);
         setSuccess("");
+        setEditingPurchase(null);
 
         if (closeTimer.current) clearTimeout(closeTimer.current);
 
         setName("");
         setDate(today());
+        setReceiptStatus("RECEIVED");
         setNote("");
         setShipping("0");
         setCustoms("0");
@@ -562,6 +717,9 @@ export default function NewPurchasePanel({
             updateProduct(draftId, {
                 ...createProduct(),
                 id: draftId,
+                purchaseItemId:
+                    products.find((product) => product.id === draftId)
+                        ?.purchaseItemId ?? null,
             });
             return;
         }
@@ -612,6 +770,11 @@ export default function NewPurchasePanel({
     async function handleSave() {
         if (requestLocked.current) return;
 
+        if (isEditing && receiptStatus !== "IN_TRANSIT") {
+            setError("პარტიის მისაღებად გამოიყენე „პარტიის მიღება“.");
+            return;
+        }
+
         setError("");
 
         let submission = pendingSubmission.current;
@@ -645,12 +808,14 @@ export default function NewPurchasePanel({
             const purchase = {
                 name,
                 note,
+                receiptStatus,
                 purchaseDate: date,
                 shippingCost: shipping,
                 customsCost: customs,
                 otherCost: other,
 
                 items: products.map((product) => ({
+                    purchaseItemId: product.purchaseItemId,
                     sourceInventoryItemId:
                         product.sourceInventoryItemId,
                     name: product.name,
@@ -660,17 +825,33 @@ export default function NewPurchasePanel({
                     color: product.color,
                     size: product.size,
                     quantity: product.quantity,
+                    defectiveQuantity:
+                        receiptStatus === "RECEIVED"
+                            ? product.defectiveQuantity || "0"
+                            : "0",
+                    defectNote:
+                        receiptStatus === "RECEIVED"
+                            ? product.defectNote
+                            : "",
                     unitPurchasePrice: product.unitPurchasePrice,
                     pricingMethod: product.pricingMethod,
                     pricingValue: product.pricingValue,
                 })),
             };
 
-            const payload = JSON.stringify({
-                requestId: crypto.randomUUID(),
-                purchase,
-                imageActions,
-            });
+            const payload = JSON.stringify(
+                editingPurchase
+                    ? {
+                        expectedUpdatedAt: editingPurchase.updatedAt,
+                        purchase,
+                        imageActions,
+                    }
+                    : {
+                        requestId: crypto.randomUUID(),
+                        purchase,
+                        imageActions,
+                    },
+            );
 
             const payloadSize = new TextEncoder().encode(payload).byteLength;
 
@@ -724,11 +905,16 @@ export default function NewPurchasePanel({
         setRetryPending(false);
 
         try {
-            const response = await fetch("/api/purchases", {
-                method: "POST",
-                credentials: "same-origin",
-                body: submission,
-            });
+            const response = await fetch(
+                editingPurchase
+                    ? `/api/purchases/${encodeURIComponent(editingPurchase.id)}`
+                    : "/api/purchases",
+                {
+                    method: editingPurchase ? "PATCH" : "POST",
+                    credentials: "same-origin",
+                    body: submission,
+                },
+            );
 
             const rawData: unknown = await response.json().catch(() => null);
 
@@ -771,7 +957,10 @@ export default function NewPurchasePanel({
                     400,
                     401,
                     403,
+                    404,
+                    409,
                     413,
+                    415,
                     422,
                 ].includes(response.status);
 
@@ -808,7 +997,8 @@ export default function NewPurchasePanel({
             setDirty(false);
 
             setSuccess(
-                `პარტია #${String(data.purchase.number).padStart(3, "0")} დამატებულია`,
+                `პარტია #${String(data.purchase.number).padStart(3, "0")} ${editingPurchase ? "განახლებულია" : "დამატებულია"
+                }`,
             );
 
             // წარმატების შემდეგ ვხურავთ დადასტურების კითხვის გარეშე.
@@ -861,32 +1051,193 @@ export default function NewPurchasePanel({
         }
     }
 
+    const projectedRevenue = products.reduce<number | null>(
+        (sum, product) => {
+            if (sum === null) return null;
+
+            if (
+                receiptStatus === "RECEIVED" &&
+                numberValue(product.defectiveQuantity) > 0
+            ) {
+                return null;
+            }
+
+            const quantity = Number(product.quantity);
+            const purchasePrice = Number(product.unitPurchasePrice);
+            const pricingValue = Number(product.pricingValue);
+
+            if (
+                !product.quantity.trim() ||
+                !Number.isInteger(quantity) ||
+                quantity <= 0 ||
+                !product.unitPurchasePrice.trim() ||
+                !Number.isFinite(purchasePrice) ||
+                purchasePrice <= 0 ||
+                !product.pricingValue.trim() ||
+                !Number.isFinite(pricingValue) ||
+                pricingValue < 0
+            ) {
+                return null;
+            }
+
+            const price = salePrice(product);
+
+            if (price === null || !Number.isFinite(price) || price < 0) {
+                return null;
+            }
+
+            // გასაყიდი ერთეულის ფასი — თეთრამდე.
+            const roundedPrice = Math.round(
+                (price + Number.EPSILON) * 100,
+            ) / 100;
+
+            return sum + roundedPrice * quantity;
+        },
+        products.length > 0 ? 0 : null,
+    );
+
+    const expectedProfit =
+        projectedRevenue === null
+            ? null
+            : Math.round(
+                (projectedRevenue - total + Number.EPSILON) * 100,
+            ) / 100;
+
     return (
         <>
-            <button
-                ref={openButton}
-                type="button"
-                onClick={openPanel}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition hover:bg-emerald-700"            >
-                <Icon
-                    icon="solar:add-circle-bold-duotone"
-                    className="h-5 w-5"
-                />
-                ახალი პარტია
-            </button>
+            <div
+                className={
+                    editPurchaseId
+                        ? "relative h-11 w-11 shrink-0"
+                        : "w-full sm:w-auto"
+                }
+            >
+                <button
+                    ref={openButton}
+                    type="button"
+                    disabled={loadingEdit}
+                    onClick={() => {
+                        if (editPurchaseId) {
+                            void openEditPanel();
+                        } else {
+                            openPanel();
+                        }
+                    }}
+                    aria-label={
+                        editPurchaseId
+                            ? loadingEdit
+                                ? "პარტია იტვირთება"
+                                : "პარტიის რედაქტირება"
+                            : undefined
+                    }
+                    aria-busy={loadingEdit}
+                    className={
+                        editPurchaseId
+                            ? [
+                                "absolute right-0 top-0 flex flex-col items-center justify-center overflow-hidden rounded-xl border-2",
+                                "transition-[width,height,border-color,background-color,box-shadow] duration-300 ease-out motion-reduce:transition-none",
+                                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600",
+                                loadingEdit
+                                    ? "z-20 h-[88px] w-[88px] cursor-wait border-emerald-600 bg-surface shadow-lg"
+                                    : "h-11 w-11 border-border bg-surface text-text-secondary hover:border-emerald-600 hover:text-emerald-600",
+                            ].join(" ")
+                            : "inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition hover:bg-emerald-700 sm:w-auto"
+                    }
+                >
+                    {editPurchaseId ? (
+                        <>
+                            <Icon
+                                icon="solar:pen-new-square-linear"
+                                aria-hidden="true"
+                                className={[
+                                    "absolute h-5 w-5 transition-[opacity,transform] duration-150 motion-reduce:transition-none",
+                                    loadingEdit
+                                        ? "scale-75 opacity-0"
+                                        : "scale-100 opacity-100",
+                                ].join(" ")}
+                            />
+
+                            <span
+                                aria-hidden="true"
+                                className={[
+                                    "absolute flex flex-col items-center justify-center gap-2 transition-opacity duration-150 motion-reduce:transition-none",
+                                    loadingEdit
+                                        ? "opacity-100 delay-150"
+                                        : "opacity-0",
+                                ].join(" ")}
+                            >
+                                <span
+                                    className={[
+                                        "h-7 w-7 rounded-full border-[3px] border-emerald-600/20 border-t-emerald-600",
+                                        loadingEdit
+                                            ? "animate-spin motion-reduce:animate-none"
+                                            : "",
+                                    ].join(" ")}
+                                />
+
+                                <span className="whitespace-nowrap text-[10px] font-medium leading-none text-emerald-600">
+                                    იტვირთება
+                                </span>
+                            </span>
+                        </>
+                    ) : (
+                        <>
+                            <Icon
+                                icon="solar:add-circle-bold-duotone"
+                                className="h-5 w-5"
+                                aria-hidden="true"
+                            />
+                            ახალი პარტია
+                        </>
+                    )}
+                </button>
+
+                {loadingEdit && (
+                    <span role="status" className="sr-only">
+                        პარტია იტვირთება
+                    </span>
+                )}
+            </div>
+
+            {error && !mounted && (
+                <p role="alert" className="mt-2 text-xs text-red-500">
+                    {error}
+                </p>
+            )}
 
             {success && !mounted && (
-                <p
+                <div
                     role="status"
-                    className="text-sm font-medium text-emerald-600"
+                    className="fixed inset-x-4 bottom-4 z-50 flex items-center gap-3 rounded-2xl border border-emerald-600/30 bg-surface p-4 shadow-lg sm:left-auto sm:right-6 sm:bottom-6 sm:max-w-sm"
                 >
-                    {success}
-                </p>
+                    <Icon
+                        icon="solar:check-circle-bold-duotone"
+                        className="h-6 w-6 shrink-0 text-emerald-600"
+                        aria-hidden="true"
+                    />
+
+                    <p className="min-w-0 flex-1 text-sm font-medium text-text-primary">
+                        {success}
+                    </p>
+
+                    <button
+                        type="button"
+                        onClick={() => setSuccess("")}
+                        aria-label="შეტყობინების დახურვა"
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-text-secondary transition hover:bg-emerald-600/10"
+                    >
+                        <Icon
+                            icon="solar:close-circle-linear"
+                            className="h-5 w-5"
+                            aria-hidden="true"
+                        />
+                    </button>
+                </div>
             )}
 
             {mounted && (
                 <section
-                    aria-labelledby="new-purchase-title"
+                    aria-labelledby={titleId}
                     onKeyDown={(event) => {
                         if (event.key === "Escape") {
                             event.stopPropagation();
@@ -905,32 +1256,20 @@ export default function NewPurchasePanel({
                     ].join(" ")}
                 >
                     {/* სათაური */}
-                    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface px-4 py-2.5 sm:px-5">
-                        <h2
-                            id="new-purchase-title"
-                            ref={heading}
-                            tabIndex={-1}
-                            className="text-lg font-semibold text-text-primary outline-none"
-                        >
-                            ახალი პარტია
-                        </h2>
-
-                        <button
-                            type="button"
-                            onClick={closePanel}
-                            aria-label="პარტიის დახურვა"
-                            className="flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary transition hover:bg-background"
-                        >
-                            <Icon
-                                icon="solar:close-circle-linear"
-                                className="h-5 w-5"
-                            />
-                        </button>
-                    </div>
+                    <h2
+                        id={titleId}
+                        ref={heading}
+                        tabIndex={-1}
+                        className="sr-only"
+                    >
+                        {editingPurchase
+                            ? `პარტია #${String(editingPurchase.number).padStart(3, "0")} — რედაქტირება`
+                            : "ახალი პარტია"}
+                    </h2>
 
                     <form
                         ref={formRef}
-                        id="new-purchase-form"
+                        id={formId}
                         inert={saving || retryPending || !visible}
                         aria-busy={saving}
                         onSubmit={(event) => {
@@ -944,29 +1283,98 @@ export default function NewPurchasePanel({
                         className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-3 sm:p-4 lg:overflow-hidden"
                     >
                         {/* პარტიის ძირითადი ინფორმაცია */}
-                        <div className="mb-3 grid shrink-0 grid-cols-1 gap-3 rounded-xl border border-border bg-surface p-3 sm:grid-cols-[minmax(0,1fr)_180px]">
-                            <Field label="პარტიის სახელი">
-                                <input
-                                    value={name}
-                                    onChange={(event) =>
-                                        setName(event.target.value)
-                                    }
-                                    maxLength={200}
-                                    className={inputClass}
-                                />
-                            </Field>
+                        {/* პარტიის ძირითადი ინფორმაცია */}
+                        <div className="mb-3 grid shrink-0 grid-cols-2 items-end gap-2 rounded-xl border border-border bg-surface p-2.5 sm:grid-cols-[minmax(0,1fr)_150px_190px]">
+                            <div className="col-span-2 min-w-0 sm:col-span-1">
+                                <Field label="პარტიის სახელი">
+                                    <input
+                                        value={name}
+                                        onChange={(event) => setName(event.target.value)}
+                                        maxLength={200}
+                                        className={inputClass}
+                                    />
+                                </Field>
+                            </div>
 
                             <Field label="თარიღი">
                                 <input
                                     type="date"
                                     required
                                     value={date}
-                                    onChange={(event) =>
-                                        setDate(event.target.value)
-                                    }
+                                    onChange={(event) => setDate(event.target.value)}
                                     className={inputClass}
                                 />
                             </Field>
+
+                            <div className="min-w-0">
+                                <span className="mb-1 block text-xs text-text-secondary">
+                                    მდგომარეობა
+                                </span>
+
+                                <div
+                                    role="group"
+                                    aria-label="პარტიის მდგომარეობა"
+                                    className="relative grid h-9 grid-cols-2 rounded-lg border border-emerald-600/30 bg-emerald-600/10 p-0.5 lg:h-8"
+                                >
+                                    <span
+                                        aria-hidden="true"
+                                        className={[
+                                            "pointer-events-none absolute bottom-0.5 left-0.5 top-0.5 w-[calc(50%-2px)] rounded-md bg-emerald-600 transition-transform duration-200 motion-reduce:transition-none",
+                                            receiptStatus === "RECEIVED"
+                                                ? "translate-x-full"
+                                                : "translate-x-0",
+                                        ].join(" ")}
+                                    />
+
+                                    {([
+                                        { value: "IN_TRANSIT", label: "გზაში" },
+                                        { value: "RECEIVED", label: "ჩამოსული" },
+                                    ] as const).map((option) => (
+                                        <button
+                                            key={option.value}
+                                            disabled={isEditing}
+                                            title={
+                                                isEditing
+                                                    ? "პარტიის მისაღებად გამოიყენე „პარტიის მიღება“"
+                                                    : undefined
+                                            }
+                                            type="button"
+                                            aria-pressed={receiptStatus === option.value}
+                                            onClick={() => {
+                                                if (receiptStatus === option.value) return;
+
+                                                const hasDefects = products.some(
+                                                    (product) =>
+                                                        numberValue(product.defectiveQuantity) > 0 ||
+                                                        product.defectNote.trim() !== "",
+                                                );
+
+                                                if (
+                                                    option.value === "IN_TRANSIT" &&
+                                                    hasDefects
+                                                ) {
+                                                    setError(
+                                                        "გზაში გადასართავად ჯერ გაასუფთავე წუნდებული რაოდენობა და წუნის აღწერა.",
+                                                    );
+                                                    return;
+                                                }
+
+                                                setReceiptStatus(option.value);
+                                                setDirty(true);
+                                                setError("");
+                                            }}
+                                            className={[
+                                                "relative z-10 min-w-0 rounded-md px-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600",
+                                                receiptStatus === option.value
+                                                    ? "text-white"
+                                                    : "text-text-secondary",
+                                            ].join(" ")}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
 
                         <div className="grid gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_260px] xl:grid-cols-[minmax(0,1fr)_290px]">
@@ -1057,49 +1465,26 @@ export default function NewPurchasePanel({
                                                     </div>
 
                                                     <div className="col-span-2 lg:col-span-1">
-                                                        <Field label="ბრენდი">
-                                                            <input
-                                                                value={product.brand}
-                                                                onChange={(event) =>
-                                                                    updateProduct(product.id, {
-                                                                        brand: event.target.value,
-                                                                    })
-                                                                }
-                                                                className={inputClass}
-                                                            />
-                                                        </Field>
+                                                        <AttributeInput
+                                                            label="ბრენდი"
+                                                            value={product.brand}
+                                                            options={getAttributeOptions("brand", product.id)}
+                                                            onChange={(brand) =>
+                                                                updateProduct(product.id, { brand })
+                                                            }
+                                                        />
                                                     </div>
 
                                                     <div className="col-span-2 grid min-w-0 grid-cols-[minmax(0,3fr)_minmax(0,1fr)] items-start gap-2 lg:grid-cols-2">
-                                                        <Field label="კატეგორია *">
-                                                            <select
-                                                                required
-                                                                value={product.category}
-                                                                onChange={(event) =>
-                                                                    updateProduct(product.id, {
-                                                                        category: event.target.value,
-                                                                    })
-                                                                }
-                                                                className={inputClass}
-                                                            >
-                                                                <option value="" disabled>
-                                                                    აირჩიე კატეგორია
-                                                                </option>
-
-                                                                {product.category &&
-                                                                    !categoryOptions.includes(product.category) && (
-                                                                        <option value={product.category}>
-                                                                            {product.category}
-                                                                        </option>
-                                                                    )}
-
-                                                                {categoryOptions.map((category) => (
-                                                                    <option key={category} value={category}>
-                                                                        {category}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                        </Field>
+                                                        <AttributeInput
+                                                            label="კატეგორია"
+                                                            required
+                                                            value={product.category}
+                                                            options={getAttributeOptions("category", product.id)}
+                                                            onChange={(category) =>
+                                                                updateProduct(product.id, { category })
+                                                            }
+                                                        />
 
                                                         <div className="flex min-w-0 flex-col gap-1.5">
                                                             <span className="text-xs font-medium text-text-secondary">
@@ -1170,7 +1555,7 @@ export default function NewPurchasePanel({
                                                         </div>
                                                     </div>
 
-                                                    <div className="col-span-2 lg:col-span-4">
+                                                    <div className="col-span-2 grid min-w-0 grid-cols-[minmax(0,3fr)_minmax(0,1fr)] gap-2 lg:col-span-4">
                                                         <Field label="აღწერა">
                                                             <input
                                                                 value={product.description}
@@ -1182,61 +1567,68 @@ export default function NewPurchasePanel({
                                                                 className={inputClass}
                                                             />
                                                         </Field>
+
+                                                        <AttributeInput
+                                                            label="ფერი"
+                                                            value={product.color}
+                                                            options={getAttributeOptions("color", product.id)}
+                                                            onChange={(color) =>
+                                                                updateProduct(product.id, { color })
+                                                            }
+                                                        />
                                                     </div>
 
-                                                    <Field label="ფერი">
-                                                        <select
-                                                            value={product.color}
-                                                            onChange={(event) =>
-                                                                updateProduct(product.id, {
-                                                                    color: event.target.value,
-                                                                })
-                                                            }
-                                                            className={inputClass}
-                                                        >
-                                                            <option value="">არ არის მითითებული</option>
+                                                    <AttributeInput
+                                                        label="ზომა"
+                                                        value={product.size}
+                                                        options={getAttributeOptions("size", product.id)}
+                                                        onChange={(size) =>
+                                                            updateProduct(product.id, { size })
+                                                        }
+                                                    />
 
-                                                            {product.color && !colorOptions.includes(product.color) && (
-                                                                <option value={product.color}>
-                                                                    {product.color}
-                                                                </option>
-                                                            )}
+                                                    <div className="contents">
+                                                        <Field label="სულ რაოდენობა *">
+                                                            <input
+                                                                aria-label="სულ რაოდენობა"
+                                                                type="number"
+                                                                min="1"
+                                                                step="1"
+                                                                required
+                                                                value={product.quantity}
+                                                                onChange={(event) =>
+                                                                    updateProduct(product.id, {
+                                                                        quantity: event.target.value,
+                                                                    })
+                                                                }
+                                                                className={inputClass}
+                                                            />
+                                                        </Field>
 
-                                                            {colorOptions.map((color) => (
-                                                                <option key={color} value={color}>
-                                                                    {color}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </Field>
-
-                                                    <Field label="ზომა">
-                                                        <input
-                                                            value={product.size}
-                                                            onChange={(event) =>
-                                                                updateProduct(product.id, {
-                                                                    size: event.target.value,
-                                                                })
-                                                            }
-                                                            className={inputClass}
-                                                        />
-                                                    </Field>
-
-                                                    <Field label="რაოდენობა *">
-                                                        <input
-                                                            type="number"
-                                                            min="1"
-                                                            step="1"
-                                                            required
-                                                            value={product.quantity}
-                                                            onChange={(event) =>
-                                                                updateProduct(product.id, {
-                                                                    quantity: event.target.value,
-                                                                })
-                                                            }
-                                                            className={inputClass}
-                                                        />
-                                                    </Field>
+                                                        {receiptStatus === "RECEIVED" && (
+                                                            <Field label="წუნდებული">
+                                                                <input
+                                                                    aria-label="აქედან წუნდებული რაოდენობა"
+                                                                    type="number"
+                                                                    min="0"
+                                                                    max={numberValue(product.quantity)}
+                                                                    step="1"
+                                                                    placeholder="0"
+                                                                    value={product.defectiveQuantity}
+                                                                    onChange={(event) =>
+                                                                        updateProduct(product.id, {
+                                                                            defectiveQuantity: event.target.value,
+                                                                            defectNote:
+                                                                                Number(event.target.value) > 0
+                                                                                    ? product.defectNote
+                                                                                    : "",
+                                                                        })
+                                                                    }
+                                                                    className={inputClass}
+                                                                />
+                                                            </Field>
+                                                        )}
+                                                    </div>
 
                                                     <Field label="შესყიდვა / ცალი · ₾ *">
                                                         <input
@@ -1254,6 +1646,24 @@ export default function NewPurchasePanel({
                                                             className={inputClass}
                                                         />
                                                     </Field>
+
+                                                    {receiptStatus === "RECEIVED" &&
+                                                        numberValue(product.defectiveQuantity) > 0 && (
+                                                            <div className="col-span-2 lg:col-span-4">
+                                                                <Field label="წუნის აღწერა">
+                                                                    <input
+                                                                        value={product.defectNote}
+                                                                        maxLength={2000}
+                                                                        onChange={(event) =>
+                                                                            updateProduct(product.id, {
+                                                                                defectNote: event.target.value,
+                                                                            })
+                                                                        }
+                                                                        className={inputClass}
+                                                                    />
+                                                                </Field>
+                                                            </div>
+                                                        )}
 
                                                     <div className="col-span-2 xl:col-span-3">
                                                         <Field label="გასაყიდი ფასის განსაზღვრა">
@@ -1478,6 +1888,24 @@ export default function NewPurchasePanel({
                                                 {money(total)}
                                             </dd>
                                         </div>
+                                        <div
+                                            className={[
+                                                "flex flex-wrap items-center justify-between gap-2 rounded-lg p-3",
+                                                expectedProfit === null
+                                                    ? "bg-background text-text-secondary"
+                                                    : expectedProfit < 0
+                                                        ? "bg-red-500/10 text-red-600"
+                                                        : "bg-emerald-500/10 text-emerald-600",
+                                            ].join(" ")}
+                                        >
+                                            <dt className="text-xs font-medium">
+                                                მოსალოდნელი მოგება
+                                            </dt>
+
+                                            <dd className="text-base font-semibold">
+                                                {expectedProfit === null ? "—" : money(expectedProfit)}
+                                            </dd>
+                                        </div>
                                     </dl>
                                 </div>
                             </aside>
@@ -1526,7 +1954,9 @@ export default function NewPurchasePanel({
                                     ? "ინახება..."
                                     : retryPending
                                         ? "ხელახლა ცდა"
-                                        : "პარტიის შენახვა"}
+                                        : isEditing
+                                            ? "ცვლილებების შენახვა"
+                                            : "პარტიის შენახვა"}
                             </button>
                         </div>
                     </footer>
