@@ -17,7 +17,7 @@ export default function PurchasesLoading() {
 
           <div
             aria-hidden="true"
-            className="h-11 w-full animate-pulse rounded-xl bg-emerald-600/20 motion-reduce:animate-none sm:w-44"
+            className="h-11 w-full animate-pulse rounded-xl bg-success/20 motion-reduce:animate-none sm:w-44"
           />
         </div>
 

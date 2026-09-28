@@ -147,7 +147,7 @@ export default function InventoryPicker({
                     data-inventory-picker
                     aria-haspopup="dialog"
                     onClick={openPicker}
-                    className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-emerald-600 px-2.5 text-xs font-medium text-emerald-600 transition hover:bg-emerald-500/10 lg:h-8"
+                    className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-success px-2.5 text-xs font-medium text-success transition hover:bg-success/10 lg:h-8"
                 >
                     <Icon
                         icon="solar:box-linear"
@@ -289,7 +289,7 @@ export default function InventoryPicker({
                                         setStockOnly(event.target.checked);
                                         setLimit(30);
                                     }}
-                                    className="accent-emerald-600"
+                                    className="accent-success"
                                 />
                                 მხოლოდ დადებითი ნაშთი
                             </label>
@@ -323,7 +323,7 @@ export default function InventoryPicker({
                                         key={item.id}
                                         type="button"
                                         onClick={() => choose(item.id)}
-                                        className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition hover:border-emerald-600 hover:bg-emerald-500/5 focus-visible:outline-2 focus-visible:outline-emerald-600"
+                                        className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition hover:border-success hover:bg-success/5 focus-visible:outline-2 focus-visible:outline-success"
                                     >
                                         <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-background">
                                             {item.imageUrl ? (
@@ -366,7 +366,7 @@ export default function InventoryPicker({
                                         {value === item.id && (
                                             <Icon
                                                 icon="solar:check-circle-bold"
-                                                className="h-5 w-5 shrink-0 text-emerald-600"
+                                                className="h-5 w-5 shrink-0 text-success"
                                             />
                                         )}
                                     </button>

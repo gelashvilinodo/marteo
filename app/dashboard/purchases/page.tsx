@@ -7,6 +7,8 @@ import { Prisma } from "@/generated/prisma/client";
 import PurchaseProducts from "@/components/dashboard/purchases/PurchaseProducts";
 import PurchaseFiltersDisclosure from "@/components/dashboard/purchases/PurchaseFiltersDisclosure";
 import ReceivePurchaseButton from "@/components/dashboard/purchases/ReceivePurchaseButton";
+import PurchaseActionButton from "@/components/dashboard/purchases/PurchaseActionButton";
+import PaginationLink from "@/components/dashboard/purchases/PaginationLink";
 
 import Image from "next/image";
 import { Icon } from "@iconify/react";
@@ -19,6 +21,7 @@ type PurchasesPageProps = {
     from?: string | string[];
     to?: string | string[];
     page?: string | string[];
+    view?: string | string[];
   }>;
 };
 
@@ -48,6 +51,11 @@ export default async function PurchasesPage({
 }: PurchasesPageProps) {
   const params = await searchParams;
 
+  const view =
+    singleValue(params.view) === "archive" ? "archive" : "active";
+
+  const isArchive = view === "archive";
+
   const query = singleValue(params.q).slice(0, 150);
   const rawFrom = singleValue(params.from);
   const rawTo = singleValue(params.to);
@@ -75,9 +83,13 @@ export default async function PurchasesPage({
   const pageSize = 10;
   const hasFilters = Boolean(query || rawFrom || rawTo);
 
-  function pageHref(page: number) {
+  function pageHref(
+    page: number,
+    selectedView: "active" | "archive" = view,
+  ) {
     const search = new URLSearchParams();
 
+    if (selectedView === "archive") search.set("view", "archive");
     if (query) search.set("q", query);
     if (from) search.set("from", from);
     if (to) search.set("to", to);
@@ -87,6 +99,7 @@ export default async function PurchasesPage({
 
     return `/dashboard/purchases${suffix ? `?${suffix}` : ""}`;
   }
+
   const user = await getCurrentUser();
 
   if (!user) {
@@ -113,6 +126,7 @@ export default async function PurchasesPage({
 
   const where: Prisma.PurchaseWhereInput = {
     businessId: membership.businessId,
+    archivedAt: isArchive ? { not: null } : null,
   };
 
   if (query) {
@@ -183,6 +197,37 @@ export default async function PurchasesPage({
 
   const currentPage = Math.min(requestedPage, totalPages);
 
+  const visiblePages =
+    totalPages <= 7
+      ? Array.from({ length: totalPages }, (_, index) => index + 1)
+      : [...new Set([
+        1,
+        totalPages,
+        ...Array.from(
+          { length: 5 },
+          (_, index) =>
+            Math.max(
+              2,
+              Math.min(currentPage - 2, totalPages - 5),
+            ) + index,
+        ),
+      ])].sort((first, second) => first - second);
+
+  const paginationItems: Array<number | string> = [];
+
+  for (const [index, page] of visiblePages.entries()) {
+    const previous = visiblePages[index - 1];
+
+    if (index > 0 && page - previous > 1) {
+      paginationItems.push(`gap-${previous}-${page}`);
+    }
+
+    paginationItems.push(page);
+  }
+
+  const paginationClass =
+    "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-sm font-medium text-text-primary transition hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+
   if (!filterError && requestedPage > totalPages) {
     redirect(pageHref(totalPages));
   }
@@ -198,6 +243,16 @@ export default async function PurchasesPage({
     include: {
       items: {
         include: {
+          _count: {
+            select: {
+              orderAllocations: true,
+              inventoryMovements: {
+                where: {
+                  type: { not: "PURCHASE_IN" },
+                },
+              },
+            },
+          },
           inventoryItem: {
             select: {
               id: true,
@@ -331,7 +386,22 @@ export default async function PurchasesPage({
     },
   });
 
+  const productNames = await prisma.product.findMany({
+    where: {
+      businessId: membership.businessId,
+    },
+    select: {
+      name: true,
+    },
+    distinct: ["name"],
+    orderBy: {
+      name: "asc",
+    },
+  });
+
   const attributeOptions = {
+    name: productNames.map((product) => product.name),
+
     category: attributes
       .filter((item) => item.type === "CATEGORY")
       .map((item) => item.name),
@@ -352,15 +422,44 @@ export default async function PurchasesPage({
   return (
     <main className="p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <h1 className="text-2xl font-semibold text-text-primary">
             შესყიდვები
           </h1>
 
-          <NewPurchasePanel
-            inventoryOptions={inventoryOptions}
-            attributeOptions={attributeOptions}
-          />
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+            <nav
+              aria-label="პარტიების სია"
+              className="order-2 grid min-w-0 grid-cols-2 gap-1 rounded-xl border border-border bg-surface p-1 sm:order-1 sm:w-60 sm:shrink-0"
+            >
+              {([
+                { value: "active", label: "აქტიური" },
+                { value: "archive", label: "არქივი" },
+              ] as const).map((tab) => (
+                <Link
+                  key={tab.value}
+                  href={pageHref(1, tab.value)}
+                  aria-current={view === tab.value ? "page" : undefined}
+                  className={[
+                    "flex h-9 min-w-0 items-center justify-center rounded-lg px-3 text-sm font-medium transition-colors",
+                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                    view === tab.value
+                      ? "bg-accent text-white"
+                      : "text-text-secondary hover:bg-background hover:text-text-primary",
+                  ].join(" ")}
+                >
+                  {tab.label}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="order-1 min-w-0 sm:order-2">
+              <NewPurchasePanel
+                inventoryOptions={inventoryOptions}
+                attributeOptions={attributeOptions}
+              />
+            </div>
+          </div>
         </div>
 
         <PurchaseFiltersDisclosure
@@ -372,7 +471,8 @@ export default async function PurchasesPage({
             action="/dashboard/purchases"
             className="border-t border-border p-3 sm:border-t-0 sm:p-4"
           >
-            <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-end">
+            <input type="hidden" name="view" value={view} />
+            <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-end">
               <label className="block min-w-0 sm:col-span-2 xl:col-span-1">
                 <span className="mb-1.5 block text-xs font-medium text-text-secondary">
                   ძებნა
@@ -384,7 +484,7 @@ export default async function PurchasesPage({
                   defaultValue={query}
                   maxLength={150}
                   placeholder="პარტიის ნომერი, სახელი ან პროდუქტი"
-                  className="h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-sm text-text-primary outline-none focus:border-accent"
+                  className="h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-[16px] lg:text-sm text-text-primary outline-none focus:border-accent"
                 />
               </label>
 
@@ -397,8 +497,7 @@ export default async function PurchasesPage({
                   type="date"
                   name="from"
                   defaultValue={from}
-                  className="h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="purchase-date-input block h-11 w-full min-w-0 max-w-full appearance-none rounded-xl border border-border bg-background px-3 text-[16px] lg:text-sm text-text-primary outline-none focus:border-accent" />
               </label>
 
               <label className="block min-w-0">
@@ -410,8 +509,7 @@ export default async function PurchasesPage({
                   type="date"
                   name="to"
                   defaultValue={to}
-                  className="h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-sm text-text-primary outline-none focus:border-accent"
-                />
+                  className="purchase-date-input block h-11 w-full min-w-0 max-w-full appearance-none rounded-xl border border-border bg-background px-3 text-[16px] lg:text-sm text-text-primary outline-none focus:border-accent" />
               </label>
 
               <button
@@ -425,7 +523,11 @@ export default async function PurchasesPage({
             {hasFilters && (
               <div className="mt-3 flex justify-end">
                 <Link
-                  href="/dashboard/purchases"
+                  href={
+                    isArchive
+                      ? "/dashboard/purchases?view=archive"
+                      : "/dashboard/purchases"
+                  }
                   className="inline-flex min-h-9 items-center text-sm text-text-secondary underline underline-offset-4 hover:text-accent"
                 >
                   გასუფთავება
@@ -453,7 +555,9 @@ export default async function PurchasesPage({
                   ? "შეასწორე თარიღის ფილტრი"
                   : hasFilters
                     ? "პარტიები ვერ მოიძებნა"
-                    : "შესყიდვები ჯერ არ გაქვს"}
+                    : isArchive
+                      ? "არქივი ცარიელია"
+                      : "შესყიდვები ჯერ არ გაქვს"}
               </h2>
             </div>
           ) : (
@@ -520,7 +624,7 @@ export default async function PurchasesPage({
                           className={[
                             "inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium",
                             purchase.receiptStatus === "RECEIVED"
-                              ? "bg-emerald-600/10 text-emerald-600"
+                              ? "bg-success/10 text-success"
                               : "bg-amber-500/10 text-amber-600",
                           ].join(" ")}
                         >
@@ -568,7 +672,20 @@ export default async function PurchasesPage({
                     </div>
 
                     <div className="flex shrink-0 items-center gap-1">
-                      {purchase.receiptStatus === "IN_TRANSIT" ? (
+                      {purchase.archivedAt === null &&
+                        purchase.items.every(
+                          (item) =>
+                            item._count.orderAllocations === 0 &&
+                            item._count.inventoryMovements === 0 &&
+                            (
+                              purchase.receiptStatus === "IN_TRANSIT"
+                                ? item.remainingQuantity === 0 &&
+                                item.remainingDefectiveQuantity === 0
+                                : item.remainingQuantity === item.quantity &&
+                                item.remainingDefectiveQuantity ===
+                                item.defectiveQuantity
+                            ),
+                        ) ? (
                         <NewPurchasePanel
                           editPurchaseId={purchase.id}
                           inventoryOptions={inventoryOptions}
@@ -579,7 +696,7 @@ export default async function PurchasesPage({
                           type="button"
                           disabled
                           aria-label={`პარტია #${number} — რედაქტირება მიუწვდომელია`}
-                          title="ჩამოსული პარტიის რედაქტირება ჯერ მიუწვდომელია"
+                          title="პარტია არქივშია ან მის მარაგზე ცვლილებაა დაფიქსირებული"
                           className="inline-flex h-11 w-11 cursor-not-allowed items-center justify-center rounded-xl border border-border text-text-secondary opacity-50"
                         >
                           <Icon
@@ -590,19 +707,12 @@ export default async function PurchasesPage({
                         </button>
                       )}
 
-                      <button
-                        type="button"
-                        disabled
-                        aria-label={`პარტია #${number} — წაშლა მიუწვდომელია`}
-                        title="წაშლა — მალე"
-                        className="inline-flex h-11 w-11 cursor-not-allowed items-center justify-center rounded-xl border border-border text-red-500 opacity-50"
-                      >
-                        <Icon
-                          icon="solar:trash-bin-trash-linear"
-                          className="h-5 w-5"
-                          aria-hidden="true"
-                        />
-                      </button>
+                      <PurchaseActionButton
+                        purchaseId={purchase.id}
+                        purchaseNumber={purchase.number}
+                        receiptStatus={purchase.receiptStatus}
+                        archived={purchase.archivedAt !== null}
+                      />
                     </div>
                   </div>
 
@@ -736,45 +846,107 @@ export default async function PurchasesPage({
           )}
         </div>
 
-        {totalPages > 1 && (
+        {totalPurchases > pageSize && (
           <nav
             aria-label="შესყიდვების გვერდები"
-            className="mt-6 flex flex-wrap items-center justify-between gap-3"
+            className="mt-6 flex min-w-0 items-center justify-center gap-2"
           >
             {currentPage > 1 ? (
-              <Link
+              <PaginationLink
                 href={pageHref(currentPage - 1)}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-medium text-text-primary transition hover:border-accent"
+                aria-label="წინა გვერდი"
+                title="წინა გვერდი"
+                className={paginationClass}
               >
-                წინა
-              </Link>
+                <Icon
+                  icon="solar:alt-arrow-left-linear"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                />
+              </PaginationLink>
             ) : (
-              <span
-                aria-disabled="true"
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-border px-4 text-sm text-text-secondary opacity-40"
+              <button
+                type="button"
+                disabled
+                aria-label="წინა გვერდი"
+                className="inline-flex h-11 w-11 shrink-0 cursor-not-allowed items-center justify-center rounded-xl border border-border bg-surface text-text-secondary opacity-40"
               >
-                წინა
-              </span>
+                <Icon
+                  icon="solar:alt-arrow-left-linear"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                />
+              </button>
             )}
 
-            <span className="text-sm text-text-secondary">
-              გვერდი {currentPage} / {totalPages}
+            <span
+              className="flex h-11 min-w-0 flex-1 items-center justify-center gap-2 text-sm tabular-nums sm:hidden"
+              aria-label={`გვერდი ${currentPage}, სულ ${totalPages}`}
+            >
+              <span className="font-semibold text-text-primary">
+                {currentPage}
+              </span>
+              <span className="text-text-secondary">
+                / {totalPages}
+              </span>
             </span>
 
+            <div className="hidden items-center gap-1.5 sm:flex">
+              {paginationItems.map((item) =>
+                typeof item === "string" ? (
+                  <span
+                    key={item}
+                    aria-hidden="true"
+                    className="flex h-11 w-6 items-center justify-center text-text-secondary"
+                  >
+                    …
+                  </span>
+                ) : (
+                  <PaginationLink
+                    key={item}
+                    href={pageHref(item)}
+                    aria-label={`გვერდი ${item}`}
+                    aria-current={
+                      item === currentPage ? "page" : undefined
+                    }
+                    className={
+                      item === currentPage
+                        ? "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-accent bg-accent text-sm font-semibold tabular-nums text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        : `${paginationClass} tabular-nums`
+                    }
+                  >
+                    {item}
+                  </PaginationLink>
+                ),
+              )}
+            </div>
+
             {currentPage < totalPages ? (
-              <Link
+              <PaginationLink
                 href={pageHref(currentPage + 1)}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-medium text-text-primary transition hover:border-accent"
+                aria-label="შემდეგი გვერდი"
+                title="შემდეგი გვერდი"
+                className={paginationClass}
               >
-                შემდეგი
-              </Link>
+                <Icon
+                  icon="solar:alt-arrow-right-linear"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                />
+              </PaginationLink>
             ) : (
-              <span
-                aria-disabled="true"
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-border px-4 text-sm text-text-secondary opacity-40"
+              <button
+                type="button"
+                disabled
+                aria-label="შემდეგი გვერდი"
+                className="inline-flex h-11 w-11 shrink-0 cursor-not-allowed items-center justify-center rounded-xl border border-border bg-surface text-text-secondary opacity-40"
               >
-                შემდეგი
-              </span>
+                <Icon
+                  icon="solar:alt-arrow-right-linear"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                />
+              </button>
             )}
           </nav>
         )}

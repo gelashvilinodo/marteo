@@ -47,7 +47,7 @@ type EditablePurchase = {
     updatedAt: string;
     name: string;
     note: string;
-    receiptStatus: "IN_TRANSIT";
+    receiptStatus: "IN_TRANSIT" | "RECEIVED";
     purchaseDate: string;
     shippingCost: string;
     customsCost: string;
@@ -90,7 +90,7 @@ type InventoryOption = {
 };
 
 const inputClass =
-    "h-9 lg:h-8 w-full min-w-0 rounded-lg border border-border bg-surface px-2.5 text-xs text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15";
+    "h-9 lg:h-8 w-full min-w-0 rounded-lg border border-border bg-surface px-2.5 text-[16px] lg:text-xs text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15";
 
 const numberValue = (value: string) => {
     const parsed = Number(value);
@@ -332,6 +332,7 @@ export default function NewPurchasePanel({
     editPurchaseId?: string;
     inventoryOptions: InventoryOption[];
     attributeOptions: {
+        name: string[];
         category: string[];
         brand: string[];
         color: string[];
@@ -377,16 +378,14 @@ export default function NewPurchasePanel({
     const [products, setProducts] = useState<ProductDraft[]>([]);
 
     function getAttributeOptions(
-        field: "category" | "brand" | "color" | "size",
+        field: "name" | "category" | "brand" | "color" | "size",
         currentProductId: string,
     ) {
         return [
             ...attributeOptions[field],
 
-            // ძველ პროდუქტებში არსებული მნიშვნელობებიც გამოჩნდეს.
             ...inventoryOptions.map((item) => item[field]),
 
-            // სხვა ბარათებში ახლახან შეყვანილი მნიშვნელობები.
             ...products
                 .filter((item) => item.id !== currentProductId)
                 .map((item) => item[field]),
@@ -423,6 +422,98 @@ export default function NewPurchasePanel({
             );
         };
     }, [mounted, dirty, saving, retryPending]);
+
+    useEffect(() => {
+        if (!mounted) return;
+
+        function handleNavigationClick(event: MouseEvent) {
+            if (
+                event.defaultPrevented ||
+                event.button !== 0 ||
+                event.ctrlKey ||
+                event.metaKey ||
+                event.shiftKey ||
+                event.altKey
+            ) {
+                return;
+            }
+
+            const target = event.target;
+
+            if (!(target instanceof Element)) return;
+
+            const link = target.closest<HTMLAnchorElement>("a[href]");
+
+            if (!link || link.hasAttribute("download")) return;
+
+            // ახალ ფანჯარაში გახსნა მიმდინარე ფორმას არ კარგავს.
+            if (link.target && link.target !== "_self") return;
+
+            const destination = new URL(link.href, window.location.href);
+            const current = new URL(window.location.href);
+
+            // გარე მისამართზე გადასვლას არსებული
+            // beforeunload შემოწმება მოემსახურება.
+            if (destination.origin !== current.origin) return;
+
+            // იმავე გვერდის შიგნით გადაადგილება.
+            if (
+                destination.pathname === current.pathname &&
+                destination.search === current.search
+            ) {
+                return;
+            }
+
+            function cancelNavigation() {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+
+            if (requestLocked.current) {
+                cancelNavigation();
+                setError("მიმდინარეობს შენახვა. დაელოდე დასრულებას.");
+                return;
+            }
+
+            if (pendingSubmission.current) {
+                cancelNavigation();
+                setError(
+                    "შენახვის შედეგი ჯერ დაუდასტურებელია. დააჭირე „ხელახლა ცდა“-ს.",
+                );
+                return;
+            }
+
+            if (!dirty) return;
+
+            const confirmed = window.confirm(
+                "ცვლილებები შენახული არ არის. გადახვალ სხვა გვერდზე და დაკარგავ შეყვანილ მონაცემებს?",
+            );
+
+            if (!confirmed) {
+                cancelNavigation();
+                return;
+            }
+
+            if (closeTimer.current) {
+                clearTimeout(closeTimer.current);
+            }
+
+            setDirty(false);
+            setVisible(false);
+            setMounted(false);
+        }
+
+        // შემოწმება ბმულისა და საიდბარის onClick-მდე სრულდება.
+        document.addEventListener("click", handleNavigationClick, true);
+
+        return () => {
+            document.removeEventListener(
+                "click",
+                handleNavigationClick,
+                true,
+            );
+        };
+    }, [mounted, dirty]);
 
     useEffect(() => {
         const urls = photoUrls.current;
@@ -568,7 +659,10 @@ export default function NewPurchasePanel({
 
             if (
                 candidate.id !== editPurchaseId ||
-                candidate.receiptStatus !== "IN_TRANSIT" ||
+                (
+                    candidate.receiptStatus !== "IN_TRANSIT" &&
+                    candidate.receiptStatus !== "RECEIVED"
+                ) ||
                 typeof candidate.number !== "number" ||
                 typeof candidate.updatedAt !== "string" ||
                 !Number.isFinite(Date.parse(candidate.updatedAt)) ||
@@ -603,7 +697,7 @@ export default function NewPurchasePanel({
 
             setName(purchase.name);
             setDate(purchase.purchaseDate);
-            setReceiptStatus("IN_TRANSIT");
+            setReceiptStatus(purchase.receiptStatus);
             setNote(purchase.note);
             setShipping(purchase.shippingCost);
             setCustoms(purchase.customsCost);
@@ -769,11 +863,6 @@ export default function NewPurchasePanel({
 
     async function handleSave() {
         if (requestLocked.current) return;
-
-        if (isEditing && receiptStatus !== "IN_TRANSIT") {
-            setError("პარტიის მისაღებად გამოიყენე „პარტიის მიღება“.");
-            return;
-        }
 
         setError("");
 
@@ -1136,12 +1225,12 @@ export default function NewPurchasePanel({
                             ? [
                                 "absolute right-0 top-0 flex flex-col items-center justify-center overflow-hidden rounded-xl border-2",
                                 "transition-[width,height,border-color,background-color,box-shadow] duration-300 ease-out motion-reduce:transition-none",
-                                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600",
+                                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-success",
                                 loadingEdit
-                                    ? "z-20 h-[88px] w-[88px] cursor-wait border-emerald-600 bg-surface shadow-lg"
-                                    : "h-11 w-11 border-border bg-surface text-text-secondary hover:border-emerald-600 hover:text-emerald-600",
+                                    ? "z-20 h-[88px] w-[88px] cursor-wait border-success bg-surface shadow-lg"
+                                    : "h-11 w-11 border-border bg-surface text-text-secondary hover:border-success hover:text-success",
                             ].join(" ")
-                            : "inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition hover:bg-emerald-700 sm:w-auto"
+                            : "inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-success px-5 text-sm font-medium text-white transition hover:bg-success-hover sm:w-auto"
                     }
                 >
                     {editPurchaseId ? (
@@ -1168,14 +1257,14 @@ export default function NewPurchasePanel({
                             >
                                 <span
                                     className={[
-                                        "h-7 w-7 rounded-full border-[3px] border-emerald-600/20 border-t-emerald-600",
+                                        "h-7 w-7 rounded-full border-[3px] border-success/20 border-t-success",
                                         loadingEdit
                                             ? "animate-spin motion-reduce:animate-none"
                                             : "",
                                     ].join(" ")}
                                 />
 
-                                <span className="whitespace-nowrap text-[10px] font-medium leading-none text-emerald-600">
+                                <span className="whitespace-nowrap text-[10px] font-medium leading-none text-success">
                                     იტვირთება
                                 </span>
                             </span>
@@ -1208,11 +1297,11 @@ export default function NewPurchasePanel({
             {success && !mounted && (
                 <div
                     role="status"
-                    className="fixed inset-x-4 bottom-4 z-50 flex items-center gap-3 rounded-2xl border border-emerald-600/30 bg-surface p-4 shadow-lg sm:left-auto sm:right-6 sm:bottom-6 sm:max-w-sm"
+                    className="fixed inset-x-4 bottom-4 z-50 flex items-center gap-3 rounded-2xl border border-success/30 bg-surface p-4 shadow-lg sm:left-auto sm:right-6 sm:bottom-6 sm:max-w-sm"
                 >
                     <Icon
                         icon="solar:check-circle-bold-duotone"
-                        className="h-6 w-6 shrink-0 text-emerald-600"
+                        className="h-6 w-6 shrink-0 text-success"
                         aria-hidden="true"
                     />
 
@@ -1224,7 +1313,7 @@ export default function NewPurchasePanel({
                         type="button"
                         onClick={() => setSuccess("")}
                         aria-label="შეტყობინების დახურვა"
-                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-text-secondary transition hover:bg-emerald-600/10"
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-text-secondary transition hover:bg-success/10"
                     >
                         <Icon
                             icon="solar:close-circle-linear"
@@ -1302,7 +1391,7 @@ export default function NewPurchasePanel({
                                     required
                                     value={date}
                                     onChange={(event) => setDate(event.target.value)}
-                                    className={inputClass}
+                                    className={`${inputClass} purchase-date-input`}
                                 />
                             </Field>
 
@@ -1314,12 +1403,12 @@ export default function NewPurchasePanel({
                                 <div
                                     role="group"
                                     aria-label="პარტიის მდგომარეობა"
-                                    className="relative grid h-9 grid-cols-2 rounded-lg border border-emerald-600/30 bg-emerald-600/10 p-0.5 lg:h-8"
+                                    className="relative grid h-9 grid-cols-2 rounded-lg border border-success/30 bg-success/10 p-0.5 lg:h-8"
                                 >
                                     <span
                                         aria-hidden="true"
                                         className={[
-                                            "pointer-events-none absolute bottom-0.5 left-0.5 top-0.5 w-[calc(50%-2px)] rounded-md bg-emerald-600 transition-transform duration-200 motion-reduce:transition-none",
+                                            "pointer-events-none absolute bottom-0.5 left-0.5 top-0.5 w-[calc(50%-2px)] rounded-md bg-success transition-transform duration-200 motion-reduce:transition-none",
                                             receiptStatus === "RECEIVED"
                                                 ? "translate-x-full"
                                                 : "translate-x-0",
@@ -1364,7 +1453,7 @@ export default function NewPurchasePanel({
                                                 setError("");
                                             }}
                                             className={[
-                                                "relative z-10 min-w-0 rounded-md px-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600",
+                                                "relative z-10 min-w-0 rounded-md px-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-success",
                                                 receiptStatus === option.value
                                                     ? "text-white"
                                                     : "text-text-secondary",
@@ -1400,7 +1489,7 @@ export default function NewPurchasePanel({
 
                                             setDirty(true);
                                         }}
-                                        className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-2.5 text-xs font-medium text-white transition hover:bg-emerald-700"                                    >
+                                        className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-success px-2.5 text-xs font-medium text-white transition hover:bg-success-hover"                                    >
                                         <Icon
                                             icon="solar:add-circle-linear"
                                             className="h-4 w-4"
@@ -1450,18 +1539,16 @@ export default function NewPurchasePanel({
 
                                                 <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                                                     <div className="col-span-2 lg:col-span-1">
-                                                        <Field label="სახელი *">
-                                                            <input
-                                                                required
-                                                                value={product.name}
-                                                                onChange={(event) =>
-                                                                    updateProduct(product.id, {
-                                                                        name: event.target.value,
-                                                                    })
-                                                                }
-                                                                className={inputClass}
-                                                            />
-                                                        </Field>
+                                                        <AttributeInput
+                                                            label="სახელი"
+                                                            required
+                                                            maxLength={200}
+                                                            value={product.name}
+                                                            options={getAttributeOptions("name", product.id)}
+                                                            onChange={(name) =>
+                                                                updateProduct(product.id, { name })
+                                                            }
+                                                        />
                                                     </div>
 
                                                     <div className="col-span-2 lg:col-span-1">
@@ -1491,7 +1578,7 @@ export default function NewPurchasePanel({
                                                                 ფოტო
                                                             </span>
 
-                                                            <label className="relative flex h-9 min-w-0 cursor-pointer items-center justify-center gap-1 overflow-hidden rounded-lg bg-emerald-600 px-1 text-xs font-medium text-white transition hover:bg-emerald-700 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:ring-offset-2 focus-within:ring-offset-surface lg:h-8">
+                                                            <label className="relative flex h-9 min-w-0 cursor-pointer items-center justify-center gap-1 overflow-hidden rounded-lg bg-success px-1 text-xs font-medium text-white transition hover:bg-success-hover focus-within:ring-2 focus-within:ring-success focus-within:ring-offset-2 focus-within:ring-offset-surface lg:h-8">
                                                                 <Icon
                                                                     icon={
                                                                         product.imageUrl
@@ -1895,7 +1982,7 @@ export default function NewPurchasePanel({
                                                     ? "bg-background text-text-secondary"
                                                     : expectedProfit < 0
                                                         ? "bg-red-500/10 text-red-600"
-                                                        : "bg-emerald-500/10 text-emerald-600",
+                                                        : "bg-success/10 text-success",
                                             ].join(" ")}
                                         >
                                             <dt className="text-xs font-medium">
@@ -1914,6 +2001,11 @@ export default function NewPurchasePanel({
 
                     {/* მუდმივად ხილული მოქმედებები */}
                     <footer className="shrink-0 border-t border-border bg-surface px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:px-5">
+                        <p className="mb-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-text-primary">
+                            გადაამოწმე რაოდენობები და ფასები. ამ პარტიიდან
+                            პირველი გაყიდვის შემდეგ რედაქტირება აღარ იქნება
+                            შესაძლებელი.
+                        </p>
                         {error && (
                             <p
                                 role="alert"
@@ -1936,7 +2028,7 @@ export default function NewPurchasePanel({
                                 type="button"
                                 onClick={() => void handleSave()}
                                 disabled={saving || !visible}
-                                className="inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="inline-flex h-10 items-center gap-2 rounded-lg bg-success px-4 text-sm font-medium text-white transition hover:bg-success-hover disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <Icon
                                     icon={

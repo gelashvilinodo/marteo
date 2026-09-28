@@ -7,6 +7,10 @@
   --marteo-accent: #5a8dee;
   --marteo-accent-hover: #4a7fe4;
 
+  --marteo-success: #16c45b;
+  --marteo-success-hover: #10a64b;
+  --marteo-on-success: #081f16;
+
   /* Backgrounds */
   --marteo-background: #f8fafc;
   --marteo-surface: #ffffff;
@@ -27,6 +31,10 @@
   --color-primary-hover: var(--marteo-primary-hover);
   --color-accent: var(--marteo-accent);
   --color-accent-hover: var(--marteo-accent-hover);
+
+  --color-success: var(--marteo-success);
+  --color-success-hover: var(--marteo-success-hover);
+  --color-on-success: var(--marteo-on-success);
 
   --color-background: var(--marteo-background);
   --color-surface: var(--marteo-surface);
@@ -114,5 +122,50 @@ body {
   100% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+.purchase-date-input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.purchase-date-input::-webkit-date-and-time-value {
+  min-width: 0;
+  text-align: left;
+}
+
+.purchase-date-input::-webkit-datetime-edit {
+  min-width: 0;
+  padding: 0;
+}
+
+@keyframes paginationBorderTravel {
+  from {
+    stroke-dashoffset: 0;
+  }
+
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+.pagination-border-trail {
+  animation: paginationBorderTravel 1.15s linear infinite;
+  filter: drop-shadow(0 0 3px var(--marteo-accent));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pagination-border-trail {
+    animation: none;
+    stroke-dasharray: none;
+    filter: none;
   }
 }

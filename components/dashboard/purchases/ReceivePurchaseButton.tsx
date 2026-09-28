@@ -194,7 +194,7 @@ export default function ReceivePurchaseButton({
 
     if (received) {
         return (
-            <p role="status" className="mt-3 text-sm text-emerald-600">
+            <p role="status" className="mt-3 text-sm text-success">
                 პარტია მიღებულია
             </p>
         );
@@ -205,7 +205,7 @@ export default function ReceivePurchaseButton({
             <button
                 type="button"
                 onClick={openDialog}
-                className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-medium text-white transition hover:bg-emerald-700 sm:w-auto"
+                className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-success px-4 text-sm font-medium text-white transition hover:bg-success-hover sm:w-auto"
             >
                 პარტიის მიღება
             </button>
@@ -337,7 +337,7 @@ export default function ReceivePurchaseButton({
                         <button
                             type="submit"
                             disabled={saving}
-                            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-success px-4 text-sm font-medium text-white hover:bg-success-hover disabled:opacity-50"
                         >
                             {saving
                                 ? "ინახება..."

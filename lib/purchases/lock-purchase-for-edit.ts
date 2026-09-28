@@ -12,6 +12,8 @@ export class PurchaseEditError extends Error {
     }
 }
 
+import { assertPurchaseEditable } from "./assert-purchase-editable";
+
 type EditLockInput = {
     userId: string;
     businessId: string;
@@ -91,12 +93,7 @@ export async function lockPurchaseForEdit(
         );
     }
 
-    if (purchase.receiptStatus !== "IN_TRANSIT") {
-        throw new PurchaseEditError(
-            "პარტია უკვე მიღებულია და ამ ფორმით ვეღარ შეიცვლება.",
-            409,
-        );
-    }
+
 
     if (
         purchase.updatedAt.getTime() !== expectedDate.getTime()
@@ -120,43 +117,7 @@ export async function lockPurchaseForEdit(
         );
     }
 
-    if (
-        purchase.items.some(
-            (item) =>
-                item.remainingQuantity !== 0 ||
-                item.remainingDefectiveQuantity !== 0,
-        )
-    ) {
-        throw new PurchaseEditError(
-            "გზაში მყოფ პარტიაზე მიღებული ნაშთია დაფიქსირებული.",
-            409,
-        );
-    }
-
-    const movement = await tx.inventoryMovement.findFirst({
-        where: {
-            purchaseItem: {
-                purchaseId: purchase.id,
-            },
-        },
-        select: { id: true },
-    });
-
-    const allocation = await tx.orderItemAllocation.findFirst({
-        where: {
-            purchaseItem: {
-                purchaseId: purchase.id,
-            },
-        },
-        select: { id: true },
-    });
-
-    if (movement || allocation) {
-        throw new PurchaseEditError(
-            "პარტიაზე მარაგის მოძრაობაა დაფიქსირებული და ამ ფორმით ვეღარ შეიცვლება.",
-            409,
-        );
-    }
+    await assertPurchaseEditable(tx, purchase);
 
     const existingIds = new Set(
         purchase.items.map((item) => item.id),

@@ -100,12 +100,6 @@ export async function updatePurchase(
         }
     }
 
-    if (input.receiptStatus !== "IN_TRANSIT") {
-        throw new PurchaseEditError(
-            "პარტიის მისაღებად გამოიყენე „პარტიის მიღება“.",
-        );
-    }
-
     const prisma = createPrismaClient();
 
     const uploadedImages = new Map<
@@ -181,6 +175,66 @@ export async function updatePurchase(
                         (item) => item.purchaseItemId,
                     ),
                 });
+
+                if (input.receiptStatus !== purchase.receiptStatus) {
+                    throw new PurchaseEditError(
+                        "რედაქტირებისას პარტიის მდგომარეობა ვერ შეიცვლება. გზაში მყოფი პარტიის მისაღებად გამოიყენე „პარტიის მიღება“.",
+                        409,
+                    );
+                }
+
+                const isReceived =
+                    purchase.receiptStatus === "RECEIVED";
+
+                if (isReceived) {
+                    // ერთი მარაგის ჩანაწერი პარტიაში შეიძლება
+                    // რამდენიმე სტრიქონში გვხვდებოდეს.
+                    const previousQuantities = new Map<string, number>();
+
+                    for (const item of purchase.items) {
+                        previousQuantities.set(
+                            item.inventoryItemId,
+                            (previousQuantities.get(item.inventoryItemId) ?? 0)
+                            + item.remainingQuantity,
+                        );
+                    }
+
+                    for (const [inventoryItemId, quantity] of
+                        [...previousQuantities.entries()].sort(
+                            ([first], [second]) => first.localeCompare(second),
+                        )) {
+                        const result = await tx.inventoryItem.updateMany({
+                            where: {
+                                id: inventoryItemId,
+                                businessId,
+                                currentStock: { gte: quantity },
+                            },
+                            data: {
+                                currentStock: {
+                                    decrement: quantity,
+                                },
+                            },
+                        });
+
+                        if (result.count !== 1) {
+                            throw new PurchaseEditError(
+                                "მარაგის ნაშთი პარტიის რაოდენობას არ შეესაბამება. ცვლილებები არ შენახულა.",
+                                409,
+                            );
+                        }
+                    }
+
+                    // დასაშვებია მხოლოდ გაუყიდავი პარტიის
+                    // საწყისი მიღების ჩანაწერების ჩანაცვლება.
+                    await tx.inventoryMovement.deleteMany({
+                        where: {
+                            type: "PURCHASE_IN",
+                            purchaseItem: {
+                                purchaseId: purchase.id,
+                            },
+                        },
+                    });
+                }
 
                 const retainedIds: string[] = [];
 
@@ -352,15 +406,75 @@ export async function updatePurchase(
                         );
                     }
 
-                    checkedMoney(plannedSalePrice);
+                    const salePrice = checkedMoney(plannedSalePrice);
+
+                    if (isReceived) {
+                        const result = await tx.inventoryItem.updateMany({
+                            where: {
+                                id: inventory.id,
+                                businessId,
+                                currentStock: {
+                                    gte: 0,
+                                    lte: 2147483647 - calculated.quantity,
+                                },
+                            },
+                            data: {
+                                currentStock: {
+                                    increment: calculated.quantity,
+                                },
+                                isActive: true,
+                            },
+                        });
+
+                        if (result.count !== 1) {
+                            throw new PurchaseEditError(
+                                "მარაგის ახალი რაოდენობა ვერ შეინახა. ცვლილებები გაუქმდა.",
+                                409,
+                            );
+                        }
+
+                        // თუ ამ პროდუქტს სხვა მიღებული პარტიაც იყენებს,
+                        // მის საერთო გასაყიდ ფასს ჩუმად არ შევცვლით.
+                        const otherReceivedItem =
+                            await tx.purchaseItem.findFirst({
+                                where: {
+                                    inventoryItemId: inventory.id,
+                                    purchase: {
+                                        businessId,
+                                        receiptStatus: "RECEIVED",
+                                        id: { not: purchase.id },
+                                    },
+                                },
+                                select: { id: true },
+                            });
+
+                        if (!otherReceivedItem) {
+                            await tx.inventoryItem.update({
+                                where: { id: inventory.id },
+                                data: {
+                                    pricingMethod: item.pricingMethod,
+                                    pricingValue,
+                                    salePrice,
+                                },
+                            });
+                        }
+                    }
 
                     const data = {
                         inventoryItemId: inventory.id,
                         quantity: calculated.quantity,
-                        remainingQuantity: 0,
-                        defectiveQuantity: 0,
-                        remainingDefectiveQuantity: 0,
-                        defectNote: null,
+                        remainingQuantity: isReceived
+                            ? calculated.quantity
+                            : 0,
+                        defectiveQuantity: isReceived
+                            ? item.defectiveQuantity
+                            : 0,
+                        remainingDefectiveQuantity: isReceived
+                            ? item.defectiveQuantity
+                            : 0,
+                        defectNote: isReceived
+                            ? item.defectNote || null
+                            : null,
                         unitPurchasePrice: checkedMoney(
                             calculated.unitPurchasePrice,
                         ),
@@ -385,6 +499,36 @@ export async function updatePurchase(
                             },
                             select: { id: true },
                         });
+
+                    if (isReceived) {
+                        const goodQuantity =
+                            calculated.quantity - item.defectiveQuantity;
+
+                        if (goodQuantity > 0) {
+                            await tx.inventoryMovement.create({
+                                data: {
+                                    inventoryItemId: inventory.id,
+                                    purchaseItemId: savedItem.id,
+                                    type: "PURCHASE_IN",
+                                    condition: "GOOD",
+                                    quantity: goodQuantity,
+                                },
+                            });
+                        }
+
+                        if (item.defectiveQuantity > 0) {
+                            await tx.inventoryMovement.create({
+                                data: {
+                                    inventoryItemId: inventory.id,
+                                    purchaseItemId: savedItem.id,
+                                    type: "PURCHASE_IN",
+                                    condition: "DEFECTIVE",
+                                    quantity: item.defectiveQuantity,
+                                    note: item.defectNote || null,
+                                },
+                            });
+                        }
+                    }
 
                     retainedIds.push(savedItem.id);
                 }

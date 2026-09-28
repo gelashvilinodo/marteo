@@ -12,6 +12,7 @@ import {
     PurchaseFormError,
 } from "@/lib/purchases/read-purchase-form";
 import { ProductImageError } from "@/lib/purchases/product-images";
+import { assertPurchaseEditable } from "@/lib/purchases/assert-purchase-editable";
 
 function errorResponse(message: string, status: number) {
     return NextResponse.json(
@@ -103,12 +104,9 @@ export async function GET(
             return errorResponse("პარტია ვერ მოიძებნა.", 404);
         }
 
-        if (purchase.receiptStatus !== "IN_TRANSIT") {
-            return errorResponse(
-                "ამ ეტაპზე მხოლოდ გზაში მყოფი პარტიის რედაქტირებაა შესაძლებელი.",
-                409,
-            );
-        }
+        await prisma.$transaction(async (tx) => {
+            await assertPurchaseEditable(tx, purchase);
+        });
 
         const missingPricing = purchase.items.some(
             (item) =>
@@ -176,6 +174,10 @@ export async function GET(
             },
         );
     } catch (error) {
+        if (error instanceof PurchaseEditError) {
+            return errorResponse(error.message, error.status);
+        }
+
         console.error("Purchase edit data loading failed", error);
 
         return errorResponse(

@@ -8,6 +8,7 @@ type Props = {
     options: string[];
     onChange: (value: string) => void;
     required?: boolean;
+    maxLength?: number;
 };
 
 function clean(value: string) {
@@ -72,6 +73,7 @@ export default function AttributeInput({
     options,
     onChange,
     required = false,
+    maxLength = 100,
 }: Props) {
     const listId = useId();
     const [reviewedValue, setReviewedValue] = useState<string | null>(null);
@@ -130,7 +132,7 @@ export default function AttributeInput({
                     list={listId}
                     value={value}
                     required={required}
-                    maxLength={100}
+                    maxLength={maxLength}
                     autoComplete="off"
                     placeholder="აირჩიე ან ჩაწერე"
                     onChange={(event) => {
@@ -138,8 +140,7 @@ export default function AttributeInput({
                         onChange(event.target.value);
                     }}
                     onBlur={finishEditing}
-                    className="h-9 w-full min-w-0 rounded-lg border border-border bg-surface px-2.5 text-xs text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 lg:h-8"
-                />
+                    className="h-9 w-full min-w-0 rounded-lg border border-border bg-surface px-2.5 text-[16px] lg:text-xs text-text-primary outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 lg:h-8" />
 
                 <datalist id={listId}>
                     {suggestions.map((option) => (
