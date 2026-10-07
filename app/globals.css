@@ -11,6 +11,9 @@
   --marteo-success-hover: #10a64b;
   --marteo-on-success: #081f16;
 
+  --marteo-warning: #c98200;
+  --marteo-danger: #e5484d;
+
   /* Backgrounds */
   --marteo-background: #f8fafc;
   --marteo-surface: #ffffff;
@@ -35,6 +38,9 @@
   --color-success: var(--marteo-success);
   --color-success-hover: var(--marteo-success-hover);
   --color-on-success: var(--marteo-on-success);
+
+  --color-warning: var(--marteo-warning);
+  --color-danger: var(--marteo-danger);
 
   --color-background: var(--marteo-background);
   --color-surface: var(--marteo-surface);
@@ -95,6 +101,9 @@
     --marteo-accent-hover: #6d9af2;
 
     --marteo-overlay: rgb(8 17 30 / 0.18);
+
+    --marteo-warning: #f6c453;
+    --marteo-danger: #ff7378;
   }
 }
 
@@ -167,5 +176,27 @@ body {
     animation: none;
     stroke-dasharray: none;
     filter: none;
+  }
+}
+
+@keyframes inventory-chart-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.inventory-chart-enter {
+  animation: inventory-chart-enter 250ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inventory-chart-enter {
+    animation: none;
   }
 }

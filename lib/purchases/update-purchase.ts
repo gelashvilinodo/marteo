@@ -4,6 +4,8 @@ import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
 
+import { createInventorySkuAllocator } from "./create-inventory-sku";
+
 import { validatePurchase } from "./validate-purchases";
 import {
     lockPurchaseForEdit,
@@ -182,6 +184,11 @@ export async function updatePurchase(
                         409,
                     );
                 }
+
+                const nextInventorySku = await createInventorySkuAllocator(
+                    tx,
+                    businessId,
+                );
 
                 const isReceived =
                     purchase.receiptStatus === "RECEIVED";
@@ -370,7 +377,7 @@ export async function updatePurchase(
                             data: {
                                 businessId,
                                 productId,
-                                sku: `P-${crypto.randomUUID()}`,
+                                sku: nextInventorySku(),
                                 color: item.color || null,
                                 size: item.size || null,
                                 imageUrl,

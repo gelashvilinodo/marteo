@@ -4,6 +4,9 @@ import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
 
+import { createInventorySkuAllocator } from "./create-inventory-sku";
+
+
 import {
     PurchaseValidationError,
     validatePurchase,
@@ -222,6 +225,11 @@ export async function savePurchase(
                     };
                 }
 
+                const nextInventorySku = await createInventorySkuAllocator(
+                    tx,
+                    businessId,
+                );
+
                 const previous = await tx.purchase.aggregate({
                     where: { businessId },
                     _max: { number: true },
@@ -439,7 +447,7 @@ export async function savePurchase(
                             data: {
                                 businessId,
                                 productId,
-                                sku: `P-${crypto.randomUUID()}`,
+                                sku: nextInventorySku(),
                                 color: item.color || null,
                                 size: item.size || null,
                                 imageUrl,
