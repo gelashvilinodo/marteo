@@ -1,0 +1,20 @@
+export type OrderInvoiceData = {
+    number: number | null;
+    createdAt: string;
+    status: "PROCESSING" | "SHIPPED" | "COMPLETED" | "CANCELED" | "RETURNED";
+    paymentStatus: "UNPAID" | "PAID" | "COURIER_ONLY_PAID" | "PARTIALLY_PAID";
+    business: { name: string; logoUrl: string | null; phone: string | null; email: string | null; address: string | null };
+    recipient: { name: string; phone: string; address: string };
+    items: { name: string; color: string | null; size: string | null; condition: "GOOD" | "DEFECTIVE"; quantity: number; unitPrice: string; total: string }[];
+    productsTotal: string;
+    courierFee: string;
+    total: string;
+    paidAmount: string;
+    remainingAmount: string;
+    refundDue: string;
+    publicUrl: string | null;
+    qrDataUrl: string | null;
+    version: number;
+    printState: "NEW" | "PRINTED" | "UPDATED";
+    printedAt: string | null;
+};

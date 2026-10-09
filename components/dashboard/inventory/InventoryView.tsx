@@ -13,6 +13,7 @@ import InventoryPagination from "@/components/dashboard/inventory/InventoryPagin
 import LatestInventoryMovements, {
     type InventoryMovementEntry,
 } from "@/components/dashboard/inventory/LatestInventoryMovements";
+import InventoryProductsSkeleton from "./InventoryProductsSkeleton";
 
 export type InventoryProduct = {
     id: string;
@@ -393,7 +394,9 @@ export default function InventoryView({
                             </InventoryFiltersDisclosure>
                         </div>
 
-                        {totalProducts === 0 ? (
+                        {pending ? (
+                            <InventoryProductsSkeleton />
+                        ) : totalProducts === 0 ? (
                             <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
                                 <Icon
                                     icon="solar:box-linear"
@@ -416,7 +419,11 @@ export default function InventoryView({
                         <InventoryPagination
                             currentPage={currentPage}
                             totalPages={totalPages}
-                            onPageChange={(page) => navigate(filter, appliedControls, page)}
+                            onPageChange={(page) => {
+                                startTransition(() => {
+                                    navigate(filter, appliedControls, page);
+                                });
+                            }}
                         />
 
                     </section>

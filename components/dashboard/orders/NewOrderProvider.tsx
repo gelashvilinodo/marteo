@@ -7,10 +7,17 @@ import {
     type ReactNode,
 } from "react";
 
+import type { getOrder } from "@/lib/orders/get-order";
+
+type EditableOrder = Awaited<ReturnType<typeof getOrder>>;
+
 type NewOrderContextType = {
     isOpen: boolean;
+    editingOrder: EditableOrder | null;
     openNewOrder: () => void;
+    openEditOrder: (order: EditableOrder) => void;
     closeNewOrder: () => void;
+    holdOrderSession: (held: boolean) => void;
 };
 
 const NewOrderContext = createContext<NewOrderContextType | null>(null);
@@ -23,8 +30,23 @@ export function NewOrderProvider({
     children,
 }: NewOrderProviderProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [sessionHeld, setSessionHeld] = useState(false);
+    const [editingOrder, setEditingOrder] =
+        useState<EditableOrder | null>(null);
 
     function openNewOrder() {
+        if (!isOpen && !sessionHeld) {
+            setEditingOrder(null);
+        }
+
+        setIsOpen(true);
+    }
+
+    function openEditOrder(order: EditableOrder) {
+        if (!isOpen && !sessionHeld) {
+            setEditingOrder(order);
+        }
+
         setIsOpen(true);
     }
 
@@ -36,8 +58,11 @@ export function NewOrderProvider({
         <NewOrderContext.Provider
             value={{
                 isOpen,
+                editingOrder,
                 openNewOrder,
+                openEditOrder,
                 closeNewOrder,
+                holdOrderSession: setSessionHeld,
             }}
         >
             {children}

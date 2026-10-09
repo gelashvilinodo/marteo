@@ -3,32 +3,24 @@
 import { Icon } from "@iconify/react";
 import { useNewOrder } from "./NewOrderProvider";
 
-type NewOrderButtonProps = {
-    label?: string;
-    className?: string;
-};
-
 export default function NewOrderButton({
-    label = "ახალი შეკვეთა",
     className = "",
-}: NewOrderButtonProps) {
+}: {
+    className?: string;
+}) {
     const { openNewOrder } = useNewOrder();
 
     return (
         <button
             type="button"
             onClick={openNewOrder}
-            className={[
-                "inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-white transition hover:opacity-90",
-                className,
-            ].join(" ")}
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-success px-5 text-sm font-semibold text-white transition-colors hover:bg-success-hover ${className}`}
         >
             <Icon
-                icon="solar:add-circle-bold"
-                className="h-5 w-5"
+                icon="solar:add-circle-linear"
+                className="h-5 w-5 shrink-0"
             />
-
-            {label}
+            ახალი შეკვეთა
         </button>
     );
 }

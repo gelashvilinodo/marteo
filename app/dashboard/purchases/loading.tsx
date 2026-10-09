@@ -21,6 +21,51 @@ export default function PurchasesLoading() {
           />
         </div>
 
+        <div
+          aria-hidden="true"
+          className={
+            "mt-4 rounded-2xl border border-border bg-surface " +
+            "motion-safe:animate-pulse sm:mt-6"
+          }
+        >
+          {/* ტელეფონზე ჩამოსაშლელი ძებნის ღილაკი */}
+          <div className="flex h-11 items-center justify-between px-4 sm:hidden">
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 rounded bg-border/50" />
+              <div className="h-3 w-32 rounded bg-border/60" />
+            </div>
+
+            <div className="h-4 w-4 rounded bg-border/40" />
+          </div>
+
+          {/* დესკტოპზე ძებნა და თარიღების ველები */}
+          <div className="hidden p-4 sm:block">
+            <div className="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-end">
+              <div className="min-w-0 space-y-1.5 sm:col-span-2 xl:col-span-1">
+                <div className="h-3 w-12 rounded bg-border/50" />
+                <div className="h-11 rounded-xl border border-border bg-background" />
+              </div>
+
+              <div className="min-w-0 space-y-1.5">
+                <div className="h-3 w-20 rounded bg-border/50" />
+                <div className="h-11 rounded-xl border border-border bg-background" />
+              </div>
+
+              <div className="min-w-0 space-y-1.5">
+                <div className="h-3 w-20 rounded bg-border/50" />
+                <div className="h-11 rounded-xl border border-border bg-background" />
+              </div>
+
+              <div className="h-11 rounded-xl bg-accent/20 sm:col-span-2 xl:col-span-1 xl:w-24" />
+            </div>
+          </div>
+        </div>
+
+        <div
+          aria-hidden="true"
+          className="mt-4 h-5 w-24 rounded bg-border/40 motion-safe:animate-pulse"
+        />
+
         <div aria-hidden="true" className="mt-6 space-y-4">
           {[0, 1, 2].map((card) => (
             <div
