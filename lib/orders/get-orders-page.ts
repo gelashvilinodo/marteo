@@ -1,6 +1,7 @@
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
+import { orderPayableTotal } from "./order-payable-total";
 import type { createPrismaClient } from "@/lib/prisma";
 
 export type OrdersSearchParams = Record<
@@ -202,9 +203,18 @@ export async function getOrdersPage(
                 FROM "Order" WHERE "businessId"=${businessId} AND "deletedAt" IS NULL AND "status" <> 'CANCELED'
             `;
             const invoiceCounts = { new: Number(invoiceCount?.newCount ?? 0), updated: Number(invoiceCount?.updatedCount ?? 0) };
-            const totalOrders = await tx.order.count({
-                where,
-            });
+            const totalOrders =
+                !query && payment === "all"
+                    ? filter === "all"
+                        ? counts.all
+                        : (
+                            grouped.find(
+                                group => group.status === where.status,
+                            )?._count._all ?? 0
+                        )
+                    : await tx.order.count({
+                        where,
+                    });
 
             const totalPages = Math.max(
                 1,
@@ -228,6 +238,7 @@ export async function getOrdersPage(
                     recipientFirstName: true,
                     recipientLastName: true,
                     shippingAddress: true,
+                    notes: true,
                     status: true,
                     paymentStatus: true,
                     courierFee: true,
@@ -242,7 +253,10 @@ export async function getOrdersPage(
                             status: true,
                             fulfillmentCycle: true,
                             items: {
-                                select: { quantity: true },
+                                select: {
+                                    orderItemId: true,
+                                    quantity: true,
+                                },
                             },
                         },
                     },
@@ -270,6 +284,8 @@ export async function getOrdersPage(
                             size: true,
                             unitPrice: true,
                             unitCost: true,
+                            totalCost: true,
+                            stockRestoredAt: true,
                         },
                     },
                     payments: {
@@ -289,17 +305,31 @@ export async function getOrdersPage(
             });
 
             const entries = orders.map((order) => {
-                const productsTotal = order.items.reduce(
-                    (sum, item) =>
-                        sum.plus(
-                            item.unitPrice.mul(item.quantity),
-                        ),
-                    new Prisma.Decimal(0),
+                const receivedQuantities = new Map<string, number>();
+
+                for (const entry of order.returns) {
+                    if (
+                        entry.status !== "RECEIVED" ||
+                        entry.fulfillmentCycle !== order.fulfillmentCycle
+                    ) {
+                        continue;
+                    }
+
+                    for (const item of entry.items) {
+                        receivedQuantities.set(
+                            item.orderItemId,
+                            (receivedQuantities.get(item.orderItemId) ?? 0) +
+                            item.quantity,
+                        );
+                    }
+                }
+
+                const total = orderPayableTotal(
+                    order,
+                    receivedQuantities,
                 );
 
-                const total = productsTotal.plus(
-                    order.courierFee,
-                );
+                const productsTotal = total.minus(order.courierFee);
 
                 const paidAmount = order.payments.reduce(
                     (sum, payment) =>
@@ -314,6 +344,22 @@ export async function getOrdersPage(
 
                 return {
                     ...order,
+
+                    missingManualCosts: order.items
+                        .filter(item =>
+                            item.source === "MANUAL" &&
+                            item.totalCost === null &&
+                            !order.stockReturnedAt &&
+                            !item.stockRestoredAt &&
+                            item.quantity >
+                            (receivedQuantities.get(item.id) ?? 0),
+                        )
+                        .map(item => ({
+                            id: item.id,
+                            name: item.name,
+                            imageUrl: item.imageUrl,
+                        })),
+
                     deleteRequestedAt:
                         order.deleteRequestedAt?.toISOString() ?? null,
 
@@ -324,7 +370,7 @@ export async function getOrdersPage(
                             entry.fulfillmentCycle !== order.fulfillmentCycle,
                     ),
 
-                    pendingReturnQuantity: currentReturns
+                    pendingReturnQuantity: order.returns
                         .filter(entry => entry.status === "PENDING")
                         .reduce(
                             (sum, entry) =>
@@ -376,6 +422,9 @@ export async function getOrdersPage(
                     ),
                     items: order.items.map((item) => ({
                         ...item,
+                        totalCost: item.totalCost?.toFixed(2) ?? null,
+                        stockRestoredAt:
+                            item.stockRestoredAt?.toISOString() ?? null,
                         unitPrice:
                             item.unitPrice.toFixed(2),
                         unitCost:

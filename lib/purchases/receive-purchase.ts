@@ -214,9 +214,9 @@ export async function receivePurchase(
 
                         return (
                             item.defectiveQuantity ===
-                                submitted.defectiveQuantity &&
+                            submitted.defectiveQuantity &&
                             (item.defectNote ?? "") ===
-                                submitted.defectNote
+                            submitted.defectNote
                         );
                     });
 
@@ -333,6 +333,9 @@ export async function receivePurchase(
                         where: { id: item.id },
                         data: {
                             remainingQuantity: item.quantity,
+                            remainingCost: item.unitPurchasePrice
+                                .mul(item.quantity)
+                                .plus(item.allocatedExtraCostTotal),
                             defectiveQuantity:
                                 submitted.defectiveQuantity,
                             remainingDefectiveQuantity:

@@ -229,14 +229,25 @@ export async function getCustomersPage(
             ${filterWhere} AND ${searchWhere}
         `;
 
-        const [count] = await tx.$queryRaw<
-            Array<{ total: number }>
-        >(Prisma.sql`
+        const [count] = query
+            ? await tx.$queryRaw<Array<{ total: number }>>(
+                Prisma.sql`
             ${base}
             SELECT COUNT(*)::int AS total
             FROM customers
             WHERE ${where}
-        `);
+        `,
+            )
+            : [{
+                total:
+                    filter === "new"
+                        ? summary.newCustomers
+                        : filter === "repeat"
+                            ? summary.repeatCustomers
+                            : filter === "top"
+                                ? summary.topCustomer ? 1 : 0
+                                : summary.total,
+            }];
 
         const totalPages = Math.max(
             1,

@@ -179,6 +179,7 @@ productAttributes ProductAttribute[]
 inventoryItems InventoryItem[]
 purchases Purchase[]
 expenses Expense[]
+financialEntries OrderFinancialEntry[]
 contentItems ContentItem[]
 contentCampaigns ContentCampaign[]
 }
@@ -255,6 +256,7 @@ model Order {
 id String @id @default(cuid())
 number Int?
 clientRequestId String?
+notes String?
 stockReturnedAt DateTime?
 deletedAt DateTime?
 publicAccessToken String? @unique
@@ -288,6 +290,7 @@ business Business @relation(fields: [businessId], references: [id], onDelete: Ca
 customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
 items OrderItem[]
 payments OrderPayment[]
+financialEntries OrderFinancialEntry[]
 
 @@index([businessId])
 @@index([customerId])
@@ -306,6 +309,7 @@ orderId String
 fulfillmentCycle Int @default(0)
 isActive Boolean @default(true)
 isCarriedOver Boolean @default(false)
+financialSourceItemId String?
 stockRestoredAt DateTime?
 
 inventoryItemId String?
@@ -321,6 +325,8 @@ size String?
 
 unitPrice Decimal @db.Decimal(12, 2)
 unitCost Decimal @db.Decimal(12, 2)
+
+totalCost Decimal? @db.Decimal(18, 2)
 
 createdAt DateTime @default(now())
 updatedAt DateTime @updatedAt
@@ -449,6 +455,8 @@ unitPurchasePrice Decimal @db.Decimal(12, 2)
 
 allocatedExtraCostTotal Decimal @default(0) @db.Decimal(12, 2)
 finalUnitCost Decimal @db.Decimal(12, 2)
+
+remainingCost Decimal? @db.Decimal(18, 2)
 
 plannedPricingMethod PricingMethod?
 plannedPricingValue Decimal? @db.Decimal(12, 2)
@@ -584,6 +592,11 @@ condition InventoryCondition @default(GOOD)
 
 unitCost Decimal @db.Decimal(12, 2)
 
+totalCost Decimal? @db.Decimal(18, 2)
+returnedCost Decimal @default(0) @db.Decimal(18, 2)
+transferredQuantity Int @default(0)
+transferredCost Decimal? @default(0) @db.Decimal(18, 2)
+
 createdAt DateTime @default(now())
 
 orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
@@ -656,6 +669,7 @@ model OrderReturn {
 fulfillmentCycle Int @default(0)
 id String @id @default(cuid())
 orderId String
+exchangeId String?
 status OrderReturnStatus @default(PENDING)
 receivedAt DateTime?
 createdAt DateTime @default(now())
@@ -663,8 +677,10 @@ updatedAt DateTime @updatedAt
 
 order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 items OrderReturnItem[]
+exchange OrderExchange? @relation(fields: [exchangeId], references: [id], onDelete: Restrict)
 
 @@index([orderId, status])
+@@index([exchangeId])
 }
 
 model OrderReturnItem {
@@ -702,7 +718,68 @@ newTotal Decimal @db.Decimal(12, 2)
 createdAt DateTime @default(now())
 
 order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+returns OrderReturn[]
 
 @@unique([orderId, nextCycle])
 @@index([orderId, createdAt])
+}
+
+enum OrderFinancialEntryKind {
+SALE
+RETURN
+EXCHANGE_ADJUSTMENT
+COST_ADJUSTMENT
+}
+
+model OrderFinancialEntry {
+id String @id @default(cuid())
+businessId String
+
+// კავშირი შეიძლება მოიხსნას ; ფინანსური ჩანაწერი რჩება.
+orderId String?
+orderNumber Int?
+fulfillmentCycle Int
+
+// განმეორებითი მოქმედება ახალ ჩანაწერს ვერ შექმნის.
+eventKey String
+kind OrderFinancialEntryKind
+
+// გაყიდვა დადებითია, მისი შემცირება — უარყოფითი.
+productRevenueDelta Decimal @db.Decimal(18, 2)
+deliveryRevenueDelta Decimal @default(0) @db.Decimal(18, 2)
+costOfGoodsDelta Decimal @db.Decimal(18, 2)
+
+// დაუდასტურებელი თვითღირებულება მოგებად არ ჩაითვალოს.
+costComplete Boolean @default(false)
+
+occurredAt DateTime
+createdAt DateTime @default(now())
+
+business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+items OrderFinancialEntryItem[]
+
+@@unique([businessId, eventKey])
+@@index([businessId, occurredAt])
+@@index([orderId, fulfillmentCycle])
+}
+
+model OrderFinancialEntryItem {
+id String @id @default(cuid())
+entryId String
+
+// ისტორიული მნიშვნელობა ; პროდუქტის ცვლილებაზე არ გადაიწერება.
+sourceOrderItemId String
+name String
+quantityDelta Int
+revenueDelta Decimal @db.Decimal(18, 2)
+costDelta Decimal @db.Decimal(18, 2)
+costComplete Boolean @default(false)
+
+entry OrderFinancialEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+@@index([entryId])
+@@index([sourceOrderItemId])
 }

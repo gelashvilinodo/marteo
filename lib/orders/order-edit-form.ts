@@ -14,6 +14,7 @@ export function orderEditDraft(order: Order): OrderFormDraft {
         recipientFirstName: order.recipientFirstName,
         recipientLastName: order.recipientLastName,
         shippingAddress: order.shippingAddress,
+        notes: order.notes,
         courierFee: order.courierFee,
         paidAmount: order.paidAmount,
         paymentMethod: order.paymentMethod,

@@ -96,6 +96,7 @@ export default function OrderDeleteButton({
 
     const simple = Boolean(
         order &&
+        !awaiting &&
         (
             fullyReturned ||
             order.status === "COMPLETED" ||
@@ -142,6 +143,10 @@ export default function OrderDeleteButton({
     }
     function submit() {
         if (!order || pending || saving) return;
+        if (financialDeletionBlocked) {
+            setError(deletionBalanceMessage);
+            return;
+        }
         if (awaiting && mode !== "WAIT_FOR_RETURN") { setError("ჯერ დაადასტურე დასაბრუნებელი ნივთების მიღება."); return; }
         if (mode === "WAIT_FOR_RETURN" && !awaiting) { setError("ჯერ დაბრუნების ღილაკით აირჩიე ნივთები და შეინახე დაბრუნების მოთხოვნა."); return; }
         if (!simple && !mode) { setError("აირჩიე, რა ხდება პროდუქტების დაბრუნებასთან დაკავშირებით."); return; }
@@ -165,6 +170,19 @@ export default function OrderDeleteButton({
             mode: mode || (fullyReturned ? "RECEIVED" : undefined), confirmNoReturn: mode === "NO_RETURN",
         });
     }
+
+    const deletionBalanceMessage =
+        !order
+            ? ""
+            : order.deletionRefundDue !== "0.00"
+                ? `კლიენტისთვის დასაბრუნებელია ${order.deletionRefundDue} ₾. წაშლამდე დაადასტურე თანხის რეალური დაბრუნება. გაუგზავნელ შეკვეთაზე ჯერ გააფორმე გაუქმება, შემდეგ თანხის დაბრუნება.`
+                : order.deletionRemainingAmount !== "0.00"
+                    ? `კლიენტისგან მისაღებია ${order.deletionRemainingAmount} ₾. წაშლამდე აღრიცხე გადახდა ან გააფორმე გაუქმება/დაბრუნება.`
+                    : "";
+
+    const financialDeletionBlocked =
+        Boolean(deletionBalanceMessage) &&
+        mode !== "WAIT_FOR_RETURN";
     const blocked = loading || saving || Boolean(pending);
 
     return <>
@@ -174,6 +192,36 @@ export default function OrderDeleteButton({
             {loading && <p role="status" className="my-5 flex items-center gap-2 text-sm text-text-secondary"><Icon icon="solar:refresh-linear" className="h-5 w-5 animate-spin" />იტვირთება…</p>}
             {!loading && order && <div className="mt-4 space-y-4">
                 <p className="text-sm">შეკვეთა {order.number === null ? "" : `#${String(order.number).padStart(4, "0")}`}</p>
+                {deletionBalanceMessage && (
+                    <div className="rounded-xl border border-warning/30 bg-warning/10 p-3">
+                        <p className="flex items-center gap-2 text-sm font-semibold text-warning">
+                            <Icon
+                                icon="solar:wallet-money-linear"
+                                className="h-5 w-5 shrink-0"
+                            />
+                            წაშლამდე თანხა მოსაწესრიგებელია
+                        </p>
+
+                        <p className="mt-2 text-sm leading-relaxed text-text-primary">
+                            {deletionBalanceMessage}
+                        </p>
+
+                        <p className="mt-2 text-xs text-text-secondary">
+                            დაბრუნების მოლოდინის მოთხოვნის შენახვა
+                            შეგიძლია. თავად წაშლა ფინანსური ნაშთის
+                            მოწესრიგების შემდეგ გახდება შესაძლებელი.
+                        </p>
+                    </div>
+                )}
+                {awaiting && (
+                    <p className="rounded-xl border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
+                        ამ შეკვეთაზე ნივთების დაბრუნებას ველოდებით.
+                        ეს შეიძლება წინა გადაცვლის ნივთებსაც ეხებოდეს.
+                        ახლა შეგიძლია წაშლის მოთხოვნა შეინახო.
+                        ბოლო დაბრუნების მიღების შემდეგ წაშლის დადასტურებას
+                        შემოგთავაზებთ.
+                    </p>
+                )}
                 <p className="rounded-xl bg-danger/10 p-3 text-sm text-danger">
                     {fullyReturned
                         ? "დაბრუნება უკვე აღრიცხულია. წაშლისას მარაგი მეორედ აღარ გაიზრდება."
@@ -191,7 +239,7 @@ export default function OrderDeleteButton({
                     ["RECEIVED", "ნივთები უკვე დაბრუნდა"],
                     ["WAIT_FOR_RETURN", "ნივთები უნდა დაბრუნდეს — დაველოდოთ"],
                     ["NO_RETURN", "ნივთები აღარ დაბრუნდება"],
-                ] as const).map(([value, label]) => <label key={value} className={`flex items-center gap-3 rounded-xl border p-3 text-sm ${mode === value ? "border-accent bg-accent/5" : "border-border"}`}><input type="radio" name={`delete-mode-${orderId}`} checked={mode === value} onChange={() => { setMode(value); setError(""); }} className="h-4 w-4 accent-accent" />{label}</label>)}</fieldset>}
+                ] as const).map(([value, label]) => <label key={value} className={`flex items-center gap-3 rounded-xl border p-3 text-sm ${mode === value ? "border-accent bg-accent/5" : "border-border"}`}><input type="radio" disabled={awaiting && value !== "WAIT_FOR_RETURN"} name={`delete-mode-${orderId}`} checked={mode === value} onChange={() => { setMode(value); setError(""); }} className="h-4 w-4 accent-accent" />{label}</label>)}</fieldset>}
                 {(awaiting || mode === "RECEIVED" || mode === "WAIT_FOR_RETURN") && <div className="flex items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning/5 p-3"><p className="text-xs text-text-secondary">{awaiting ? "დაბრუნების მოთხოვნა არსებობს. აქედან დაადასტურე ფიზიკური მიღება." : "აქედან აირჩიე დასაბრუნებელი ნივთები და შეინახე მოთხოვნა. მიღება მხოლოდ ფიზიკური დაბრუნების შემდეგ დაადასტურე."}</p><OrderReturnButton
                     orderId={orderId}
                     onUpdated={() => {
@@ -245,7 +293,12 @@ export default function OrderDeleteButton({
             {notice && <p role="status" className="mt-4 rounded-xl bg-success/10 p-3 text-sm text-success">{notice}</p>}
             {error && <p role="alert" className="mt-4 text-sm text-danger">{error}</p>}
             {!loading && !order && !pending && <button type="button" onClick={() => { setLoading(true); setError(""); void load(); }} className="mt-3 text-sm text-accent underline">ხელახლა ჩატვირთვა</button>}
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-2"><button type="button" disabled={saving} onClick={() => { if (canLeave()) leave(); }} className="h-11 rounded-xl border border-border px-4 text-sm disabled:opacity-40">დახურვა</button>{saving && <button type="button" onClick={() => mutationController.current?.abort()} className="text-xs text-text-secondary underline">შეაჩერე ლოდინი</button>}<button type="button" disabled={loading || saving || (!order && !pending)} onClick={() => pending ? void send(pending) : submit()} className="inline-flex h-11 items-center gap-2 rounded-xl bg-danger px-4 text-sm font-semibold text-white disabled:opacity-50"><Icon icon={saving ? "solar:refresh-linear" : "solar:trash-bin-trash-linear"} className={`h-5 w-5 ${saving ? "animate-spin" : ""}`} />{saving ? "ინახება…" : pending ? "ხელახლა ცდა" : mode === "WAIT_FOR_RETURN" ? "წაშლის მოთხოვნა" : "წაშლა"}</button></div>
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-2"><button type="button" disabled={saving} onClick={() => { if (canLeave()) leave(); }} className="h-11 rounded-xl border border-border px-4 text-sm disabled:opacity-40">დახურვა</button>{saving && <button type="button" onClick={() => mutationController.current?.abort()} className="text-xs text-text-secondary underline">შეაჩერე ლოდინი</button>}<button type="button" disabled={
+                loading ||
+                saving ||
+                (!order && !pending) ||
+                (!pending && financialDeletionBlocked)
+            } onClick={() => pending ? void send(pending) : submit()} className="inline-flex h-11 items-center gap-2 rounded-xl bg-danger px-4 text-sm font-semibold text-white disabled:opacity-50"><Icon icon={saving ? "solar:refresh-linear" : "solar:trash-bin-trash-linear"} className={`h-5 w-5 ${saving ? "animate-spin" : ""}`} />{saving ? "ინახება…" : pending ? "ხელახლა ცდა" : mode === "WAIT_FOR_RETURN" ? "წაშლის მოთხოვნა" : "წაშლა"}</button></div>
         </dialog>
     </>;
 }

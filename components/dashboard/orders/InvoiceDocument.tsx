@@ -36,6 +36,17 @@ export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: Or
             .invoice-document .invoice-heading { text-align:right; flex-shrink:0; }
             .invoice-document .invoice-heading h3 { font-weight:600; }
             .invoice-document .invoice-recipient { margin:16px 0; overflow-wrap:anywhere; }
+            .invoice-document .invoice-notes {
+    margin:10px 0;
+    padding:8px 0;
+    border-top:1px dashed #bbb;
+    border-bottom:1px dashed #bbb;
+    overflow-wrap:anywhere;
+}
+.invoice-document .invoice-notes p {
+    margin-top:4px;
+    white-space:pre-wrap;
+}
             .invoice-document table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:inherit; }
             .invoice-document th { border-top:1px solid #bbb; border-bottom:1px solid #bbb; padding:7px 0; text-align:left; }
             .invoice-document td { border-bottom:1px solid #ddd; padding:9px 0; vertical-align:top; overflow-wrap:anywhere; }
@@ -152,6 +163,12 @@ export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: Or
             <div className="invoice-heading"><h3>ინვოისი{invoice.number !== null ? ` #${String(invoice.number).padStart(4, "0")}` : ""}</h3><p>{date(invoice.createdAt)}</p></div>
         </header>
         <div className="invoice-recipient"><p><strong>მიმღები:</strong> {invoice.recipient.name || "—"}</p><p>{invoice.recipient.phone}</p>{invoice.recipient.address && <p>{invoice.recipient.address}</p>}<p>{statuses[invoice.status]} · {payments[invoice.paymentStatus]}</p></div>
+        {invoice.notes && (
+            <section className="invoice-notes">
+                <strong>კომენტარი</strong>
+                <p>{invoice.notes}</p>
+            </section>
+        )}
         {thermal ? <div>{invoice.items.map((item, index) => <div key={index} className="invoice-thermal-item"><p className="invoice-item">{item.name}</p><p className="invoice-variant">{[item.color, item.size, item.condition === "DEFECTIVE" ? "წუნდებული" : null].filter(Boolean).join(" · ")}</p><div className="invoice-thermal-line"><span>{item.quantity} × {item.unitPrice} ₾</span><strong>{item.total} ₾</strong></div></div>)}</div> :
             <table><thead><tr><th style={{ width: "46%" }}>პროდუქტი</th><th style={{ width: "12%" }}>რაოდ.</th><th className="invoice-right" style={{ width: "20%" }}>ფასი ₾</th><th className="invoice-right" style={{ width: "22%" }}>ჯამი ₾</th></tr></thead><tbody>{invoice.items.map((item, index) => <tr key={index}><td><p className="invoice-item">{item.name}</p><p className="invoice-variant">{[item.color, item.size, item.condition === "DEFECTIVE" ? "წუნდებული" : null].filter(Boolean).join(" · ")}</p></td><td>{item.quantity}</td><td className="invoice-right">{item.unitPrice}</td><td className="invoice-right">{item.total}</td></tr>)}</tbody></table>}
         <div className="invoice-bottom">

@@ -31,6 +31,7 @@ export type ValidatedOrder = {
     recipientFirstName: string;
     recipientLastName: string;
     shippingAddress: string;
+    notes: string;
     status: "PROCESSING" | "SHIPPED" | "COMPLETED" | "CANCELED";
     courierFee: Prisma.Decimal;
     paidAmount: Prisma.Decimal;
@@ -221,10 +222,19 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
                 // მარაგის თვითღირებულებას სერვერი პარტიებიდან აიღებს.
                 unitCost:
                     item.source === "MANUAL"
-                        ? money(
-                            item.unitCost,
-                            `${label}, თვითღირებულება`,
+                        ? (
+                            item.unitCost === undefined ||
+                            item.unitCost === null ||
+                            (
+                                typeof item.unitCost === "string" &&
+                                item.unitCost.trim() === ""
+                            )
                         )
+                            ? null
+                            : money(
+                                item.unitCost,
+                                `${label}, თვითღირებულება`,
+                            )
                         : null,
             };
         },
@@ -267,6 +277,7 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
             data.shippingAddress,
             "მისამართი",
         ),
+        notes: text(data.notes, "კომენტარი"),
         status: data.status,
         courierFee,
         paidAmount,

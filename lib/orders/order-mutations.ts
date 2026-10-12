@@ -8,11 +8,17 @@ import { createOrderItems, orderWithStock, resolveOrderCustomer, restoreOrderSto
 import { createPublicOrderToken } from "./create-public-order-token";
 import { exchangeOrderProducts } from "./order-exchanges";
 import { confirmOrderRefund } from "./order-refunds";
+import { orderPayableTotal } from "./order-payable-total";
+import { assertOrderDeletionBalance } from "./assert-order-deletion-balance";
+import { prepareCompletionCosts } from "./prepare-completion-costs";
 import {
     requestOrderReturn,
     receiveOrderReturn,
     type ReturnSelection,
 } from "./order-returns";
+import { buildSaleSnapshot } from "@/lib/analytics/build-sale-snapshot";
+import { recordSaleSnapshot } from "@/lib/analytics/record-sale-snapshot";
+import { recordFinancialAdjustment } from "@/lib/analytics/record-financial-adjustment";
 
 export type MutationKind =
     | "edit"
@@ -108,7 +114,15 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                         const old = order.items[index];
                         return item.source === old.source && item.inventoryItemId === old.inventoryItemId && item.condition === old.condition && item.name === old.name &&
                             (item.source !== "MANUAL" || item.imageUrl === old.imageUrl) &&
-                            item.quantity === old.quantity && item.description === (old.description ?? "") && item.color === (old.color ?? "") && item.size === (old.size ?? "") && item.unitPrice.eq(old.unitPrice) && (item.source !== "MANUAL" || item.unitCost?.eq(old.unitCost));
+                            item.quantity === old.quantity && item.description === (old.description ?? "") && item.color === (old.color ?? "") && item.size === (old.size ?? "") && item.unitPrice.eq(old.unitPrice) && (
+                                item.source !== "MANUAL" ||
+                                (
+                                    old.totalCost === null
+                                        ? item.unitCost === null
+                                        : item.unitCost !== null &&
+                                        item.unitCost.eq(old.unitCost)
+                                )
+                            );
                     });
                     if (!same || !data.courierFee.eq(order.courierFee)) fail("გაგზავნილ ან გაუქმებულ შეკვეთაში პროდუქტები, რაოდენობა და ფასი აღარ იცვლება.", 409);
                 } else {
@@ -144,7 +158,12 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                                 item.source !== "MANUAL" ||
                                 (
                                     item.imageUrl === old.imageUrl &&
-                                    item.unitCost?.eq(old.unitCost)
+                                    (
+                                        old.totalCost === null
+                                            ? item.unitCost === null
+                                            : item.unitCost !== null &&
+                                            item.unitCost.eq(old.unitCost)
+                                    )
                                 )
                             );
 
@@ -255,7 +274,9 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                     where: { id: orderId }, data: {
                         customerId: customer.id, recipientPhone: data.recipientPhone,
                         recipientFirstName: data.recipientFirstName || null, recipientLastName: data.recipientLastName || null,
-                        shippingAddress: data.shippingAddress || null, courierFee: data.courierFee,
+                        shippingAddress: data.shippingAddress || null,
+                        notes: data.notes || null,
+                        courierFee: data.courierFee,
                         paymentStatus: paymentState(total, data.paidAmount, data.courierFee), invoiceVersion: { increment: 1 },
                     }
                 });
@@ -264,6 +285,95 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                 const next = state(body.status);
                 assertTransition(order.status, next, body.confirmCompleted);
                 if (next !== order.status) {
+                    const receivedQuantities = new Map<string, number>();
+
+                    let completionSnapshot:
+                        ReturnType<typeof buildSaleSnapshot> | null = null;
+
+                    if (next === "COMPLETED") {
+                        if (hasReturnHistory > 0) {
+                            const returnedItems = await tx.orderReturnItem.groupBy({
+                                by: ["orderItemId"],
+                                where: {
+                                    orderReturn: {
+                                        orderId,
+                                        fulfillmentCycle: order.fulfillmentCycle,
+                                        status: "RECEIVED",
+                                    },
+                                },
+                                _sum: {
+                                    quantity: true,
+                                },
+                            });
+
+                            for (const item of returnedItems) {
+                                receivedQuantities.set(
+                                    item.orderItemId,
+                                    item._sum.quantity ?? 0,
+                                );
+                            }
+                        }
+
+                        completionSnapshot = await prepareCompletionCosts(
+                            tx,
+                            order,
+                            receivedQuantities,
+                            body.completionCosts,
+                        );
+
+                        const total = orderPayableTotal(
+                            order,
+                            receivedQuantities,
+                        );
+
+                        const paid = order.payments.reduce(
+                            (sum, payment) => sum.plus(payment.amount),
+                            new Prisma.Decimal(0),
+                        );
+
+                        const remaining = total.minus(paid);
+
+                        if (remaining.gt(0)) {
+                            if (body.confirmFullPayment !== true) {
+                                fail(
+                                    `დარჩენილია ${remaining.toFixed(2)} ₾. დასრულებამდე დაადასტურე ამ თანხის რეალურად მიღება.`,
+                                    422,
+                                );
+                            }
+
+                            const method = body.completionPaymentMethod;
+
+                            if (
+                                method !== "CASH" &&
+                                method !== "BANK_TRANSFER" &&
+                                method !== "CARD"
+                            ) {
+                                fail("აირჩიე დარჩენილი თანხის გადახდის მეთოდი.", 422);
+                            }
+
+                            if (
+                                body.completionBankName !== undefined &&
+                                typeof body.completionBankName !== "string"
+                            ) {
+                                fail("ბანკის დასახელება არასწორია.", 422);
+                            }
+
+                            const bankName =
+                                method === "BANK_TRANSFER" &&
+                                    typeof body.completionBankName === "string"
+                                    ? body.completionBankName.trim()
+                                    : "";
+
+                            await tx.orderPayment.create({
+                                data: {
+                                    orderId,
+                                    amount: remaining,
+                                    method,
+                                    bankName: bankName || null,
+                                },
+                            });
+                        }
+                    }
                     const returnStock = next === "CANCELED" && (order.status === "PROCESSING" || body.stockReturned === true);
                     const fullyRestored = returnStock
                         ? await restoreOrderStock(
@@ -274,10 +384,38 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                         : false;
                     await tx.order.update({
                         where: { id: orderId }, data: {
-                            status: next, invoiceVersion: { increment: 1 },
+                            status: next,
+                            invoiceVersion: { increment: 1 },
+                            ...(next === "COMPLETED"
+                                ? { paymentStatus: "PAID" as const }
+                                : {}),
                             ...(fullyRestored ? { stockReturnedAt: new Date() } : {}),
                         }
                     });
+                    if (next === "CANCELED" && fullyRestored) {
+                        await recordFinancialAdjustment(
+                            tx,
+                            businessId,
+                            orderId,
+                            requestId,
+                            "RETURN",
+                        );
+                    }
+                    if (next === "COMPLETED") {
+                        if (!completionSnapshot) {
+                            fail("დასრულების ფინანსური მონაცემები ვერ მომზადდა.", 500);
+                        }
+
+                        const snapshot = completionSnapshot;
+
+                        await recordSaleSnapshot(
+                            tx,
+                            businessId,
+                            order,
+                            snapshot,
+                            `sale:${order.id}:${order.fulfillmentCycle}`,
+                        );
+                    }
                     changed = true;
                 }
             } else if (kind === "return") {
@@ -318,6 +456,15 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                     );
 
                     changed = !result.alreadyReceived;
+                    if (changed) {
+                        await recordFinancialAdjustment(
+                            tx,
+                            businessId,
+                            orderId,
+                            requestId,
+                            "RETURN",
+                        );
+                    }
                 } else {
                     // ძველი სრული დაბრუნება რჩება მხოლოდ იმ შეკვეთებისთვის,
                     // რომლებსაც ახალი დაბრუნების ისტორია არ აქვთ.
@@ -357,6 +504,14 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                             },
                         });
 
+                        await recordFinancialAdjustment(
+                            tx,
+                            businessId,
+                            orderId,
+                            requestId,
+                            "RETURN",
+                        );
+
                         changed = true;
                     }
                 }
@@ -375,10 +530,13 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                     );
 
                     if (
-                        order.stockReturnedAt ||
+                        pendingReturns === 0 &&
                         (
-                            order.status === "PROCESSING" &&
-                            !hasCarriedOverItems
+                            order.stockReturnedAt ||
+                            (
+                                order.status === "PROCESSING" &&
+                                !hasCarriedOverItems
+                            )
                         )
                     ) {
                         fail(
@@ -473,6 +631,12 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                         }
                     }
 
+                    await assertOrderDeletionBalance(
+                        tx,
+                        order,
+                        restored,
+                    );
+
                     await tx.order.update({
                         where: { id: orderId },
                         data: {
@@ -483,6 +647,17 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                             ...(restored ? { stockReturnedAt: new Date() } : {}),
                         },
                     });
+
+                    if (restored) {
+                        await recordFinancialAdjustment(
+                            tx,
+                            businessId,
+                            orderId,
+                            requestId,
+                            "RETURN",
+                        );
+                    }
+
                     changed = true;
                 }
 
@@ -525,6 +700,13 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                     requestId,
                     body.items,
                 );
+                await recordFinancialAdjustment(
+                    tx,
+                    businessId,
+                    orderId,
+                    requestId,
+                    "EXCHANGE_ADJUSTMENT",
+                );
 
                 changed = true;
             } else if (kind === "link") {
@@ -561,7 +743,6 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                     const pendingReturns = await tx.orderReturn.count({
                         where: {
                             orderId,
-                            fulfillmentCycle: latestOrder.fulfillmentCycle,
                             status: "PENDING",
                         },
                     });

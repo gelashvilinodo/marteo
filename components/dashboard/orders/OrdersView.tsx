@@ -16,6 +16,7 @@ import OrderDeleteButton from "./OrderDeleteButton";
 import OrderBulkDeleteButton from "./OrderBulkDeleteButton";
 import OrderRefundButton from "./OrderRefundButton";
 import OrdersListSkeleton from "./OrdersListSkeleton";
+import { moneyCents } from "@/lib/orders/order-form";
 
 import {
     OrderActionError,
@@ -89,6 +90,23 @@ function Status({
     const retry = useRef<Record<string, unknown> | null>(null);
     const running = useRef(false);
 
+    const completionDialog = useRef<HTMLDialogElement>(null);
+    const [fullPaymentReceived, setFullPaymentReceived] = useState(false);
+    const [completionMethod, setCompletionMethod] = useState<
+        "CASH" | "BANK_TRANSFER" | "CARD"
+    >("CASH");
+    const [completionBankName, setCompletionBankName] = useState("");
+
+    const [completionCosts, setCompletionCosts] = useState<
+        Record<string, string>
+    >({});
+
+    const costsReady = order.missingManualCosts.every(
+        item => moneyCents(completionCosts[item.id] ?? "") !== null,
+    );
+
+    const needsPayment = Number(order.remainingAmount) > 0;
+
     useEffect(() => {
         setCurrent({
             status: order.status,
@@ -145,6 +163,9 @@ function Status({
             );
 
             retry.current = null;
+            if (payload.status === "COMPLETED") {
+                completionDialog.current?.close();
+            }
             setCurrent({
                 status: payload.status as OrderEntry["status"],
                 version: result.version,
@@ -184,12 +205,15 @@ function Status({
             retry.current
         ) return;
 
-        if (
-            next === "COMPLETED" &&
-            !window.confirm(
-                "დასრულების შემდეგ შეკვეთის რედაქტირება აღარ იქნება შესაძლებელი. გადაამოწმე მონაცემები. დაასრულო შეკვეთა?",
-            )
-        ) return;
+        if (next === "COMPLETED") {
+            setCompletionCosts({});
+            setFullPaymentReceived(false);
+            setCompletionMethod("CASH");
+            setCompletionBankName("");
+            setError("");
+            completionDialog.current?.showModal();
+            return;
+        }
 
         let stockReturned = false;
 
@@ -207,7 +231,7 @@ function Status({
             requestId: crypto.randomUUID(),
             expectedVersion: current.version,
             status: next,
-            confirmCompleted: next === "COMPLETED",
+            confirmCompleted: false,
             stockReturned,
         });
     }
@@ -282,6 +306,239 @@ function Status({
                     </>
                 )}
             </div>
+
+            <dialog
+                ref={completionDialog}
+                aria-label="შეკვეთის დასრულება"
+                onCancel={event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    if (!busy && !retry.current) {
+                        completionDialog.current?.close();
+                    }
+                }}
+                onClose={event => event.stopPropagation()}
+                className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%_-_2rem)] max-w-md overflow-y-auto rounded-2xl border border-border bg-surface p-5 text-text-primary shadow-2xl backdrop:bg-black/35 backdrop:backdrop-blur-sm"
+            >
+                <h3 className="flex items-center gap-2 text-lg font-semibold">
+                    <Icon
+                        icon="solar:check-circle-linear"
+                        className="h-6 w-6 text-success"
+                    />
+                    შეკვეთის დასრულება
+                </h3>
+
+                <p className="mt-3 text-sm text-text-secondary">
+                    დასრულების შემდეგ შეკვეთის რედაქტირება აღარ იქნება
+                    შესაძლებელი. დასრულებულ შეკვეთაზე დაბრუნებასა და
+                    გადაცვლას შესაბამისი მოქმედებებით შეძლებ.
+                </p>
+
+                {order.missingManualCosts.length > 0 && (
+                    <fieldset
+                        disabled={busy || Boolean(retry.current)}
+                        className="mt-4 space-y-3 rounded-xl border border-border bg-background p-3 disabled:opacity-60"
+                    >
+                        <legend className="px-1 text-sm font-semibold">
+                            პროდუქტების თვითღირებულება
+                        </legend>
+
+                        <p className="text-xs leading-relaxed text-text-secondary">
+                            ამ პროდუქტებზე ხარჯი ჯერ არ არის მითითებული.
+                            დასრულებისთვის შეიყვანე, რა დაგიჯდა ერთი ნივთი.
+                            თუ ხარჯი ნამდვილად არ გქონია, ჩაწერე 0.
+                        </p>
+
+                        {order.missingManualCosts.map(item => (
+                            <label
+                                key={item.id}
+                                className="block space-y-2"
+                            >
+                                <span className="flex items-center gap-2 text-sm">
+                                    {item.imageUrl ? (
+                                        <Image
+                                            src={item.imageUrl}
+                                            alt=""
+                                            width={36}
+                                            height={36}
+                                            className="h-9 w-9 shrink-0 rounded-lg object-cover"
+                                        />
+                                    ) : (
+                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border">
+                                            <Icon
+                                                icon="solar:box-linear"
+                                                className="h-5 w-5 text-accent"
+                                            />
+                                        </span>
+                                    )}
+
+                                    <span className="min-w-0 break-words">
+                                        {item.name}
+                                    </span>
+                                </span>
+
+                                <span className="block text-xs text-text-secondary">
+                                    ერთი ერთეულის თვითღირებულება · ₾
+                                </span>
+
+                                <input
+                                    inputMode="decimal"
+                                    value={completionCosts[item.id] ?? ""}
+                                    onChange={event => {
+                                        const value = event.target.value;
+
+                                        setCompletionCosts(current => ({
+                                            ...current,
+                                            [item.id]: value,
+                                        }));
+
+                                        setError("");
+                                    }}
+                                    placeholder="მაგალითად: 12.50"
+                                    className="h-11 w-full rounded-xl border border-border bg-surface px-3 text-[16px] text-text-primary outline-none focus:border-accent"
+                                />
+                            </label>
+                        ))}
+                    </fieldset>
+                )}
+
+                {needsPayment && (
+                    <fieldset
+                        disabled={busy || Boolean(retry.current)}
+                        className="mt-4 space-y-3 disabled:opacity-60"
+                    >
+                        <p className="rounded-xl bg-warning/10 p-3 text-sm text-warning">
+                            დარჩენილია {order.remainingAmount} ₾.
+                            შეკვეთა მხოლოდ ამ თანხის რეალურად მიღების
+                            დადასტურების შემდეგ დასრულდება.
+                        </p>
+
+                        <label className="flex items-start gap-3 text-sm">
+                            <input
+                                type="checkbox"
+                                checked={fullPaymentReceived}
+                                onChange={event =>
+                                    setFullPaymentReceived(event.target.checked)
+                                }
+                                className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
+                            />
+                            დარჩენილი {order.remainingAmount} ₾ რეალურად მივიღე
+                        </label>
+
+                        <label className="block text-sm">
+                            <span className="mb-1 block text-text-secondary">
+                                დარჩენილი თანხის გადახდის მეთოდი
+                            </span>
+                            <select
+                                value={completionMethod}
+                                onChange={event =>
+                                    setCompletionMethod(
+                                        event.target.value as typeof completionMethod,
+                                    )
+                                }
+                                className="h-11 w-full rounded-xl border border-border bg-background px-3 text-[16px]"
+                            >
+                                <option value="CASH">ნაღდი</option>
+                                <option value="BANK_TRANSFER">გადარიცხვა</option>
+                                <option value="CARD">ბარათი</option>
+                            </select>
+                        </label>
+
+                        {completionMethod === "BANK_TRANSFER" && (
+                            <label className="block text-sm">
+                                <span className="mb-1 block text-text-secondary">
+                                    ბანკი — არასავალდებულო
+                                </span>
+                                <input
+                                    value={completionBankName}
+                                    onChange={event =>
+                                        setCompletionBankName(event.target.value)
+                                    }
+                                    className="h-11 w-full rounded-xl border border-border bg-background px-3 text-[16px]"
+                                />
+                            </label>
+                        )}
+                    </fieldset>
+                )}
+
+                {error && (
+                    <p role="alert" className="mt-3 text-sm text-danger">
+                        {error}
+                    </p>
+                )}
+
+                {retry.current && (
+                    <p className="mt-3 text-xs text-warning">
+                        შედეგი დაუდასტურებელია. ხელახლა ცდა იმავე მოთხოვნას
+                        გამოიყენებს, რათა გადახდა მეორედ არ დაემატოს.
+                    </p>
+                )}
+
+                <div className="mt-5 flex flex-wrap justify-between gap-2">
+                    <button
+                        type="button"
+                        disabled={busy || Boolean(retry.current)}
+                        onClick={() => completionDialog.current?.close()}
+                        className="min-h-11 rounded-xl border border-border px-4 text-sm disabled:opacity-40"
+                    >
+                        გაუქმება
+                    </button>
+
+                    <button
+                        type="button"
+                        disabled={
+                            busy ||
+                            refreshing ||
+                            (
+                                !retry.current &&
+                                (
+                                    !costsReady ||
+                                    (needsPayment && !fullPaymentReceived)
+                                )
+                            )
+                        }
+                        onClick={() => {
+                            if (retry.current) {
+                                void save(retry.current);
+                                return;
+                            }
+
+                            void save({
+                                requestId: crypto.randomUUID(),
+                                expectedVersion: current.version,
+                                status: "COMPLETED",
+                                confirmCompleted: true,
+                                confirmFullPayment: needsPayment && fullPaymentReceived,
+                                completionPaymentMethod: completionMethod,
+                                completionBankName,
+                                completionCosts: order.missingManualCosts.map(item => ({
+                                    orderItemId: item.id,
+                                    unitCost: (completionCosts[item.id] ?? "")
+                                        .trim()
+                                        .replace(",", "."),
+                                })),
+                                stockReturned: false,
+                            });
+                        }}
+                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-success px-4 text-sm font-semibold text-white disabled:opacity-40"
+                    >
+                        <Icon
+                            icon={
+                                busy
+                                    ? "solar:refresh-linear"
+                                    : "solar:check-circle-linear"
+                            }
+                            className={`h-5 w-5 ${busy ? "animate-spin" : ""}`}
+                        />
+                        {busy
+                            ? "ინახება…"
+                            : retry.current
+                                ? "ხელახლა ცდა"
+                                : "შეკვეთის დასრულება"}
+                    </button>
+                </div>
+            </dialog>
 
             {error && (
                 <p
@@ -677,6 +934,7 @@ export default function OrdersView({ data }: { data: OrdersPageData }) {
                                 )?.imageUrl;
 
                                 const hasExtraInfo =
+                                    Boolean(order.notes) ||
                                     order.printState !== "PRINTED" ||
                                     order.pendingReturnQuantity > 0 ||
                                     order.receivedReturnQuantity > 0 ||
@@ -873,6 +1131,21 @@ export default function OrdersView({ data }: { data: OrdersPageData }) {
                     aria-label="შეკვეთის დამატებითი ინფორმაცია"
                     className="mt-4 space-y-2"
                 >
+                    {selected.notes && (
+                        <div className="rounded-xl border border-border bg-background p-3">
+                            <h3 className="flex items-center gap-2 text-sm font-semibold">
+                                <Icon
+                                    icon="solar:document-text-linear"
+                                    className="h-5 w-5 text-accent"
+                                />
+                                კომენტარი
+                            </h3>
+
+                            <p className="mt-2 whitespace-pre-wrap break-words text-sm text-text-secondary">
+                                {selected.notes}
+                            </p>
+                        </div>
+                    )}
                     {selected.hasPastReturns && (
                         <p className="flex items-start gap-2 rounded-xl border border-accent/30 bg-accent/5 p-3 text-xs text-text-secondary">
                             <Icon

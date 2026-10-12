@@ -45,12 +45,29 @@ export default function OrderExchangeEditor({
     useEffect(() => {
         onUploading(uploading);
     }, [uploading, onUploading]);
+    const returnQuantity = (
+        item: Order["items"][number],
+    ) =>
+        item.receivedReturnQuantity +
+        item.pendingReturnQuantity;
+
     const kept = order.items
-        .map(item => ({ ...item, quantity: item.quantity - item.receivedReturnQuantity }))
+        .map(item => ({
+            ...item,
+            quantity: item.quantity - returnQuantity(item),
+        }))
         .filter(item => item.quantity > 0);
-    const returned = order.items.filter(item => item.receivedReturnQuantity > 0);
+
+    const returned = order.items.filter(
+        item => returnQuantity(item) > 0,
+    );
+
     const oldReturnedTotal = returned.reduce(
-        (sum, item) => sum + (moneyCents(item.unitPrice) ?? 0n) * BigInt(item.receivedReturnQuantity), 0n,
+        (sum, item) =>
+            sum +
+            (moneyCents(item.unitPrice) ?? 0n) *
+            BigInt(returnQuantity(item)),
+        0n,
     );
     const keptTotal = kept.reduce(
         (sum, item) => sum + (moneyCents(item.unitPrice) ?? 0n) * BigInt(item.quantity), 0n,
@@ -103,14 +120,14 @@ export default function OrderExchangeEditor({
         </div>;
     }
     if (!open) return <section className="rounded-2xl border border-success/30 bg-success/5 p-4">
-        <h3 className="flex items-center gap-2 text-sm font-semibold"><Icon icon="solar:check-circle-linear" className="h-5 w-5 text-success" />ნივთების მიღება დადასტურებულია</h3>
-        <p className="mt-2 text-xs text-text-secondary">ახლა აირჩიე ახალი ნივთები. კლიენტის მონაცემები უცვლელი დარჩება; შენახვამდე ფასის სხვაობასაც ნახავ.</p>
+        <h3 className="flex items-center gap-2 text-sm font-semibold"><Icon icon="solar:check-circle-linear" className="h-5 w-5 text-success" />გადაცვლა — ახალი ნივთების არჩევა</h3>
+        <p className="mt-2 text-xs text-text-secondary">ახალი ნივთები ძველის დაბრუნებამდეც შეგიძლია აირჩიო. ძველი ნივთები მარაგში მხოლოდ ფიზიკური მიღების დადასტურებისას დაემატება. შენახვამდე ფასის სხვაობასაც ნახავ.</p>
         <button type="button" disabled={blocked} onClick={() => { if (onStart()) setOpen(true); }} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-success px-4 text-sm font-semibold text-white disabled:opacity-40"><Icon icon="solar:transfer-horizontal-linear" className="h-5 w-5" />აირჩიე ახალი ნივთები</button>
     </section>;
 
     return <section className="space-y-4 rounded-2xl border border-accent/30 bg-surface p-4">
-        <div><h3 className="flex items-center gap-2 font-semibold"><Icon icon="solar:transfer-horizontal-linear" className="h-5 w-5 text-accent" />გადაცვლა — ახალი ნივთების არჩევა</h3><p className="mt-2 text-xs text-text-secondary">დაბრუნება უკვე აღრიცხულია. ამ ეტაპზე დაამატე მხოლოდ სანაცვლოდ გასაგზავნი ახალი ნივთები.</p></div>
-        <div className="space-y-2"><h4 className="text-sm font-medium">უკვე დაბრუნებულია</h4>{returned.map(item => productLine(item, item.receivedReturnQuantity))}</div>
+        <div><h3 className="flex items-center gap-2 font-semibold"><Icon icon="solar:transfer-horizontal-linear" className="h-5 w-5 text-accent" />გადაცვლა — ახალი ნივთების არჩევა</h3><p className="mt-2 text-xs text-text-secondary">დაბრუნების მოთხოვნა შენახულია. აქ დაამატე მხოლოდ სანაცვლოდ გასაგზავნი ახალი ნივთები. ძველის მიღებას ცალკე დაადასტურებ.</p></div>
+        <div className="space-y-2"><h4 className="text-sm font-medium">შეკვეთიდან გამოსაცვლელი ნივთები</h4>{returned.map(item => productLine(item, returnQuantity(item)))}</div>
         {kept.length > 0 && <div className="space-y-2"><h4 className="text-sm font-medium">კლიენტთან რჩება</h4><p className="text-xs text-text-secondary">ეს ნივთები შეკვეთაში დარჩება. ხელახლა დამატება არ არის საჭირო.</p>{kept.map(item => productLine(item, item.quantity))}</div>}
         <fieldset disabled={blocked} className="min-w-0 space-y-3 disabled:opacity-60">
             <legend className="mb-2 text-sm font-semibold">ახალი ნივთები</legend>
@@ -132,7 +149,7 @@ export default function OrderExchangeEditor({
         <div className="rounded-xl border border-border bg-background p-3">
             <h4 className="mb-3 text-sm font-semibold">გადაცვლის შეჯამება</h4>
             <dl className="space-y-2 text-xs sm:text-sm">
-                {[["დაბრუნებული ნივთების ღირებულება", oldReturnedTotal], ["კლიენტთან დარჩენილი ნივთები", keptTotal], ["ახალი ნივთები", newTotal], ["მიწოდება", moneyCents(order.courierFee) ?? 0n], ["ახალი შეკვეთის ჯამი", total], ["უკვე გადახდილია", paid]].map(([label, value]) => <div key={String(label)} className="flex justify-between gap-3"><dt className="text-text-secondary">{String(label)}</dt><dd className="shrink-0 font-semibold tabular-nums">{moneyText(value as bigint)} ₾</dd></div>)}
+                {[["შეკვეთიდან გამოკლებული ნივთების ღირებულება", oldReturnedTotal], ["კლიენტთან დარჩენილი ნივთები", keptTotal], ["ახალი ნივთები", newTotal], ["მიწოდება", moneyCents(order.courierFee) ?? 0n], ["ახალი შეკვეთის ჯამი", total], ["უკვე გადახდილია", paid]].map(([label, value]) => <div key={String(label)} className="flex justify-between gap-3"><dt className="text-text-secondary">{String(label)}</dt><dd className="shrink-0 font-semibold tabular-nums">{moneyText(value as bigint)} ₾</dd></div>)}
                 <div className="flex justify-between gap-3 border-t border-border pt-2 font-semibold"><dt>{balance < 0n ? "კლიენტს დასაბრუნებელი" : balance > 0n ? "დამატებით გადასახდელი" : "თანხის სხვაობა"}</dt><dd className="shrink-0 tabular-nums">{moneyText(balance < 0n ? -balance : balance)} ₾</dd></div>
             </dl>
             {balance < 0n && <p className="mt-3 text-xs text-warning">გადაცვლის შენახვა თანხის დაბრუნებას არ ადასტურებს. გადახდილი თანხა მხოლოდ რეალური დაბრუნების დადასტურების შემდეგ შემცირდება.</p>}

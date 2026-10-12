@@ -1,6 +1,9 @@
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { OrderValidationError } from "./validate-order";
+import { allocateCost } from "@/lib/analytics/allocate-cost";
+import { orderPayableTotal } from "./order-payable-total";
+import { paymentState } from "./order-rules";
 
 function fail(message: string, status = 422): never {
     throw new OrderValidationError(message, status);
@@ -127,9 +130,19 @@ export async function receiveOrderReturn(
     const entry = await tx.orderReturn.findFirst({
         where: { id: returnId, orderId, order: { businessId, deletedAt: null } },
         include: {
+            exchange: {
+                select: {
+                    orderId: true,
+                    previousCycle: true,
+                    nextCycle: true,
+                },
+            },
             items: true, order: {
                 include: {
                     items: { include: { allocations: { orderBy: { id: "asc" }, include: { purchaseItem: { include: { purchase: true } } } } } },
+                    payments: {
+                        select: { amount: true },
+                    },
                 }
             }
         },
@@ -137,17 +150,29 @@ export async function receiveOrderReturn(
     if (!entry) fail("დაბრუნების მოთხოვნა ვერ მოიძებნა.", 404);
     if (entry.status === "RECEIVED") return { id: entry.id, alreadyReceived: true };
     if (entry.status !== "PENDING") fail("დაბრუნების მოთხოვნა გაუქმებულია.", 409);
-    if (
-        entry.fulfillmentCycle !==
-        entry.order.fulfillmentCycle
-    ) {
+    const belongsToCurrentCycle =
+        entry.fulfillmentCycle === entry.order.fulfillmentCycle;
+
+    const belongsToLinkedExchange =
+        entry.exchange !== null &&
+        entry.exchange.orderId === orderId &&
+        entry.exchange.previousCycle === entry.fulfillmentCycle &&
+        entry.exchange.nextCycle > entry.fulfillmentCycle &&
+        entry.exchange.nextCycle <= entry.order.fulfillmentCycle;
+
+    if (!belongsToCurrentCycle && !belongsToLinkedExchange) {
         fail(
-            "ეს დაბრუნება შეკვეთის წინა გადაცვლას ეკუთვნის.",
+            "ეს დაბრუნება მიმდინარე შეკვეთასთან ან მის გადაცვლასთან დაკავშირებული არ არის.",
             409,
         );
     }
-    if (entry.order.stockReturnedAt) fail("ამ შეკვეთის მარაგი უკვე დაბრუნებულია.", 409);
-    if (!entry.items.length) fail("დაბრუნების მოთხოვნაში პროდუქტები არ არის.", 409);
+    if (belongsToCurrentCycle && entry.order.stockReturnedAt) {
+        fail("ამ შეკვეთის მარაგი უკვე დაბრუნებულია.", 409);
+    }
+
+    if (!entry.items.length) {
+        fail("დაბრუნების მოთხოვნაში პროდუქტები არ არის.", 409);
+    }
 
     const ids = [...new Set(entry.order.items.flatMap(item => item.inventoryItemId ? [item.inventoryItemId] : []))].sort();
     if (ids.length) await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "InventoryItem" WHERE "businessId"=${businessId} AND "id" IN (${Prisma.join(ids)}) ORDER BY "id" FOR UPDATE`);
@@ -175,12 +200,47 @@ export async function receiveOrderReturn(
             if (batch.purchase.businessId !== businessId || batch.inventoryItemId !== item.inventoryItemId) {
                 fail("მარაგის განაწილება არასწორია.", 409);
             }
-            const quantity = Math.min(remaining, allocation.quantity - allocation.returnedQuantity);
+            const availableQuantity =
+                allocation.quantity -
+                allocation.returnedQuantity -
+                allocation.transferredQuantity;
+
+            if (availableQuantity < 0) {
+                fail("დაბრუნების რაოდენობის განაწილება არასწორია.", 409);
+            }
+
+            const quantity = Math.min(remaining, availableQuantity);
+
             if (quantity <= 0) continue;
-            await tx.orderItemAllocation.update({ where: { id: allocation.id }, data: { returnedQuantity: { increment: quantity } } });
+
+            const costSplit =
+                allocation.totalCost === null ||
+                    allocation.transferredCost === null
+                    ? null
+                    : allocateCost(
+                        allocation.totalCost
+                            .minus(allocation.returnedCost)
+                            .minus(allocation.transferredCost),
+                        [quantity, availableQuantity - quantity],
+                    );
+
+            const restoredCost = costSplit?.[0] ?? null;
+
+            await tx.orderItemAllocation.update({
+                where: { id: allocation.id },
+                data: {
+                    returnedQuantity: { increment: quantity },
+                    ...(restoredCost !== null
+                        ? { returnedCost: { increment: restoredCost } }
+                        : {}),
+                },
+            });
             await tx.purchaseItem.update({
                 where: { id: batch.id }, data: {
                     remainingQuantity: { increment: quantity },
+                    remainingCost: restoredCost !== null
+                        ? { increment: restoredCost }
+                        : null,
                     ...(returned.condition === "DEFECTIVE" ? { remainingDefectiveQuantity: { increment: quantity } } : {}),
                 }
             });
@@ -215,6 +275,32 @@ export async function receiveOrderReturn(
         item => item.isActive,
     );
 
+    const receivedQuantities = new Map<string, number>();
+
+    for (const receivedReturn of receivedReturns) {
+        for (const item of receivedReturn.items) {
+            receivedQuantities.set(
+                item.orderItemId,
+                (receivedQuantities.get(item.orderItemId) ?? 0) +
+                item.quantity,
+            );
+        }
+    }
+
+    const payableTotal = orderPayableTotal(
+        {
+            courierFee: entry.order.courierFee,
+            stockReturnedAt: entry.order.stockReturnedAt,
+            items: activeItems,
+        },
+        receivedQuantities,
+    );
+
+    const paidAmount = entry.order.payments.reduce(
+        (sum, payment) => sum.plus(payment.amount),
+        new Prisma.Decimal(0),
+    );
+
     const fullyReturned =
         activeItems.length > 0 &&
         activeItems.every(item => {
@@ -241,7 +327,14 @@ export async function receiveOrderReturn(
         where: { id: orderId },
         data: {
             invoiceVersion: { increment: 1 },
-            ...(entry.order.status === "COMPLETED" && fullyReturned
+            paymentStatus: paymentState(
+                payableTotal,
+                paidAmount,
+                entry.order.courierFee,
+            ),
+            ...(belongsToCurrentCycle &&
+                entry.order.status === "COMPLETED" &&
+                fullyReturned
                 ? { status: "RETURNED" as const }
                 : {}),
         },

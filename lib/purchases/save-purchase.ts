@@ -468,6 +468,12 @@ export async function savePurchase(
                             quantity: calculated.quantity,
                             remainingQuantity: receivedQuantity,
 
+                            remainingCost: isReceived
+                                ? new Prisma.Decimal(calculated.unitPurchasePrice)
+                                    .mul(calculated.quantity)
+                                    .plus(calculated.allocatedExtraCostTotal)
+                                : new Prisma.Decimal(0),
+
                             defectiveQuantity: item.defectiveQuantity,
                             remainingDefectiveQuantity:
                                 receivedDefectiveQuantity,

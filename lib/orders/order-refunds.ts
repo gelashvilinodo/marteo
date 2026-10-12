@@ -3,6 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import type { StockOrder } from "./order-stock";
 import { paymentState } from "./order-rules";
 import { OrderValidationError } from "./validate-order";
+import { orderPayableTotal } from "./order-payable-total";
 
 function fail(message: string): never {
     throw new OrderValidationError(message, 422);
@@ -23,10 +24,30 @@ export async function confirmOrderRefund(
         fail("დაბრუნებული თანხა მიუთითე მაქსიმუმ ორი ათწილადით.");
     }
     const amount = new Prisma.Decimal(text);
-    const total = order.items.reduce(
-        (sum, item) => sum.plus(item.unitPrice.mul(item.quantity)),
-        order.courierFee,
-    );
+    const receivedItems = await tx.orderReturnItem.groupBy({
+        by: ["orderItemId"],
+        where: {
+            orderReturn: {
+                orderId: order.id,
+                fulfillmentCycle: order.fulfillmentCycle,
+                status: "RECEIVED",
+            },
+        },
+        _sum: {
+            quantity: true,
+        },
+    });
+
+    const receivedQuantities = new Map<string, number>();
+
+    for (const item of receivedItems) {
+        receivedQuantities.set(
+            item.orderItemId,
+            item._sum.quantity ?? 0,
+        );
+    }
+
+    const total = orderPayableTotal(order, receivedQuantities);
     const paid = order.payments.reduce(
         (sum, payment) => sum.plus(payment.amount),
         new Prisma.Decimal(0),

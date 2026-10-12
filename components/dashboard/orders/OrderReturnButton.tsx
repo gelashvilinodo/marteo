@@ -320,7 +320,107 @@ export default function OrderReturnButton({
                                 }}
                             />
                         )}
-                        {order.returns.length > 0 && <section className="space-y-3"><h3 className="text-sm font-semibold">დაბრუნების მოთხოვნები</h3>{order.returns.map(entry => <article key={entry.id} className="rounded-xl border border-border bg-surface p-3"><p className={`mb-2 text-sm font-medium ${entry.status === "PENDING" ? "text-warning" : entry.status === "RECEIVED" ? "text-success" : "text-text-secondary"}`}>{entry.status === "PENDING" ? "დაბრუნების მოლოდინში" : entry.status === "RECEIVED" ? "დაბრუნება მიღებულია" : "მოთხოვნა გაუქმებულია"}</p>{entry.items.map(item => <div key={item.id} className="flex items-center gap-3 py-2">{item.imageUrl ? <Image src={item.imageUrl} alt="" width={40} height={40} className="h-10 w-10 shrink-0 rounded-lg object-cover" /> : <Icon icon="solar:box-linear" className="h-10 w-10 shrink-0 p-2 text-text-secondary" />}<div className="min-w-0"><p className="break-words text-sm">{item.name} · {item.quantity}</p><p className="text-xs text-text-secondary">{reasons[item.reason]} · {item.condition === "DEFECTIVE" ? "წუნდებული" : "დაუზიანებელი"}</p>{item.note && <p className="break-words text-xs text-text-secondary">{item.note}</p>}</div></div>)}{entry.status === "PENDING" && <button type="button" disabled={blocked} onClick={() => receive(entry)} className="mt-2 inline-flex min-h-10 items-center gap-2 rounded-xl bg-success px-3 text-sm font-medium text-white disabled:opacity-50"><Icon icon="solar:check-circle-linear" className="h-5 w-5" />ნივთები მივიღე</button>}</article>)}</section>}
+                        {order.returns.length > 0 && (
+                            <section className="space-y-3">
+                                <h3 className="text-sm font-semibold">
+                                    დაბრუნების მოთხოვნები
+                                </h3>
+
+                                {order.returns.map(entry => (
+                                    <article
+                                        key={entry.id}
+                                        className="rounded-xl border border-border bg-surface p-3"
+                                    >
+                                        {entry.isFromPreviousExchange && (
+                                            <p className="mb-3 rounded-lg bg-accent/10 p-3 text-xs text-text-secondary">
+                                                ეს მოთხოვნა წინა გადაცვლის ნივთებს ეხება.
+                                                ახალი ნივთების გაგზავნა მის მიღებას არ ელოდება.
+                                                ძველი ნივთები მარაგს მხოლოდ ფიზიკური მიღების
+                                                დადასტურებისას დაემატება.
+                                            </p>
+                                        )}
+
+                                        <p
+                                            className={`mb-2 text-sm font-medium ${entry.status === "PENDING"
+                                                    ? "text-warning"
+                                                    : entry.status === "RECEIVED"
+                                                        ? "text-success"
+                                                        : "text-text-secondary"
+                                                }`}
+                                        >
+                                            {entry.status === "PENDING"
+                                                ? "დაბრუნების მოლოდინში"
+                                                : entry.status === "RECEIVED"
+                                                    ? "დაბრუნება მიღებულია"
+                                                    : "მოთხოვნა გაუქმებულია"}
+                                        </p>
+
+                                        {entry.items.map(item => (
+                                            <div
+                                                key={item.id}
+                                                className="flex items-center gap-3 py-2"
+                                            >
+                                                {item.imageUrl ? (
+                                                    <Image
+                                                        src={item.imageUrl}
+                                                        alt={item.name}
+                                                        width={40}
+                                                        height={40}
+                                                        className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                                                    />
+                                                ) : (
+                                                    <Icon
+                                                        icon="solar:box-linear"
+                                                        className="h-10 w-10 shrink-0 p-2 text-text-secondary"
+                                                    />
+                                                )}
+
+                                                <div className="min-w-0">
+                                                    <p className="break-words text-sm">
+                                                        {item.name} · {item.quantity}
+                                                    </p>
+
+                                                    <p className="text-xs text-text-secondary">
+                                                        {reasons[item.reason]} ·{" "}
+                                                        {item.condition === "DEFECTIVE"
+                                                            ? "წუნდებული"
+                                                            : "დაუზიანებელი"}
+                                                    </p>
+
+                                                    {item.note && (
+                                                        <p className="break-words text-xs text-text-secondary">
+                                                            {item.note}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {entry.status === "PENDING" && (
+                                            <>
+                                                <p className="mt-2 text-xs text-text-secondary">
+                                                    მიღება დაადასტურე მხოლოდ მაშინ, როცა
+                                                    ჩამოთვლილი ნივთები ფიზიკურად დაგიბრუნდება.
+                                                </p>
+
+                                                <button
+                                                    type="button"
+                                                    disabled={blocked}
+                                                    onClick={() => receive(entry)}
+                                                    className="mt-2 inline-flex min-h-10 items-center gap-2 rounded-xl bg-success px-3 text-sm font-medium text-white disabled:opacity-50"
+                                                >
+                                                    <Icon
+                                                        icon="solar:check-circle-linear"
+                                                        className="h-5 w-5"
+                                                    />
+                                                    ნივთები მივიღე
+                                                </button>
+                                            </>
+                                        )}
+                                    </article>
+                                ))}
+                            </section>
+                        )}
                         {order.canRequestReturn && !exchangeEditing && <fieldset disabled={blocked} className="min-w-0 space-y-3 disabled:opacity-60"><legend className="mb-3 text-sm font-semibold">ახალი დაბრუნების მოთხოვნა</legend>{order.items.length > 1 && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={allSelected} onChange={event => { setChoices(current => current.map(item => ({ ...item, selected: event.target.checked }))); setDirty(true); }} className="h-4 w-4 accent-[var(--marteo-accent)]" />ყველას მონიშვნა</label>}{choices.map(choice => {
                             const item = order.items.find(value => value.id === choice.orderItemId)!;
                             return <article key={item.id} className={`min-w-0 rounded-xl border bg-surface p-3 ${choice.selected ? "border-accent" : "border-border"}`}><div className="flex items-center gap-3">{order.items.length > 1 && <input type="checkbox" checked={choice.selected} onChange={event => patch(item.id, { selected: event.target.checked })} aria-label={`${item.name} — მონიშვნა`} className="h-4 w-4 shrink-0 accent-[var(--marteo-accent)]" />}{item.imageUrl ? <Image src={item.imageUrl} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-xl object-cover" /> : <Icon icon="solar:box-linear" className="h-12 w-12 shrink-0 rounded-xl bg-background p-3 text-text-secondary" />}<div className="min-w-0"><p className="break-words text-sm font-medium">{item.name}</p><p className="text-xs text-text-secondary">{[item.color, item.size].filter(Boolean).join(" · ")}</p><p className="text-xs text-text-secondary">დასაბრუნებელი: {item.returnableQuantity}</p></div></div>{choice.selected && <div className="mt-3 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3"><label className="min-w-0"><span className="mb-1 block text-xs text-text-secondary">რაოდენობა</span><input aria-label={`${item.name} — რაოდენობა`} inputMode="numeric" value={choice.quantityText} onChange={event => patch(item.id, { quantityText: event.target.value })} className={field} /></label><label className="min-w-0"><span className="mb-1 block text-xs text-text-secondary">მიზეზი</span><select aria-label={`${item.name} — მიზეზი`} value={choice.reason} onChange={event => patch(item.id, { reason: event.target.value as Choice["reason"] })} className={field}><option value="OTHER">სხვა</option><option value="DEFECT">წუნი</option><option value="EXCHANGE">გადაცვლა</option></select></label><label className="min-w-0"><span className="mb-1 block text-xs text-text-secondary">მდგომარეობა</span><select aria-label={`${item.name} — მდგომარეობა`} value={choice.condition} onChange={event => patch(item.id, { condition: event.target.value as Choice["condition"] })} className={field}><option value="GOOD">დაუზიანებელი</option><option value="DEFECTIVE">წუნდებული</option></select></label><label className="min-w-0 sm:col-span-3"><span className="mb-1 block text-xs text-text-secondary">განმარტება</span><textarea aria-label={`${item.name} — განმარტება`} value={choice.note ?? ""} onChange={event => patch(item.id, { note: event.target.value })} className="min-h-20 w-full min-w-0 rounded-xl border border-border bg-background p-3 text-[16px] outline-none focus:border-accent" /></label></div>}</article>;

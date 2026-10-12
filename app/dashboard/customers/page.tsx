@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
+import { getCurrentBusiness } from "@/lib/auth/current-business";
 import {
     getCustomersPage,
     type CustomersSearchParams,
@@ -16,17 +17,15 @@ export default async function CustomersPage({
 
     if (!user) redirect("/login");
 
+    const membership = await getCurrentBusiness();
+
+    if (!membership) {
+        redirect("/business/onboarding");
+    }
+
     const prisma = createPrismaClient();
 
     try {
-        const membership = await prisma.businessMembership.findFirst({
-            where: { userId: user.id },
-            orderBy: { createdAt: "asc" },
-            select: { businessId: true },
-        });
-
-        if (!membership) redirect("/business/onboarding");
-
         const data = await getCustomersPage(
             prisma,
             membership.businessId,

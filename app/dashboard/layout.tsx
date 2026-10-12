@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
-import { createPrismaClient } from "@/lib/prisma";
+import { getCurrentBusiness } from "@/lib/auth/current-business";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
 type DashboardLayoutProps = {
@@ -18,25 +18,7 @@ export default async function DashboardLayout({
         redirect("/login");
     }
 
-    const prisma = createPrismaClient();
-
-    const membership = await prisma.businessMembership.findFirst({
-        where: {
-            userId: user.id,
-        },
-        orderBy: {
-            createdAt: "asc",
-        },
-        select: {
-            business: {
-                select: {
-                    id: true,
-                    name: true,
-                    logoUrl: true,
-                },
-            },
-        },
-    });
+    const membership = await getCurrentBusiness();
 
     if (!membership) {
         redirect("/business/onboarding");

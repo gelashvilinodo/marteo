@@ -14,16 +14,16 @@ export type OrderFormItem = {
     uploadPending?: boolean;
 };
 export type OrderFormDraft = {
-    recipientPhone: string; recipientFirstName: string; recipientLastName: string; shippingAddress: string;
+    recipientPhone: string; recipientFirstName: string; recipientLastName: string; shippingAddress: string; notes: string;
     courierFee: string; paidAmount: string; paymentMethod: "CASH" | "BANK_TRANSFER" | "CARD";
     bankName: string; status: "PROCESSING" | "COMPLETED"; items: OrderFormItem[];
 };
 export type PaidMode = "none" | "full" | "courier" | "custom";
 export function emptyOrderDraft(): OrderFormDraft {
-    return { recipientPhone: "", recipientFirstName: "", recipientLastName: "", shippingAddress: "", courierFee: "0", paidAmount: "0", paymentMethod: "CASH", bankName: "", status: "PROCESSING", items: [] };
+    return { recipientPhone: "", recipientFirstName: "", recipientLastName: "", shippingAddress: "", notes: "", courierFee: "0", paidAmount: "0", paymentMethod: "CASH", bankName: "", status: "PROCESSING", items: [] };
 }
 export function manualOrderItem(): OrderFormItem {
-    return { key: crypto.randomUUID(), source: "MANUAL", inventoryItemId: null, name: "", description: "", color: "", size: "", imageUrl: null, condition: "GOOD", quantity: "1", unitPrice: "", unitCost: "0" };
+    return { key: crypto.randomUUID(), source: "MANUAL", inventoryItemId: null, name: "", description: "", color: "", size: "", imageUrl: null, condition: "GOOD", quantity: "1", unitPrice: "", unitCost: "" };
 }
 export function inventoryOrderItem(product: InventoryOrderProduct, condition: "GOOD" | "DEFECTIVE"): OrderFormItem {
     return {
@@ -75,7 +75,15 @@ export function orderCreatePayload(
         if (!item.name.trim()) throw new Error(`${label}: მიუთითე სახელი.`);
         if (!/^\d+$/.test(item.quantity) || !Number.isSafeInteger(Number(item.quantity)) || Number(item.quantity) < 1) throw new Error(`${label}: რაოდენობა უნდა იყოს დადებითი მთელი რიცხვი.`);
         if (moneyCents(item.unitPrice) === null) throw new Error(`${label}: მიუთითე გასაყიდი ფასი. უფასოდ გაცემისთვის ჩაწერე 0.`);
-        if (item.source === "MANUAL" && moneyCents(item.unitCost) === null) throw new Error(`${label}: მიუთითე თვითღირებულება.`);
+        if (
+            item.source === "MANUAL" &&
+            item.unitCost.trim() !== "" &&
+            moneyCents(item.unitCost) === null
+        ) {
+            throw new Error(
+                `${label}: თვითღირებულება მიუთითე თეთრების სიზუსტით ან დატოვე ცარიელი.`,
+            );
+        }
         return {
             orderItemId: item.orderItemId,
             source: item.source,
@@ -100,7 +108,7 @@ export function orderCreatePayload(
     }
     return {
         clientRequestId, recipientPhone: draft.recipientPhone, recipientFirstName: draft.recipientFirstName,
-        recipientLastName: draft.recipientLastName, shippingAddress: draft.shippingAddress, status: "PROCESSING" as const,
+        recipientLastName: draft.recipientLastName, shippingAddress: draft.shippingAddress, notes: draft.notes, status: "PROCESSING" as const,
         confirmCompleted: false, courierFee: moneyText(totals.courier), paidAmount: moneyText(totals.paid), paymentMethod: draft.paymentMethod,
         bankName: draft.bankName, items
     };

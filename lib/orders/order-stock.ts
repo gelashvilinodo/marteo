@@ -1,6 +1,7 @@
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { OrderValidationError, type ValidatedOrder } from "./validate-order";
+import { allocateCost } from "@/lib/analytics/allocate-cost";
 
 function fail(message: string, status = 400): never { throw new OrderValidationError(message, status); }
 export async function resolveOrderCustomer(
@@ -141,10 +142,16 @@ export async function createOrderItems(
         let unitCost =
             item.unitCost ?? new Prisma.Decimal(0);
 
+        let exactTotalCost: Prisma.Decimal | null =
+            item.source === "MANUAL" && item.unitCost !== null
+                ? item.unitCost.mul(item.quantity)
+                : null;
+
         const allocations: Array<{
             purchaseItemId: string;
             quantity: number;
             unitCost: Prisma.Decimal;
+            totalCost: Prisma.Decimal | null;
         }> = [];
 
         if (item.source === "INVENTORY") {
@@ -216,6 +223,7 @@ export async function createOrderItems(
                         remainingDefectiveQuantity:
                             true,
                         finalUnitCost: true,
+                        remainingCost: true,
                     },
                 });
 
@@ -238,16 +246,24 @@ export async function createOrderItems(
 
                 if (quantity <= 0) continue;
 
+                const split = batch.remainingCost === null
+                    ? null
+                    : allocateCost(
+                        batch.remainingCost,
+                        [quantity, batch.remainingQuantity - quantity],
+                    );
+
+                const allocatedCost = split?.[0] ?? null;
+
                 allocations.push({
                     purchaseItemId: batch.id,
                     quantity,
                     unitCost: batch.finalUnitCost,
+                    totalCost: allocatedCost,
                 });
 
                 costTotal = costTotal.plus(
-                    batch.finalUnitCost.mul(
-                        quantity,
-                    ),
+                    allocatedCost ?? batch.finalUnitCost.mul(quantity),
                 );
 
                 await tx.purchaseItem.update({
@@ -256,6 +272,9 @@ export async function createOrderItems(
                         remainingQuantity: {
                             decrement: quantity,
                         },
+                        ...(split
+                            ? { remainingCost: split[1] }
+                            : {}),
                         ...(item.condition ===
                             "DEFECTIVE"
                             ? {
@@ -283,6 +302,12 @@ export async function createOrderItems(
                     409,
                 );
             }
+
+            exactTotalCost = allocations.every(
+                allocation => allocation.totalCost !== null,
+            )
+                ? costTotal
+                : null;
 
             unitCost = costTotal
                 .div(item.quantity)
@@ -319,6 +344,7 @@ export async function createOrderItems(
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
                 unitCost,
+                totalCost: exactTotalCost,
             },
             select: { id: true },
         });
@@ -415,6 +441,13 @@ export async function restoreOrderStock(
                     where: { id: batch.id },
                     data: {
                         remainingQuantity: { increment: allocation.quantity },
+                        remainingCost: allocation.totalCost !== null
+                            ? {
+                                increment: allocation.totalCost.minus(
+                                    allocation.returnedCost,
+                                ),
+                            }
+                            : null,
                         ...(allocation.condition === "DEFECTIVE"
                             ? { remainingDefectiveQuantity: { increment: allocation.quantity } }
                             : {}),

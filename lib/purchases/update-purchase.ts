@@ -470,6 +470,11 @@ export async function updatePurchase(
                     const data = {
                         inventoryItemId: inventory.id,
                         quantity: calculated.quantity,
+                        remainingCost: isReceived
+                            ? new Prisma.Decimal(calculated.unitPurchasePrice)
+                                .mul(calculated.quantity)
+                                .plus(calculated.allocatedExtraCostTotal)
+                            : new Prisma.Decimal(0),
                         remainingQuantity: isReceived
                             ? calculated.quantity
                             : 0,

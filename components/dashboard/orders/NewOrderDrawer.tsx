@@ -48,6 +48,7 @@ export default function NewOrderDrawer() {
     const router = useRouter();
     const [, startTransition] = useTransition();
     const [draft, setDraft] = useState<OrderFormDraft>(emptyOrderDraft);
+    const [notesOpen, setNotesOpen] = useState(false);
     const [paidMode, setPaidMode] = useState<PaidMode>("none");
     const [dirty, setDirty] = useState(false);
     const [removingProduct, setRemovingProduct] = useState(false);
@@ -123,6 +124,7 @@ export default function NewOrderDrawer() {
             productNumber.current = initialDraft.items.length;
 
             setDraft(initialDraft);
+            setNotesOpen(Boolean(initialDraft.notes.trim()));
             draftRef.current = initialDraft;
             setPaidMode("custom");
             setDirty(false);
@@ -206,6 +208,7 @@ export default function NewOrderDrawer() {
         setDirty(true); setCustomerInfo(""); setCustomerBusy(Boolean(lookupPhone(phone))); setError("");
     }
     function reset() {
+        setNotesOpen(false);
         productNumber.current = 0;
         setDraft(emptyOrderDraft()); setPaidMode("none"); setDirty(false); setPending(null); setError("");
         setPickerOpen(false); setCustomerInfo(""); setCustomerBusy(false); autoFilled.current = null; requestId.current = null;
@@ -547,6 +550,66 @@ export default function NewOrderDrawer() {
                             <Field label="სახელი"><input value={draft.recipientFirstName} onChange={event => patch({ recipientFirstName: event.target.value })} className={input} /></Field>
                             <Field label="გვარი"><input value={draft.recipientLastName} onChange={event => patch({ recipientLastName: event.target.value })} className={input} /></Field>
                             <div className="col-span-2 lg:col-span-1"><Field label="მისამართი"><input value={draft.shippingAddress} onChange={event => patch({ shippingAddress: event.target.value })} placeholder="ქალაქი, ქუჩა, ნომერი" className={input} /></Field></div>
+                        </div>
+                        <div className="mt-3">
+                            <button
+                                type="button"
+                                aria-expanded={notesOpen}
+                                aria-controls={`${formId}-notes-panel`}
+                                onClick={() => setNotesOpen(current => !current)}
+                                className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-accent"
+                            >
+                                <Icon
+                                    icon="solar:document-text-linear"
+                                    className="h-5 w-5"
+                                />
+
+                                {draft.notes.trim()
+                                    ? "კომენტარი"
+                                    : "კომენტარის დამატება"}
+
+                                <Icon
+                                    icon="solar:alt-arrow-down-linear"
+                                    className={`h-4 w-4 transition-transform duration-300 motion-reduce:transition-none ${notesOpen ? "rotate-180" : ""
+                                        }`}
+                                />
+                            </button>
+
+                            <div
+                                id={`${formId}-notes-panel`}
+                                inert={!notesOpen}
+                                aria-hidden={!notesOpen}
+                                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out motion-reduce:transition-none ${notesOpen
+                                        ? "grid-rows-[1fr] opacity-100"
+                                        : "grid-rows-[0fr] opacity-0"
+                                    }`}
+                            >
+                                <div className="min-h-0 overflow-hidden">
+                                    <div className="space-y-2 pt-2">
+                                        <label
+                                            htmlFor={`${formId}-notes`}
+                                            className="block text-xs text-text-secondary"
+                                        >
+                                            კომენტარი — არასავალდებულო
+                                        </label>
+
+                                        <textarea
+                                            id={`${formId}-notes`}
+                                            rows={2}
+                                            value={draft.notes}
+                                            onChange={event =>
+                                                patch({ notes: event.target.value })
+                                            }
+                                            placeholder="მაგ: დარეკეთ მისვლამდე; მიწოდება 18:00-ის შემდეგ."
+                                            className="block w-full min-w-0 resize-none rounded-xl border border-border bg-background p-3 text-[16px] text-text-primary outline-none focus:border-accent"
+                                        />
+
+                                        <p className="text-xs text-text-secondary">
+                                            კომენტარი ინვოისზეც გამოჩნდება და კურიერი დაინახავს.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </section>
                     <div className="min-h-0 min-w-0 space-y-3 lg:grid lg:flex-1 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:gap-4 lg:space-y-0">

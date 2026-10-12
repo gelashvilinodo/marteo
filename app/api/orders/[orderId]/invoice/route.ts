@@ -1,6 +1,7 @@
 import QRCode from "qrcode";
 import { Prisma } from "@/generated/prisma/client";
 import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
+import { orderPayableTotal } from "@/lib/orders/order-payable-total";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
@@ -73,11 +74,27 @@ export async function GET(
                 recipientLastName: true,
                 recipientPhone: true,
                 shippingAddress: true,
+                notes: true,
                 courierFee: true,
+                stockReturnedAt: true,
+                fulfillmentCycle: true,
+                returns: {
+                    where: { status: "RECEIVED" },
+                    select: {
+                        fulfillmentCycle: true,
+                        items: {
+                            select: {
+                                orderItemId: true,
+                                quantity: true,
+                            },
+                        },
+                    },
+                },
                 items: {
                     where: { isActive: true },
                     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
                     select: {
+                        id: true,
                         name: true,
                         color: true,
                         size: true,
@@ -140,11 +157,38 @@ export async function GET(
                     ? "PRINTED"
                     : "UPDATED";
 
-        const productsTotal = order.items.reduce(
-            (sum, item) => sum.plus(item.unitPrice.mul(item.quantity)),
-            new Prisma.Decimal(0),
+        const receivedQuantities = new Map<string, number>();
+
+        for (const entry of order.returns) {
+            if (entry.fulfillmentCycle !== order.fulfillmentCycle) {
+                continue;
+            }
+
+            for (const item of entry.items) {
+                receivedQuantities.set(
+                    item.orderItemId,
+                    (receivedQuantities.get(item.orderItemId) ?? 0) +
+                    item.quantity,
+                );
+            }
+        }
+
+        const total = orderPayableTotal(
+            order,
+            receivedQuantities,
         );
-        const total = productsTotal.plus(order.courierFee);
+
+        const productsTotal = total.minus(order.courierFee);
+
+        const invoiceItems = order.items
+            .map(item => ({
+                ...item,
+                quantity: order.stockReturnedAt
+                    ? 0
+                    : item.quantity -
+                    (receivedQuantities.get(item.id) ?? 0),
+            }))
+            .filter(item => item.quantity > 0);
         const paidAmount = order.payments.reduce(
             (sum, payment) => sum.plus(payment.amount),
             new Prisma.Decimal(0),
@@ -152,6 +196,7 @@ export async function GET(
         const invoice: OrderInvoiceData = {
             number: order.number,
             createdAt: order.createdAt.toISOString(),
+            notes: order.notes ?? "",
             status: order.status,
             paymentStatus: order.paymentStatus,
             business: order.business,
@@ -160,8 +205,12 @@ export async function GET(
                 phone: order.recipientPhone,
                 address: order.shippingAddress || "",
             },
-            items: order.items.map(item => ({
-                ...item,
+            items: invoiceItems.map(item => ({
+                name: item.name,
+                color: item.color,
+                size: item.size,
+                condition: item.condition,
+                quantity: item.quantity,
                 unitPrice: item.unitPrice.toFixed(2),
                 total: item.unitPrice.mul(item.quantity).toFixed(2),
             })),

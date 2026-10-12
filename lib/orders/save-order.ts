@@ -161,6 +161,7 @@ export async function saveOrder(raw: unknown) {
                             data.recipientLastName || null,
                         shippingAddress:
                             data.shippingAddress || null,
+                        notes: data.notes || null,
                         status: data.status,
                         paymentStatus,
                         courierFee: data.courierFee,

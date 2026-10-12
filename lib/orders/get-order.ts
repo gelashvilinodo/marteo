@@ -3,6 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
 import { OrderValidationError } from "./validate-order";
+import { orderPayableTotal } from "./order-payable-total";
 export async function getOrder(orderId: string) {
     const user = await getCurrentUser();
     if (!user) throw new OrderValidationError("გაიარე ავტორიზაცია.", 401);
@@ -65,10 +66,64 @@ export async function getOrder(orderId: string) {
                 entry.fulfillmentCycle === order.fulfillmentCycle,
         );
         const paidAmount = order.payments.reduce((sum, payment) => sum.plus(payment.amount), new Prisma.Decimal(0));
-        const total = order.items.reduce(
-            (sum, item) =>
-                sum.plus(item.unitPrice.mul(item.quantity)),
-            order.courierFee,
+        const receivedQuantities = new Map<string, number>();
+
+        for (const [itemId, quantities] of returnQuantities) {
+            receivedQuantities.set(itemId, quantities.received);
+        }
+
+        const total = orderPayableTotal(order, receivedQuantities);
+
+        const deletionReceivedQuantities = new Map(
+            receivedQuantities,
+        );
+
+        for (const item of order.items) {
+            if (
+                item.stockRestoredAt ||
+                (
+                    order.status === "PROCESSING" &&
+                    !item.isCarriedOver
+                )
+            ) {
+                deletionReceivedQuantities.set(
+                    item.id,
+                    item.quantity,
+                );
+            }
+        }
+
+        const deletionTotal = orderPayableTotal(
+            order,
+            deletionReceivedQuantities,
+        );
+
+        const hasUnreturnedCarriedItems = order.items.some(item =>
+            item.isCarriedOver &&
+            !item.stockRestoredAt &&
+            (deletionReceivedQuantities.get(item.id) ?? 0) <
+            item.quantity,
+        );
+
+        const shouldCollectBeforeDeletion =
+            order.status !== "CANCELED" &&
+            order.status !== "RETURNED" &&
+            (
+                order.status !== "PROCESSING" ||
+                hasUnreturnedCarriedItems
+            );
+
+        const deletionRemainingAmount =
+            shouldCollectBeforeDeletion
+                ? Prisma.Decimal.max(
+                    deletionTotal.minus(paidAmount),
+                    0,
+                )
+                : new Prisma.Decimal(0);
+
+        const deletionRefundDue = Prisma.Decimal.max(
+            paidAmount.minus(deletionTotal),
+            0,
         );
 
         const currentReturns = order.returns.filter(
@@ -82,17 +137,16 @@ export async function getOrder(orderId: string) {
             ["SHIPPED", "COMPLETED", "RETURNED"].includes(
                 order.status,
             ) &&
-            !currentReturns.some(
-                entry => entry.status === "PENDING",
-            ) &&
-            currentReturns.some(
-                entry =>
-                    entry.status === "RECEIVED" &&
-                    entry.items.some(
-                        item => item.reason === "EXCHANGE",
-                    ),
+            currentReturns.some(entry =>
+                (entry.status === "PENDING" ||
+                    entry.status === "RECEIVED") &&
+                entry.items.some(item => item.reason === "EXCHANGE"),
             );
         return {
+            deletionRemainingAmount:
+                deletionRemainingAmount.toFixed(2),
+            deletionRefundDue:
+                deletionRefundDue.toFixed(2),
             total: total.toFixed(2),
             refundDue: Prisma.Decimal.max(
                 paidAmount.minus(total),
@@ -103,6 +157,7 @@ export async function getOrder(orderId: string) {
                 0,
             ).toFixed(2),
             canExchange,
+            notes: order.notes ?? "",
             id: order.id,
             number: order.number,
             expectedVersion: order.invoiceVersion,
@@ -139,6 +194,9 @@ export async function getOrder(orderId: string) {
 
             returns: order.returns.map(entry => ({
                 id: entry.id,
+                isFromPreviousExchange:
+                    entry.fulfillmentCycle !== order.fulfillmentCycle &&
+                    entry.exchangeId !== null,
                 status: entry.status,
                 createdAt: entry.createdAt.toISOString(),
                 receivedAt: entry.receivedAt?.toISOString() ?? null,
@@ -185,7 +243,10 @@ export async function getOrder(orderId: string) {
                         ),
                 id: item.id, source: item.source, inventoryItemId: item.inventoryItemId,
                 name: item.name, description: item.description ?? "", color: item.color ?? "", size: item.size ?? "", imageUrl: item.imageUrl,
-                condition: item.condition, quantity: item.quantity, unitPrice: item.unitPrice.toFixed(2), unitCost: item.unitCost.toFixed(2),
+                condition: item.condition, quantity: item.quantity, unitPrice: item.unitPrice.toFixed(2), unitCost:
+                    item.source === "MANUAL" && item.totalCost === null
+                        ? ""
+                        : item.unitCost.toFixed(2),
             })),
         };
     } finally { await prisma.$disconnect(); }

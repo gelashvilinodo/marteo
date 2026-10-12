@@ -219,12 +219,50 @@ export default function OrderProductEditor({
             <Field label="რაოდენობა *"><input inputMode="numeric" value={item.quantity} onChange={event => update({ quantity: event.target.value })} required className={input} /></Field>
             <Field label="გასაყიდი ფასი · ₾ *"><input inputMode="decimal" value={item.unitPrice} onChange={event => update({ unitPrice: event.target.value })} placeholder="0.00" required className={input} /></Field>
         </div>
+        {item.source === "MANUAL" && (
+            <div className="mt-3 rounded-xl border border-border p-3">
+                <Field label="ერთი ერთეულის თვითღირებულება · ₾">
+                    <input
+                        inputMode="decimal"
+                        value={item.unitCost}
+                        onChange={event =>
+                            update({ unitCost: event.target.value })
+                        }
+                        placeholder="მაგალითად: 12.50"
+                        className={input}
+                    />
+                </Field>
+
+                <p className="mt-2 text-xs leading-relaxed text-text-secondary">
+                    მიუთითე, რა დაგიჯდა ერთი ნივთი.
+                    თუ ხარჯი არ გქონია, ჩაწერე 0.
+                    თუ ჯერ არ იცი, დატოვე ცარიელი —
+                    მოგება დასაზუსტებელი იქნება.
+                </p>
+            </div>
+        )}
         <details className="mt-3">
             <summary className="cursor-pointer text-xs text-text-secondary">ფერი, ზომა და დამატებითი ინფორმაცია</summary>
             <div className="mt-3 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-3">
                 <Field label="ფერი"><input value={item.color} onChange={event => update({ color: event.target.value })} className={input} /></Field>
                 <Field label="ზომა"><input value={item.size} onChange={event => update({ size: event.target.value })} className={input} /></Field>
-                {item.source === "MANUAL" ? <Field label="თვითღირებულება · ₾"><input inputMode="decimal" value={item.unitCost} onChange={event => update({ unitCost: event.target.value })} className={input} /></Field> : <Field label="მდგომარეობა"><select value={item.condition} onChange={event => update({ condition: event.target.value as OrderFormItem["condition"] })} className={input}><option value="GOOD">დაუზიანებელი</option><option value="DEFECTIVE">წუნდებული</option></select></Field>}
+                {item.source === "INVENTORY" && (
+                    <Field label="მდგომარეობა">
+                        <select
+                            value={item.condition}
+                            onChange={event =>
+                                update({
+                                    condition: event.target.value as
+                                        OrderFormItem["condition"],
+                                })
+                            }
+                            className={input}
+                        >
+                            <option value="GOOD">დაუზიანებელი</option>
+                            <option value="DEFECTIVE">წუნდებული</option>
+                        </select>
+                    </Field>
+                )}
                 <div className="col-span-2 lg:col-span-3"><Field label="აღწერა"><textarea rows={2} value={item.description} onChange={event => update({ description: event.target.value })} className={`${input} !h-auto py-2`} /></Field></div>
             </div>
         </details>
