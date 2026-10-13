@@ -26,6 +26,7 @@ export async function getOrdersPage(
     prisma: ReturnType<typeof createPrismaClient>,
     businessId: string,
     params: OrdersSearchParams,
+    singleOrderId?: string,
 ) {
     function text(key: string) {
         const value = params[key];
@@ -227,9 +228,11 @@ export async function getOrdersPage(
             );
 
             const orders = await tx.order.findMany({
-                where,
-                skip: (currentPage - 1) * PAGE_SIZE,
-                take: PAGE_SIZE,
+                where: singleOrderId
+                    ? { ...baseWhere, id: singleOrderId }
+                    : where,
+                skip: singleOrderId ? 0 : (currentPage - 1) * PAGE_SIZE,
+                take: singleOrderId ? 1 : PAGE_SIZE,
                 orderBy: ordering[sort],
                 select: {
                     id: true,

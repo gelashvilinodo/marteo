@@ -200,3 +200,111 @@ body {
     animation: none;
   }
 }
+
+/* გვერდის სქროლი იბლოკება, საიდბარის sticky საყრდენი შენარჩუნდება. */
+html:has(dialog:modal) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body:has(dialog:modal) {
+  overflow: clip !important;
+  overscroll-behavior: none;
+}
+
+/* გრძელი ფანჯრის შიგნით სქროლი ფონზე არ გადადის. */
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+@keyframes calendar-slide-next {
+  from {
+    opacity: 0.5;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes calendar-slide-previous {
+  from {
+    opacity: 0.5;
+    transform: translateX(-32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.calendar-slide-next {
+  animation: calendar-slide-next 300ms ease-out both;
+}
+
+.calendar-slide-previous {
+  animation: calendar-slide-previous 300ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-slide-next,
+  .calendar-slide-previous {
+    animation: none;
+  }
+}
+
+@keyframes calendar-body-enter-next {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes calendar-body-exit-next {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
+@keyframes calendar-body-enter-previous {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes calendar-body-exit-previous {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+.calendar-body-enter-next {
+  animation: calendar-body-enter-next 420ms cubic-bezier(.22,.61,.36,1) both;
+}
+
+.calendar-body-exit-next {
+  animation: calendar-body-exit-next 420ms cubic-bezier(.22,.61,.36,1) both;
+}
+
+.calendar-body-enter-previous {
+  animation: calendar-body-enter-previous 420ms cubic-bezier(.22,.61,.36,1) both;
+}
+
+.calendar-body-exit-previous {
+  animation: calendar-body-exit-previous 420ms cubic-bezier(.22,.61,.36,1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-body-enter-next,
+  .calendar-body-exit-next,
+  .calendar-body-enter-previous,
+  .calendar-body-exit-previous {
+    animation: none;
+  }
+}
+
+:root {
+  --content-tint-opacity: 0.09;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --content-tint-opacity: 0.22;
+  }
+}

@@ -7,7 +7,7 @@ import type { AnalyticsSearchParams } from "./get-analytics-page";
 
 export type FinancialMovement = {
     key: string;
-    source: "financial" | "payment" | "expense";
+    source: "financial" | "payment" | "expense" | "purchase";
     kind: string;
     occurredAt: string;
     orderNumber: number | null;
@@ -39,7 +39,7 @@ export async function getFinancialMovements(
             ? params[key].trim()
             : "";
 
-    const allowed = ["all", "financial", "payment", "expense"];
+    const allowed = ["all", "financial", "payment", "expense", "purchase"];
 
     const source = allowed.includes(text("movement"))
         ? text("movement")
@@ -70,7 +70,11 @@ export async function getFinancialMovements(
                     f."deliveryRevenueDelta"
                 ) AS amount,
                 f."costOfGoodsDelta" AS cost,
-                f."costComplete" AS cost_complete
+                f."costComplete" AS cost_complete,
+COALESCE(
+    f."orderId",
+    'historical:' || f.id
+) AS order_key
             FROM "OrderFinancialEntry" f
             WHERE f."businessId" = ${businessId}
                 AND f."occurredAt" >= ${range.start}
@@ -88,9 +92,10 @@ export async function getFinancialMovements(
                 p."createdAt",
                 o.number,
                 p.method::text,
-                p.amount,
+                                p.amount,
                 NULL::numeric,
-                TRUE
+                TRUE,
+                o.id
             FROM "OrderPayment" p
             JOIN "Order" o ON o.id = p."orderId"
             WHERE o."businessId" = ${businessId}
@@ -106,20 +111,144 @@ export async function getFinancialMovements(
                 e."expenseDate",
                 NULL::integer,
                 COALESCE(NULLIF(e.title, ''), 'ხარჯი'),
-                -e.amount,
+                                -e.amount,
                 NULL::numeric,
-                TRUE
+                TRUE,
+                NULL::text
             FROM "Expense" e
             WHERE e."businessId" = ${businessId}
                 AND e."expenseDate" >= ${range.start}
-                AND e."expenseDate" < ${range.end}
+                                AND e."expenseDate" < ${range.end}
+
+            UNION ALL
+
+            SELECT
+                'purchase:' || p.id,
+                'purchase'::text,
+                'PURCHASE'::text,
+                p."purchaseDate",
+                p.number,
+                COALESCE(NULLIF(p.name, ''), 'პარტიის შეძენა'),
+                -(
+                    COALESCE(
+                        (
+                            SELECT SUM(
+                                pi.quantity::numeric *
+                                pi."unitPurchasePrice"
+                            )
+                            FROM "PurchaseItem" pi
+                            WHERE pi."purchaseId" = p.id
+                        ),
+                        0::numeric
+                    ) +
+                    p."shippingCost" +
+                    p."customsCost" +
+                    p."otherCost"
+                ),
+                                NULL::numeric,
+                TRUE,
+                NULL::text
+            FROM "Purchase" p
+            WHERE p."businessId" = ${businessId}
+                AND p."purchaseDate" >= ${range.start}
+                AND p."purchaseDate" < ${range.end}
         ),
-        filtered AS (
+                selected_movements AS (
             SELECT *
             FROM movements
             WHERE (
                 ${source} = 'all' OR source = ${source}
             )
+        ),
+        order_groups AS (
+            SELECT
+                order_key,
+
+                COALESCE(
+                    MAX(key) FILTER (WHERE source = 'financial'),
+                    MAX(key) FILTER (WHERE source = 'payment')
+                ) AS key,
+
+                CASE
+                    WHEN COUNT(*) FILTER (
+                        WHERE source = 'financial'
+                    ) > 0
+                    THEN 'financial'
+                    ELSE 'payment'
+                END AS source,
+
+                'ORDER_SUMMARY'::text AS kind,
+                MAX(occurred_at) AS occurred_at,
+                MAX(order_number) AS order_number,
+
+                CASE
+                    WHEN COUNT(*) FILTER (
+                        WHERE source = 'financial'
+                    ) > 0
+                    THEN 'გაყიდვის თანხა; გადახდები იხილე დეტალებში'
+                    ELSE 'მიღებული თანხა, დაბრუნებების გამოკლებით'
+                END AS title,
+
+                CASE
+                    WHEN COUNT(*) FILTER (
+                        WHERE source = 'financial'
+                    ) > 0
+                    THEN COALESCE(
+                        SUM(amount) FILTER (
+                            WHERE source = 'financial'
+                        ),
+                        0::numeric
+                    )
+                    ELSE COALESCE(
+                        SUM(amount) FILTER (
+                            WHERE source = 'payment'
+                        ),
+                        0::numeric
+                    )
+                END AS amount,
+
+                SUM(cost) FILTER (
+                    WHERE source = 'financial'
+                ) AS cost,
+
+                COALESCE(
+                    BOOL_AND(cost_complete) FILTER (
+                        WHERE source = 'financial'
+                    ),
+                    TRUE
+                ) AS cost_complete
+
+            FROM selected_movements
+            WHERE order_key IS NOT NULL
+            GROUP BY order_key
+        ),
+        filtered AS (
+            SELECT
+                key,
+                source,
+                kind,
+                occurred_at,
+                order_number,
+                title,
+                amount,
+                cost,
+                cost_complete
+            FROM order_groups
+
+            UNION ALL
+
+            SELECT
+                key,
+                source,
+                kind,
+                occurred_at,
+                order_number,
+                title,
+                amount,
+                cost,
+                cost_complete
+            FROM selected_movements
+            WHERE order_key IS NULL
         ),
         totals AS (
             SELECT

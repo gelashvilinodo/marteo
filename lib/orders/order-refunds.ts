@@ -16,7 +16,7 @@ export async function confirmOrderRefund(
     body: Record<string, unknown>,
 ) {
     if (body.confirmRefund !== true) {
-        fail("დაადასტურე, რომ თანხა კლიენტს რეალურად დაუბრუნე.");
+        fail("დაადასტურე, რომ თანხა მომხმარებელს რეალურად დაუბრუნე.");
     }
     if (typeof body.amount !== "string") fail("მიუთითე დაბრუნებული თანხა.");
     const text = body.amount.trim().replace(",", ".");

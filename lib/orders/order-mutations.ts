@@ -109,7 +109,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                 }
                 const data = validateOrder({ ...object(body.order), clientRequestId: requestId, status: order.status }, "edit");
                 if (order.status !== "PROCESSING") {
-                    // გაგზავნილ/გაუქმებულ შეკვეთაზე იცვლება კლიენტის ინფორმაცია და გადახდა.
+                    // გაგზავნილ/გაუქმებულ შეკვეთაზე იცვლება მომხმარებლის ინფორმაცია და გადახდა.
                     const same = data.items.length === order.items.length && data.items.every((item, index) => {
                         const old = order.items[index];
                         return item.source === old.source && item.inventoryItemId === old.inventoryItemId && item.condition === old.condition && item.name === old.name &&
@@ -134,7 +134,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                         carriedItems.map(item => item.id),
                     );
 
-                    // კლიენტთან დარჩენილი ნივთები უცვლელად უნდა შენარჩუნდეს.
+                    // მომხმარებელთან დარჩენილი ნივთები უცვლელად უნდა შენარჩუნდეს.
                     for (const old of carriedItems) {
                         const matches = data.items.filter(
                             item => item.orderItemId === old.id,
@@ -169,7 +169,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
 
                         if (!unchanged) {
                             fail(
-                                "კლიენტთან დარჩენილი პროდუქტი ამ ფორმიდან არ იცვლება. გამოიყენე დაბრუნება ან გადაცვლა.",
+                                "მომხმარებელთან დარჩენილი პროდუქტი ამ ფორმიდან არ იცვლება. გამოიყენე დაბრუნება ან გადაცვლა.",
                                 409,
                             );
                         }
@@ -580,13 +580,13 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                             if (body.mode === "NO_RETURN") {
                                 if (body.confirmNoReturn !== true) {
                                     fail(
-                                        "დაადასტურე, რომ კლიენტთან დარჩენილი ნივთები აღარ დაბრუნდება და მარაგს არ დაემატება.",
+                                        "დაადასტურე, რომ მომხმარებელთან დარჩენილი ნივთები აღარ დაბრუნდება და მარაგს არ დაემატება.",
                                         422,
                                     );
                                 }
                             } else if (body.mode !== "RECEIVED") {
                                 fail(
-                                    "შეკვეთაში კლიენტთან დარჩენილი ნივთებია. ჯერ დაადასტურე მათი დაბრუნება ან მიუთითე, რომ დაბრუნება აღარ იგეგმება.",
+                                    "შეკვეთაში მომხმარებელთან დარჩენილი ნივთებია. ჯერ დაადასტურე მათი დაბრუნება ან მიუთითე, რომ დაბრუნება აღარ იგეგმება.",
                                     422,
                                 );
                             }
@@ -604,7 +604,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                             !restored
                         ) {
                             fail(
-                                "ჯერ დაბრუნების ფანჯარაში დაადასტურე კლიენტთან დარჩენილი ნივთების ფიზიკური მიღება.",
+                                "ჯერ დაბრუნების ფანჯარაში დაადასტურე მომხმარებელთან დარჩენილი ნივთების ფიზიკური მიღება.",
                                 422,
                             );
                         }
@@ -711,7 +711,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                 changed = true;
             } else if (kind === "link") {
                 if (body.action !== "create" && body.action !== "revoke" && body.action !== "rotate") fail("ბმულის მოქმედება არასწორია.");
-                // create არსებული ბმულის შემთხვევაში არ ცვლის კლიენტისთვის უკვე გაგზავნილ URL-ს.
+                // create არსებული ბმულის შემთხვევაში არ ცვლის მომხმარებლისთვის უკვე გაგზავნილ URL-ს.
                 if ((body.action === "create" && !order.publicAccessToken) || body.action === "rotate" || (body.action === "revoke" && order.publicAccessToken)) {
                     await tx.order.update({ where: { id: orderId }, data: { publicAccessToken: body.action === "revoke" ? null : createPublicOrderToken(), invoiceVersion: { increment: 1 } } });
                     changed = true;

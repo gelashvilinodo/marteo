@@ -262,7 +262,7 @@ export default async function AnalyticsPage({
                         <dl className="mt-4 grid gap-3 sm:grid-cols-3">
                             {[
                                 ["მიღებული თანხა", data.received],
-                                ["კლიენტებისთვის დაბრუნებული", data.refunded],
+                                ["მომხმარებლებისთვის დაბრუნებული", data.refunded],
                                 ["მიღებული მინუს დაბრუნებული", data.netReceived],
                             ].map(([label, value]) => (
                                 <div
@@ -305,7 +305,7 @@ export default async function AnalyticsPage({
                                         icon="solar:download-minimalistic-linear"
                                         className="h-5 w-5 shrink-0 text-success"
                                     />
-                                    კლიენტებისგან მისაღები
+                                    მომხმარებლებისგან მისაღები
                                 </dt>
 
                                 <dd className="mt-2 break-words text-xl font-semibold tabular-nums text-text-primary sm:text-2xl">
@@ -324,7 +324,7 @@ export default async function AnalyticsPage({
                                         icon="solar:upload-minimalistic-linear"
                                         className="h-5 w-5 shrink-0 text-warning"
                                     />
-                                    კლიენტებისთვის დასაბრუნებელი
+                                    მომხმარებლებისთვის დასაბრუნებელი
                                 </dt>
 
                                 <dd className="mt-2 break-words text-xl font-semibold tabular-nums text-text-primary sm:text-2xl">

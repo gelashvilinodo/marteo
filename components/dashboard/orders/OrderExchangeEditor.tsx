@@ -128,7 +128,7 @@ export default function OrderExchangeEditor({
     return <section className="space-y-4 rounded-2xl border border-accent/30 bg-surface p-4">
         <div><h3 className="flex items-center gap-2 font-semibold"><Icon icon="solar:transfer-horizontal-linear" className="h-5 w-5 text-accent" />გადაცვლა — ახალი ნივთების არჩევა</h3><p className="mt-2 text-xs text-text-secondary">დაბრუნების მოთხოვნა შენახულია. აქ დაამატე მხოლოდ სანაცვლოდ გასაგზავნი ახალი ნივთები. ძველის მიღებას ცალკე დაადასტურებ.</p></div>
         <div className="space-y-2"><h4 className="text-sm font-medium">შეკვეთიდან გამოსაცვლელი ნივთები</h4>{returned.map(item => productLine(item, returnQuantity(item)))}</div>
-        {kept.length > 0 && <div className="space-y-2"><h4 className="text-sm font-medium">კლიენტთან რჩება</h4><p className="text-xs text-text-secondary">ეს ნივთები შეკვეთაში დარჩება. ხელახლა დამატება არ არის საჭირო.</p>{kept.map(item => productLine(item, item.quantity))}</div>}
+        {kept.length > 0 && <div className="space-y-2"><h4 className="text-sm font-medium">მომხმარებელთან რჩება</h4><p className="text-xs text-text-secondary">ეს ნივთები შეკვეთაში დარჩება. ხელახლა დამატება არ არის საჭირო.</p>{kept.map(item => productLine(item, item.quantity))}</div>}
         <fieldset disabled={blocked} className="min-w-0 space-y-3 disabled:opacity-60">
             <legend className="mb-2 text-sm font-semibold">ახალი ნივთები</legend>
             <div className="flex flex-wrap gap-2">
@@ -149,12 +149,12 @@ export default function OrderExchangeEditor({
         <div className="rounded-xl border border-border bg-background p-3">
             <h4 className="mb-3 text-sm font-semibold">გადაცვლის შეჯამება</h4>
             <dl className="space-y-2 text-xs sm:text-sm">
-                {[["შეკვეთიდან გამოკლებული ნივთების ღირებულება", oldReturnedTotal], ["კლიენტთან დარჩენილი ნივთები", keptTotal], ["ახალი ნივთები", newTotal], ["მიწოდება", moneyCents(order.courierFee) ?? 0n], ["ახალი შეკვეთის ჯამი", total], ["უკვე გადახდილია", paid]].map(([label, value]) => <div key={String(label)} className="flex justify-between gap-3"><dt className="text-text-secondary">{String(label)}</dt><dd className="shrink-0 font-semibold tabular-nums">{moneyText(value as bigint)} ₾</dd></div>)}
-                <div className="flex justify-between gap-3 border-t border-border pt-2 font-semibold"><dt>{balance < 0n ? "კლიენტს დასაბრუნებელი" : balance > 0n ? "დამატებით გადასახდელი" : "თანხის სხვაობა"}</dt><dd className="shrink-0 tabular-nums">{moneyText(balance < 0n ? -balance : balance)} ₾</dd></div>
+                {[["შეკვეთიდან გამოკლებული ნივთების ღირებულება", oldReturnedTotal], ["მომხმარებელთან დარჩენილი ნივთები", keptTotal], ["ახალი ნივთები", newTotal], ["მიწოდება", moneyCents(order.courierFee) ?? 0n], ["ახალი შეკვეთის ჯამი", total], ["უკვე გადახდილია", paid]].map(([label, value]) => <div key={String(label)} className="flex justify-between gap-3"><dt className="text-text-secondary">{String(label)}</dt><dd className="shrink-0 font-semibold tabular-nums">{moneyText(value as bigint)} ₾</dd></div>)}
+                <div className="flex justify-between gap-3 border-t border-border pt-2 font-semibold"><dt>{balance < 0n ? "მომხმარებელს დასაბრუნებელი" : balance > 0n ? "დამატებით გადასახდელი" : "თანხის სხვაობა"}</dt><dd className="shrink-0 tabular-nums">{moneyText(balance < 0n ? -balance : balance)} ₾</dd></div>
             </dl>
             {balance < 0n && <p className="mt-3 text-xs text-warning">გადაცვლის შენახვა თანხის დაბრუნებას არ ადასტურებს. გადახდილი თანხა მხოლოდ რეალური დაბრუნების დადასტურების შემდეგ შემცირდება.</p>}
         </div>
-        <p className="text-xs text-text-secondary">შენახვისას ახალი ნივთები მარაგს მოაკლდება და შეკვეთა გადავა „მუშავდება“-ზე. კლიენტის ინფორმაცია და უკვე აღრიცხული გადახდები უცვლელი დარჩება.</p>
+        <p className="text-xs text-text-secondary">შენახვისას ახალი ნივთები მარაგს მოაკლდება და შეკვეთა გადავა „მუშავდება“-ზე. მომხმარებლის ინფორმაცია და უკვე აღრიცხული გადახდები უცვლელი დარჩება.</p>
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
         <div className="flex flex-wrap justify-between gap-2">
             <button type="button" disabled={blocked || uploading} onClick={() => { if (onCancel()) { setOpen(false); setItems([]); setError(""); } }} className="min-h-11 rounded-xl border border-border px-3 text-sm disabled:opacity-40">გადაცვლის გაუქმება</button>

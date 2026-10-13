@@ -62,7 +62,7 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
     }
     async function changeLink(action: "create" | "rotate" | "revoke") {
         if (!invoice || linkOperation.current) return;
-        if (action !== "create" && !window.confirm(action === "revoke" ? "ბმულის გაუქმების შემდეგ კლიენტი ამ ბმულით და ძველი QR-ით შეკვეთას ვეღარ ნახავს. გავაუქმოთ?" : "ახალი ბმულის შექმნისას ძველი ბმული და QR აღარ იმუშავებს. გავაგრძელოთ?")) return;
+        if (action !== "create" && !window.confirm(action === "revoke" ? "ბმულის გაუქმების შემდეგ მომხმარებელი ამ ბმულით და ძველი QR-ით შეკვეთას ვეღარ ნახავს. გავაუქმოთ?" : "ახალი ბმულის შექმნისას ძველი ბმული და QR აღარ იმუშავებს. გავაგრძელოთ?")) return;
         linkOperation.current = true; setLinkBusy(true); setNotice("");
         try {
             await sendOrderAction(orderId, "link", { action, expectedVersion: invoice.version });
@@ -114,14 +114,14 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
                     </div>
                     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white p-4 sm:p-7"><InvoiceDocument invoice={invoice} paper={paper} /></div>
                     {invoice.publicUrl ? <div className="mt-4 space-y-3">
-                        <div className="flex flex-wrap gap-2"><button type="button" onClick={copyLink} className="inline-flex h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm"><Icon icon="solar:copy-linear" className="h-5 w-5 text-accent" />ბმულის კოპირება</button><button type="button" onClick={shareLink} className="inline-flex h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm"><Icon icon="solar:share-linear" className="h-5 w-5 text-accent" />გაზიარება</button><a href={invoice.publicUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center rounded-xl border border-border px-4 text-sm">კლიენტის გვერდი</a></div>
-                        <label className="block min-w-0"><span className="mb-1 block text-xs text-text-secondary">კლიენტის ბმული</span><input readOnly value={invoice.publicUrl} onFocus={event => event.currentTarget.select()} className="h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary lg:text-sm" /></label>
-                    </div> : <p className="mt-4 text-sm text-text-secondary">ამ შეკვეთაზე კლიენტის ბმული ჯერ არ არის შექმნილი.</p>}
+                        <div className="flex flex-wrap gap-2"><button type="button" onClick={copyLink} className="inline-flex h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm"><Icon icon="solar:copy-linear" className="h-5 w-5 text-accent" />ბმულის კოპირება</button><button type="button" onClick={shareLink} className="inline-flex h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm"><Icon icon="solar:share-linear" className="h-5 w-5 text-accent" />გაზიარება</button><a href={invoice.publicUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center rounded-xl border border-border px-4 text-sm">მომხმარებლის გვერდი</a></div>
+                        <label className="block min-w-0"><span className="mb-1 block text-xs text-text-secondary">მომხმარებლის ბმული</span><input readOnly value={invoice.publicUrl} onFocus={event => event.currentTarget.select()} className="h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary lg:text-sm" /></label>
+                    </div> : <p className="mt-4 text-sm text-text-secondary">ამ შეკვეთაზე მომხმარებლის ბმული ჯერ არ არის შექმნილი.</p>}
                     <div className="mt-3 flex flex-wrap gap-2">
                         {invoice.publicUrl ? <>
                             <button type="button" disabled={linkBusy} onClick={() => changeLink("rotate")} className="min-h-11 rounded-xl border border-border px-3 text-sm">ბმულის შეცვლა</button>
                             <button type="button" disabled={linkBusy} onClick={() => changeLink("revoke")} className="min-h-11 rounded-xl border border-danger/30 px-3 text-sm text-danger">ბმულის გაუქმება</button>
-                        </> : <button type="button" disabled={linkBusy} onClick={() => changeLink("create")} className="min-h-11 rounded-xl border border-border px-3 text-sm">კლიენტის ბმულის შექმნა</button>}
+                        </> : <button type="button" disabled={linkBusy} onClick={() => changeLink("create")} className="min-h-11 rounded-xl border border-border px-3 text-sm">მომხმარებლის ბმულის შექმნა</button>}
                         {linkBusy && <span role="status" className="self-center text-sm text-text-secondary">ინახება…</span>}
                     </div>
                     <p role="status" aria-live="polite" className="mt-2 text-sm text-text-secondary">{notice}</p>

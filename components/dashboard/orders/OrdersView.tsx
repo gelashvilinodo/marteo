@@ -74,11 +74,12 @@ function date(value: string) {
 function Status({
     order,
     onReturn,
+    onChanged,
 }: {
     order: OrderEntry;
     onReturn: (orderId: string) => void;
+    onChanged: (orderId: string) => Promise<void>;
 }) {
-    const router = useRouter();
     const [refreshing, startRefresh] = useTransition();
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
@@ -171,7 +172,9 @@ function Status({
                 version: result.version,
             });
 
-            startRefresh(() => router.refresh());
+            startRefresh(async () => {
+                await onChanged(order.id);
+            });
         } catch (cause: unknown) {
             const definiteFailure =
                 cause instanceof OrderActionError &&
@@ -189,7 +192,9 @@ function Status({
                 cause instanceof OrderActionError &&
                 cause.status === 409
             ) {
-                startRefresh(() => router.refresh());
+                startRefresh(async () => {
+                    await onChanged(order.id);
+                });
             }
         } finally {
             running.current = false;
@@ -564,7 +569,16 @@ function Status({
     );
 }
 
-export default function OrdersView({ data }: { data: OrdersPageData }) {
+export default function OrdersView({
+    data: initialData,
+}: {
+    data: OrdersPageData;
+}) {
+    const [data, setData] = useState(initialData);
+
+    useEffect(() => {
+        setData(initialData);
+    }, [initialData]);
     const router = useRouter();
     const [pending, startTransition] = useTransition();
     const [selected, setSelected] = useState<OrderEntry | null>(null);
@@ -609,11 +623,145 @@ export default function OrdersView({ data }: { data: OrdersPageData }) {
         };
     }, [selected]);
 
-    useEffect(() => {
-        const refresh = () => startTransition(() => router.refresh());
-        window.addEventListener("focus", refresh);
-        return () => window.removeEventListener("focus", refresh);
-    }, [router]);
+    async function refreshOrder(orderId: string) {
+        try {
+            if (data.filter !== "all" || data.payment !== "all") {
+                const response = await fetch(
+                    `/api/orders/list${window.location.search}`,
+                    {
+                        cache: "no-store",
+                        credentials: "same-origin",
+                    },
+                );
+
+                const raw: unknown = await response.json();
+
+                if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+                    throw new Error("შეკვეთების სია ვერ განახლდა.");
+                }
+
+                const body = raw as {
+                    success?: boolean;
+                    message?: string;
+                    data?: OrdersPageData;
+                };
+
+                if (
+                    !response.ok ||
+                    body.success !== true ||
+                    !body.data ||
+                    !Array.isArray(body.data.orders)
+                ) {
+                    throw new Error(
+                        body.message || "შეკვეთების სია ვერ განახლდა.",
+                    );
+                }
+
+                const updatedData = body.data;
+                setData(updatedData);
+
+                setCheckedIds(current =>
+                    current.filter(id =>
+                        updatedData.orders.some(order => order.id === id),
+                    ),
+                );
+
+                setSelected(current => {
+                    if (current?.id !== orderId) return current;
+
+                    return (
+                        updatedData.orders.find(order => order.id === orderId) ??
+                        null
+                    );
+                });
+
+                const params = new URLSearchParams(window.location.search);
+                params.set("page", String(updatedData.currentPage));
+
+                window.history.replaceState(
+                    null,
+                    "",
+                    `/dashboard/orders?${params.toString()}${window.location.hash}`,
+                );
+
+                return;
+            }
+            const response = await fetch(
+                `/api/orders/${encodeURIComponent(orderId)}/row${window.location.search}`,
+                {
+                    cache: "no-store",
+                    credentials: "same-origin",
+                },
+            );
+
+            const raw: unknown = await response.json();
+
+            if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+                throw new Error("შეკვეთის განახლებული მონაცემები ვერ ჩაიტვირთა.");
+            }
+
+            const body = raw as {
+                success?: boolean;
+                message?: string;
+                order?: OrderEntry | null;
+                summary?: Pick<
+                    OrdersPageData,
+                    | "counts"
+                    | "invoiceCounts"
+                    | "totalOrders"
+                    | "currentPage"
+                    | "totalPages"
+                >;
+            };
+
+            if (
+                !response.ok ||
+                body.success !== true ||
+                !body.summary ||
+                body.order === undefined ||
+                (body.order !== null && body.order.id !== orderId)
+            ) {
+                throw new Error(
+                    body.message ||
+                    "შეკვეთის განახლებული მონაცემები ვერ ჩაიტვირთა.",
+                );
+            }
+
+            const updated = body.order;
+            const summary = body.summary;
+            
+
+            setData(current => ({
+                ...current,
+                ...summary,
+                orders: updated
+                    ? current.orders.map(order =>
+                        order.id === orderId &&
+                            updated.invoiceVersion >= order.invoiceVersion
+                            ? updated
+                            : order,
+                    )
+                    : current.orders.filter(order => order.id !== orderId),
+            }));
+
+            setSelected(current =>
+                current?.id === orderId ? updated : current,
+            );
+
+            if (!updated) {
+                setCheckedIds(current =>
+                    current.filter(id => id !== orderId),
+                );
+            }
+        } catch (cause: unknown) {
+            // მოქმედება უკვე შესრულებულია; თავიდან არ ვაგზავნით.
+            setPrintError(
+                cause instanceof Error
+                    ? cause.message
+                    : "შეკვეთის განახლებული მონაცემები ვერ ჩაიტვირთა.",
+            );
+        }
+    }
 
     function navigate(filter: OrdersFilter, query: string, page = 1, changes: Partial<{ period: OrdersPeriod; from: string; to: string; sort: OrdersSort; payment: OrdersPaymentFilter }> = {}) {
         const params = new URLSearchParams();
@@ -1027,6 +1175,7 @@ export default function OrdersView({ data }: { data: OrdersPageData }) {
 
                                         <td className="px-1 py-2 align-middle">
                                             <Status
+                                                onChanged={refreshOrder}
                                                 order={order}
                                                 onReturn={openOrderReturn}
                                             />
@@ -1124,6 +1273,7 @@ export default function OrdersView({ data }: { data: OrdersPageData }) {
                     </div>
                 </div>
                 <div className="mt-4 flex items-center justify-between gap-2"><Status
+                    onChanged={refreshOrder}
                     order={selected}
                     onReturn={openOrderReturn}
                 /><span className="text-sm text-text-secondary">{payments[selected.paymentStatus]}</span></div>
@@ -1312,7 +1462,7 @@ export default function OrdersView({ data }: { data: OrdersPageData }) {
 
                             <div className="min-w-0">
                                 <h3 className="text-sm font-semibold text-warning">
-                                    კლიენტს დასაბრუნებელია {selected.refundDue} ₾
+                                    მომხმარებელს დასაბრუნებელია {selected.refundDue} ₾
                                 </h3>
 
                                 <p className="mt-2 text-xs text-text-secondary">
@@ -1322,7 +1472,7 @@ export default function OrdersView({ data }: { data: OrdersPageData }) {
                                 </p>
 
                                 <p className="mt-2 text-xs text-text-secondary">
-                                    ჯერ დაუბრუნე თანხა კლიენტს, შემდეგ
+                                    ჯერ დაუბრუნე თანხა მომხმარებელს, შემდეგ
                                     დაადასტურე ქვემოთ. ეს ღილაკი თანხას
                                     ბანკიდან ავტომატურად არ გადარიცხავს.
                                 </p>

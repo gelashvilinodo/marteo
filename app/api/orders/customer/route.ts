@@ -146,7 +146,7 @@ export async function GET(request: Request) {
         return json(
             {
                 success: false,
-                message: "კლიენტის მოძებნა ვერ მოხერხდა.",
+                message: "მომხმარებლის მოძებნა ვერ მოხერხდა.",
             },
             500,
         );

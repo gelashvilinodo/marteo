@@ -168,7 +168,7 @@ export default function NewOrderDrawer() {
             try {
                 const response = await fetch(`/api/orders/customer?${new URLSearchParams({ phone })}`, { cache: "no-store", signal: controller.signal });
                 const data = await response.json() as { success?: boolean; message?: string; customer?: { firstName: string; lastName: string; address: string } | null };
-                if (!response.ok || !data.success) throw new Error(data.message || "კლიენტის მოძებნა ვერ მოხერხდა.");
+                if (!response.ok || !data.success) throw new Error(data.message || "მომხმარებლის მოძებნა ვერ მოხერხდა.");
                 if (!active) return;
                 if (data.customer) {
                     const customer = data.customer;
@@ -179,10 +179,10 @@ export default function NewOrderDrawer() {
                         shippingAddress: current.shippingAddress === before.shippingAddress ? customer.address : current.shippingAddress,
                     } : current);
                     autoFilled.current = { ...customer, phone };
-                    setCustomerInfo("კლიენტი მოიძებნა.");
-                } else setCustomerInfo("ახალი კლიენტი — შეკვეთასთან ერთად შეინახება.");
+                    setCustomerInfo("მომხმარებელი მოიძებნა.");
+                } else setCustomerInfo("ახალი მომხმარებელი — შეკვეთასთან ერთად შეინახება.");
             } catch (cause: unknown) {
-                if (active && !(cause instanceof Error && cause.name === "AbortError")) setCustomerInfo(cause instanceof Error ? cause.message : "კლიენტის მოძებნა ვერ მოხერხდა. ინფორმაციის ხელით შეყვანა შეგიძლია.");
+                if (active && !(cause instanceof Error && cause.name === "AbortError")) setCustomerInfo(cause instanceof Error ? cause.message : "მომხმარებლის მოძებნა ვერ მოხერხდა. ინფორმაციის ხელით შეყვანა შეგიძლია.");
             } finally { if (active) setCustomerBusy(false); }
         }, 350);
         return () => { active = false; clearTimeout(timer); controller.abort(); };
@@ -381,7 +381,7 @@ export default function NewOrderDrawer() {
                     }
 
                     if (!window.confirm(
-                        `დაადასტურე, რომ კლიენტისგან დამატებით მიიღე ${moneyText(additionalPayment)} ₾. ეს თანხა გადახდების ისტორიაში ჩაიწერება.`,
+                        `დაადასტურე, რომ მომხმარებლისგან დამატებით მიიღე ${moneyText(additionalPayment)} ₾. ეს თანხა გადახდების ისტორიაში ჩაიწერება.`,
                     )) {
                         return;
                     }
@@ -544,7 +544,7 @@ export default function NewOrderDrawer() {
             <form id={formId} onSubmit={submit} className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 lg:flex lg:flex-col lg:overflow-hidden lg:p-4 xl:p-5">
                 <fieldset disabled={blocked} className="min-h-0 min-w-0 space-y-3 lg:flex lg:h-full lg:flex-col lg:space-y-0 lg:gap-3 disabled:opacity-70">
                     <section className="shrink-0 rounded-2xl border border-border bg-surface p-3 sm:p-4">
-                        <div className="mb-3 flex flex-wrap items-center gap-2"><Icon icon="solar:user-linear" className="h-5 w-5 text-accent" /><h3 className="text-sm font-semibold">კლიენტის ინფორმაცია</h3>{customerBusy && <Icon icon="solar:refresh-linear" className="h-4 w-4 animate-spin text-accent" />}<span role="status" className="text-xs text-text-secondary">{customerInfo}</span>{customerInfo && !customerInfo.startsWith("კლიენტი მოიძებნა") && !customerInfo.startsWith("ახალი კლიენტი") && <button type="button" onClick={() => setLookupRevision(value => value + 1)} className="text-xs text-accent underline">ხელახლა მოძებნა</button>}</div>
+                        <div className="mb-3 flex flex-wrap items-center gap-2"><Icon icon="solar:user-linear" className="h-5 w-5 text-accent" /><h3 className="text-sm font-semibold">მომხმარებლის ინფორმაცია</h3>{customerBusy && <Icon icon="solar:refresh-linear" className="h-4 w-4 animate-spin text-accent" />}<span role="status" className="text-xs text-text-secondary">{customerInfo}</span>{customerInfo && !customerInfo.startsWith("მომხმარებელი მოიძებნა") && !customerInfo.startsWith("ახალი მომხმარებელი") && <button type="button" onClick={() => setLookupRevision(value => value + 1)} className="text-xs text-accent underline">ხელახლა მოძებნა</button>}</div>
                         <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.6fr)]">
                             <div className="col-span-2 lg:col-span-1"><Field label="ტელეფონი *"><input type="tel" autoComplete="off" value={draft.recipientPhone} onChange={event => changePhone(event.target.value)} required placeholder="მაგ: 599 12 34 56" className={input} /></Field></div>
                             <Field label="სახელი"><input value={draft.recipientFirstName} onChange={event => patch({ recipientFirstName: event.target.value })} className={input} /></Field>

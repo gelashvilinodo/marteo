@@ -104,7 +104,7 @@ export default function OrderRefundButton({ orderId, onUpdated }: {
                 setPending(null);
                 setError(cause.message);
             } else {
-                setError("აღრიცხვის შედეგი დაუდასტურებელია. ხელახლა ცდა მხოლოდ ჩანაწერს გადაამოწმებს — კლიენტს თანხა მეორედ არ დაუბრუნო.");
+                setError("აღრიცხვის შედეგი დაუდასტურებელია. ხელახლა ცდა მხოლოდ ჩანაწერს გადაამოწმებს — მომხმარებელს თანხა მეორედ არ დაუბრუნო.");
             }
         } finally {
             running.current = false;
@@ -121,7 +121,7 @@ export default function OrderRefundButton({ orderId, onUpdated }: {
             return;
         }
         if (!confirmed) {
-            setError("მონიშნე დადასტურება მხოლოდ მაშინ, თუ თანხა რეალურად დაუბრუნე კლიენტს.");
+            setError("მონიშნე დადასტურება მხოლოდ მაშინ, თუ თანხა რეალურად დაუბრუნე მომხმარებელს.");
             return;
         }
         void send({
@@ -142,15 +142,15 @@ export default function OrderRefundButton({ orderId, onUpdated }: {
         </button>
         <dialog ref={dialog} onCancel={event => { event.preventDefault(); event.stopPropagation(); if (canLeave()) leave(); }} onClose={event => event.stopPropagation()} aria-labelledby="order-refund-title" className="m-auto max-h-[85dvh] w-[calc(100%_-_2rem)] max-w-lg overflow-y-auto rounded-2xl border border-border bg-surface p-5 text-text-primary shadow-2xl backdrop:bg-black/30 backdrop:backdrop-blur-sm">
             <h2 id="order-refund-title" className="flex items-center gap-2 text-lg font-semibold"><Icon icon="solar:wallet-money-linear" className="h-6 w-6 text-warning" />თანხის დაბრუნება</h2>
-            <p className="mt-3 text-sm text-text-secondary">ეს მოქმედება თანხას ბანკიდან არ გადარიცხავს. აქ აღრიცხე მხოლოდ ის თანხა, რომელიც კლიენტს უკვე დაუბრუნე.</p>
+            <p className="mt-3 text-sm text-text-secondary">ეს მოქმედება თანხას ბანკიდან არ გადარიცხავს. აქ აღრიცხე მხოლოდ ის თანხა, რომელიც მომხმარებელს უკვე დაუბრუნე.</p>
             {loading && <p role="status" className="mt-4 flex items-center gap-2 text-sm text-accent"><Icon icon="solar:refresh-linear" className="h-5 w-5 animate-spin" />იტვირთება…</p>}
             {!loading && order && <>
-                <div className="mt-4 rounded-xl border border-warning/30 bg-warning/5 p-3"><p className="text-xs text-text-secondary">კლიენტს დასაბრუნებელი თანხა</p><p className="mt-1 text-xl font-semibold tabular-nums text-warning">{order.refundDue} ₾</p></div>
+                <div className="mt-4 rounded-xl border border-warning/30 bg-warning/5 p-3"><p className="text-xs text-text-secondary">მომხმარებელს დასაბრუნებელი თანხა</p><p className="mt-1 text-xl font-semibold tabular-nums text-warning">{order.refundDue} ₾</p></div>
                 {due > 0n ? <fieldset disabled={blocked} className="mt-4 space-y-3 disabled:opacity-60">
                     <label className="block"><span className="mb-1 block text-sm">რეალურად დაბრუნებული თანხა · ₾</span><input inputMode="decimal" value={amount} onChange={event => { setAmount(event.target.value); setDirty(true); }} className={field} /><span className="mt-1 block text-xs text-text-secondary">შეგიძლია თანხა ნაწილობრივაც აღრიცხო. დარჩენილი ნაწილი დასაბრუნებლად დარჩება.</span></label>
                     <label className="block"><span className="mb-1 block text-sm">დაბრუნების მეთოდი</span><select value={method} onChange={event => { setMethod(event.target.value as Method); setDirty(true); }} className={field}><option value="CASH">ნაღდი ფული</option><option value="BANK_TRANSFER">საბანკო გადარიცხვა</option><option value="CARD">ბარათი</option></select></label>
                     {method === "BANK_TRANSFER" && <label className="block"><span className="mb-1 block text-sm">ბანკი</span><input value={bankName} onChange={event => { setBankName(event.target.value); setDirty(true); }} className={field} /></label>}
-                    <label className="flex items-start gap-3 rounded-xl border border-border p-3 text-sm"><input type="checkbox" checked={confirmed} onChange={event => { setConfirmed(event.target.checked); setDirty(true); }} className="mt-0.5 h-4 w-4 shrink-0 accent-accent" /><span>ვადასტურებ, რომ მითითებული თანხა კლიენტს რეალურად დავუბრუნე.</span></label>
+                    <label className="flex items-start gap-3 rounded-xl border border-border p-3 text-sm"><input type="checkbox" checked={confirmed} onChange={event => { setConfirmed(event.target.checked); setDirty(true); }} className="mt-0.5 h-4 w-4 shrink-0 accent-accent" /><span>ვადასტურებ, რომ მითითებული თანხა მომხმარებელს რეალურად დავუბრუნე.</span></label>
                 </fieldset> : <p className="mt-4 text-sm text-success">ამ შეკვეთაზე დასაბრუნებელი თანხა აღარ არის.</p>}
             </>}
             {error && <p role="alert" className="mt-4 text-sm text-danger">{error}</p>}
