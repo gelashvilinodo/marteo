@@ -5,6 +5,7 @@ import InvoiceDocument, { isInvoicePaper, type InvoicePaper } from "./InvoiceDoc
 import { sendOrderAction } from "@/lib/orders/order-actions-client";
 import { Icon } from "@iconify/react";
 import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
+import InvoicePreview from "./InvoicePreview";
 
 export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
     const [paper, setPaper] = useState<InvoicePaper>("a4");
@@ -102,7 +103,7 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
                 </div>
                 <div className="p-3 sm:p-5">
                     <p className="mb-3 text-xs text-text-secondary">{invoice.printState === "NEW" ? "ახალი ინვოისი" : invoice.printState === "UPDATED" ? "ინვოისი განახლებულია — საჭიროა ხელახლა ბეჭდვა" : "მონიშნულია დაბეჭდილად"} · ვერსია {invoice.version}</p>
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
                         <select aria-label="ინვოისის ფორმატი" value={paper} onChange={event => {
                             if (!isInvoicePaper(event.target.value)) return;
                             setPaper(event.target.value);
@@ -110,14 +111,39 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
                         }} className="h-11 max-w-full rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary lg:text-sm">
                             <option value="a4">A4</option><option value="100x150">10 × 15 სმ</option><option value="80mm">თერმული — 80 მმ</option><option value="58mm">თერმული — 58 მმ</option>
                         </select>
-                        <a href={`/print/orders/${encodeURIComponent(orderId)}?format=${paper}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center gap-2 rounded-xl bg-success px-4 text-sm font-semibold text-white"><Icon icon="solar:document-text-linear" className="h-5 w-5" />ბეჭდვა / PDF</a>
+                        <a
+                            href={`/print/orders/${encodeURIComponent(orderId)}?format=${paper}`}
+                            className="inline-flex h-11 items-center gap-2 rounded-xl bg-success px-4 text-sm font-semibold text-white"
+                        >
+                            <Icon icon="solar:document-text-linear" className="h-5 w-5" />
+                            ბეჭდვა / PDF
+                        </a>
                     </div>
-                    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white p-4 sm:p-7"><InvoiceDocument invoice={invoice} paper={paper} /></div>
+                    <InvoicePreview
+                        width={
+                            paper === "a4"
+                                ? "210mm"
+                                : paper === "100x150"
+                                    ? "100mm"
+                                    : paper === "80mm"
+                                        ? "80mm"
+                                        : "58mm"
+                        }
+                    >
+                        <div
+                            className="box-border rounded-xl bg-white shadow-sm"
+                            style={{
+                                padding: paper === "a4" ? "12mm" : "3mm",
+                            }}
+                        >
+                            <InvoiceDocument invoice={invoice} paper={paper} />
+                        </div>
+                    </InvoicePreview>
                     {invoice.publicUrl ? <div className="mt-4 space-y-3">
-                        <div className="flex flex-wrap gap-2"><button type="button" onClick={copyLink} className="inline-flex h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm"><Icon icon="solar:copy-linear" className="h-5 w-5 text-accent" />ბმულის კოპირება</button><button type="button" onClick={shareLink} className="inline-flex h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm"><Icon icon="solar:share-linear" className="h-5 w-5 text-accent" />გაზიარება</button><a href={invoice.publicUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center rounded-xl border border-border px-4 text-sm">მომხმარებლის გვერდი</a></div>
+                        <div className="flex flex-wrap justify-center gap-2"><button type="button" onClick={copyLink} className="inline-flex h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm"><Icon icon="solar:copy-linear" className="h-5 w-5 text-accent" />ბმულის კოპირება</button><button type="button" onClick={shareLink} className="inline-flex h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm"><Icon icon="solar:share-linear" className="h-5 w-5 text-accent" />გაზიარება</button><a href={invoice.publicUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center rounded-xl border border-border px-4 text-sm">მომხმარებლის გვერდი</a></div>
                         <label className="block min-w-0"><span className="mb-1 block text-xs text-text-secondary">მომხმარებლის ბმული</span><input readOnly value={invoice.publicUrl} onFocus={event => event.currentTarget.select()} className="h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary lg:text-sm" /></label>
                     </div> : <p className="mt-4 text-sm text-text-secondary">ამ შეკვეთაზე მომხმარებლის ბმული ჯერ არ არის შექმნილი.</p>}
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <div className="mt-3 flex flex-wrap justify-center gap-2">
                         {invoice.publicUrl ? <>
                             <button type="button" disabled={linkBusy} onClick={() => changeLink("rotate")} className="min-h-11 rounded-xl border border-border px-3 text-sm">ბმულის შეცვლა</button>
                             <button type="button" disabled={linkBusy} onClick={() => changeLink("revoke")} className="min-h-11 rounded-xl border border-danger/30 px-3 text-sm text-danger">ბმულის გაუქმება</button>

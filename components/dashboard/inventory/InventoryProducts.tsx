@@ -160,14 +160,14 @@ export default function InventoryProducts({
 
                         <th
                             scope="col"
-                            className="w-[19%] px-1 py-3 text-center font-medium md:w-[16%] md:text-left"
+                            className="w-[19%] px-2 py-3 text-center font-medium md:text-left"
                         >
                             სტატუსი
                         </th>
 
                         <th
                             scope="col"
-                            className="w-11 px-1 py-3 md:w-[7%]"
+                            className="w-14 px-1 py-3"
                         >
                             <span className="sr-only">დეტალები</span>
                         </th>
@@ -254,13 +254,13 @@ export default function InventoryProducts({
                                 </td>
 
                                 <td className="px-1 py-3 md:px-2">
-                                    <div className="flex flex-wrap justify-center gap-1 md:justify-start">
+                                    <div className="flex min-w-0 flex-wrap justify-center gap-1 md:justify-start">
                                         {getStatuses(product).map((status) => (
                                             <span
                                                 key={status.label}
                                                 title={status.label}
                                                 className={[
-                                                    "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg",
+                                                    "inline-flex h-6 w-6 min-w-0 max-w-full items-center justify-center rounded-lg",
                                                     "md:h-auto md:w-auto md:gap-1 md:px-2 md:py-1",
                                                     status.color,
                                                 ].join(" ")}
@@ -271,7 +271,7 @@ export default function InventoryProducts({
                                                     className="h-3.5 w-3.5 shrink-0"
                                                 />
 
-                                                <span className="sr-only text-[11px] font-medium md:not-sr-only">
+                                                <span className="sr-only text-[11px] font-medium md:not-sr-only md:min-w-0 md:whitespace-normal md:leading-4 md:[overflow-wrap:anywhere]">
                                                     {status.label}
                                                 </span>
                                             </span>
@@ -284,7 +284,7 @@ export default function InventoryProducts({
                                         type="button"
                                         aria-label={`${product.name} — დეტალების ნახვა`}
                                         onClick={() => setSelected(product)}
-                                        className="flex h-11 w-11 items-center justify-center rounded-xl text-text-secondary transition hover:bg-accent/10 hover:text-accent focus-visible:outline-2 focus-visible:outline-accent"
+                                        className="mx-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-text-secondary transition hover:bg-accent/10 hover:text-accent focus-visible:outline-2 focus-visible:outline-accent"
                                     >
                                         <Icon
                                             icon="solar:menu-dots-bold"

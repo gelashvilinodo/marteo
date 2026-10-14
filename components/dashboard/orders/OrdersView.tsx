@@ -242,9 +242,10 @@ function Status({
     }
 
     return (
-        <div className="min-w-0">
+        <div className="@container min-w-0 w-full">
             <div
-                className={`relative inline-flex max-w-full items-center gap-1.5 rounded-lg px-2 py-1.5 ${status.tone}`}
+                title={status.label}
+                className={`relative inline-flex max-w-full items-center gap-1 rounded-lg px-2 py-1.5 ${status.tone}`}
             >
                 <Icon
                     icon={
@@ -256,11 +257,11 @@ function Status({
                         }`}
                 />
 
-                <span className="hidden text-xs font-medium sm:inline">
+                <span className="hidden min-w-0 truncate text-xs font-medium @[11rem]:inline">
                     {status.label}
                 </span>
 
-                <span className="sr-only sm:hidden">
+                <span className="sr-only @[11rem]:hidden">
                     {status.label}
                 </span>
 
@@ -729,7 +730,7 @@ export default function OrdersView({
 
             const updated = body.order;
             const summary = body.summary;
-            
+
 
             setData(current => ({
                 ...current,
@@ -828,7 +829,7 @@ export default function OrdersView({
             </form>}
             <p className="mt-3 text-xs text-text-secondary">პერიოდი: {data.from.split("-").reverse().join(".")} — {data.to.split("-").reverse().join(".")}</p>
             {data.periodError && <p role="alert" className="mt-2 text-sm text-danger">{data.periodError}</p>}
-            <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
+            <div className="mt-6 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
                 {cards.map((card) => (
                     <button
                         key={card.id}
@@ -851,7 +852,14 @@ export default function OrdersView({
                                 : "border-border bg-surface hover:bg-background",
                         ].join(" ")}
                     >
-                        <div className="flex min-w-0 items-center gap-2 lg:gap-3">
+                        <div
+                            className={[
+                                "grid min-w-0 items-center gap-2",
+                                card.id === "all"
+                                    ? "grid-cols-[auto_minmax(0,1fr)_auto] lg:grid-cols-[auto_minmax(0,1fr)]"
+                                    : "grid-cols-[auto_minmax(0,1fr)]",
+                            ].join(" ")}
+                        >
                             <span
                                 className={[
                                     "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl lg:h-9 lg:w-9",
@@ -865,18 +873,24 @@ export default function OrdersView({
                                 />
                             </span>
 
-                            <span className="min-w-0 flex-1 text-xs font-medium text-text-secondary lg:text-sm">
+                            <span className={[
+                                "min-w-0 [overflow-wrap:anywhere] text-xs font-medium leading-relaxed text-text-secondary lg:text-sm",
+                                card.id === "all"
+                                    ? "lg:col-span-2 lg:row-start-2 lg:mt-1"
+                                    : "col-span-2 row-start-2 mt-1",
+                            ].join(" ")}>
                                 {card.title}
                             </span>
 
-                            <span className="shrink-0 text-lg font-semibold tabular-nums text-text-primary lg:hidden">
+                            <span className={[
+                                "min-w-0 text-right text-lg font-semibold tabular-nums text-text-primary [overflow-wrap:anywhere] lg:text-2xl",
+                                card.id === "all"
+                                    ? "lg:col-start-2 lg:row-start-1"
+                                    : "col-start-2 row-start-1",
+                            ].join(" ")}>
                                 {data.counts[card.id]}
                             </span>
                         </div>
-
-                        <p className="mt-2 hidden text-2xl font-semibold tabular-nums text-text-primary lg:block">
-                            {data.counts[card.id]}
-                        </p>
                     </button>
                 ))}
             </div>
@@ -1032,7 +1046,7 @@ export default function OrdersView({
                     )}
                 </div>
                 {pending ? (
-                    <OrdersListSkeleton />
+                    <OrdersListSkeleton selectionMode={selectionMode} />
                 ) : data.orders.length === 0 ? <div className="flex flex-col items-center gap-3 px-4 py-12 text-text-secondary"><Icon icon="solar:clipboard-list-linear" className="h-10 w-10" /><p>{data.counts.all === 0 ? "ამ პერიოდში შეკვეთები არ არის" : "შეკვეთა ვერ მოიძებნა"}</p></div> :
                     <table className="w-full table-fixed border-collapse text-left">
                         <thead className="sticky top-16 z-20 bg-background text-xs text-text-secondary sm:text-sm">
@@ -1066,13 +1080,30 @@ export default function OrdersView({
                                         />
                                     </th>
                                 )}
-                                <th className="w-[35%] px-3 py-3 sm:w-[13%] sm:px-4 xl:w-[12%]">შეკვეთა</th>
-                                <th className="hidden w-[22%] px-3 py-3 sm:table-cell xl:w-[18%]">მიმღები</th>
+                                <th
+                                    className="px-3 py-3 sm:px-4"
+                                    style={{
+                                        width: `calc(${Math.max(
+                                            5,
+                                            ...data.orders.map(order => number(order).length),
+                                        ) + 1
+                                            }ch + 5rem)`,
+                                    }}
+                                >
+                                    შეკვეთა
+                                </th>
+                                <th className="hidden px-3 py-3 sm:table-cell">
+                                    მიმღები
+                                </th>
                                 <th className="hidden w-[22%] px-3 py-3 lg:table-cell xl:w-[18%]">პროდუქტები</th>
                                 <th className="w-[23%] px-2 py-3 sm:w-[15%] xl:w-[14%]">თანხა</th>
-                                <th className="w-[18%] px-1 py-3 sm:w-[17%] xl:w-[15%]">სტატუსი</th>
+                                <th className="w-20 px-1 py-3 sm:w-[20%] xl:w-[18%]">
+                                    სტატუსი
+                                </th>
                                 <th className="hidden w-[12%] px-2 py-3 xl:table-cell">გადახდა</th>
-                                <th className="w-[15%] px-1 py-3 sm:w-[8%]"><span className="sr-only">დეტალები</span></th>
+                                <th className="w-14 px-1 py-3">
+                                    <span className="sr-only">დეტალები</span>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1133,8 +1164,8 @@ export default function OrdersView({
                                                     )}
                                                 </div>
 
-                                                <div className="min-w-0">
-                                                    <p className="truncate text-xs font-semibold text-text-primary sm:text-sm">
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="whitespace-nowrap text-xs font-semibold tabular-nums text-text-primary sm:text-sm">
                                                         {number(order)}
                                                     </p>
 

@@ -3,8 +3,14 @@ import "./globals.css";
 import ModalBackdropDismiss from "@/components/ModalBackdropDismiss";
 
 export const metadata: Metadata = {
-  title: "MARTEO.GE",
+  title: "Marteo",
+  applicationName: "Marteo",
   description: "ბიზნესის მართვის თანამედროვე პლატფორმა",
+  appleWebApp: {
+    capable: true,
+    title: "Marteo",
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({

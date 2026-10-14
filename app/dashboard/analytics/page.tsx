@@ -249,8 +249,8 @@ export default async function AnalyticsPage({
                     </section>
                 )}
 
-                <div className="grid min-w-0 gap-4 lg:grid-cols-2">
-                    <section className="min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+                <div className="grid min-w-0 gap-4 2xl:grid-cols-2">
+                    <section className="@container min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">
                         <h2 className="flex items-center gap-2 font-semibold text-text-primary">
                             <Icon
                                 icon="solar:wallet-money-linear"
@@ -259,17 +259,17 @@ export default async function AnalyticsPage({
                             გადახდები
                         </h2>
 
-                        <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+                        <dl className="mt-4 grid min-w-0 gap-3 @[30rem]:grid-cols-3">
                             {[
                                 ["მიღებული თანხა", data.received],
-                                ["მომხმარებლებისთვის დაბრუნებული", data.refunded],
-                                ["მიღებული მინუს დაბრუნებული", data.netReceived],
+                                ["დაბრუნებული თანხა", data.refunded],
+                                ["მიღებული − დაბრუნებული", data.netReceived],
                             ].map(([label, value]) => (
                                 <div
                                     key={label}
                                     className="min-w-0 rounded-xl border border-border bg-background p-4"
                                 >
-                                    <dt className="text-xs text-text-secondary">
+                                    <dt className="min-w-0 [overflow-wrap:anywhere] text-xs leading-relaxed text-text-secondary">
                                         {label}
                                     </dt>
                                     <dd className="mt-3 break-words text-xl font-semibold tabular-nums text-text-primary sm:text-2xl">
@@ -284,7 +284,7 @@ export default async function AnalyticsPage({
                             მიღებული თანხა და გაყიდვის მოგება სხვადასხვა მაჩვენებელია.
                         </p>
                     </section>
-                    <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+                    <section className="@container min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">
                         <h2 className="flex items-center gap-2 font-semibold text-text-primary">
                             <Icon
                                 icon="solar:bill-list-linear"
@@ -298,9 +298,9 @@ export default async function AnalyticsPage({
                             ზემოთ არჩეული თარიღები ამ თანხებს არ ცვლის.
                         </p> */}
 
-                        <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                        <dl className="mt-4 grid min-w-0 gap-3 @[26rem]:grid-cols-2">
                             <div className="min-w-0 rounded-xl border border-border bg-background p-4">
-                                <dt className="flex items-center gap-2 text-sm text-text-secondary">
+                                <dt className="flex min-w-0 flex-col items-start gap-2 [overflow-wrap:anywhere] text-sm leading-relaxed text-text-secondary">
                                     <Icon
                                         icon="solar:download-minimalistic-linear"
                                         className="h-5 w-5 shrink-0 text-success"
@@ -319,7 +319,7 @@ export default async function AnalyticsPage({
                             </div>
 
                             <div className="min-w-0 rounded-xl border border-border bg-background p-4">
-                                <dt className="flex items-center gap-2 text-sm text-text-secondary">
+                                <dt className="flex min-w-0 flex-col items-start gap-2 [overflow-wrap:anywhere] text-sm leading-relaxed text-text-secondary">
                                     <Icon
                                         icon="solar:upload-minimalistic-linear"
                                         className="h-5 w-5 shrink-0 text-warning"

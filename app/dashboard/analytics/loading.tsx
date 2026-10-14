@@ -141,31 +141,65 @@ export default function AnalyticsLoading() {
                     </section>
                 </div>
 
-                <div className="grid min-w-0 gap-4 lg:grid-cols-2">
-                    {[3, 2].map((count, index) => (
-                        <section key={index} className={panel}>
-                            <Placeholder className="h-5 w-36" />
+                <div className="grid min-w-0 gap-4 2xl:grid-cols-2">
+                    <section className="@container min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+                        <div className="flex items-center gap-2">
+                            <Placeholder className="h-5 w-5 shrink-0" />
+                            <Placeholder className="h-5 w-28 max-w-full" />
+                        </div>
 
-                            <div
-                                className={`mt-4 grid gap-3 ${
-                                    count === 3
-                                        ? "sm:grid-cols-3"
-                                        : "sm:grid-cols-2"
-                                }`}
-                            >
-                                {Array.from({ length: count }, (_, item) => (
+                        <div className="mt-4 grid min-w-0 gap-3 @[30rem]:grid-cols-3">
+                            {Array.from({ length: 3 }, (_, index) => (
+                                <div
+                                    key={index}
+                                    className="min-w-0 rounded-xl border border-border bg-background p-4"
+                                >
+                                    <Placeholder className="h-3 w-28 max-w-full" />
+                                    <Placeholder className="mt-3 h-7 w-24 max-w-full" />
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-3 space-y-2">
+                            <Placeholder className="h-3 w-full" />
+                            <Placeholder className="h-3 w-3/4" />
+                        </div>
+                    </section>
+
+                    <section className="@container min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+                        <div className="flex items-center gap-2">
+                            <Placeholder className="h-5 w-5 shrink-0" />
+                            <Placeholder className="h-5 w-40 max-w-full" />
+                        </div>
+
+                        <div className="mt-4 grid min-w-0 gap-3 @[26rem]:grid-cols-2">
+                            {Array.from({ length: 2 }, (_, index) => (
+                                <div
+                                    key={index}
+                                    className="min-w-0 rounded-xl border border-border bg-background p-4"
+                                >
                                     <div
-                                        key={item}
-                                        className="rounded-xl border border-border bg-background p-4"
-                                    >
+                                        className={`h-5 w-5 rounded ${index === 0
+                                                ? "bg-success/15"
+                                                : "bg-warning/15"
+                                            }`}
+                                    />
+
+                                    <div className="mt-2 space-y-2">
                                         <Placeholder className="h-3 w-full" />
-                                        <Placeholder className="mt-2 h-3 w-3/4" />
-                                        <Placeholder className="mt-4 h-7 w-24 max-w-full" />
+                                        <Placeholder className="h-3 w-3/4" />
                                     </div>
-                                ))}
-                            </div>
-                        </section>
-                    ))}
+
+                                    <Placeholder className="mt-2 h-7 w-24 max-w-full" />
+
+                                    <div className="mt-2 space-y-2">
+                                        <Placeholder className="h-3 w-full" />
+                                        <Placeholder className="h-3 w-2/3" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
                 </div>
 
                 <section className="min-w-0 overflow-hidden rounded-2xl border border-border bg-surface">
