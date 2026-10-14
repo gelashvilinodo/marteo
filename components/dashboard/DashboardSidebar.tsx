@@ -187,6 +187,7 @@ export default function DashboardSidebar({
                             <Link
                                 key={item.href}
                                 href={item.href}
+                                prefetch={false}
                                 onClick={onSelect}
                                 className={[
                                     "sidebar-navigation-link relative flex h-[52px] shrink-0 items-center gap-3 px-4 text-sm font-medium transition-all duration-200",

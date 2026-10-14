@@ -25,8 +25,24 @@ export async function GET(
         | ReturnType<typeof createPrismaClient>
         | undefined;
 
+    const startedAt = performance.now();
+    let stageStartedAt = startedAt;
+
+    function measure(stage: string) {
+        const now = performance.now();
+
+        console.info("Invoice timing", {
+            stage,
+            elapsedMs: Math.round((now - stageStartedAt) * 100) / 100,
+            totalElapsedMs: Math.round((now - startedAt) * 100) / 100,
+        });
+
+        stageStartedAt = now;
+    }
+
     try {
         const user = await getCurrentUser();
+        measure("authentication");
 
         if (!user) {
             return json(
@@ -48,6 +64,8 @@ export async function GET(
                 orderBy: [{ createdAt: "asc" }, { businessId: "asc" }],
                 select: { businessId: true },
             });
+
+        measure("membership");
 
         if (!membership) {
             return json(
@@ -120,6 +138,8 @@ export async function GET(
             },
         });
 
+        measure("order-query");
+
         if (!order) {
             return json(
                 {
@@ -148,6 +168,8 @@ export async function GET(
                 },
             })
             : null;
+
+        measure("qr-generation");
 
         const printState =
             order.lastPrintedInvoiceVersion === null
@@ -233,7 +255,12 @@ export async function GET(
             printState,
             printedAt: order.invoicePrintedAt?.toISOString() ?? null,
         };
-        return json({ success: true, invoice });
+        measure("invoice-calculation");
+
+        const response = json({ success: true, invoice });
+        measure("response-serialization");
+
+        return response;
     } catch (error: unknown) {
         // ბმულის დაცულ კოდს ლოგებში არ ვბეჭდავთ.
         console.error(
@@ -253,7 +280,9 @@ export async function GET(
         );
     } finally {
         if (prisma) {
+            stageStartedAt = performance.now();
             await prisma.$disconnect();
+            measure("database-disconnect");
         }
     }
 }

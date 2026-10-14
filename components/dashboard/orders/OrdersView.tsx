@@ -946,7 +946,7 @@ export default function OrdersView({
                                 className="h-5 w-5"
                             />
                             {selectionMode
-                                ? "მონიშვნის დასრულება"
+                                ? "დასრულება"
                                 : "მონიშვნა"}
                         </button>
 
@@ -1006,7 +1006,7 @@ export default function OrdersView({
                                             icon="solar:documents-linear"
                                             className="h-5 w-5"
                                         />
-                                        ინვოისების ბეჭდვა
+                                         ბეჭდვა
                                     </button>
                                 )}
 
@@ -1029,12 +1029,12 @@ export default function OrdersView({
                         )}
                     </div>
 
-                    {selectionMode && (
+                    {/* {selectionMode && (
                         <p className="mt-2 text-xs text-text-secondary">
                             მონიშნე სასურველი შეკვეთები. სათაურის ჩეკბოქსი
                             ამ გვერდის ყველა შეკვეთას მონიშნავს.
                         </p>
-                    )}
+                    )} */}
 
                     {printError && (
                         <p
