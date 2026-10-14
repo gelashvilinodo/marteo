@@ -12,9 +12,10 @@ type Order = Awaited<ReturnType<typeof getOrder>>;
 type Method = "CASH" | "BANK_TRANSFER" | "CARD";
 const field = "h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary outline-none focus:border-accent";
 
-export default function OrderRefundButton({ orderId, onUpdated }: {
+export default function OrderRefundButton({ orderId, onUpdated, onChanged }: {
     orderId: string;
     onUpdated?: () => void;
+    onChanged?: () => void;
 }) {
     const router = useRouter();
     const dialog = useRef<HTMLDialogElement>(null);
@@ -96,7 +97,8 @@ export default function OrderRefundButton({ orderId, onUpdated }: {
             setPending(null);
             setDirty(false);
             setOpen(false);
-            router.refresh();
+            if (onChanged) onChanged();
+            else router.refresh();
             onUpdated?.();
         } catch (cause: unknown) {
             const definite = cause instanceof OrderActionError && cause.status < 500;
@@ -147,7 +149,7 @@ export default function OrderRefundButton({ orderId, onUpdated }: {
             {!loading && order && <>
                 <div className="mt-4 rounded-xl border border-warning/30 bg-warning/5 p-3"><p className="text-xs text-text-secondary">მომხმარებელს დასაბრუნებელი თანხა</p><p className="mt-1 text-xl font-semibold tabular-nums text-warning">{order.refundDue} ₾</p></div>
                 {due > 0n ? <fieldset disabled={blocked} className="mt-4 space-y-3 disabled:opacity-60">
-                    <label className="block"><span className="mb-1 block text-sm">რეალურად დაბრუნებული თანხა · ₾</span><input inputMode="decimal" value={amount} onChange={event => { setAmount(event.target.value); setDirty(true); }} className={field} /><span className="mt-1 block text-xs text-text-secondary">შეგიძლია თანხა ნაწილობრივაც აღრიცხო. დარჩენილი ნაწილი დასაბრუნებლად დარჩება.</span></label>
+                    <label className="block"><span className="mb-1 block text-sm">რეალურად დაბრუნებული თანხა · ₾</span><input inputMode="decimal" value={amount} onChange={event => { setAmount(event.target.value); setDirty(true); }} className={field} /><span className="mt-1 block text-xs text-text-secondary">შეგიძლია თანხა ნაწილობრივად აღრიცხო. დარჩენილი ნაწილი დასაბრუნებლად დარჩება.</span></label>
                     <label className="block"><span className="mb-1 block text-sm">დაბრუნების მეთოდი</span><select value={method} onChange={event => { setMethod(event.target.value as Method); setDirty(true); }} className={field}><option value="CASH">ნაღდი ფული</option><option value="BANK_TRANSFER">საბანკო გადარიცხვა</option><option value="CARD">ბარათი</option></select></label>
                     {method === "BANK_TRANSFER" && <label className="block"><span className="mb-1 block text-sm">ბანკი</span><input value={bankName} onChange={event => { setBankName(event.target.value); setDirty(true); }} className={field} /></label>}
                     <label className="flex items-start gap-3 rounded-xl border border-border p-3 text-sm"><input type="checkbox" checked={confirmed} onChange={event => { setConfirmed(event.target.checked); setDirty(true); }} className="mt-0.5 h-4 w-4 shrink-0 accent-accent" /><span>ვადასტურებ, რომ მითითებული თანხა მომხმარებელს რეალურად დავუბრუნე.</span></label>

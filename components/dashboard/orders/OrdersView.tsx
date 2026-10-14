@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { Icon } from "@iconify/react";
 import type { OrderEntry, OrderDetailEntry, OrdersFilter, OrdersPageData, OrdersSort, OrdersPaymentFilter } from "@/lib/orders/get-orders-page";
 import type { OrdersPeriod } from "@/lib/orders/orders-period";
@@ -11,11 +12,14 @@ import OrderEditButton from "./OrderEditButton";
 import OrdersPagination from "./OrdersPagination";
 import InventoryFiltersDisclosure from "@/components/dashboard/inventory/InventoryFiltersDisclosure";
 import OrderInvoiceButton from "./OrderInvoiceButton";
-import OrderReturnButton from "./OrderReturnButton";
-import OrderDeleteButton from "./OrderDeleteButton";
 import OrderBulkDeleteButton from "./OrderBulkDeleteButton";
-import OrderRefundButton from "./OrderRefundButton";
 import OrdersListSkeleton from "./OrdersListSkeleton";
+
+// These actions appear only after opening details or a return/delete flow.
+// Keep their forms out of the initial server render and browser module load.
+const OrderReturnButton = dynamic(() => import("./OrderReturnButton"), { ssr: false });
+const OrderDeleteButton = dynamic(() => import("./OrderDeleteButton"), { ssr: false });
+const OrderRefundButton = dynamic(() => import("./OrderRefundButton"), { ssr: false });
 import { moneyCents } from "@/lib/orders/order-form";
 
 import {
@@ -1535,7 +1539,7 @@ export default function OrdersView({
 
                             <div className="min-w-0">
                                 <h3 className="text-sm font-semibold text-warning">
-                                    მომხმარებელს დასაბრუნებელია {selected.refundDue} ₾
+                                    მომხმარებლისთვის დასაბრუნებელია {selected.refundDue} ₾
                                 </h3>
 
                                 <p className="mt-2 text-xs text-text-secondary">
@@ -1546,8 +1550,7 @@ export default function OrdersView({
 
                                 <p className="mt-2 text-xs text-text-secondary">
                                     ჯერ დაუბრუნე თანხა მომხმარებელს, შემდეგ
-                                    დაადასტურე ქვემოთ. ეს ღილაკი თანხას
-                                    ბანკიდან ავტომატურად არ გადარიცხავს.
+                                    დაადასტურე.
                                 </p>
                             </div>
                         </div>
@@ -1555,6 +1558,7 @@ export default function OrdersView({
                         <div className="mt-3">
                             <OrderRefundButton
                                 orderId={selected.id}
+                                onChanged={() => { void refreshOrder(selected.id); }}
                                 onUpdated={close}
                             />
                         </div>

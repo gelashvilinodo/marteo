@@ -149,19 +149,19 @@ export async function createInvoicePdf(
     invoice: OrderInvoiceData,
     paper: Paper,
 ): Promise<Blob> {
-    const [{ PDFDocument, rgb }, { default: fontkit }] =
+    // Independent assets can load together; do not wait for the PDF libraries
+    // before starting fonts, or for fonts before starting the business logo.
+    const [{ PDFDocument, rgb }, { default: fontkit }, regularBytes, boldBytes, logoBytes] =
         await Promise.all([
             import("pdf-lib"),
             import("@pdf-lib/fontkit"),
+            readFont("/fonts/FiraGO-Regular.otf"),
+            readFont("/fonts/FiraGO-SemiBold.otf"),
+            invoice.business.logoUrl ? logoPng(invoice.business.logoUrl) : null,
         ]);
 
     const pdf = await PDFDocument.create();
     pdf.registerFontkit(fontkit);
-
-    const [regularBytes, boldBytes] = await Promise.all([
-        readFont("/fonts/FiraGO-Regular.otf"),
-        readFont("/fonts/FiraGO-SemiBold.otf"),
-    ]);
 
     const regular = await pdf.embedFont(regularBytes);
     const bold = await pdf.embedFont(boldBytes);
@@ -274,10 +274,8 @@ export async function createInvoicePdf(
         }
     }
 
-    if (invoice.business.logoUrl) {
-        const logo = await pdf.embedPng(
-            await logoPng(invoice.business.logoUrl),
-        );
+    if (logoBytes) {
+        const logo = await pdf.embedPng(logoBytes);
         const scale = 32 / Math.max(logo.width, logo.height);
         const width = logo.width * scale;
         const height = logo.height * scale;

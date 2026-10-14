@@ -2001,11 +2001,11 @@ export default function NewPurchasePanel({
 
                     {/* მუდმივად ხილული მოქმედებები */}
                     <footer className="shrink-0 border-t border-border bg-surface px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:px-5">
-                        <p className="mb-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-text-primary">
+                        {/* <p className="mb-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-text-primary">
                             გადაამოწმე რაოდენობები და ფასები. ამ პარტიიდან
                             პირველი გაყიდვის შემდეგ რედაქტირება აღარ იქნება
                             შესაძლებელი.
-                        </p>
+                        </p> */}
                         {error && (
                             <p
                                 role="alert"

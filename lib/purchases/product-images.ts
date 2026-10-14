@@ -139,7 +139,9 @@ export async function uploadProductImage(
         .from(BUCKET)
         .upload(path, buffer, {
             contentType: image.contentType,
-            cacheControl: "3600",
+            // Every upload gets a new UUID and never overwrites an old object.
+            // Browsers can reuse the same photo on return visits without refetching.
+            cacheControl: "31536000",
             upsert: false,
         });
 

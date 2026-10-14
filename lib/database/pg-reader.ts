@@ -22,17 +22,33 @@ export function createPgReader() {
     return {
         async withReadTransaction<T>(read: (client: QueryReader) => Promise<T>): Promise<T> {
             const connection = await pool.connect();
+            // A transaction owns one connection. Serialize reads even if a caller
+            // uses Promise.all; pg must not receive overlapping client.query calls.
+            let pending: Promise<unknown> = Promise.resolve();
+            let queryFailed = false;
+            let queryError: unknown;
             try {
                 await connection.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
                 const result = await read({
                     async $queryRaw<R = unknown>(query: TemplateStringsArray | Sql, ...values: unknown[]): Promise<R> {
                         const statement = Array.isArray(query) ? sql(query as TemplateStringsArray, ...values) : query as Sql;
-                        return (await connection.query(statement.text, statement.values)).rows as R;
+                        const result = pending.then(async () => {
+                            if (queryFailed) throw queryError;
+                            return (await connection.query(statement.text, statement.values)).rows as R;
+                        });
+                        pending = result.catch(error => {
+                            queryFailed = true;
+                            queryError = error;
+                        });
+                        return result;
                     },
                 });
+                await pending;
+                if (queryFailed) throw queryError;
                 await connection.query("COMMIT");
                 return result;
             } catch (error) {
+                await pending;
                 try { await connection.query("ROLLBACK"); } catch { /* Preserve the original error. */ }
                 throw error;
             } finally { connection.release(); }
