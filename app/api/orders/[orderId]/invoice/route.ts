@@ -157,7 +157,12 @@ export async function GET(
             ).toString()
             : null;
 
-        const qrDataUrl = publicUrl
+        // დროებითი დიაგნოსტიკა: ჩვეულებრივ მოთხოვნაში QR რჩება.
+        const skipQrForDiagnostic =
+            new URL(request.url).searchParams.get("diagnostic") ===
+            "skip-qr";
+
+        const qrDataUrl = publicUrl && !skipQrForDiagnostic
             ? await QRCode.toDataURL(publicUrl, {
                 width: 320,
                 margin: 4,
@@ -168,6 +173,11 @@ export async function GET(
                 },
             })
             : null;
+
+        console.info("Invoice QR diagnostic", {
+            mode: skipQrForDiagnostic ? "skip-qr" : "normal",
+            hasPublicLink: Boolean(publicUrl),
+        });
 
         measure("qr-generation");
 
