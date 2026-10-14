@@ -8,7 +8,11 @@ function hashSessionToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-export const getCurrentUser = cache(async () => {
+// The caller owns this request's client and disconnects it after all queries.
+// A factory keeps unauthenticated requests from creating a database client.
+export async function getCurrentUserWithClient(
+  getClient: () => ReturnType<typeof createPrismaClient>,
+) {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("marteo_session")?.value;
 
@@ -17,49 +21,57 @@ export const getCurrentUser = cache(async () => {
   }
 
   const tokenHash = hashSessionToken(sessionToken);
-  const prisma = createPrismaClient();
+  const prisma = getClient();
 
-  try {
-    const session = await prisma.session.findUnique({
+  const session = await prisma.session.findUnique({
+    where: {
+      tokenHash,
+    },
+    select: {
+      userId: true,
+      expiresAt: true,
+      user: {
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          status: true,
+        },
+      },
+    },
+  });
+
+  if (!session) {
+    return null;
+  }
+
+  if (session.expiresAt <= new Date()) {
+    await prisma.session.deleteMany({
       where: {
         tokenHash,
       },
-      select: {
-        userId: true,
-        expiresAt: true,
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            status: true,
-          },
-        },
-      },
     });
 
-    if (!session) {
-      return null;
-    }
+    return null;
+  }
 
-    if (session.expiresAt <= new Date()) {
-      await prisma.session.deleteMany({
-        where: {
-          tokenHash,
-        },
-      });
+  if (session.user.status !== "ACTIVE") {
+    return null;
+  }
 
-      return null;
-    }
+  return session.user;
+}
 
-    if (session.user.status !== "ACTIVE") {
-      return null;
-    }
+export const getCurrentUser = cache(async () => {
+  let prisma: ReturnType<typeof createPrismaClient> | undefined;
 
-    return session.user;
+  try {
+    return await getCurrentUserWithClient(
+      () => (prisma ??= createPrismaClient()),
+    );
   } finally {
-    await prisma.$disconnect();
+    if (prisma) await prisma.$disconnect();
   }
 });

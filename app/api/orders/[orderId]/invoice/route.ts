@@ -2,7 +2,7 @@ import { Prisma } from "@/generated/prisma/client";
 import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
 import { orderPayableTotal } from "@/lib/orders/order-payable-total";
 
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentUserWithClient } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
 
 function json(data: unknown, status = 200) {
@@ -24,6 +24,10 @@ export async function GET(
         | ReturnType<typeof createPrismaClient>
         | undefined;
 
+    function getClient() {
+        return prisma ??= createPrismaClient();
+    }
+
     const startedAt = performance.now();
     let stageStartedAt = startedAt;
 
@@ -40,7 +44,7 @@ export async function GET(
     }
 
     try {
-        const user = await getCurrentUser();
+        const user = await getCurrentUserWithClient(getClient);
         measure("authentication");
 
         if (!user) {
@@ -55,10 +59,10 @@ export async function GET(
 
         const { orderId } = await context.params;
 
-        prisma = createPrismaClient();
+        const client = getClient();
 
         const membership =
-            await prisma.businessMembership.findFirst({
+            await client.businessMembership.findFirst({
                 where: { userId: user.id },
                 orderBy: [{ createdAt: "asc" }, { businessId: "asc" }],
                 select: { businessId: true },
@@ -76,7 +80,7 @@ export async function GET(
             );
         }
 
-        const order = await prisma.order.findFirst({
+        const order = await client.order.findFirst({
             where: {
                 id: orderId,
                 businessId: membership.businessId,
