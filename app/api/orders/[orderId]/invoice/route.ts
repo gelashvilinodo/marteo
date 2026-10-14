@@ -1,4 +1,3 @@
-import QRCode from "qrcode";
 import { Prisma } from "@/generated/prisma/client";
 import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
 import { orderPayableTotal } from "@/lib/orders/order-payable-total";
@@ -157,29 +156,8 @@ export async function GET(
             ).toString()
             : null;
 
-        // დროებითი დიაგნოსტიკა: ჩვეულებრივ მოთხოვნაში QR რჩება.
-        const skipQrForDiagnostic =
-            new URL(request.url).searchParams.get("diagnostic") ===
-            "skip-qr";
-
-        const qrDataUrl = publicUrl && !skipQrForDiagnostic
-            ? await QRCode.toDataURL(publicUrl, {
-                width: 320,
-                margin: 4,
-                errorCorrectionLevel: "M",
-                color: {
-                    dark: "#000000",
-                    light: "#ffffff",
-                },
-            })
-            : null;
-
-        console.info("Invoice QR diagnostic", {
-            mode: skipQrForDiagnostic ? "skip-qr" : "normal",
-            hasPublicLink: Boolean(publicUrl),
-        });
-
-        measure("qr-generation");
+        // PNG QR-ს ბრაუზერი ამზადებს ჩვენებამდე და ბეჭდვამდე.
+        const qrDataUrl = null;
 
         const printState =
             order.lastPrintedInvoiceVersion === null

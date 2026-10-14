@@ -6,6 +6,7 @@ import { sendOrderAction } from "@/lib/orders/order-actions-client";
 import { Icon } from "@iconify/react";
 import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
 import InvoicePreview from "./InvoicePreview";
+import { prepareInvoiceQr } from "@/lib/orders/prepare-invoice-qr-client";
 
 export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
     const [paper, setPaper] = useState<InvoicePaper>("a4");
@@ -50,9 +51,10 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
             });
             const data = await response.json() as { success?: boolean; message?: string; invoice?: OrderInvoiceData };
             if (!response.ok || !data.success || !data.invoice) throw new Error(data.message || "ინვოისის მომზადება ვერ მოხერხდა.");
-            if (mounted.current) {
+            const preparedInvoice = await prepareInvoiceQr(data.invoice, controller.signal);
+            if (mounted.current && !controller.signal.aborted) {
                 try { const saved = localStorage.getItem("marteo.invoice-paper"); if (isInvoicePaper(saved)) setPaper(saved); } catch { /* გამოიყენება A4 */ }
-                setInvoice(data.invoice as OrderInvoiceData);
+                setInvoice(preparedInvoice);
             }
         } catch (cause: unknown) {
             if (mounted.current) setError(cause instanceof Error && cause.name !== "AbortError" ? cause.message : "ინვოისის ჩატვირთვა შეწყდა. სცადე ხელახლა.");
@@ -70,7 +72,8 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
             const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/invoice`, { cache: "no-store" });
             const data = await response.json() as { success?: boolean; message?: string; invoice?: OrderInvoiceData };
             if (!response.ok || !data.success || !data.invoice) throw new Error(data.message || "ბმული შეიცვალა. ინვოისი ხელახლა გახსენი.");
-            if (mounted.current && dialog.current?.open) { setInvoice(data.invoice); setNotice(action === "revoke" ? "ბმული გაუქმებულია." : "ბმული მზადაა."); }
+            const preparedInvoice = await prepareInvoiceQr(data.invoice);
+            if (mounted.current && dialog.current?.open) { setInvoice(preparedInvoice); setNotice(action === "revoke" ? "ბმული გაუქმებულია." : "ბმული მზადაა."); }
         } catch (cause: unknown) { if (mounted.current) setNotice(cause instanceof Error ? cause.message : "ბმული ვერ შეიცვალა."); }
         finally { linkOperation.current = false; if (mounted.current) setLinkBusy(false); }
     }

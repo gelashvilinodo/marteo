@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
 import InvoiceDocument, { type InvoicePaper, isInvoicePaper } from "./InvoiceDocument";
 import InvoicePreview from "./InvoicePreview";
+import { prepareInvoiceQr } from "@/lib/orders/prepare-invoice-qr-client";
 
 export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: string; initialPaper: InvoicePaper }) {
     const [paper, setPaper] = useState(initialPaper);
@@ -117,7 +118,8 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
                 const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/invoice`, { cache: "no-store", signal: controller.signal });
                 const data = await response.json() as { success?: boolean; message?: string; invoice?: OrderInvoiceData };
                 if (!response.ok || !data.success || !data.invoice) throw new Error(data.message || "ინვოისი ვერ ჩაიტვირთა.");
-                if (active) setInvoice(data.invoice);
+                const preparedInvoice = await prepareInvoiceQr(data.invoice, controller.signal);
+                if (active && !controller.signal.aborted) setInvoice(preparedInvoice);
             } catch (cause: unknown) {
                 if (active) setError(cause instanceof Error && cause.name !== "AbortError" ? cause.message : "ინვოისის ჩატვირთვა შეწყდა. სცადე ხელახლა.");
             } finally { clearTimeout(timeout); }

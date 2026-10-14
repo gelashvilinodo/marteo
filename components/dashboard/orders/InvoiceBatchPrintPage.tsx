@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
 import InvoiceDocument, { isInvoicePaper, type InvoicePaper } from "./InvoiceDocument";
+import { prepareInvoiceQr } from "@/lib/orders/prepare-invoice-qr-client";
 
 const EMPTY_IDS: string[] = [];
 type Entry = { id: string; invoice: OrderInvoiceData };
@@ -55,8 +56,10 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                     const response = await fetch(`/api/orders/${encodeURIComponent(id)}/invoice`, { cache: "no-store", signal: controller.signal });
                     const data = await response.json() as { success?: boolean; message?: string; invoice?: OrderInvoiceData };
                     if (!response.ok || !data.success || !data.invoice) throw new Error(data.message || "ინვოისი ვერ ჩაიტვირთა.");
-                    loaded.push({ id, invoice: data.invoice });
-                    if (active) setEntries([...loaded]);
+                    const preparedInvoice = await prepareInvoiceQr(data.invoice, controller.signal);
+                    if (!active || controller.signal.aborted) return;
+                    loaded.push({ id, invoice: preparedInvoice });
+                    setEntries([...loaded]);
                 }
                 if (active) setReady(true);
             } catch (cause: unknown) {
