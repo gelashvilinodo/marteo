@@ -639,7 +639,7 @@ export default function OrdersView({
         setDetailError("");
         try {
             const response = await fetch(
-                `/api/orders/${encodeURIComponent(order.id)}/row${window.location.search}`,
+                `/api/orders/${encodeURIComponent(order.id)}/details`,
                 { cache: "no-store", credentials: "same-origin", signal: controller.signal },
             );
             const body = await response.json() as { success?: boolean; order?: OrderDetailEntry | null; message?: string };

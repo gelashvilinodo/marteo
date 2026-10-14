@@ -127,6 +127,7 @@ export default function DashboardSidebar({
             <div className="shrink-0 px-3">
                 <Link
                     href="/dashboard"
+                    prefetch={false}
                     onClick={onSelect}
                     className="flex items-center gap-3"
                 >

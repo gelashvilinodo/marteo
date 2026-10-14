@@ -31,8 +31,10 @@ export async function GET(
 
     const startedAt = performance.now();
     let stageStartedAt = startedAt;
+    const diagnosticsEnabled = typeof process !== "undefined" && process.env.MARTEO_PERFORMANCE_DIAGNOSTICS === "1";
 
     function measure(stage: string) {
+        if (!diagnosticsEnabled) return;
         const now = performance.now();
 
         console.info("Invoice timing", {

@@ -1,7 +1,9 @@
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
-import { orderPayableTotal } from "./order-payable-total";
+import { getOrdersSummary } from "./get-orders-summary";
+import { getOrderRecords } from "./get-order-records";
+import { serializeOrderRecord } from "./serialize-order-record";
 import type { createPrismaClient } from "@/lib/prisma";
 
 export type OrdersSearchParams = Record<
@@ -163,11 +165,7 @@ export async function getOrdersPage(
     return prisma.$transaction(
         async (tx) => {
             // ქარდები არჩეულ პერიოდს აჯამებს, ძებნისა და სხვა ფილტრების მიუხედავად.
-            const grouped = await tx.order.groupBy({
-                by: ["status"],
-                where: baseWhere,
-                _count: { _all: true },
-            });
+            const { grouped, invoiceCounts } = await getOrdersSummary(tx, businessId, range.start, range.end);
 
             const counts = {
                 all: 0,
@@ -198,12 +196,6 @@ export async function getOrdersPage(
                 }
             }
 
-            const [invoiceCount] = await tx.$queryRaw<Array<{ newCount: bigint; updatedCount: bigint }>>`
-                SELECT COUNT(*) FILTER (WHERE "lastPrintedInvoiceVersion" IS NULL) AS "newCount",
-                       COUNT(*) FILTER (WHERE "lastPrintedInvoiceVersion" IS NOT NULL AND "lastPrintedInvoiceVersion" <> "invoiceVersion") AS "updatedCount"
-                FROM "Order" WHERE "businessId"=${businessId} AND "deletedAt" IS NULL AND "status" <> 'CANCELED'
-            `;
-            const invoiceCounts = { new: Number(invoiceCount?.newCount ?? 0), updated: Number(invoiceCount?.updatedCount ?? 0) };
             const totalOrders =
                 !query && payment === "all"
                     ? filter === "all"
@@ -234,251 +226,11 @@ export async function getOrdersPage(
                 skip: singleOrderId ? 0 : (currentPage - 1) * PAGE_SIZE,
                 take: singleOrderId ? 1 : PAGE_SIZE,
                 orderBy: ordering[sort],
-                select: {
-                    id: true,
-                    number: true,
-                    recipientPhone: true,
-                    recipientFirstName: true,
-                    recipientLastName: true,
-                    shippingAddress: true,
-                    notes: true,
-                    status: true,
-                    paymentStatus: true,
-                    courierFee: true,
-                    stockReturnedAt: true,
-                    deleteRequestedAt: true,
-                    fulfillmentCycle: true,
-                    returns: {
-                        where: {
-                            status: { in: ["PENDING", "RECEIVED"] },
-                        },
-                        select: {
-                            status: true,
-                            fulfillmentCycle: true,
-                            items: {
-                                select: {
-                                    orderItemId: true,
-                                    quantity: true,
-                                },
-                            },
-                        },
-                    },
-                    createdAt: true,
-                    updatedAt: true,
-                    invoiceVersion: true,
-                    lastPrintedInvoiceVersion: true,
-                    invoicePrintedAt: true,
-                    items: {
-                        where: { isActive: true },
-                        orderBy: [
-                            { createdAt: "asc" },
-                            { id: "asc" },
-                        ],
-                        select: {
-                            id: true,
-                            inventoryItemId: Boolean(singleOrderId),
-                            source: true,
-                            condition: Boolean(singleOrderId),
-                            name: true,
-                            quantity: true,
-                            description: Boolean(singleOrderId),
-                            imageUrl: true,
-                            color: Boolean(singleOrderId),
-                            size: Boolean(singleOrderId),
-                            unitPrice: true,
-                            unitCost: Boolean(singleOrderId),
-                            totalCost: true,
-                            stockRestoredAt: true,
-                        },
-                    },
-                    payments: singleOrderId ? {
-                        orderBy: [
-                            { createdAt: "asc" },
-                            { id: "asc" },
-                        ],
-                        select: {
-                            id: Boolean(singleOrderId),
-                            amount: true,
-                            method: Boolean(singleOrderId),
-                            bankName: Boolean(singleOrderId),
-                            createdAt: Boolean(singleOrderId),
-                        },
-                    } : false,
-                },
+                select: { id: true },
             });
 
-            // The list needs a payment total, not every payment-history record.
-            const paymentTotals = !singleOrderId && orders.length > 0
-                ? await tx.$queryRaw<Array<{ orderId: string; amount: string }>>`
-                    SELECT p."orderId", SUM(p."amount")::text AS amount
-                    FROM "OrderPayment" p
-                    JOIN "Order" o ON o.id = p."orderId"
-                    WHERE o."businessId" = ${businessId} AND o."deletedAt" IS NULL
-                      AND p."orderId" IN (${Prisma.join(orders.map(order => order.id))})
-                    GROUP BY p."orderId"
-                `
-                : [];
-            const paidByOrder = new Map(paymentTotals.map(row => [row.orderId, new Prisma.Decimal(row.amount)]));
-
-            const entries = orders.map((order) => {
-                const receivedQuantities = new Map<string, number>();
-
-                for (const entry of order.returns) {
-                    if (
-                        entry.status !== "RECEIVED" ||
-                        entry.fulfillmentCycle !== order.fulfillmentCycle
-                    ) {
-                        continue;
-                    }
-
-                    for (const item of entry.items) {
-                        receivedQuantities.set(
-                            item.orderItemId,
-                            (receivedQuantities.get(item.orderItemId) ?? 0) +
-                            item.quantity,
-                        );
-                    }
-                }
-
-                const total = orderPayableTotal(
-                    order,
-                    receivedQuantities,
-                );
-
-                const productsTotal = total.minus(order.courierFee);
-
-                const paidAmount = singleOrderId ? order.payments.reduce(
-                    (sum, payment) =>
-                        sum.plus(payment.amount),
-                    new Prisma.Decimal(0),
-                ) : (paidByOrder.get(order.id) ?? new Prisma.Decimal(0));
-
-                const currentReturns = order.returns.filter(
-                    entry =>
-                        entry.fulfillmentCycle === order.fulfillmentCycle,
-                );
-
-                const { items: rawItems, payments: _payments, returns: _returns, notes, shippingAddress, ...header } = order;
-                const summary = {
-                    ...header,
-                    hasNotes: Boolean(notes),
-
-                    missingManualCosts: order.items
-                        .filter(item =>
-                            item.source === "MANUAL" &&
-                            item.totalCost === null &&
-                            !order.stockReturnedAt &&
-                            !item.stockRestoredAt &&
-                            item.quantity >
-                            (receivedQuantities.get(item.id) ?? 0),
-                        )
-                        .map(item => ({
-                            id: item.id,
-                            name: item.name,
-                            imageUrl: item.imageUrl,
-                        })),
-
-                    deleteRequestedAt:
-                        order.deleteRequestedAt?.toISOString() ?? null,
-
-                    hasReturnHistory: currentReturns.length > 0,
-
-                    hasPastReturns: order.returns.some(
-                        entry =>
-                            entry.fulfillmentCycle !== order.fulfillmentCycle,
-                    ),
-
-                    pendingReturnQuantity: order.returns
-                        .filter(entry => entry.status === "PENDING")
-                        .reduce(
-                            (sum, entry) =>
-                                sum + entry.items.reduce(
-                                    (count, item) => count + item.quantity,
-                                    0,
-                                ),
-                            0,
-                        ),
-
-                    receivedReturnQuantity: currentReturns
-                        .filter(entry => entry.status === "RECEIVED")
-                        .reduce(
-                            (sum, entry) =>
-                                sum + entry.items.reduce(
-                                    (count, item) => count + item.quantity,
-                                    0,
-                                ),
-                            0,
-                        ),
-                    createdAt:
-                        order.createdAt.toISOString(),
-                    updatedAt:
-                        order.updatedAt.toISOString(),
-                    printState: order.lastPrintedInvoiceVersion === null ? "NEW" as const : order.lastPrintedInvoiceVersion === order.invoiceVersion ? "PRINTED" as const : "UPDATED" as const,
-                    invoicePrintedAt: order.invoicePrintedAt?.toISOString() ?? null,
-                    stockReturnedAt:
-                        order.stockReturnedAt
-                            ?.toISOString() ?? null,
-                    courierFee:
-                        order.courierFee.toFixed(2),
-                    productsTotal:
-                        productsTotal.toFixed(2),
-                    total: total.toFixed(2),
-                    paidAmount: paidAmount.toFixed(2),
-                    remainingAmount: Prisma.Decimal.max(
-                        total.minus(paidAmount),
-                        0,
-                    ).toFixed(2),
-
-                    refundDue: Prisma.Decimal.max(
-                        paidAmount.minus(total),
-                        0,
-                    ).toFixed(2),
-                    productQuantity: order.items.reduce(
-                        (sum, item) =>
-                            sum + item.quantity,
-                        0,
-                    ),
-                };
-                if (!singleOrderId) {
-                    const previewItems = rawItems.slice(0, 1);
-                    const photoItem = rawItems.find(item => item.imageUrl);
-                    if (photoItem && photoItem !== previewItems[0]) previewItems.push(photoItem);
-                    return {
-                        ...summary,
-                        detailsLoaded: false as const,
-                        items: previewItems.map(item => ({ id: item.id, name: item.name, imageUrl: item.imageUrl })),
-                    };
-                }
-                return {
-                    ...summary,
-                    detailsLoaded: true as const,
-                    notes,
-                    shippingAddress,
-                    items: order.items.map((item) => ({
-                        ...item,
-                        totalCost: item.totalCost?.toFixed(2) ?? null,
-                        stockRestoredAt:
-                            item.stockRestoredAt?.toISOString() ?? null,
-                        unitPrice:
-                            item.unitPrice.toFixed(2),
-                        unitCost:
-                            item.unitCost.toFixed(2),
-                        total: item.unitPrice
-                            .mul(item.quantity)
-                            .toFixed(2),
-                    })),
-                    payments: order.payments.map(
-                        (payment) => ({
-                            ...payment,
-                            amount:
-                                payment.amount.toFixed(2),
-                            createdAt:
-                                payment.createdAt
-                                    .toISOString(),
-                        }),
-                    ),
-                };
-            });
+            const records = await getOrderRecords(tx, businessId, orders.map(order => order.id), Boolean(singleOrderId));
+            const entries = records.map(order => serializeOrderRecord(order, Boolean(singleOrderId)));
 
             return {
                 orders: entries,
