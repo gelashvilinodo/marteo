@@ -572,8 +572,12 @@ function Status({
 
 export default function OrdersView({
     data: initialData,
+    basePath = "/dashboard/orders",
+    listEndpoint = "/api/orders/list",
 }: {
     data: OrdersPageData;
+    basePath?: string;
+    listEndpoint?: string;
 }) {
     const [data, setData] = useState(initialData);
 
@@ -659,7 +663,7 @@ export default function OrdersView({
         try {
             if (data.filter !== "all" || data.payment !== "all") {
                 const response = await fetch(
-                    `/api/orders/list${window.location.search}`,
+                    `${listEndpoint}${window.location.search}`,
                     {
                         cache: "no-store",
                         credentials: "same-origin",
@@ -710,7 +714,7 @@ export default function OrdersView({
                 window.history.replaceState(
                     null,
                     "",
-                    `/dashboard/orders?${params.toString()}${window.location.hash}`,
+                    `${basePath}?${params.toString()}${window.location.hash}`,
                 );
 
                 return;
@@ -802,7 +806,7 @@ export default function OrdersView({
         if (next.sort !== "date-desc") params.set("sort", next.sort);
         if (next.payment !== "all") params.set("payment", next.payment);
         if (page > 1) params.set("page", String(page));
-        router.push(`/dashboard/orders${params.size ? `?${params}` : ""}`, { scroll: false });
+        router.push(`${basePath}${params.size ? `?${params}` : ""}`, { scroll: false });
     }
     function close() {
         detailRequest.current?.abort();

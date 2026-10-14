@@ -1,4 +1,4 @@
-import type { Prisma } from "@/generated/prisma/client";
+import type { OrderRecordQueryClient } from "./get-order-records";
 
 type SummaryRow = {
     grouped: Array<{ status: string; count: number }>;
@@ -7,7 +7,7 @@ type SummaryRow = {
 };
 
 export async function getOrdersSummary(
-    client: Pick<Prisma.TransactionClient, "$queryRaw">,
+    client: Pick<OrderRecordQueryClient, "$queryRaw">,
     businessId: string,
     start: Date,
     end: Date,
