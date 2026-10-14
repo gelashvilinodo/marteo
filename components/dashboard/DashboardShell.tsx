@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { NewOrderProvider } from "@/components/dashboard/orders/NewOrderProvider";
-import NewOrderDrawer from "@/components/dashboard/orders/NewOrderDrawer";
+import DeferredNewOrderDrawer from "@/components/dashboard/orders/DeferredNewOrderDrawer";
 
 type DashboardShellProps = {
     children: React.ReactNode;
@@ -92,7 +92,7 @@ export default function DashboardShell({
                 <NewOrderProvider>
                     {children}
 
-                    <NewOrderDrawer />
+                    <DeferredNewOrderDrawer />
                 </NewOrderProvider>
             </div>
         </div>

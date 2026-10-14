@@ -13,6 +13,7 @@ type EditableOrder = Awaited<ReturnType<typeof getOrder>>;
 
 type NewOrderContextType = {
     isOpen: boolean;
+    drawerActivated: boolean;
     editingOrder: EditableOrder | null;
     openNewOrder: () => void;
     openEditOrder: (order: EditableOrder) => void;
@@ -30,6 +31,7 @@ export function NewOrderProvider({
     children,
 }: NewOrderProviderProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [drawerActivated, setDrawerActivated] = useState(false);
     const [sessionHeld, setSessionHeld] = useState(false);
     const [editingOrder, setEditingOrder] =
         useState<EditableOrder | null>(null);
@@ -39,6 +41,7 @@ export function NewOrderProvider({
             setEditingOrder(null);
         }
 
+        setDrawerActivated(true);
         setIsOpen(true);
     }
 
@@ -47,6 +50,7 @@ export function NewOrderProvider({
             setEditingOrder(order);
         }
 
+        setDrawerActivated(true);
         setIsOpen(true);
     }
 
@@ -58,6 +62,7 @@ export function NewOrderProvider({
         <NewOrderContext.Provider
             value={{
                 isOpen,
+                drawerActivated,
                 editingOrder,
                 openNewOrder,
                 openEditOrder,
