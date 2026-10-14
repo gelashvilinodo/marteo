@@ -5,6 +5,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
 const crypto = require("node:crypto");
+const { Decimal } = require("@prisma/client-runtime-utils");
 
 const root = path.resolve(__dirname, "..");
 let cookie;
@@ -45,11 +46,13 @@ function createPrismaClient() {
       assert.equal(args.where.userId, "user-a");
       return membership;
     } },
-    order: { async findFirst(args) {
-      calls.orders.push(args.where);
+    async $queryRaw(strings, orderId, businessId) {
+      calls.orders.push({ id: orderId, businessId, deletedAt: null });
+      assert.ok(strings.join("?").includes('o."businessId" = ?'));
+      assert.ok(strings.join("?").includes('o."deletedAt" IS NULL'));
       // A nonexistent or another tenant's order is not returned.
-      return null;
-    } },
+      return [];
+    },
     async $disconnect() { calls.disconnects++; },
   };
 }
@@ -84,6 +87,9 @@ const route = load("app/api/orders/[orderId]/invoice/route.ts", {
   } },
   "@/lib/auth/session": auth,
   "@/lib/prisma": { createPrismaClient },
+  "@/lib/orders/get-invoice-order": load("lib/orders/get-invoice-order.ts", {
+    "@/generated/prisma/client": { Prisma: { Decimal } },
+  }),
 });
 
 async function getInvoice() {

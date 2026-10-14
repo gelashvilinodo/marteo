@@ -1,6 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
 import { orderPayableTotal } from "@/lib/orders/order-payable-total";
+import { getInvoiceOrder } from "@/lib/orders/get-invoice-order";
 
 import { getCurrentUserWithClient } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
@@ -80,66 +81,7 @@ export async function GET(
             );
         }
 
-        const order = await client.order.findFirst({
-            where: {
-                id: orderId,
-                businessId: membership.businessId,
-                deletedAt: null,
-            },
-            select: {
-                number: true,
-                createdAt: true,
-                status: true,
-                paymentStatus: true,
-                recipientFirstName: true,
-                recipientLastName: true,
-                recipientPhone: true,
-                shippingAddress: true,
-                notes: true,
-                courierFee: true,
-                stockReturnedAt: true,
-                fulfillmentCycle: true,
-                returns: {
-                    where: { status: "RECEIVED" },
-                    select: {
-                        fulfillmentCycle: true,
-                        items: {
-                            select: {
-                                orderItemId: true,
-                                quantity: true,
-                            },
-                        },
-                    },
-                },
-                items: {
-                    where: { isActive: true },
-                    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-                    select: {
-                        id: true,
-                        name: true,
-                        color: true,
-                        size: true,
-                        condition: true,
-                        quantity: true,
-                        unitPrice: true,
-                    },
-                },
-                payments: { select: { amount: true } },
-                publicAccessToken: true,
-                invoiceVersion: true,
-                lastPrintedInvoiceVersion: true,
-                invoicePrintedAt: true,
-                business: {
-                    select: {
-                        name: true,
-                        logoUrl: true,
-                        phone: true,
-                        email: true,
-                        address: true,
-                    },
-                },
-            },
-        });
+        const order = await getInvoiceOrder(client, membership.businessId, orderId);
 
         measure("order-query");
 
@@ -203,10 +145,7 @@ export async function GET(
                     (receivedQuantities.get(item.id) ?? 0),
             }))
             .filter(item => item.quantity > 0);
-        const paidAmount = order.payments.reduce(
-            (sum, payment) => sum.plus(payment.amount),
-            new Prisma.Decimal(0),
-        );
+        const paidAmount = order.paidAmount;
         const invoice: OrderInvoiceData = {
             number: order.number,
             createdAt: order.createdAt.toISOString(),
