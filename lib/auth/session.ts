@@ -1,8 +1,9 @@
 import { createHash } from "crypto";
 import { cookies } from "next/headers";
 import { cache } from "react";
+import { getPgDashboardContext } from "./pg-dashboard-context";
 
-import { createPrismaClient } from "@/lib/prisma";
+import type { createPrismaClient } from "@/lib/prisma";
 
 function hashSessionToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -64,14 +65,4 @@ export async function getCurrentUserWithClient(
   return session.user;
 }
 
-export const getCurrentUser = cache(async () => {
-  let prisma: ReturnType<typeof createPrismaClient> | undefined;
-
-  try {
-    return await getCurrentUserWithClient(
-      () => (prisma ??= createPrismaClient()),
-    );
-  } finally {
-    if (prisma) await prisma.$disconnect();
-  }
-});
+export const getCurrentUser = cache(async () => (await getPgDashboardContext())?.user ?? null);

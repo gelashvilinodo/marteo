@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
-import { createPrismaClient } from "@/lib/prisma";
-import { getOrdersPage, type OrdersSearchParams } from "@/lib/orders/get-orders-page";
+import { createPgReader } from "@/lib/database/pg-reader";
+import type { OrdersSearchParams } from "@/lib/orders/get-orders-page";
+import { getOrdersPgPage } from "@/lib/orders/get-orders-pg-page";
 import OrdersView from "@/components/dashboard/orders/OrdersView";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 
@@ -15,11 +16,11 @@ export default async function OrdersPage({ searchParams }: {
     if (!membership) {
         redirect("/business/onboarding");
     }
-    const prisma = createPrismaClient();
+    const client = createPgReader();
     try {
-        const data = await getOrdersPage(prisma, membership.businessId, await searchParams);
+        const data = await getOrdersPgPage(client, membership.businessId, await searchParams);
         return <OrdersView data={data} />;
     } finally {
-        await prisma.$disconnect();
+        await client.$disconnect();
     }
 }

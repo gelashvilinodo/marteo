@@ -76,6 +76,7 @@ function load(relative, imports) {
 }
 
 const auth = load("lib/auth/session.ts", {
+  "./pg-dashboard-context": { getPgDashboardContext: () => { throw Error("Unexpected dashboard auth in invoice context"); } },
   crypto,
   "next/headers": { cookies: async () => ({ get: () => cookie ? { value: cookie } : undefined }) },
   react: { cache: fn => fn }, // Scope caching itself is outside these checks.
@@ -93,6 +94,13 @@ const route = load("app/api/orders/[orderId]/invoice/route.ts", {
   }),
 });
 
+// Legacy invoice callers own their request client; dashboard PG auth is tested separately.
+async function readLegacyUser() {
+  let client;
+  try { return await auth.getCurrentUserWithClient(() => (client ??= createPrismaClient())); }
+  finally { if (client) await client.$disconnect(); }
+}
+
 async function getInvoice() {
   return route.GET(new Request("https://example.test/api/orders/other-order/invoice"),
     { params: Promise.resolve({ orderId: "other-order" }) });
@@ -100,15 +108,15 @@ async function getInvoice() {
 
 (async () => {
   reset(); cookie = undefined;
-  assert.equal(await auth.getCurrentUser(), null);
+  assert.equal(await readLegacyUser(), null);
   assert.equal(calls.clients, 0);
 
   reset();
-  assert.equal((await auth.getCurrentUser()).id, "user-a");
+  assert.equal((await readLegacyUser()).id, "user-a");
   assert.equal(calls.disconnects, 1);
 
   reset(); queryError = true;
-  await assert.rejects(auth.getCurrentUser(), /isolated-query-failure/);
+  await assert.rejects(readLegacyUser(), /isolated-query-failure/);
   assert.equal(calls.disconnects, 1);
 
   reset(); cookie = undefined;

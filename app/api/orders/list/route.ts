@@ -1,11 +1,11 @@
-import { getOrdersPage } from "@/lib/orders/get-orders-page";
+import { getOrdersPgPage } from "@/lib/orders/get-orders-pg-page";
 import { orderJson } from "@/lib/orders/order-http";
-import { withOrderReadContext } from "@/lib/orders/order-read-context";
+import { withOrderPgReadContext } from "@/lib/orders/order-pg-read-context";
 
 export async function GET(request: Request) {
-    return withOrderReadContext(async (client, businessId) => {
+    return withOrderPgReadContext(async (client, businessId) => {
         const params = Object.fromEntries(new URL(request.url).searchParams.entries());
-        const data = await getOrdersPage(client, businessId, params);
+        const data = await getOrdersPgPage(client, businessId, params);
         return orderJson({ success: true, data });
     });
 }
