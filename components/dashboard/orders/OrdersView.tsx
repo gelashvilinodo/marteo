@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Icon } from "@iconify/react";
-import type { OrderEntry, OrdersFilter, OrdersPageData, OrdersSort, OrdersPaymentFilter } from "@/lib/orders/get-orders-page";
+import type { OrderEntry, OrderDetailEntry, OrdersFilter, OrdersPageData, OrdersSort, OrdersPaymentFilter } from "@/lib/orders/get-orders-page";
 import type { OrdersPeriod } from "@/lib/orders/orders-period";
 import NewOrderButton from "./NewOrderButton";
 import OrderEditButton from "./OrderEditButton";
@@ -582,7 +582,10 @@ export default function OrdersView({
     }, [initialData]);
     const router = useRouter();
     const [pending, startTransition] = useTransition();
-    const [selected, setSelected] = useState<OrderEntry | null>(null);
+    const [selected, setSelected] = useState<OrderDetailEntry | null>(null);
+    const [detailTarget, setDetailTarget] = useState<OrderEntry | null>(null);
+    const [detailError, setDetailError] = useState("");
+    const detailRequest = useRef<AbortController | null>(null);
     const [returnOrderId, setReturnOrderId] =
         useState<string | null>(null);
     const [deleteOfferOrderId, setDeleteOfferOrderId] =
@@ -611,9 +614,10 @@ export default function OrdersView({
         setDraftPeriod(data.period);
     }
     const inputClass = "h-11 w-full min-w-0 max-w-full rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary outline-none focus:border-accent lg:text-sm";
+    const detailsOpen = Boolean(selected || detailTarget);
 
     useEffect(() => {
-        if (!selected) return;
+        if (!detailsOpen) return;
         const element = dialog.current;
         element?.showModal();
         const previous = document.body.style.overflow;
@@ -622,7 +626,34 @@ export default function OrdersView({
             element?.close();
             document.body.style.overflow = previous;
         };
-    }, [selected]);
+    }, [detailsOpen]);
+
+    useEffect(() => () => detailRequest.current?.abort(), []);
+
+    async function openDetails(order: OrderEntry) {
+        detailRequest.current?.abort();
+        const controller = new AbortController();
+        detailRequest.current = controller;
+        setSelected(null);
+        setDetailTarget(order);
+        setDetailError("");
+        try {
+            const response = await fetch(
+                `/api/orders/${encodeURIComponent(order.id)}/row${window.location.search}`,
+                { cache: "no-store", credentials: "same-origin", signal: controller.signal },
+            );
+            const body = await response.json() as { success?: boolean; order?: OrderDetailEntry | null; message?: string };
+            if (!response.ok || !body.success || !body.order?.detailsLoaded || body.order.id !== order.id) {
+                throw new Error(body.message || "შეკვეთის დეტალები ვერ ჩაიტვირთა.");
+            }
+            if (controller.signal.aborted) return;
+            setSelected(body.order);
+            setDetailTarget(null);
+        } catch (cause) {
+            if (controller.signal.aborted) return;
+            setDetailError(cause instanceof Error ? cause.message : "შეკვეთის დეტალები ვერ ჩაიტვირთა.");
+        }
+    }
 
     async function refreshOrder(orderId: string) {
         try {
@@ -667,14 +698,11 @@ export default function OrdersView({
                     ),
                 );
 
-                setSelected(current => {
-                    if (current?.id !== orderId) return current;
-
-                    return (
-                        updatedData.orders.find(order => order.id === orderId) ??
-                        null
-                    );
-                });
+                if (selected?.id === orderId) {
+                    const row = updatedData.orders.find(order => order.id === orderId);
+                    if (row) await openDetails(row);
+                    else close();
+                }
 
                 const params = new URLSearchParams(window.location.search);
                 params.set("page", String(updatedData.currentPage));
@@ -746,7 +774,7 @@ export default function OrdersView({
             }));
 
             setSelected(current =>
-                current?.id === orderId ? updated : current,
+                current?.id === orderId ? (updated?.detailsLoaded ? updated : null) : current,
             );
 
             if (!updated) {
@@ -777,6 +805,9 @@ export default function OrdersView({
         router.push(`/dashboard/orders${params.size ? `?${params}` : ""}`, { scroll: false });
     }
     function close() {
+        detailRequest.current?.abort();
+        setDetailTarget(null);
+        setDetailError("");
         setSelected(null);
     }
 
@@ -1113,7 +1144,7 @@ export default function OrdersView({
                                 )?.imageUrl;
 
                                 const hasExtraInfo =
-                                    Boolean(order.notes) ||
+                                    order.hasNotes ||
                                     order.printState !== "PRINTED" ||
                                     order.pendingReturnQuantity > 0 ||
                                     order.receivedReturnQuantity > 0 ||
@@ -1221,7 +1252,7 @@ export default function OrdersView({
                                         <td className="px-1 py-2 align-middle">
                                             <button
                                                 type="button"
-                                                onClick={() => setSelected(order)}
+                                                onClick={() => void openDetails(order)}
                                                 aria-label={`${number(order)} დეტალები${hasExtraInfo
                                                     ? " — დამატებითი ინფორმაცია"
                                                     : ""
@@ -1262,6 +1293,13 @@ export default function OrdersView({
             </section>
         </div>
         <dialog ref={dialog} onCancel={close} onClose={close} onClick={event => { if (event.target === event.currentTarget) close(); }} aria-labelledby="order-details-title" className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%_-_2rem)] max-w-xl overflow-y-auto rounded-2xl border border-border bg-surface p-0 text-text-primary shadow-2xl backdrop:bg-black/25 backdrop:backdrop-blur-sm">
+            {detailTarget && !selected && <div className="p-4 sm:p-6">
+                <div className="flex items-center justify-between gap-3">
+                    <h2 id="order-details-title" className="text-lg font-semibold">შეკვეთა {number(detailTarget)}</h2>
+                    <button type="button" onClick={close} aria-label="დახურვა" className="flex h-11 w-11 items-center justify-center rounded-xl border border-border"><Icon icon="solar:close-circle-linear" className="h-6 w-6" /></button>
+                </div>
+                {detailError ? <div role="alert" className="mt-4 text-sm text-danger">{detailError}<button type="button" onClick={() => void openDetails(detailTarget)} className="ml-3 text-accent underline">ხელახლა ცდა</button></div> : <div role="status" aria-label="შეკვეთის დეტალები იტვირთება" className="mt-5 animate-pulse space-y-4"><div className="h-12 rounded-xl bg-background" /><div className="h-24 rounded-xl bg-background" /><div className="h-32 rounded-xl bg-background" /></div>}
+            </div>}
             {selected && <div className="p-4 sm:p-6">
                 <div className="flex items-center justify-between gap-3">
                     <h2

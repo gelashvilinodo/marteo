@@ -276,36 +276,49 @@ export async function getOrdersPage(
                         ],
                         select: {
                             id: true,
-                            inventoryItemId: true,
+                            inventoryItemId: Boolean(singleOrderId),
                             source: true,
-                            condition: true,
+                            condition: Boolean(singleOrderId),
                             name: true,
                             quantity: true,
-                            description: true,
+                            description: Boolean(singleOrderId),
                             imageUrl: true,
-                            color: true,
-                            size: true,
+                            color: Boolean(singleOrderId),
+                            size: Boolean(singleOrderId),
                             unitPrice: true,
-                            unitCost: true,
+                            unitCost: Boolean(singleOrderId),
                             totalCost: true,
                             stockRestoredAt: true,
                         },
                     },
-                    payments: {
+                    payments: singleOrderId ? {
                         orderBy: [
                             { createdAt: "asc" },
                             { id: "asc" },
                         ],
                         select: {
-                            id: true,
+                            id: Boolean(singleOrderId),
                             amount: true,
-                            method: true,
-                            bankName: true,
-                            createdAt: true,
+                            method: Boolean(singleOrderId),
+                            bankName: Boolean(singleOrderId),
+                            createdAt: Boolean(singleOrderId),
                         },
-                    },
+                    } : false,
                 },
             });
+
+            // The list needs a payment total, not every payment-history record.
+            const paymentTotals = !singleOrderId && orders.length > 0
+                ? await tx.$queryRaw<Array<{ orderId: string; amount: string }>>`
+                    SELECT p."orderId", SUM(p."amount")::text AS amount
+                    FROM "OrderPayment" p
+                    JOIN "Order" o ON o.id = p."orderId"
+                    WHERE o."businessId" = ${businessId} AND o."deletedAt" IS NULL
+                      AND p."orderId" IN (${Prisma.join(orders.map(order => order.id))})
+                    GROUP BY p."orderId"
+                `
+                : [];
+            const paidByOrder = new Map(paymentTotals.map(row => [row.orderId, new Prisma.Decimal(row.amount)]));
 
             const entries = orders.map((order) => {
                 const receivedQuantities = new Map<string, number>();
@@ -334,19 +347,21 @@ export async function getOrdersPage(
 
                 const productsTotal = total.minus(order.courierFee);
 
-                const paidAmount = order.payments.reduce(
+                const paidAmount = singleOrderId ? order.payments.reduce(
                     (sum, payment) =>
                         sum.plus(payment.amount),
                     new Prisma.Decimal(0),
-                );
+                ) : (paidByOrder.get(order.id) ?? new Prisma.Decimal(0));
 
                 const currentReturns = order.returns.filter(
                     entry =>
                         entry.fulfillmentCycle === order.fulfillmentCycle,
                 );
 
-                return {
-                    ...order,
+                const { items: rawItems, payments: _payments, returns: _returns, notes, shippingAddress, ...header } = order;
+                const summary = {
+                    ...header,
+                    hasNotes: Boolean(notes),
 
                     missingManualCosts: order.items
                         .filter(item =>
@@ -423,6 +438,22 @@ export async function getOrdersPage(
                             sum + item.quantity,
                         0,
                     ),
+                };
+                if (!singleOrderId) {
+                    const previewItems = rawItems.slice(0, 1);
+                    const photoItem = rawItems.find(item => item.imageUrl);
+                    if (photoItem && photoItem !== previewItems[0]) previewItems.push(photoItem);
+                    return {
+                        ...summary,
+                        detailsLoaded: false as const,
+                        items: previewItems.map(item => ({ id: item.id, name: item.name, imageUrl: item.imageUrl })),
+                    };
+                }
+                return {
+                    ...summary,
+                    detailsLoaded: true as const,
+                    notes,
+                    shippingAddress,
                     items: order.items.map((item) => ({
                         ...item,
                         totalCost: item.totalCost?.toFixed(2) ?? null,
@@ -482,3 +513,4 @@ export type OrdersPageData = Awaited<
 >;
 
 export type OrderEntry = OrdersPageData["orders"][number];
+export type OrderDetailEntry = Extract<OrderEntry, { detailsLoaded: true }>;
