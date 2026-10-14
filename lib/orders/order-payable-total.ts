@@ -1,19 +1,19 @@
-import { Prisma } from "@/generated/prisma/client";
+import { Decimal } from "@prisma/client-runtime-utils";
 
 type PayableOrder = {
-    courierFee: Prisma.Decimal;
+    courierFee: Decimal;
     stockReturnedAt: Date | null;
     items: Array<{
         id: string;
         quantity: number;
-        unitPrice: Prisma.Decimal;
+        unitPrice: Decimal;
     }>;
 };
 
 export function orderPayableTotal(
     order: PayableOrder,
     receivedQuantities: ReadonlyMap<string, number>,
-): Prisma.Decimal {
+): Decimal {
     return order.items.reduce((sum, item) => {
         const received = receivedQuantities.get(item.id) ?? 0;
 

@@ -1,4 +1,9 @@
-import { Prisma } from "@/generated/prisma/client";
+import { Decimal, join, sql } from "@prisma/client-runtime-utils";
+
+export type OrderRecordQueryClient = {
+    $queryRaw<T = unknown>(query: TemplateStringsArray, ...values: unknown[]): Promise<T>;
+    $queryRawUnsafe?<T = unknown>(query: string, ...values: unknown[]): Promise<T>;
+};
 
 type ItemRow = {
     id: string; name: string; quantity: number; imageUrl: string | null;
@@ -30,13 +35,22 @@ function utcDate(value: string) {
 
 // Accepts both a request client and a RepeatableRead transaction client.
 export async function getOrderRecords(
-    client: Pick<Prisma.TransactionClient, "$queryRaw">,
+    client: OrderRecordQueryClient,
     businessId: string,
     orderIds: string[],
     details: boolean,
 ) {
     if (!orderIds.length) return [];
-    const rows = await client.$queryRaw<RecordRow[]>`
+    const query = <T>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T> => {
+        if (client.$queryRawUnsafe) {
+            // Build trusted SQL with the same tag, then bind all values separately.
+            // This avoids passing Sql class instances across Next bundle boundaries.
+            const statement = sql(strings, ...values);
+            return client.$queryRawUnsafe<T>(statement.text, ...statement.values);
+        }
+        return client.$queryRaw<T>(strings, ...values);
+    };
+    const rows = await query<RecordRow[]>`
         SELECT o.id, o.number, o."recipientPhone", o."recipientFirstName", o."recipientLastName",
             o."shippingAddress", o.notes, o.status::text AS status,
             o."paymentStatus"::text AS "paymentStatus", o."courierFee"::text AS "courierFee",
@@ -64,7 +78,7 @@ export async function getOrderRecords(
             ELSE '[]'::jsonb END AS payments,
             COALESCE((SELECT SUM(p.amount) FROM "OrderPayment" p WHERE p."orderId" = o.id), 0)::text AS "paidAmount"
         FROM "Order" o WHERE o."businessId" = ${businessId} AND o."deletedAt" IS NULL
-            AND o.id IN (${Prisma.join(orderIds)})
+            AND o.id IN (${join(orderIds)})
     `;
     const byId = new Map(rows.map(row => [row.id, row]));
     return orderIds.flatMap(id => {
@@ -72,17 +86,17 @@ export async function getOrderRecords(
         if (!row) return [];
         return [{
             ...row,
-            courierFee: new Prisma.Decimal(row.courierFee),
-            paidAmount: new Prisma.Decimal(row.paidAmount),
+            courierFee: new Decimal(row.courierFee),
+            paidAmount: new Decimal(row.paidAmount),
             items: row.items.map(item => ({
                 ...item,
-                unitPrice: new Prisma.Decimal(item.unitPrice),
-                totalCost: item.totalCost === null ? null : new Prisma.Decimal(item.totalCost),
+                unitPrice: new Decimal(item.unitPrice),
+                totalCost: item.totalCost === null ? null : new Decimal(item.totalCost),
                 stockRestoredAt: item.stockRestoredAt ? utcDate(item.stockRestoredAt) : null,
                 // Detail-only fields are never serialized for list rows.
-                unitCost: details ? new Prisma.Decimal(item.unitCost) : new Prisma.Decimal(0),
+                unitCost: details ? new Decimal(item.unitCost) : new Decimal(0),
             })),
-            payments: row.payments.map(payment => ({ ...payment, amount: new Prisma.Decimal(payment.amount), createdAt: utcDate(payment.createdAt) })),
+            payments: row.payments.map(payment => ({ ...payment, amount: new Decimal(payment.amount), createdAt: utcDate(payment.createdAt) })),
         }];
     });
 }

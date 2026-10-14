@@ -638,8 +638,10 @@ export default function OrdersView({
         setDetailTarget(order);
         setDetailError("");
         try {
+            const detailsPath = new URLSearchParams(window.location.search).get("detailsBackend") === "pg"
+                ? "details-pg" : "details";
             const response = await fetch(
-                `/api/orders/${encodeURIComponent(order.id)}/details`,
+                `/api/orders/${encodeURIComponent(order.id)}/${detailsPath}`,
                 { cache: "no-store", credentials: "same-origin", signal: controller.signal },
             );
             const body = await response.json() as { success?: boolean; order?: OrderDetailEntry | null; message?: string };

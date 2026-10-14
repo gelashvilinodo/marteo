@@ -1,4 +1,4 @@
-import { OrderValidationError } from "./validate-order";
+import { OrderValidationError } from "./order-validation-error";
 export function orderJson(data: unknown, status = 200) {
     return Response.json(data, { status, headers: { "Cache-Control": "private, no-store" } });
 }

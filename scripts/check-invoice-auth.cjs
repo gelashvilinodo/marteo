@@ -65,6 +65,7 @@ function load(relative, imports) {
   const exports = {};
   vm.runInNewContext(output, {
     exports, require(name) {
+      if (name === "@prisma/client-runtime-utils") return require("@prisma/client-runtime-utils");
       if (!(name in imports)) throw new Error(`Unexpected import: ${name}`);
       return imports[name];
     },

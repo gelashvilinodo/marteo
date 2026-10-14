@@ -12,6 +12,7 @@ function load(file, imports) {
         compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
     }).outputText, {
         exports, require(name) {
+      if (name === "@prisma/client-runtime-utils") return require("@prisma/client-runtime-utils");
             if (!(name in imports)) throw new Error(`Unexpected import ${name}`);
             return imports[name];
         },

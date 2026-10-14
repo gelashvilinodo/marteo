@@ -1,14 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 
-export class OrderValidationError extends Error {
-    constructor(
-        message: string,
-        public status = 400,
-    ) {
-        super(message);
-        this.name = "OrderValidationError";
-    }
-}
+import { OrderValidationError } from "./order-validation-error";
+export { OrderValidationError } from "./order-validation-error";
 
 export type OrderProduct = {
     orderItemId?: string;

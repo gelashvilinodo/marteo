@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma/client";
+import { Decimal } from "@prisma/client-runtime-utils";
 import { orderPayableTotal } from "./order-payable-total";
 import type { OrderRecord } from "./get-order-records";
 
@@ -102,12 +102,12 @@ export function serializeOrderRecord(order: OrderRecord, details: boolean) {
             productsTotal.toFixed(2),
         total: total.toFixed(2),
         paidAmount: paidAmount.toFixed(2),
-        remainingAmount: Prisma.Decimal.max(
+        remainingAmount: Decimal.max(
             total.minus(paidAmount),
             0,
         ).toFixed(2),
 
-        refundDue: Prisma.Decimal.max(
+        refundDue: Decimal.max(
             paidAmount.minus(total),
             0,
         ).toFixed(2),

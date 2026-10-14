@@ -5,7 +5,7 @@ const ts = require('typescript');
 const { Decimal } = require('@prisma/client-runtime-utils');
 function load(file, imports) {
  const exports = {};
- vm.runInNewContext(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,require:n=>{if(!(n in imports))throw Error(n);return imports[n];},Date,Map,Number});
+ vm.runInNewContext(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,require:n=>{if(n==="@prisma/client-runtime-utils")return require(n);if(!(n in imports))throw Error(n);return imports[n];},Date,Map,Number});
  return exports;
 }
 const Prisma = {Decimal, TransactionIsolationLevel:{RepeatableRead:'RepeatableRead'},join:values=>values};
@@ -42,5 +42,6 @@ const received=q=>({status:'RECEIVED',fulfillmentCycle:2,items:[{orderItemId:'it
  assert.equal(listSelect.skip,15);assert.equal(listSelect.take,15);assert.equal(listSelect.where.status,'SHIPPED');assert.equal(listSelect.where.paymentStatus,'PAID');assert.ok(listSelect.where.OR.some(entry=>entry.number===36));assert.equal(listSelect.orderBy[0].number.sort,'asc');
  await getOrdersPage(client,'business-a',{page:'999'});assert.equal(listSelect.skip,30);
  await getOrdersPage(client,'business-a',{page:'invalid',status:'invalid',payment:'invalid',sort:'invalid'});assert.equal(listSelect.skip,0);assert.equal(listSelect.where.status,undefined);assert.equal(listSelect.where.paymentStatus,undefined);assert.equal(listSelect.orderBy[0].createdAt,'desc');
+ rows=[{...base,id:"order-x'); DROP TABLE Order;--"}];let safeCalls=0;const bindingReader={$queryRaw:async()=>{throw Error('Unexpected tag adapter');},$queryRawUnsafe:async(text,...values)=>{safeCalls++;assert.ok(!text.includes(rows[0].id));assert.ok(text.includes('o.id IN ($4)'));assert.equal(values[3],rows[0].id);return tx.$queryRaw([text.replace(/\$\d+/g,"?")],...values);}};const bound=await records.getOrderRecords(bindingReader,'business-a',[rows[0].id],true);assert.equal(bound.length,1);assert.equal(safeCalls,1);
  console.log('Orders list checks passed (10 financial/list/detail scenarios plus filters, sorting and pagination).');
 })().catch(error=>{console.error(error);process.exitCode=1;});
