@@ -17,6 +17,17 @@ const nextConfig: NextConfig = {
         ],
     },
 
+    // Build-time Prisma tools are not the generated application query compiler.
+    // Keep .next/server/chunks/** and generated/prisma/** available at runtime.
+    outputFileTracingExcludes: {
+        "/*": [
+            "./node_modules/prisma/build/*.wasm",
+            "./node_modules/@prisma/dev/dist/runtime-assets/*.wasm",
+            "./node_modules/@electric-sql/pglite/dist/*.wasm",
+            "./node_modules/@electric-sql/pglite-tools/dist/*.wasm",
+        ],
+    },
+
     images: {
         remotePatterns: [
             {
