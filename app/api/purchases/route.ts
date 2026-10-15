@@ -217,6 +217,9 @@ export async function POST(request: Request) {
 
                 allowedFields.add(fieldName);
 
+                const thumbnailField = `thumbnail-${index}`;
+                allowedFields.add(thumbnailField);
+
                 const files = formData.getAll(fieldName);
                 const file = files[0];
 
@@ -237,9 +240,25 @@ export async function POST(request: Request) {
                     );
                 }
 
+                const thumbnails = formData.getAll(thumbnailField);
+                const thumbnail = thumbnails[0];
+
+                if (
+                    thumbnails.length > 1 ||
+                    (thumbnail !== undefined &&
+                        (!(thumbnail instanceof File) ||
+                            thumbnail.size === 0 ||
+                            thumbnail.size > 100 * 1024))
+                ) {
+                    throw new RequestError(
+                        "მცირე ფოტოს მონაცემები არასწორია.",
+                    );
+                }
+
                 return {
                     action: "upload",
                     file,
+                    thumbnail: thumbnail instanceof File ? thumbnail : null,
                 };
             });
 
