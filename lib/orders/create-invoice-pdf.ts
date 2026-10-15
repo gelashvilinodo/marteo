@@ -100,6 +100,24 @@ async function logoPng(url: string): Promise<Uint8Array> {
     }
 }
 
+// Font instances belong to one PDF. Weak keys let all measured strings go when
+// that document is released; cache exact shaped widths, never approximations.
+const textWidths = new WeakMap<PDFFont, Map<number, Map<string, number>>>();
+
+function textWidth(font: PDFFont, value: string, size: number): number {
+    let sizes = textWidths.get(font);
+    if (!sizes) { sizes = new Map(); textWidths.set(font, sizes); }
+    let widths = sizes.get(size);
+    if (!widths) { widths = new Map(); sizes.set(size, widths); }
+    const cached = widths.get(value);
+    if (cached !== undefined) return cached;
+    const width = font.widthOfTextAtSize(value, size);
+    // Bound memory even for unusually long or varied invoice text.
+    if (widths.size >= 4096) widths.clear();
+    widths.set(value, width);
+    return width;
+}
+
 function wrap(
     value: string,
     font: PDFFont,
@@ -114,7 +132,7 @@ function wrap(
         for (const word of paragraph.split(/\s+/).filter(Boolean)) {
             const candidate = line ? `${line} ${word}` : word;
 
-            if (font.widthOfTextAtSize(candidate, size) <= width) {
+            if (textWidth(font, candidate, size) <= width) {
                 line = candidate;
                 continue;
             }
@@ -124,12 +142,19 @@ function wrap(
                 line = "";
             }
 
+            // A word that fits on an empty line needs no character-by-character
+            // shaping. The overflow case below keeps the previous split rules.
+            if (textWidth(font, word, size) <= width) {
+                line = word;
+                continue;
+            }
+
             for (const character of word) {
                 const next = line + character;
 
                 if (
                     line &&
-                    font.widthOfTextAtSize(next, size) > width
+                    textWidth(font, next, size) > width
                 ) {
                     lines.push(line);
                     line = character;
@@ -181,6 +206,15 @@ export async function createInvoicePdf(
     const size = paper === "a4" ? 11 : paper === "58mm" ? 8 : 9;
     const ink = rgb(0.07, 0.07, 0.07);
     const blocks: Block[] = [];
+    let lastYield = performance.now();
+    async function yieldToBrowser() {
+        const scheduler = (globalThis as typeof globalThis & {
+            scheduler?: { yield?: () => Promise<void> };
+        }).scheduler;
+        if (scheduler?.yield) await scheduler.yield();
+        else await new Promise<void>(resolve => setTimeout(resolve, 0));
+        lastYield = performance.now();
+    }
 
     function gap(height = 6) {
         blocks.push({ height, draw: () => {} });
@@ -259,7 +293,7 @@ export async function createInvoicePdf(
                         page.drawText(value, {
                             x: index >= 2
                                 ? x + width -
-                                    font.widthOfTextAtSize(value, size)
+                                    textWidth(font, value, size)
                                 : x,
                             y: top - size,
                             font,
@@ -354,6 +388,7 @@ export async function createInvoicePdf(
     }
 
     for (const item of invoice.items) {
+        if (performance.now() - lastYield >= 12) await yieldToBrowser();
         const variant = [
             item.color,
             item.size,
@@ -430,6 +465,7 @@ export async function createInvoicePdf(
     let top = pageHeight - margin;
 
     for (const block of blocks) {
+        if (performance.now() - lastYield >= 12) await yieldToBrowser();
         if (top - block.height < margin) {
             page = pdf.addPage([pageWidth, pageHeight]);
             top = pageHeight - margin;
@@ -442,7 +478,7 @@ export async function createInvoicePdf(
     pdf.setTitle(`Marteo — ინვოისი${number}`);
     pdf.setCreator("Marteo");
 
-    const bytes = await pdf.save();
+    const bytes = await pdf.save({ objectsPerTick: 10 });
 
     return new Blob(
         [new Uint8Array(bytes).buffer],
