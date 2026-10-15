@@ -1,5 +1,7 @@
 "use client";
 
+import { refreshOrdersAfterMutation } from "@/lib/orders/refresh-orders-client";
+
 import {
     useCallback,
     useEffect,
@@ -193,13 +195,13 @@ export default function OrderReturnButton({
                     setOfferDeletion(true);
                 }
 
-                router.refresh();
+                refreshOrdersAfterMutation(() => router.refresh());
                 return;
             }
 
             await load();
             onUpdated?.();
-            router.refresh();
+            refreshOrdersAfterMutation(() => router.refresh());
         } catch (cause: unknown) {
             const definite = cause instanceof OrderActionError && cause.status < 500;
             if (definite) setPending(null);

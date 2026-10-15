@@ -1,5 +1,7 @@
 "use client";
 
+import { ORDERS_CHANGED } from "@/lib/orders/refresh-orders-client";
+
 import ProductThumbnail from "@/components/shared/ProductThumbnail";
 
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -589,13 +591,19 @@ export default function OrdersView({
 
     useEffect(() => {
         setData(initialData);
+        setMutationLoading(false);
     }, [initialData]);
     const router = useRouter();
-    const [pending, startTransition] = useTransition();
+    const [routePending, startTransition] = useTransition();
+    const [mutationLoading, setMutationLoading] = useState(false);
+    const refreshVersion = useRef(0);
+    const pending = routePending || mutationLoading;
     const [selected, setSelected] = useState<OrderDetailEntry | null>(null);
     const [detailTarget, setDetailTarget] = useState<OrderEntry | null>(null);
     const [detailError, setDetailError] = useState("");
     const detailRequest = useRef<AbortController | null>(null);
+    const selectedId = useRef<string | null>(null);
+    useEffect(() => { selectedId.current = selected?.id ?? null; }, [selected]);
     const [returnOrderId, setReturnOrderId] =
         useState<string | null>(null);
     const [deleteOfferOrderId, setDeleteOfferOrderId] =
@@ -603,6 +611,78 @@ export default function OrdersView({
     const [checkedIds, setCheckedIds] = useState<string[]>([]);
     const [selectionMode, setSelectionMode] = useState(false);
     const [printError, setPrintError] = useState("");
+    useEffect(() => {
+        let active = true;
+        const versionRef = refreshVersion;
+        let request: AbortController | null = null;
+        let queued: ReturnType<typeof setTimeout> | null = null;
+        function changed(event: Event) {
+            event.preventDefault();
+            // Merge synchronous notifications; a later mutation supersedes an older read.
+            if (queued) clearTimeout(queued);
+            request?.abort();
+            const version = ++versionRef.current;
+            setMutationLoading(true);
+            queued = setTimeout(() => {
+                queued = null;
+                const controller = new AbortController();
+                request = controller;
+                const search = window.location.search;
+                void (async () => {
+                    try {
+                        const response = await fetch(`${listEndpoint}${search}`, {
+                            cache: "no-store", credentials: "same-origin", signal: controller.signal,
+                        });
+                        const body = await response.json() as { success?: boolean; data?: OrdersPageData; message?: string };
+                        if (!response.ok || !body.success || !body.data || !Array.isArray(body.data.orders)) {
+                            throw new Error(body.message || "შეკვეთების სია ვერ განახლდა.");
+                        }
+                        if (!active || controller.signal.aborted || versionRef.current !== version || window.location.search !== search) return;
+                        const next = body.data;
+                        setData(next);
+                        setCheckedIds(ids => ids.filter(id => next.orders.some(order => order.id === id)));
+                        setPrintError("");
+                        const detailId = selectedId.current;
+                        if (detailId) {
+                            if (!next.orders.some(order => order.id === detailId)) {
+                                setSelected(current => current?.id === detailId ? null : current);
+                            } else {
+                                const detailResponse = await fetch(`/api/orders/${encodeURIComponent(detailId)}/details`, {
+                                    cache: "no-store", credentials: "same-origin", signal: controller.signal,
+                                });
+                                const detail = await detailResponse.json() as { success?: boolean; order?: OrderDetailEntry };
+                                if (!detailResponse.ok || !detail.success || !detail.order?.detailsLoaded || detail.order.id !== detailId) {
+                                    throw new Error("სია განახლდა, მაგრამ შეკვეთის დეტალები ვერ განახლდა.");
+                                }
+                                if (!active || controller.signal.aborted || versionRef.current !== version || window.location.search !== search) return;
+                                setSelected(current => current?.id === detailId ? detail.order! : current);
+                            }
+                        }
+                        const params = new URLSearchParams(search);
+                        if (next.currentPage > 1) params.set("page", String(next.currentPage));
+                        else params.delete("page");
+                        window.history.replaceState(window.history.state, "",
+                            `${basePath}${params.size ? `?${params}` : ""}${window.location.hash}`);
+                    } catch (cause) {
+                        if (active && !controller.signal.aborted) {
+                            setPrintError(cause instanceof Error ? cause.message : "შეკვეთების სია ვერ განახლდა.");
+                        }
+                    } finally {
+                        if (active && !controller.signal.aborted) setMutationLoading(false);
+                    }
+                })();
+            }, 0);
+        }
+        window.addEventListener(ORDERS_CHANGED, changed);
+        return () => {
+            active = false;
+            versionRef.current++;
+            request?.abort();
+            if (queued) clearTimeout(queued);
+            window.removeEventListener(ORDERS_CHANGED, changed);
+        };
+    }, [basePath, listEndpoint, initialData]);
+
     const allChecked = data.orders.length > 0 && data.orders.every(order => checkedIds.includes(order.id));
     function toggleOrder(id: string) {
         setCheckedIds(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id]);
@@ -666,6 +746,11 @@ export default function OrdersView({
     }
 
     async function refreshOrder(orderId: string) {
+        if (mutationLoading) {
+            window.dispatchEvent(new Event(ORDERS_CHANGED, { cancelable: true }));
+            return;
+        }
+        const version = ++refreshVersion.current;
         try {
             if (data.filter !== "all" || data.payment !== "all") {
                 const response = await fetch(
@@ -700,6 +785,7 @@ export default function OrdersView({
                 }
 
                 const updatedData = body.data;
+                if (refreshVersion.current !== version) return;
                 setData(updatedData);
 
                 setCheckedIds(current =>
@@ -768,6 +854,7 @@ export default function OrdersView({
 
             const updated = body.order;
             const summary = body.summary;
+            if (refreshVersion.current !== version) return;
 
 
             setData(current => ({
@@ -1083,6 +1170,10 @@ export default function OrdersView({
                             className="mt-2 text-sm text-danger"
                         >
                             {printError}
+                            <button type="button" className="ml-2 underline" disabled={pending}
+                                onClick={() => window.dispatchEvent(new Event(ORDERS_CHANGED, { cancelable: true }))}>
+                                სიის განახლება
+                            </button>
                         </p>
                     )}
                 </div>

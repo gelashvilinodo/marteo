@@ -33,22 +33,23 @@ function isPoint(value: unknown): value is FinancialTrendPoint {
 
 export function useFinancialTrend(
     initialPoints: FinancialTrendPoint[],
+    initialPeriod: FinancialTrendPeriod = "week",
 ) {
     const [loaded, setLoaded] = useState({
-        period: "week" as FinancialTrendPeriod,
+        period: initialPeriod,
         points: initialPoints,
     });
 
     const [requestedPeriod, setRequestedPeriod] =
-        useState<FinancialTrendPeriod>("week");
+        useState<FinancialTrendPeriod>(initialPeriod);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
     const controller = useRef<AbortController | null>(null);
-    const activePeriod = useRef<FinancialTrendPeriod>("week");
-    const loadedPeriod = useRef<FinancialTrendPeriod>("week");
-    const lastRequest = useRef<FinancialTrendPeriod>("week");
+    const activePeriod = useRef<FinancialTrendPeriod>(initialPeriod);
+    const loadedPeriod = useRef<FinancialTrendPeriod>(initialPeriod);
+    const lastRequest = useRef<FinancialTrendPeriod>(initialPeriod);
 
     const loadPeriod = useCallback(
         async (value: FinancialTrendPeriod) => {
@@ -132,23 +133,23 @@ export function useFinancialTrend(
     );
 
     useEffect(() => {
-        if (activePeriod.current === "week") {
+        if (activePeriod.current === initialPeriod) {
             controller.current?.abort();
             controller.current = null;
 
-            loadedPeriod.current = "week";
+            loadedPeriod.current = initialPeriod;
             setLoaded({
-                period: "week",
+                period: initialPeriod,
                 points: initialPoints,
             });
 
-            setRequestedPeriod("week");
+            setRequestedPeriod(initialPeriod);
             setLoading(false);
             setError("");
         } else {
             void loadPeriod(activePeriod.current);
         }
-    }, [initialPoints, loadPeriod]);
+    }, [initialPoints, initialPeriod, loadPeriod]);
 
     useEffect(() => {
         return () => controller.current?.abort();

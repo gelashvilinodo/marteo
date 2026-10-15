@@ -1,4 +1,5 @@
 "use client";
+import { CUSTOMERS_CHANGED } from "@/lib/customers/refresh-customers-client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -65,20 +66,65 @@ function formatDate(value: string | null) {
 }
 
 export default function CustomersView({
-    data,
+    data: initialData,
 }: {
     data: CustomersPageData;
 }) {
     const router = useRouter();
-    const [pending, startTransition] = useTransition();
+    const [routePending, startTransition] = useTransition();
+    const [data, setData] = useState(initialData);
+    const [previous, setPrevious] = useState(initialData);
+    const [refreshing, setRefreshing] = useState(false);
+    const [refreshError, setRefreshError] = useState("");
+    const pending = routePending || refreshing;
+    if (previous !== initialData) { setPrevious(initialData); setData(initialData); setRefreshing(false); setRefreshError(""); }
     const [selected, setSelected] = useState<CustomerEntry | null>(null);
     const dialogRef = useRef<HTMLDialogElement>(null);
+    useEffect(() => { if (!selected) dialogRef.current?.close(); }, [selected]);
     const [selectionMode, setSelectionMode] = useState(false);
     const [checkedIds, setCheckedIds] = useState<string[]>([]);
     const [bulkIds, setBulkIds] = useState<string[] | null>(null);
     const [bulkBusy, setBulkBusy] = useState(false);
 
     const bulkDialogRef = useRef<HTMLDialogElement>(null);
+
+    useEffect(() => {
+        let active = true;
+        let controller: AbortController | null = null;
+        let timer: ReturnType<typeof setTimeout> | null = null;
+        function changed(event: Event) {
+            event.preventDefault();
+            controller?.abort();
+            if (timer) clearTimeout(timer);
+            setRefreshing(true);
+            timer = setTimeout(() => {
+                timer = null;
+                const request = new AbortController(); controller = request;
+                const search = window.location.search;
+                void (async () => {
+                    try {
+                        const response = await fetch(`/api/customers/list${search}`, { cache: "no-store", credentials: "same-origin", signal: request.signal });
+                        const body = await response.json() as { success?: boolean; data?: CustomersPageData; message?: string };
+                        if (!response.ok || !body.success || !Array.isArray(body.data?.customers) || !body.data.summary) {
+                            throw new Error(body.message || "მომხმარებლების სია ვერ განახლდა.");
+                        }
+                        if (!active || request.signal.aborted || window.location.search !== search) return;
+                        const next = body.data;
+                        setData(next); setRefreshError("");
+                        setCheckedIds(ids => ids.filter(id => next.customers.some(customer => customer.id === id)));
+                        setSelected(current => current ? next.customers.find(customer => customer.id === current.id) ?? null : null);
+                        const params = new URLSearchParams(search);
+                        if (next.currentPage > 1) params.set("page", String(next.currentPage)); else params.delete("page");
+                        window.history.replaceState(window.history.state, "", `/dashboard/customers${params.size ? `?${params}` : ""}${window.location.hash}`);
+                    } catch (cause) {
+                        if (active && !request.signal.aborted) setRefreshError(cause instanceof Error ? cause.message : "მომხმარებლების სია ვერ განახლდა.");
+                    } finally { if (active && controller === request && !request.signal.aborted) setRefreshing(false); }
+                })();
+            }, 0);
+        }
+        window.addEventListener(CUSTOMERS_CHANGED, changed);
+        return () => { active = false; controller?.abort(); if (timer) clearTimeout(timer); window.removeEventListener(CUSTOMERS_CHANGED, changed); };
+    }, [initialData]);
 
     const pageIds = data.customers.map((customer) => customer.id);
 
@@ -166,6 +212,7 @@ export default function CustomersView({
     return (
         <main className="min-w-0 p-4 sm:p-6 lg:p-8">
             <div className="mx-auto min-w-0 max-w-7xl space-y-5">
+                {refreshError && <p role="alert" className="text-sm text-danger">{refreshError} <button type="button" className="underline" disabled={pending} onClick={() => window.dispatchEvent(new Event(CUSTOMERS_CHANGED, { cancelable: true }))}>სიის განახლება</button></p>}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <h1 className="text-2xl font-semibold text-text-primary">
                         მომხმარებლები

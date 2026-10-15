@@ -1,4 +1,5 @@
 "use client";
+import { refreshAnalyticsAfterMutation } from "@/lib/analytics/refresh-analytics-client";
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -213,7 +214,7 @@ export default function NewExpenseButton({
                 setDirty(false);
                 setOpen(false);
                 setNotice("ხარჯი წარმატებით დაემატა.");
-                router.refresh();
+                refreshAnalyticsAfterMutation(() => router.refresh());
                 return;
             }
 

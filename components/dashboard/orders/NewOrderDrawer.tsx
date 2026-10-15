@@ -1,5 +1,7 @@
 "use client";
 
+import { refreshOrdersAfterMutation } from "@/lib/orders/refresh-orders-client";
+
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
@@ -478,7 +480,7 @@ export default function NewOrderDrawer() {
                 closeNewOrder();
                 setClosing(false);
                 closeTimer.current = null;
-                startTransition(() => router.refresh());
+                startTransition(() => refreshOrdersAfterMutation(() => router.refresh()));
             }, 260);
         } catch (cause: unknown) {
             const rejected =

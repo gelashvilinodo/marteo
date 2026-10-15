@@ -1,4 +1,5 @@
 "use client";
+import { refreshPurchasesAfterMutation } from "@/lib/purchases/refresh-purchases-client";
 
 import { useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -104,7 +105,7 @@ export default function PurchaseActionButton({
             }
 
             dialogRef.current?.close();
-            router.refresh();
+            refreshPurchasesAfterMutation(() => router.refresh());
         } catch (error) {
             setError(
                 error instanceof Error

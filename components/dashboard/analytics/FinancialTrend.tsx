@@ -30,11 +30,16 @@ const labels: Record<Metric, string> = {
 
 export default function FinancialTrend({
     points,
+    initialPeriod = "week",
+    onPeriodChange,
 }: {
     points: FinancialTrendPoint[];
     profitReady: boolean;
+    initialPeriod?: FinancialTrendPeriod;
+    onPeriodChange?: (period: FinancialTrendPeriod) => void;
 }) {
-    const trend = useFinancialTrend(points);
+    const trend = useFinancialTrend(points, initialPeriod);
+    useEffect(() => { onPeriodChange?.(trend.requestedPeriod); }, [onPeriodChange, trend.requestedPeriod]);
 
     const [chosenMetric, setMetric] =
         useState<Metric>("sales");

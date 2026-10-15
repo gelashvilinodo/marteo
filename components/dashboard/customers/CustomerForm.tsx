@@ -1,4 +1,5 @@
 "use client";
+import { refreshCustomersAfterMutation } from "@/lib/customers/refresh-customers-client";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -69,7 +70,7 @@ export default function CustomerForm({
             return;
         }
 
-        if (uncertain) router.refresh();
+        if (uncertain) refreshCustomersAfterMutation(() => router.refresh());
 
         onClose();
     }
@@ -135,7 +136,7 @@ export default function CustomerForm({
                     : "მომხმარებელი წარმატებით დაემატა.",
             );
 
-            router.refresh();
+            refreshCustomersAfterMutation(() => router.refresh());
             onClose();
         } catch {
             setUncertain(true);

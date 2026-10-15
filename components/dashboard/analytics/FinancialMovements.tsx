@@ -1,4 +1,5 @@
 "use client";
+import { refreshAnalyticsAfterMutation } from "@/lib/analytics/refresh-analytics-client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
@@ -169,8 +170,10 @@ function isMovementData(value: unknown): value is FinancialMovementsData {
 
 export default function FinancialMovements({
     data,
+    externalRefreshing = false,
 }: {
     data: FinancialMovementsData;
+    externalRefreshing?: boolean;
 }) {
     const router = useRouter();
     const params = useSearchParams();
@@ -182,7 +185,7 @@ export default function FinancialMovements({
     const listRequest = useRef<AbortController | null>(null);
     const lastValues = useRef<Record<string, string>>({});
 
-    const pending = refreshing || listLoading;
+    const pending = refreshing || listLoading || externalRefreshing;
 
     useEffect(() => {
         listRequest.current?.abort();
@@ -193,6 +196,11 @@ export default function FinancialMovements({
 
         return () => listRequest.current?.abort();
     }, [data]);
+    useEffect(() => {
+        if (externalRefreshing) {
+            listRequest.current?.abort();
+        }
+    }, [externalRefreshing]);
     const [notice, setNotice] = useState("");
 
     useEffect(() => {
@@ -206,7 +214,7 @@ export default function FinancialMovements({
         setNotice(message);
 
         startTransition(() => {
-            router.refresh();
+            refreshAnalyticsAfterMutation(() => router.refresh());
         });
     }
 

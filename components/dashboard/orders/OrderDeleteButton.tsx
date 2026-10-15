@@ -1,5 +1,7 @@
 "use client";
 
+import { refreshOrdersAfterMutation } from "@/lib/orders/refresh-orders-client";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
@@ -121,7 +123,7 @@ export default function OrderDeleteButton({
                 controller.signal,
             );
             setPending(null);
-            router.refresh();
+            refreshOrdersAfterMutation(() => router.refresh());
             if (payload.confirmCancelDeletion === true) {
                 setMode("");
                 setNotice(

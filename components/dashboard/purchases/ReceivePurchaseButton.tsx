@@ -1,4 +1,5 @@
 "use client";
+import { refreshPurchasesAfterMutation } from "@/lib/purchases/refresh-purchases-client";
 
 import {
     useId,
@@ -179,7 +180,7 @@ export default function ReceivePurchaseButton({
             setRetryPending(false);
             setReceived(true);
             dialogRef.current?.close();
-            router.refresh();
+            refreshPurchasesAfterMutation(() => router.refresh());
         } catch (caught) {
             setError(
                 caught instanceof Error

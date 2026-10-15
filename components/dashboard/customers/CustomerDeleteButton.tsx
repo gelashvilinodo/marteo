@@ -1,4 +1,5 @@
 "use client";
+import { refreshCustomersAfterMutation } from "@/lib/customers/refresh-customers-client";
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -78,7 +79,7 @@ export default function CustomerDeleteButton({
                     : `${ids.length} მომხმარებელი წარმატებით წაიშალა.`,
             );
 
-            router.refresh();
+            refreshCustomersAfterMutation(() => router.refresh());
             onDeleted();
         } catch {
             setUncertain(true);
@@ -141,7 +142,7 @@ export default function CustomerDeleteButton({
                     disabled={saving}
                     onClick={() => {
                         if (uncertain) {
-                            router.refresh();
+                            refreshCustomersAfterMutation(() => router.refresh());
                             onDeleted();
                             return;
                         }

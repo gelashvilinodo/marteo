@@ -1,5 +1,7 @@
 "use client";
 
+import { refreshOrdersAfterMutation } from "@/lib/orders/refresh-orders-client";
+
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
@@ -175,7 +177,7 @@ export default function OrderBulkDeleteButton({
             }
         } finally {
             if (deleted.length) onDeleted(deleted);
-            router.refresh();
+            refreshOrdersAfterMutation(() => router.refresh());
             running.current = false;
             setBusy(false);
         }

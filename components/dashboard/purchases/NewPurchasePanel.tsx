@@ -1,4 +1,5 @@
 "use client";
+import { refreshPurchasesAfterMutation } from "@/lib/purchases/refresh-purchases-client";
 
 import { createProductThumbnail } from "@/lib/images/create-product-thumbnail";
 
@@ -1118,7 +1119,7 @@ export default function NewPurchasePanel({
                 setMounted(false);
                 setProducts([]);
                 openButton.current?.focus();
-                router.refresh();
+                refreshPurchasesAfterMutation(() => router.refresh());
             }, duration);
         } catch {
             setRetryPending(true);
