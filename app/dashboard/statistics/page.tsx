@@ -121,18 +121,12 @@ export default async function StatisticsPage({
         <main className="min-w-0 p-4 sm:p-6 lg:p-8">
             <div className="mx-auto min-w-0 max-w-7xl space-y-5">
                 <div className="space-y-3">
-                    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_10rem] items-center gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
-                        <h1 className="text-2xl font-semibold text-text-primary">
-                            სტატისტიკა
-                        </h1>
-
-                        <StatisticsPeriodForm
-                            key={`${summary.period}-${summary.from}-${summary.to}`}
-                            period={summary.period}
-                            from={summary.from}
-                            to={summary.to}
-                        />
-                    </div>
+                    <StatisticsPeriodForm
+                        key={`${summary.period}-${summary.from}-${summary.to}`}
+                        period={summary.period}
+                        from={summary.from}
+                        to={summary.to}
+                    />
 
                     <p className="text-xs text-text-secondary">
                         {date(summary.from)} — {date(summary.to)}

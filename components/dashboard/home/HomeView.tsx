@@ -1,23 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import type { OrdersPeriod } from "@/lib/orders/orders-period";
-
 import HomeHeader from "./HomeHeader";
 import HomeWelcome from "./HomeWelcome";
 import HomeSummaryCards from "./HomeSummaryCards";
 import HomeCharts from "./HomeCharts";
 import HomeLists from "./HomeLists";
+import PeriodFilter, {
+    standardPeriodOptions,
+} from "@/components/dashboard/shared/PeriodFilter";
 
-import HomePeriodForm, {
-    HomeCustomPeriodForm,
-} from "./HomePeriodForm";
+import NewOrderButton from "@/components/dashboard/orders/NewOrderButton";
 
 import {
     useHomeData,
     type HomeData,
 } from "./useHomeData";
+
+import ExpenseBreakdown from "@/components/dashboard/analytics/ExpenseBreakdown";
 
 export default function HomeView({
     firstName,
@@ -36,52 +35,28 @@ export default function HomeView({
         retry,
     } = useHomeData(initialData);
 
-    const { summary, lists, trend } = data;
-    const [selection, setSelection] = useState(summary.period);
-
-    useEffect(() => {
-        setSelection(summary.period);
-    }, [summary.period, summary.from, summary.to]);
-
-    function choose(period: OrdersPeriod) {
-        setSelection(period);
-
-        if (period !== "custom") {
-            changePeriod({
-                period,
-                from: summary.from,
-                to: summary.to,
-            });
-        }
-    }
+    const { summary, lists, trend, expenses } = data;
 
     return (
         <main className="min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
-            <HomeHeader
-                firstName={firstName}
-                periodControl={
-                    summary.isNewBusiness ? undefined : (
-                        <HomePeriodForm
-                            value={selection}
-                            onChange={choose}
-                        />
-                    )
-                }
-            />
+            {summary.isNewBusiness ? (
+                <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <HomeHeader firstName={firstName} />
 
-            {!summary.isNewBusiness && selection === "custom" && (
-                <HomeCustomPeriodForm
-                    key={`${summary.from}-${summary.to}`}
+                    <div className="min-w-0 [&>button]:w-full sm:[&>button]:w-auto">
+                        <NewOrderButton />
+                    </div>
+                </div>
+            ) : (
+                <PeriodFilter
+                    heading={<HomeHeader firstName={firstName} />}
+                    action={<NewOrderButton />}
+                    value={summary.period}
                     from={summary.from}
                     to={summary.to}
+                    options={standardPeriodOptions}
                     pending={pending}
-                    onApply={(from, to) => {
-                        changePeriod({
-                            period: "custom",
-                            from,
-                            to,
-                        });
-                    }}
+                    onChange={changePeriod}
                 />
             )}
 
@@ -136,6 +111,14 @@ export default function HomeView({
                         <HomeCharts
                             key={`${summary.from}-${summary.to}`}
                             data={trend}
+                            expenseChart={
+                                expenses ? (
+                                    <ExpenseBreakdown
+                                        key={`${expenses.from}-${expenses.to}`}
+                                        data={expenses}
+                                    />
+                                ) : undefined
+                            }
                         />
                     )}
 

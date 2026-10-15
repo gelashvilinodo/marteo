@@ -7,6 +7,7 @@ import {
     contentTypes,
 } from "@/lib/content/content-options";
 import { PlatformIcon } from "./ContentIcons";
+import DateTimeField from "@/components/dashboard/shared/DateTimeField";
 
 type Values = {
     title: string;
@@ -480,38 +481,36 @@ export default function ContentForm({
                         )}
 
                         <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
-                            <label className="block min-w-0 text-sm text-text-secondary">
-                                თარიღი *
-                                <input
-                                    required
-                                    type="date"
-                                    value={values.scheduledDate}
-                                    onChange={event =>
-                                        change(
-                                            "scheduledDate",
-                                            event.target.value,
-                                        )
-                                    }
-                                    className={`${field} native-date-time-field`}
-                                />
-                            </label>
+    <label className="block min-w-0 text-sm text-text-secondary">
+        თარიღი *
 
-                            <label className="block min-w-0 text-sm text-text-secondary">
-                                დრო *
-                                <input
-                                    required
-                                    type="time"
-                                    value={values.scheduledTime}
-                                    onChange={event =>
-                                        change(
-                                            "scheduledTime",
-                                            event.target.value,
-                                        )
-                                    }
-                                    className={`${field} native-date-time-field`}
-                                />
-                            </label>
-                        </div>
+        <DateTimeField
+            required
+            type="date"
+            aria-label="კონტენტის თარიღი"
+            value={values.scheduledDate}
+            onChange={event =>
+                change("scheduledDate", event.target.value)
+            }
+            className="mt-1"
+        />
+    </label>
+
+    <label className="block min-w-0 text-sm text-text-secondary">
+        დრო *
+
+        <DateTimeField
+            required
+            type="time"
+            aria-label="კონტენტის დრო"
+            value={values.scheduledTime}
+            onChange={event =>
+                change("scheduledTime", event.target.value)
+            }
+            className="mt-1"
+        />
+    </label>
+</div>
 
                         <label className="block text-sm text-text-secondary">
                             აღწერა

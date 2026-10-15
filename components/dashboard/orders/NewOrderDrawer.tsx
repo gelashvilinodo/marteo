@@ -224,7 +224,7 @@ export default function NewOrderDrawer() {
         }
         if (saving) { window.alert("მიმდინარეობს შენახვა. შეგიძლია შეწყვიტო ლოდინი ქვედა ღილაკით და შემდეგ ხელახლა სცადო."); return false; }
         if (pending) return window.confirm("შენახვის შედეგი ჯერ დაუდასტურებელია. ფანჯარაში დაბრუნებისას იგივე მოთხოვნას ხელახლა სცდი. გვერდის განახლებამდე შეინახე მონახაზის ასლი. დახურო ფანჯარა?");
-        return !dirty || window.confirm("ცვლილებები შენახული არ არის. დახურო ფანჯარა და დაკარგო შეყვანილი მონაცემები?");
+        return !dirty || window.confirm("ცვლილებები შენახული არ არის. OK-ზე დაჭერით დაკარგავ შეყვანილ მონაცემებს");
     }
     function leave() {
         if (closeTimer.current) return;

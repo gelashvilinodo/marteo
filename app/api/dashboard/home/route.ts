@@ -4,6 +4,7 @@ import { orderJson } from "@/lib/orders/order-http";
 import { getHomeSummary } from "@/lib/dashboard/get-home-summary";
 import { getHomeLists } from "@/lib/dashboard/get-home-lists";
 import { getHomeTrend } from "@/lib/dashboard/get-home-trend";
+import { getHomeExpenses } from "@/lib/dashboard/get-home-expenses";
 
 import type {
     HomePatch,
@@ -131,7 +132,7 @@ export async function GET(request: Request) {
             });
         }
 
-        const [lists, trend] = await Promise.all([
+        const [lists, trend, expenses] = await Promise.all([
             recentOrders || products
                 ? getHomeLists(
                     businessId,
@@ -153,7 +154,16 @@ export async function GET(request: Request) {
                     summary.profit !== null,
                 )
                 : Promise.resolve(null),
+            finance
+                ? getHomeExpenses(
+                    businessId,
+                    summary.from,
+                    summary.to,
+                )
+                : Promise.resolve(null),
         ]);
+
+
 
         if (lists) {
             if (recentOrders) patch.orders = lists.orders;
@@ -162,6 +172,10 @@ export async function GET(request: Request) {
 
         if (trend) {
             patch.trend = trend;
+        }
+
+        if (expenses) {
+            patch.expenses = expenses;
         }
 
         return orderJson({

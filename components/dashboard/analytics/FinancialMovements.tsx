@@ -40,12 +40,16 @@ const methods: Record<string, string> = {
 };
 
 function date(value: string) {
-    const d = new Date(new Date(value).getTime() + 4 * 60 * 60 * 1000);
+    const d = new Date(
+        new Date(value).getTime() + 4 * 60 * 60 * 1000,
+    );
+
     const pad = (part: number) => String(part).padStart(2, "0");
 
     return (
-        `${pad(d.getUTCDate())}.${pad(d.getUTCMonth() + 1)}.` +
-        `${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`
+        `${pad(d.getUTCDate())}.` +
+        `${pad(d.getUTCMonth() + 1)}.` +
+        `${d.getUTCFullYear()}`
     );
 }
 

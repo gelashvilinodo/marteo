@@ -63,6 +63,7 @@ export async function getFinancialMovements(
                 'financial'::text AS source,
                 f.kind::text AS kind,
                 f."occurredAt" AS occurred_at,
+                f."createdAt" AS created_at,
                 f."orderNumber" AS order_number,
                 'შეკვეთის ფინანსური ჩანაწერი'::text AS title,
                 (
@@ -90,7 +91,8 @@ COALESCE(
                     ELSE 'PAYMENT'
                 END,
                 p."createdAt",
-                o.number,
+p."createdAt",
+o.number,
                 p.method::text,
                                 p.amount,
                 NULL::numeric,
@@ -109,7 +111,8 @@ COALESCE(
                 'expense'::text,
                 e.category::text,
                 e."expenseDate",
-                NULL::integer,
+e."createdAt",
+NULL::integer,
                 COALESCE(NULLIF(e.title, ''), 'ხარჯი'),
                                 -e.amount,
                 NULL::numeric,
@@ -127,7 +130,8 @@ COALESCE(
                 'purchase'::text,
                 'PURCHASE'::text,
                 p."purchaseDate",
-                p.number,
+p."createdAt",
+p.number,
                 COALESCE(NULLIF(p.name, ''), 'პარტიის შეძენა'),
                 -(
                     COALESCE(
@@ -179,6 +183,7 @@ COALESCE(
 
                 'ORDER_SUMMARY'::text AS kind,
                 MAX(occurred_at) AS occurred_at,
+                MAX(created_at) AS created_at,
                 MAX(order_number) AS order_number,
 
                 CASE
@@ -228,7 +233,8 @@ COALESCE(
                 source,
                 kind,
                 occurred_at,
-                order_number,
+created_at,
+order_number,
                 title,
                 amount,
                 cost,
@@ -242,7 +248,8 @@ COALESCE(
                 source,
                 kind,
                 occurred_at,
-                order_number,
+created_at,
+order_number,
                 title,
                 amount,
                 cost,
@@ -269,7 +276,11 @@ COALESCE(
         page_rows AS (
             SELECT *
             FROM filtered
-            ORDER BY occurred_at DESC, key DESC
+            ORDER BY
+    (occurred_at + INTERVAL '4 hours')::date DESC,
+    created_at DESC,
+    occurred_at DESC,
+    key DESC
             LIMIT ${pageSize}
             OFFSET (
                 SELECT (page - 1)::bigint * ${pageSize}
@@ -298,7 +309,11 @@ COALESCE(
                             'cost', r.cost::text,
                             'costComplete', r.cost_complete
                         )
-                        ORDER BY r.occurred_at DESC, r.key DESC
+                        ORDER BY
+    (r.occurred_at + INTERVAL '4 hours')::date DESC,
+    r.created_at DESC,
+    r.occurred_at DESC,
+    r.key DESC
                     )
                     FROM page_rows r
                 ),

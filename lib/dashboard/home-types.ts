@@ -4,6 +4,7 @@ import type {
     HomeTopProduct,
 } from "./get-home-lists";
 import type { HomeTrend } from "./get-home-trend";
+import type { ExpenseBreakdownData } from "@/lib/analytics/get-expense-breakdown";
 
 export type HomeRefreshSection =
     | "period"
@@ -17,4 +18,5 @@ export type HomePatch = {
     orders?: HomeRecentOrder[];
     products?: HomeTopProduct[];
     trend?: HomeTrend;
+    expenses?: ExpenseBreakdownData;
 };

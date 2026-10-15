@@ -19,11 +19,13 @@ import type {
     HomeRefreshSection,
 } from "@/lib/dashboard/home-types";
 import type { OrdersPeriod } from "@/lib/orders/orders-period";
+import type { ExpenseBreakdownData } from "@/lib/analytics/get-expense-breakdown";
 
 export type HomeData = {
     summary: HomeSummary;
     lists: HomeLists | null;
     trend: HomeTrend | null;
+    expenses: ExpenseBreakdownData | null;
 };
 
 type Range = {
@@ -144,6 +146,7 @@ export function useHomeData(initialData: HomeData) {
                     }
                     : previous.lists,
                 trend: patch.trend ?? previous.trend,
+                expenses: patch.expenses ?? previous.expenses,
             };
 
             current.current = next;

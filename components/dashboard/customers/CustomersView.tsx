@@ -204,48 +204,38 @@ export default function CustomersView({
     ];
 
     const periodLabel =
-        data.period === "all"
-            ? "ყველა დრო"
-            : `${formatDate(`${data.from}T12:00:00+04:00`)} — ${formatDate(`${data.to}T12:00:00+04:00`)
-            }`;
+        `${formatDate(`${data.from}T12:00:00+04:00`)} — ` +
+        `${formatDate(`${data.to}T12:00:00+04:00`)}`;
 
     return (
         <main className="min-w-0 p-4 sm:p-6 lg:p-8">
             <div className="mx-auto min-w-0 max-w-7xl space-y-5">
                 {refreshError && <p role="alert" className="text-sm text-danger">{refreshError} <button type="button" className="underline" disabled={pending} onClick={() => window.dispatchEvent(new Event(CUSTOMERS_CHANGED, { cancelable: true }))}>სიის განახლება</button></p>}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <h1 className="text-2xl font-semibold text-text-primary">
-                        მომხმარებლები
-                    </h1>
-
-                    <div className="flex w-full flex-col gap-2 sm:w-auto lg:flex-row lg:items-start">
-                        <CustomersPeriodSelect
-                            key={`${data.period}-${data.from}-${data.to}`}
-                            period={data.period}
-                            from={data.from}
-                            to={data.to}
-                            pending={pending}
-                            onChange={(values) => navigate(values)}
-                        />
-
+                <CustomersPeriodSelect
+                    period={data.period}
+                    from={data.from}
+                    to={data.to}
+                    pending={pending}
+                    heading={
+                        <h1 className="text-2xl font-semibold text-text-primary">
+                            მომხმარებლები
+                        </h1>
+                    }
+                    action={
                         <button
                             type="button"
                             onClick={() => setFormCustomer(null)}
-                            className={
-                                "inline-flex h-11 shrink-0 items-center " +
-                                "justify-center gap-2 rounded-xl bg-success " +
-                                "px-4 text-sm font-semibold text-white"
-                            }
+                            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-success px-4 text-sm font-semibold text-white"
                         >
                             <Icon
                                 icon="solar:user-plus-rounded-linear"
-                                className="h-5 w-5"
+                                className="h-5 w-5 shrink-0"
                             />
-
                             ახალი მომხმარებელი
                         </button>
-                    </div>
-                </div>
+                    }
+                    onChange={values => navigate(values)}
+                />
 
                 <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
                     {filters.map(([id, title, icon, tone], index) => (

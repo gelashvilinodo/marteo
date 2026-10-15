@@ -11,8 +11,11 @@ import { getHomeLists } from "@/lib/dashboard/get-home-lists";
 import { getHomeTrend } from "@/lib/dashboard/get-home-trend";
 
 import HomeView from "@/components/dashboard/home/HomeView";
+import { getHomeExpenses } from "@/lib/dashboard/get-home-expenses";
+import { Suspense } from "react";
+import HomeSkeleton from "@/components/dashboard/home/HomeSkeleton";
 
-export default async function DashboardPage({
+async function DashboardContent({
     searchParams,
 }: {
     searchParams: Promise<HomeSearchParams>;
@@ -30,8 +33,8 @@ export default async function DashboardPage({
         await searchParams,
     );
 
-    const [lists, trend] = summary.isNewBusiness
-        ? [null, null]
+    const [lists, trend, expenses] = summary.isNewBusiness
+        ? [null, null, null]
         : await Promise.all([
             getHomeLists(
                 membership.businessId,
@@ -44,6 +47,11 @@ export default async function DashboardPage({
                 summary.to,
                 summary.profit !== null,
             ),
+            getHomeExpenses(
+                membership.businessId,
+                summary.from,
+                summary.to,
+            ),
         ]);
 
     return (
@@ -51,7 +59,17 @@ export default async function DashboardPage({
             key={membership.businessId}
             firstName={user.firstName}
             businessId={membership.businessId}
-            initialData={{ summary, lists, trend }}
+            initialData={{ summary, lists, trend, expenses }}
         />
+    );
+}
+
+export default function DashboardPage(props: {
+    searchParams: Promise<HomeSearchParams>;
+}) {
+    return (
+        <Suspense fallback={<HomeSkeleton />}>
+            <DashboardContent {...props} />
+        </Suspense>
     );
 }

@@ -18,6 +18,9 @@ import InventoryFiltersDisclosure from "@/components/dashboard/inventory/Invento
 import OrderInvoiceButton from "./OrderInvoiceButton";
 import OrderBulkDeleteButton from "./OrderBulkDeleteButton";
 import OrdersListSkeleton from "./OrdersListSkeleton";
+import PeriodFilter, {
+    standardPeriodOptions,
+} from "@/components/dashboard/shared/PeriodFilter";
 
 // These actions appear only after opening details or a return/delete flow.
 // Keep their forms out of the initial server render and browser module load.
@@ -697,12 +700,6 @@ export default function OrdersView({
     }
     const dialog = useRef<HTMLDialogElement>(null);
     const search = useRef<HTMLInputElement>(null);
-    const [draftPeriod, setDraftPeriod] = useState<OrdersPeriod>(data.period);
-    const [previousPeriod, setPreviousPeriod] = useState(data.period);
-    if (previousPeriod !== data.period) {
-        setPreviousPeriod(data.period);
-        setDraftPeriod(data.period);
-    }
     const inputClass = "h-11 w-full min-w-0 max-w-full rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary outline-none focus:border-accent lg:text-sm";
     const detailsOpen = Boolean(selected || detailTarget);
 
@@ -921,64 +918,31 @@ export default function OrdersView({
 
     return <main className="min-w-0 p-4 sm:p-6 lg:p-8">
         <div className="mx-auto min-w-0 max-w-7xl">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <h1 className="text-2xl font-semibold text-text-primary">შეკვეთები</h1>
-                <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
-                    <label className="relative block min-w-0 sm:w-52">
-                        <span className="sr-only">შეკვეთების პერიოდი</span>
-                        <Icon icon="solar:calendar-linear" className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-text-secondary" />
-                        <select value={draftPeriod} disabled={pending} className={`${inputClass} pl-9`} onChange={event => {
-                            const period = event.target.value as OrdersPeriod;
-                            setDraftPeriod(period);
-                            if (period !== "custom") startTransition(() => navigate(data.filter, data.query, 1, { period }));
-                        }}>
-                            <option value="day">ერთი დღე</option><option value="three-days">სამი დღე</option>
-                            <option value="week">ერთი კვირა</option><option value="two-weeks">ორი კვირა</option>
-                            <option value="month">ერთი თვე</option><option value="custom">სხვა</option>
-                        </select>
-                    </label>
+            <PeriodFilter
+                heading={
+                    <h1 className="text-2xl font-semibold text-text-primary">
+                        შეკვეთები
+                    </h1>
+                }
+                action={
                     <NewOrderButton className="!bg-success !text-white hover:!bg-success-hover" />
-                </div>
-            </div>
-            {draftPeriod === "custom" && <form key={`${data.from}-${data.to}`} className="mt-4 grid min-w-0 grid-cols-1 items-end gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]" onInput={event => {
-                const field = event.currentTarget.elements.namedItem("to") as HTMLInputElement;
-                field.setCustomValidity("");
-            }} onSubmit={event => {
-                event.preventDefault();
-                const values = new FormData(event.currentTarget);
-                const from = String(values.get("from") || "");
-                const to = String(values.get("to") || "");
-                if (from > to) { const field = event.currentTarget.elements.namedItem("to") as HTMLInputElement; field.setCustomValidity("ბოლო თარიღი საწყისზე ადრე არ უნდა იყოს."); field.reportValidity(); return; }
-                startTransition(() => navigate(data.filter, data.query, 1, { period: "custom", from, to }));
-            }}>
-                <label className="block min-w-0">
-                    <span className="mb-1.5 block text-sm text-text-secondary">
-                        თარიღიდან
-                    </span>
-                    <input
-                        type="date"
-                        name="from"
-                        required
-                        defaultValue={data.from}
-                        className={`${inputClass} native-date-time-field`}
-                    />
-                </label>
-
-                <label className="block min-w-0">
-                    <span className="mb-1.5 block text-sm text-text-secondary">
-                        თარიღამდე
-                    </span>
-                    <input
-                        type="date"
-                        name="to"
-                        required
-                        defaultValue={data.to}
-                        onChange={event => event.currentTarget.setCustomValidity("")}
-                        className={`${inputClass} native-date-time-field`}
-                    />
-                </label>
-                <button disabled={pending} className="h-11 rounded-xl bg-accent px-5 text-sm font-semibold text-white">ჩვენება</button>
-            </form>}
+                }
+                value={data.period}
+                from={data.from}
+                to={data.to}
+                options={standardPeriodOptions}
+                pending={pending}
+                onChange={({ period, from, to }) => {
+                    startTransition(() => {
+                        navigate(
+                            data.filter,
+                            data.query,
+                            1,
+                            { period, from, to },
+                        );
+                    });
+                }}
+            />
             <p className="mt-3 text-xs text-text-secondary">პერიოდი: {data.from.split("-").reverse().join(".")} — {data.to.split("-").reverse().join(".")}</p>
             {data.periodError && <p role="alert" className="mt-2 text-sm text-danger">{data.periodError}</p>}
             <div className="mt-6 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">

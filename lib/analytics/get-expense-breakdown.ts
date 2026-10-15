@@ -1,7 +1,6 @@
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
-import type { createPrismaClient } from "@/lib/prisma";
 import { resolveOrdersPeriod } from "@/lib/orders/orders-period";
 import { expenseCategories } from "./expense-categories";
 
@@ -12,10 +11,9 @@ type Row = {
 };
 
 export async function getExpenseBreakdown(
-    prisma: Pick<
-        ReturnType<typeof createPrismaClient>,
-        "$queryRaw"
-    >,
+    prisma: {
+        $queryRaw<T = unknown>(query: Prisma.Sql): Promise<T>;
+    },
     businessId: string,
     from: string,
     to: string,

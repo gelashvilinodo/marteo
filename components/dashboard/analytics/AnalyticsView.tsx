@@ -111,24 +111,15 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
         <main className="min-w-0 p-4 sm:p-6 lg:p-8">
             <div className="mx-auto min-w-0 max-w-7xl space-y-5">
                 <div className="space-y-3">
-                    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3 lg:grid-cols-[minmax(0,1fr)_12rem_auto]">
-                        <h1 className="col-span-2 row-start-1 text-2xl font-semibold text-text-primary lg:col-span-1 lg:col-start-1">
-                            ანალიტიკა
-                        </h1>
-
-                        <AnalyticsPeriodForm
-                            key={`${data.period}-${data.from}-${data.to}`}
-                            period={data.period}
-                            from={data.from}
-                            to={data.to}
-                        />
-
-                        <div className="col-start-2 row-start-2 lg:col-start-3 lg:row-start-1">
-                            <NewExpenseButton
-                                businessId={businessId}
-                            />
-                        </div>
-                    </div>
+                    <AnalyticsPeriodForm
+                        key={`${data.period}-${data.from}-${data.to}`}
+                        period={data.period}
+                        from={data.from}
+                        to={data.to}
+                        action={
+                            <NewExpenseButton businessId={businessId} />
+                        }
+                    />
 
                     <p className="text-xs text-text-secondary">
                         პერიოდი: {displayDate(data.from)} —{" "}
