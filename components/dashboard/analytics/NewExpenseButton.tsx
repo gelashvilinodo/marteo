@@ -62,11 +62,22 @@ function isSubmission(value: unknown): value is Submission {
 
 export default function NewExpenseButton({
     businessId,
+    autoOpen = false,
 }: {
     businessId: string;
+    autoOpen?: boolean;
 }) {
     const router = useRouter();
     const dialog = useRef<HTMLDialogElement>(null);
+    const trigger = useRef<HTMLButtonElement>(null);
+    const autoOpened = useRef(false);
+
+    useEffect(() => {
+        if (!autoOpen || autoOpened.current) return;
+
+        autoOpened.current = true;
+        trigger.current?.click();
+    }, [autoOpen]);
     const running = useRef(false);
 
     const [open, setOpen] = useState(false);
@@ -246,6 +257,7 @@ export default function NewExpenseButton({
     return (
         <>
             <button
+                ref={trigger}
                 type="button"
                 onClick={show}
                 className="inline-flex h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-success px-2.5 text-xs font-semibold text-white sm:gap-2 sm:px-4 sm:text-sm"

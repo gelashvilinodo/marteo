@@ -1,0 +1,181 @@
+import "server-only";
+
+import { createPgReader } from "@/lib/database/pg-reader";
+import { resolveOrdersPeriod } from "@/lib/orders/orders-period";
+
+export type HomeSearchParams = Record<
+    string,
+    string | string[] | undefined
+>;
+
+type SummaryRow = {
+    sales: string;
+    profit: string | null;
+    orders: string;
+    stock: string;
+    isNewBusiness: boolean;
+};
+
+export async function getHomeSummary(
+    businessId: string,
+    params: HomeSearchParams,
+    options: {
+        finance?: boolean;
+        orders?: boolean;
+        stock?: boolean;
+        businessState?: boolean;
+    } = {},
+) {
+    const includeFinance = options.finance ?? true;
+    const includeOrders = options.orders ?? true;
+    const includeStock = options.stock ?? true;
+    const includeBusinessState = options.businessState ?? true;
+    const text = (key: string) => {
+        const value = params[key];
+        return typeof value === "string" ? value.trim() : "";
+    };
+
+    const range = resolveOrdersPeriod(
+        text("period") || "month",
+        text("from"),
+        text("to"),
+    );
+
+    const reader = createPgReader();
+
+    try {
+        const [row] = await reader.$queryRaw<SummaryRow[]>`
+            WITH financial AS (
+                SELECT
+                    COALESCE(SUM(
+                        f."productRevenueDelta" +
+                        f."deliveryRevenueDelta"
+                    ), 0) AS sales,
+                    COALESCE(SUM(
+                        f."costOfGoodsDelta"
+                    ), 0) AS costs,
+                    COUNT(*) FILTER (
+                        WHERE f."costComplete" = FALSE
+                    ) AS incomplete
+                FROM "OrderFinancialEntry" f
+                WHERE ${includeFinance}::boolean
+    AND f."businessId" = ${businessId}
+    AND f."occurredAt" >= ${range.start}
+                    AND f."occurredAt" < ${range.end}
+            ),
+            expenses AS (
+                SELECT COALESCE(SUM(e.amount), 0) AS total
+                FROM "Expense" e
+                WHERE ${includeFinance}::boolean
+    AND e."businessId" = ${businessId}
+    AND e."expenseDate" >= ${range.start}
+                    AND e."expenseDate" < ${range.end}
+            ),
+            orders AS (
+                SELECT COUNT(*) AS total
+                FROM "Order" o
+                WHERE ${includeOrders}::boolean
+    AND o."businessId" = ${businessId}
+    AND o."deletedAt" IS NULL
+                    AND o."createdAt" >= ${range.start}
+                    AND o."createdAt" < ${range.end}
+            ),
+            stock AS (
+                SELECT COALESCE(SUM(i."currentStock"), 0) AS total
+                FROM "InventoryItem" i
+                WHERE ${includeStock}::boolean
+    AND i."businessId" = ${businessId}
+    AND i."isActive" = TRUE
+                    AND EXISTS (
+                        SELECT 1
+                        FROM "PurchaseItem" pi
+                        JOIN "Purchase" p
+                            ON p.id = pi."purchaseId"
+                        WHERE pi."inventoryItemId" = i.id
+                            AND p."businessId" = ${businessId}
+                            AND p."receiptStatus" = 'RECEIVED'
+                    )
+            )
+            SELECT
+                ROUND(financial.sales, 2)::text AS sales,
+                CASE
+    WHEN NOT ${includeFinance}::boolean THEN NULL
+    WHEN financial.incomplete > 0
+                        OR EXISTS (
+                            SELECT 1
+                            FROM "Order" o
+                            WHERE o."businessId" = ${businessId}
+                                AND o.status = 'COMPLETED'
+                                AND NOT EXISTS (
+                                    SELECT 1
+                                    FROM "OrderFinancialEntry" f
+                                    WHERE f."businessId" = ${businessId}
+                                        AND f."orderId" = o.id
+                                        AND f.kind = 'SALE'
+                                )
+                        )
+                    THEN NULL
+                    ELSE ROUND(
+                        financial.sales -
+                        financial.costs -
+                        expenses.total,
+                        2
+                    )::text
+                END AS profit,
+                orders.total::text AS orders,
+                stock.total::text AS stock,
+                CASE WHEN ${includeBusinessState}::boolean THEN NOT (
+    EXISTS (
+        SELECT 1 FROM "Order"
+                        WHERE "businessId" = ${businessId}
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM "Purchase"
+                        WHERE "businessId" = ${businessId}
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM "Expense"
+                        WHERE "businessId" = ${businessId}
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM "Product"
+                        WHERE "businessId" = ${businessId}
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM "InventoryItem"
+                        WHERE "businessId" = ${businessId}
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM "Customer"
+                        WHERE "businessId" = ${businessId}
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM "OrderFinancialEntry"
+                        WHERE "businessId" = ${businessId}
+                    )
+                ) ELSE FALSE END AS "isNewBusiness"
+            FROM financial
+            CROSS JOIN expenses
+            CROSS JOIN orders
+            CROSS JOIN stock
+        `;
+
+        if (!row) {
+            throw new Error("მთავარი გვერდის მონაცემები ვერ ჩაიტვირთა.");
+        }
+
+        return {
+            ...row,
+            period: range.period,
+            from: range.from,
+            to: range.to,
+            periodError: range.error,
+        };
+    } finally {
+        await reader.$disconnect();
+    }
+}
+
+export type HomeSummary = Awaited<
+    ReturnType<typeof getHomeSummary>
+>;

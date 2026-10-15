@@ -331,7 +331,9 @@ export default function NewPurchasePanel({
     inventoryOptions,
     attributeOptions,
     editPurchaseId,
+    autoOpen = false,
 }: {
+    autoOpen?: boolean;
     editPurchaseId?: string;
     inventoryOptions: InventoryOption[];
     attributeOptions: {
@@ -396,6 +398,14 @@ export default function NewPurchasePanel({
     }
 
     const openButton = useRef<HTMLButtonElement>(null);
+    const autoOpened = useRef(false);
+
+    useEffect(() => {
+        if (!autoOpen || autoOpened.current) return;
+
+        autoOpened.current = true;
+        openButton.current?.click();
+    }, [autoOpen]);
     const heading = useRef<HTMLHeadingElement>(null);
     const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
