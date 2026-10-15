@@ -29,7 +29,9 @@ export async function POST(request: Request) {
         if (!(file instanceof File) || !file.size) {
             throw new OrderValidationError("აირჩიე პროდუქტის ფოტო.");
         }
-        const uploaded = await uploadProductImage(businessId, file);
+        const thumbnail = form.get("thumbnail");
+        if (thumbnail !== null && !(thumbnail instanceof File)) throw new OrderValidationError("მცირე ფოტოს მონაცემები არასწორია.");
+        const uploaded = await uploadProductImage(businessId, file, thumbnail);
         return orderJson({ success: true, imageUrl: uploaded.url }, 201);
     } catch (cause: unknown) {
         if (cause instanceof ProductImageError) {

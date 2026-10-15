@@ -1,5 +1,7 @@
 "use client";
 
+import ProductThumbnail from "@/components/shared/ProductThumbnail";
+
 import { useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 import { Icon } from "@iconify/react";
@@ -189,7 +191,7 @@ export default function InventoryProducts({
                                     <div className="flex min-w-0 items-center gap-2">
                                         <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-background md:h-10 md:w-10">
                                             {product.imageUrl ? (
-                                                <Image
+                                                <ProductThumbnail
                                                     src={product.imageUrl}
                                                     alt=""
                                                     fill

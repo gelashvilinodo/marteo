@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
+import { createProductThumbnail } from "@/lib/images/create-product-thumbnail";
 import { prepareOrderPhoto } from "@/lib/orders/prepare-order-photo";
 
 export default function OrderPhotoUpload({
@@ -40,6 +41,9 @@ export default function OrderPhotoUpload({
             setStage("ფოტო იტვირთება…");
             const form = new FormData();
             form.set("file", prepared);
+            const thumbnail = await createProductThumbnail(prepared);
+            if (abort.signal.aborted || !mounted.current) return;
+            if (thumbnail) form.set("thumbnail", thumbnail);
             const response = await fetch("/api/orders/photos", {
                 method: "POST",
                 body: form,

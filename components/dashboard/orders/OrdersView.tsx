@@ -1,5 +1,7 @@
 "use client";
 
+import ProductThumbnail from "@/components/shared/ProductThumbnail";
+
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -1187,7 +1189,7 @@ export default function OrdersView({
                                             <div className="flex min-w-0 items-center gap-2">
                                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-background sm:h-10 sm:w-10">
                                                     {image ? (
-                                                        <Image
+                                                        <ProductThumbnail
                                                             src={image}
                                                             alt="შეკვეთის პროდუქტი"
                                                             width={40}

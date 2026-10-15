@@ -125,7 +125,7 @@ export async function createOrderItems(
 
                 valid =
                     imageUrl.startsWith(allowedPrefix) &&
-                    /^[0-9a-f-]{36}\.(png|jpg|webp)$/.test(filename) &&
+                    /^[0-9a-f-]{36}(\.full)?\.(png|jpg|webp)$/.test(filename) &&
                     !url.search &&
                     !url.hash;
             } catch {

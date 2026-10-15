@@ -1,5 +1,7 @@
 "use client";
 
+import { createProductThumbnail } from "@/lib/images/create-product-thumbnail";
+
 import {
     useEffect,
     useId,
@@ -953,29 +955,42 @@ export default function NewPurchasePanel({
             submission = new FormData();
             submission.set("payload", payload);
 
-            for (const [index, product] of products.entries()) {
-                if (product.imageAction !== "upload") continue;
+            requestLocked.current = true;
+            setSaving(true);
+            try {
+                for (const [index, product] of products.entries()) {
+                    if (product.imageAction !== "upload") continue;
 
-                if (!product.imageFile) {
-                    setError(
-                        `პროდუქტი ${index + 1}: თავიდან აირჩიე ფოტო.`,
+                    if (!product.imageFile) {
+                        setError(
+                            `პროდუქტი ${index + 1}: თავიდან აირჩიე ფოტო.`,
+                        );
+                        return;
+                    }
+
+                    if (product.imageFile.size > 5 * 1024 * 1024) {
+                        setError(
+                            `პროდუქტი ${index + 1}: ფოტოს მაქსიმალური ზომაა 5 MB.`,
+                        );
+                        return;
+                    }
+
+                    totalSize += product.imageFile.size;
+                    const thumbnail = await createProductThumbnail(product.imageFile);
+                    if (thumbnail) {
+                        submission.set("thumbnail-" + index, thumbnail);
+                        totalSize += thumbnail.size;
+                    }
+
+                    submission.set(
+                        `image-${index}`,
+                        product.imageFile,
                     );
-                    return;
                 }
 
-                if (product.imageFile.size > 5 * 1024 * 1024) {
-                    setError(
-                        `პროდუქტი ${index + 1}: ფოტოს მაქსიმალური ზომაა 5 MB.`,
-                    );
-                    return;
-                }
-
-                totalSize += product.imageFile.size;
-
-                submission.set(
-                    `image-${index}`,
-                    product.imageFile,
-                );
+            } finally {
+                requestLocked.current = false;
+                setSaving(false);
             }
 
             // სივრცე მოთხოვნის ტექნიკური მონაცემებისთვისაც რჩება.

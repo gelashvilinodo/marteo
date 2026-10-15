@@ -1,7 +1,8 @@
 "use client";
 
+import ProductThumbnail from "@/components/shared/ProductThumbnail";
+
 import { useId, useState, type ReactNode } from "react";
-import Image from "next/image";
 import { Icon } from "@iconify/react";
 
 type PurchaseProduct = {
@@ -107,7 +108,7 @@ export default function PurchaseProducts({
                                     <div className="flex min-w-0 items-center gap-3">
                                         <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-surface">
                                             {item.imageUrl ? (
-                                                <Image
+                                                <ProductThumbnail
                                                     src={item.imageUrl}
                                                     alt={item.name}
                                                     width={48}

@@ -25,7 +25,7 @@ import {
 export type PurchaseImageChange =
     | { action: "keep" }
     | { action: "remove" }
-    | { action: "upload"; file: File };
+    | { action: "upload"; file: File; thumbnail?: File | null };
 
 function fail(message: string): never {
     throw new PurchaseValidationError(message);
@@ -167,6 +167,7 @@ export async function savePurchase(
                 const uploaded = await uploadProductImage(
                     businessId,
                     change.file,
+                    change.thumbnail,
                 );
 
                 uploadedImages.set(index, uploaded);

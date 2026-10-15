@@ -160,6 +160,7 @@ export async function updatePurchase(
                 const uploaded = await uploadProductImage(
                     businessId,
                     change.file,
+                    change.thumbnail,
                 );
 
                 uploadedImages.set(index, uploaded);

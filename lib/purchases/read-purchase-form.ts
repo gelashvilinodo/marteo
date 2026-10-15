@@ -168,6 +168,8 @@ export async function readPurchaseForm(request: Request) {
             }
 
             allowedFields.add(fieldName);
+            const thumbnailField = "thumbnail-" + index;
+            allowedFields.add(thumbnailField);
 
             const files = formData.getAll(fieldName);
             const file = files[0];
@@ -189,7 +191,12 @@ export async function readPurchaseForm(request: Request) {
                 );
             }
 
-            return { action: "upload", file };
+            const thumbnails = formData.getAll(thumbnailField);
+            const thumbnail = thumbnails[0];
+            if (thumbnails.length > 1 || (thumbnail !== undefined && (!(thumbnail instanceof File) || !thumbnail.size || thumbnail.size > 100 * 1024))) {
+                throw new PurchaseFormError("მცირე ფოტოს მონაცემები არასწორია.");
+            }
+            return { action: "upload", file, thumbnail: thumbnail instanceof File ? thumbnail : null };
         });
 
     for (const key of formData.keys()) {

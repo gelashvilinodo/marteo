@@ -1,7 +1,8 @@
 "use client";
 
+import ProductThumbnail from "@/components/shared/ProductThumbnail";
+
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { Icon } from "@iconify/react";
 import type { InventoryOrderProduct, OrderFormItem } from "@/lib/orders/order-form";
 
@@ -38,7 +39,7 @@ export default function OrderInventoryPicker({ close, choose, items }: { close: 
         <div className="shrink-0 p-4"><label className="relative block"><span className="sr-only">პროდუქტის ძებნა</span><Icon icon="solar:magnifer-linear" className="absolute left-3 top-3 h-5 w-5 text-text-secondary" /><input autoFocus value={query} onChange={event => { setQuery(event.target.value); setPage(1); setBusy(true); }} placeholder="სახელი, SKU, ფერი ან ზომა" className="h-11 w-full min-w-0 rounded-xl border border-border bg-background pl-10 pr-3 text-[16px] outline-none focus:border-accent lg:text-sm" /></label></div>
         <div aria-busy={busy} className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
             {busy ? <p role="status" className="flex items-center justify-center gap-2 py-12 text-sm text-text-secondary"><Icon icon="solar:refresh-linear" className="h-5 w-5 animate-spin text-accent" />იტვირთება…</p> : error ? <div role="alert" className="py-6 text-sm text-danger">{error}<button type="button" onClick={() => { setBusy(true); setRevision(value => value + 1); }} className="ml-3 underline">ხელახლა ცდა</button></div> : data?.products.length ? <div className="space-y-2">{data.products.map(product => <article key={product.id} className="flex min-w-0 flex-wrap items-center gap-3 rounded-xl border border-border p-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-background">{product.imageUrl ? <Image src={product.imageUrl} alt={product.name} width={48} height={48} unoptimized className="h-full w-full object-cover" /> : <Icon icon="solar:box-linear" className="h-6 w-6 text-accent" />}</div>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-background">{product.imageUrl ? <ProductThumbnail src={product.imageUrl} alt={product.name} width={48} height={48} unoptimized className="h-full w-full object-cover" /> : <Icon icon="solar:box-linear" className="h-6 w-6 text-accent" />}</div>
                 <div className="min-w-0 flex-1"><p className="break-words text-sm font-medium">{product.name}</p><p className="mt-1 break-words text-xs text-text-secondary">{[product.sku, product.color, product.size].filter(Boolean).join(" · ")}</p><p className="mt-1 text-xs font-medium">{product.salePrice ?? "—"} ₾</p></div>
                 <div className="flex w-full flex-wrap gap-2 sm:w-auto">
                     <button type="button" disabled={available(product, "GOOD") < 1} onClick={() => choose(product, "GOOD")} className="inline-flex h-10 items-center gap-2 rounded-xl border border-success/40 px-3 text-xs font-medium text-success disabled:opacity-40"><Icon icon="solar:add-circle-linear" className="h-4 w-4" />დაუზიანებელი · {available(product, "GOOD")}</button>

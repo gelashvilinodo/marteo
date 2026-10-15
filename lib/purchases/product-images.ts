@@ -108,6 +108,7 @@ function validateBusinessId(businessId: string) {
 export async function uploadProductImage(
     businessId: string,
     file: File,
+    thumbnail?: File | null,
 ) {
     validateBusinessId(businessId);
 
@@ -130,10 +131,19 @@ export async function uploadProductImage(
         );
     }
 
+    let thumbnailBuffer: ArrayBuffer | null = null;
+    let thumbnailImage: ReturnType<typeof detectImage> = null;
+    if (thumbnail) {
+        if (!(thumbnail instanceof File) || !thumbnail.size || thumbnail.size > 100 * 1024) {
+            throw new ProductImageError("მცირე ფოტოს ზომა არასწორია.");
+        }
+        thumbnailBuffer = await thumbnail.arrayBuffer();
+        thumbnailImage = detectImage(new Uint8Array(thumbnailBuffer));
+        if (!thumbnailImage) throw new ProductImageError("მცირე ფოტოს ფორმატი არასწორია.");
+    }
     const storage = getStorageClient();
-
-    const path =
-        `${businessId}/${crypto.randomUUID()}.${image.extension}`;
+    const stem = `${businessId}/${crypto.randomUUID()}`;
+    const path = `${stem}${thumbnailBuffer ? ".full" : ""}.${image.extension}`;
 
     const { error } = await storage.storage
         .from(BUCKET)
@@ -151,6 +161,21 @@ export async function uploadProductImage(
         );
     }
 
+    if (thumbnailBuffer && thumbnailImage) {
+        try {
+            const { error: thumbnailError } = await storage.storage.from(BUCKET).upload(
+                `${stem}.thumb`, thumbnailBuffer,
+                { contentType: thumbnailImage.contentType, cacheControl: "31536000", upsert: false },
+            );
+            if (thumbnailError) throw thumbnailError;
+        } catch {
+            // An interrupted response may still have stored the thumbnail.
+            // Both UUID paths belong only to this uncommitted upload.
+            try { await storage.storage.from(BUCKET).remove([path, `${stem}.thumb`]); }
+            catch { console.error("Uncommitted product image pair needs cleanup"); }
+            throw new ProductImageError("მცირე ფოტოს ატვირთვა ვერ მოხერხდა. სცადე ხელახლა.");
+        }
+    }
     const { data } = storage.storage
         .from(BUCKET)
         .getPublicUrl(path);
@@ -179,7 +204,7 @@ export async function removeUncommittedProductImages(
         if (
             parts.length !== 2 ||
             parts[0] !== businessId ||
-            !/^[0-9a-f-]{36}\.(png|jpg|webp)$/.test(parts[1])
+            !/^[0-9a-f-]{36}(\.full)?\.(png|jpg|webp)$/.test(parts[1])
         ) {
             throw new ProductImageError(
                 "ფოტოს გასუფთავების მისამართი არასწორია.",
@@ -191,7 +216,9 @@ export async function removeUncommittedProductImages(
 
     const { error } = await storage.storage
         .from(BUCKET)
-        .remove(uniquePaths);
+        .remove([...new Set(uniquePaths.flatMap(path => path.includes(".full.")
+            ? [path, path.replace(/\.full\.(png|jpg|webp)$/, ".thumb")]
+            : [path]))]);
 
     if (error) {
         throw new ProductImageError(
