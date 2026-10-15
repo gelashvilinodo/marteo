@@ -15,7 +15,7 @@ function ShowButton({ disabled }: { disabled: boolean }) {
             type="submit"
             disabled={disabled || pending}
             aria-busy={pending}
-            className="col-span-2 inline-flex h-11 min-w-32 items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-white disabled:opacity-60 lg:col-span-1"
+            className="inline-flex h-11 min-w-32 items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-white disabled:opacity-60 sm:col-span-2 lg:col-span-1"
         >
             {pending && (
                 <Icon
@@ -96,7 +96,7 @@ export default function StatisticsPeriodForm({
             </label>
 
             {selection === "custom" && (
-                <div className="col-span-2 grid min-w-0 grid-cols-2 items-end gap-3 rounded-2xl border border-border bg-surface p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                <div className="col-span-2 grid min-w-0 grid-cols-1 items-end gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
                     <label className="block min-w-0">
                         <span className="mb-1.5 block text-sm text-text-secondary">
                             თარიღიდან
@@ -107,7 +107,7 @@ export default function StatisticsPeriodForm({
                             name="from"
                             required
                             defaultValue={from}
-                            className={field}
+                            className={`${field} native-date-time-field`}
                         />
                     </label>
 
@@ -121,7 +121,7 @@ export default function StatisticsPeriodForm({
                             name="to"
                             required
                             defaultValue={to}
-                            className={field}
+                            className={`${field} native-date-time-field`}
                         />
                     </label>
 

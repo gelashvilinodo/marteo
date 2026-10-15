@@ -543,8 +543,8 @@ export default function NewOrderDrawer() {
                         : "ახალი შეკვეთა"}
                 </h2>
             </header>
-            <form id={formId} onSubmit={submit} className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 lg:flex lg:flex-col lg:overflow-hidden lg:p-4 xl:p-5">
-                <fieldset disabled={blocked} className="min-h-0 min-w-0 space-y-3 lg:flex lg:h-full lg:flex-col lg:space-y-0 lg:gap-3 disabled:opacity-70">
+            <form id={formId} onSubmit={submit} className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-5 lg:p-4 xl:p-5">
+                <fieldset disabled={blocked} className="min-w-0 space-y-3 disabled:opacity-70 lg:flex lg:min-h-full lg:flex-col lg:gap-3 lg:space-y-0">
                     <section className="shrink-0 rounded-2xl border border-border bg-surface p-3 sm:p-4">
                         <div className="mb-3 flex flex-wrap items-center gap-2"><Icon icon="solar:user-linear" className="h-5 w-5 text-accent" /><h3 className="text-sm font-semibold">მომხმარებლის ინფორმაცია</h3>{customerBusy && <Icon icon="solar:refresh-linear" className="h-4 w-4 animate-spin text-accent" />}<span role="status" className="text-xs text-text-secondary">{customerInfo}</span>{customerInfo && !customerInfo.startsWith("მომხმარებელი მოიძებნა") && !customerInfo.startsWith("ახალი მომხმარებელი") && <button type="button" onClick={() => setLookupRevision(value => value + 1)} className="text-xs text-accent underline">ხელახლა მოძებნა</button>}</div>
                         <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.6fr)]">
@@ -582,8 +582,8 @@ export default function NewOrderDrawer() {
                                 inert={!notesOpen}
                                 aria-hidden={!notesOpen}
                                 className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out motion-reduce:transition-none ${notesOpen
-                                        ? "grid-rows-[1fr] opacity-100"
-                                        : "grid-rows-[0fr] opacity-0"
+                                    ? "grid-rows-[1fr] opacity-100"
+                                    : "grid-rows-[0fr] opacity-0"
                                     }`}
                             >
                                 <div className="min-h-0 overflow-hidden">
@@ -614,12 +614,15 @@ export default function NewOrderDrawer() {
                             </div>
                         </div>
                     </section>
-                    <div className="min-h-0 min-w-0 space-y-3 lg:grid lg:flex-1 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:gap-4 lg:space-y-0">
-                        <section className="flex min-h-0 min-w-0 flex-col rounded-2xl border border-border bg-surface">
+                    <div className="grid min-w-0 grid-cols-1 items-start gap-3 lg:flex-1 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:gap-4">
+                        <section className="flex min-h-0 min-w-0 flex-col rounded-2xl border border-border bg-surface lg:self-stretch">
                             <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border p-3 sm:p-4"><h3 className="flex items-center gap-2 text-sm font-semibold"><Icon icon="solar:box-linear" className="h-5 w-5 text-accent" />პროდუქტები <span className="font-normal text-text-secondary">{draft.items.length}</span></h3><div className="flex flex-wrap gap-2"><button type="button" onClick={() => setPickerOpen(true)} disabled={productsLocked} className="inline-flex h-10 items-center gap-2 rounded-xl border border-success/40 px-3 text-xs font-semibold text-success"><Icon icon="solar:box-linear" className="h-4 w-4" />მარაგიდან არჩევა</button><button type="button" onClick={addManual} disabled={productsLocked} className="inline-flex h-10 items-center gap-2 rounded-xl bg-success px-3 text-xs font-semibold text-white"><Icon icon="solar:add-circle-linear" className="h-4 w-4" />ხელით დამატება</button></div></div>
                             <div
                                 ref={productList}
-                                className="min-h-0 space-y-3 p-3 sm:p-4 lg:flex-1 lg:overflow-y-auto"
+                                className={`min-w-0 space-y-3 p-3 sm:p-4 lg:flex-1 ${draft.items.length === 0
+                                        ? "lg:flex lg:items-center lg:justify-center"
+                                        : ""
+                                    }`}
                             >
                                 {draft.items.length ? (
                                     draft.items.map((item, index) => (
@@ -647,7 +650,7 @@ export default function NewOrderDrawer() {
                                         />
                                     ))
                                 ) : (
-                                    <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-10 text-center text-text-secondary lg:h-full">
+                                    <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-10 text-center text-text-secondary">
                                         <Icon
                                             icon="solar:box-linear"
                                             className="h-10 w-10 text-accent/60"
@@ -659,7 +662,7 @@ export default function NewOrderDrawer() {
                                 )}
                             </div>
                         </section>
-                        <aside className="min-h-0 min-w-0 rounded-2xl border border-border bg-surface p-3 sm:p-4 lg:overflow-y-auto">
+                        <aside className="min-w-0 rounded-2xl border border-border bg-surface p-3 sm:p-4">
                             <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><Icon icon="solar:wallet-money-linear" className="h-5 w-5 text-success" />გადახდა</h3>
                             {editingOrder && (
                                 <div className="mb-3 rounded-xl border border-accent/20 bg-accent/5 p-3">
@@ -683,7 +686,7 @@ export default function NewOrderDrawer() {
                                 </div>
                             )}
                             <div className="space-y-3">
-                                <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-1 xl:grid-cols-2"><Field label="კურიერის საფასური · ₾"><input inputMode="decimal" value={draft.courierFee} readOnly={productsLocked} onChange={event => patch({ courierFee: event.target.value })} className={input} /></Field><Field label="გადახდა"><select disabled={Boolean(editingOrder)} value={paidMode} onChange={event => { setPaidMode(event.target.value as PaidMode); setDirty(true); }} className={input}><option value="none">გადახდა არ არის</option><option value="full">სრულად გადახდილი</option><option value="courier">მხოლოდ კურიერი</option><option value="custom">
+                                <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2"><Field label="კურიერის საფასური · ₾"><input inputMode="decimal" value={draft.courierFee} readOnly={productsLocked} onChange={event => patch({ courierFee: event.target.value })} className={input} /></Field><Field label="გადახდა"><select disabled={Boolean(editingOrder)} value={paidMode} onChange={event => { setPaidMode(event.target.value as PaidMode); setDirty(true); }} className={input}><option value="none">გადახდა არ არის</option><option value="full">სრულად გადახდილი</option><option value="courier">მხოლოდ კურიერი</option><option value="custom">
                                     {editingOrder
                                         ? "მიღებული თანხის მითითება"
                                         : "ნაწილობრივ"}

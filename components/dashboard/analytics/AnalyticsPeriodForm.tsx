@@ -85,7 +85,7 @@ export default function AnalyticsPeriodForm({
             </label>
 
             {selection === "custom" && (
-                <div className="col-span-2 row-start-3 grid min-w-0 grid-cols-subgrid items-end gap-3 lg:col-span-3 lg:row-start-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:rounded-2xl lg:border lg:border-border lg:bg-surface lg:p-4">
+                <div className="col-span-2 row-start-3 grid min-w-0 grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:col-span-3 lg:row-start-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:rounded-2xl lg:border lg:border-border lg:bg-surface lg:p-4">
                     <label className="block min-w-0">
                         <span className="mb-1.5 block text-sm text-text-secondary">
                             თარიღიდან
@@ -96,7 +96,7 @@ export default function AnalyticsPeriodForm({
                             name="from"
                             required
                             defaultValue={from}
-                            className={`${field} block max-w-full`}
+                            className={`${field} native-date-time-field`}
                         />
                     </label>
 
@@ -110,13 +110,13 @@ export default function AnalyticsPeriodForm({
                             name="to"
                             required
                             defaultValue={to}
-                            className={`${field} block max-w-full`}
+                            className={`${field} native-date-time-field`}
                         />
                     </label>
 
                     <button
                         type="submit"
-                        className="col-span-2 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-white lg:col-span-1 lg:w-auto"
+                        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-white sm:col-span-2 lg:col-span-1 lg:w-auto"
                     >
                         ჩვენება
                     </button>

@@ -5,6 +5,8 @@ import { Icon } from "@iconify/react";
 import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
 import InvoiceDocument, { isInvoicePaper, type InvoicePaper } from "./InvoiceDocument";
 import { prepareInvoiceQr } from "@/lib/orders/prepare-invoice-qr-client";
+import InvoicePreview from "./InvoicePreview";
+import { waitForInvoiceImage } from "@/lib/orders/wait-for-invoice-image";
 
 const EMPTY_IDS: string[] = [];
 type Entry = { id: string; invoice: OrderInvoiceData };
@@ -20,6 +22,106 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
     const operation = useRef(false);
     const [total, setTotal] = useState<number | null>(null);
     const [ready, setReady] = useState(false);
+    const [prepared, setPrepared] = useState<{
+        entries: Entry[];
+        paper: InvoicePaper;
+    } | null>(null);
+
+    const [preparationError, setPreparationError] = useState("");
+
+    const printReady =
+        ready &&
+        entries.length > 0 &&
+        prepared?.entries === entries &&
+        prepared?.paper === paper;
+
+    useEffect(() => {
+        setPrepared(null);
+        setPreparationError("");
+
+        const element = sheets.current;
+        if (!ready || entries.length === 0 || !element) return;
+
+        let active = true;
+        let timeout: ReturnType<typeof setTimeout> | undefined;
+
+        async function prepare() {
+            try {
+                await Promise.race([
+                    Promise.all([
+                        document.fonts.ready,
+                        ...Array.from(
+                            element!.querySelectorAll("img"),
+                        ).map(waitForInvoiceImage),
+                    ]),
+                    new Promise<never>((_, reject) => {
+                        timeout = setTimeout(() => {
+                            reject(new Error(
+                                "ინვოისების მომზადების დრო ამოიწურა. განაახლე გვერდი და სცადე ხელახლა.",
+                            ));
+                        }, 15000);
+                    }),
+                ]);
+
+                if (!active) return;
+
+                if (paper === "58mm" || paper === "80mm") {
+                    const contentWidth = paper === "80mm" ? 74 : 52;
+                    const documents = Array.from(
+                        element!.querySelectorAll<HTMLElement>(
+                            ".batch-sheet",
+                        ),
+                    );
+
+                    let maximumHeight = 50;
+
+                    for (const document of documents) {
+                        if (document.offsetWidth <= 0) {
+                            throw new Error(
+                                "ინვოისის ზომის განსაზღვრა ვერ მოხერხდა.",
+                            );
+                        }
+
+                        maximumHeight = Math.max(
+                            maximumHeight,
+                            Math.ceil(
+                                document.offsetHeight /
+                                document.offsetWidth *
+                                contentWidth,
+                            ) + 8,
+                        );
+                    }
+
+                    setRollHeight(maximumHeight);
+                }
+
+                await new Promise<void>(resolve => {
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => resolve());
+                    });
+                });
+
+                if (active) setPrepared({ entries, paper });
+            } catch (cause: unknown) {
+                if (active) {
+                    setPreparationError(
+                        cause instanceof Error
+                            ? cause.message
+                            : "ინვოისების მომზადება ვერ მოხერხდა.",
+                    );
+                }
+            } finally {
+                if (timeout !== undefined) clearTimeout(timeout);
+            }
+        }
+
+        void prepare();
+
+        return () => {
+            active = false;
+            if (timeout !== undefined) clearTimeout(timeout);
+        };
+    }, [entries, paper, ready]);
     useEffect(() => {
         let active = true;
         const controller = new AbortController();
@@ -90,19 +192,22 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
         element.querySelectorAll(".batch-sheet").forEach(sheet => observer.observe(sheet));
         return () => observer.disconnect();
     }, [entries, paper]);
-    async function print() {
-        if (!ready || !entries.length || operation.current || !sheets.current) return;
-        operation.current = true; setBusy(true); setError("");
-        let timeout: ReturnType<typeof setTimeout> | undefined;
+    function print() {
+        if (!printReady || operation.current) return;
+
+        operation.current = true;
+        setBusy(true);
+        setError("");
+
         try {
-            await Promise.race([
-                Promise.all([document.fonts.ready, ...Array.from(sheets.current.querySelectorAll("img")).map(image => image.decode())]),
-                new Promise<never>((_, reject) => { timeout = setTimeout(() => reject(new Error("მომზადება შეწყდა. გადაამოწმე სურათები და სცადე ხელახლა.")), 15000); }),
-            ]);
-            await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-            window.print(); setPrompt(true);
-        } catch (cause: unknown) { setError(cause instanceof Error ? cause.message : "ბეჭდვა ვერ მომზადდა."); }
-        finally { if (timeout) clearTimeout(timeout); operation.current = false; setBusy(false); }
+            window.print();
+            setPrompt(true);
+        } catch {
+            setError("ბეჭდვის ფანჯარა ვერ გაიხსნა. სცადე ხელახლა.");
+        } finally {
+            operation.current = false;
+            setBusy(false);
+        }
     }
     async function confirm() {
         if (!ready || operation.current) return;
@@ -141,7 +246,7 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
             : paper === "100x150"
                 ? "100mm 150mm"
                 : `${paper === "80mm" ? 80 : 58}mm ${rollHeight}mm`;
-    return <main className="batch-page min-h-dvh bg-slate-100 p-3 text-slate-900 sm:p-6">
+    return <main className="batch-page min-h-dvh bg-background p-4 text-text-primary sm:p-6">
         <style>{`
             @page {
     size:${pageSize};
@@ -151,27 +256,78 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                 html,body { display:block!important; height:auto!important; margin:0!important; padding:0!important; overflow:visible!important; background:white!important; }
                 .batch-page { min-height:0!important; padding:0!important; }
                 .batch-controls { display:none!important; }
-                .batch-scroll { overflow:visible!important; }
-                .batch-sheet { width:${width}!important; margin:0!important; padding:0!important; box-shadow:none!important; break-after:page; }
-                .batch-sheet:last-child { break-after:auto; }
+                .batch-scroll {
+    width:100%!important;
+    max-width:none!important;
+    overflow:visible!important;
+}
+.batch-entry {
+    margin:0!important;
+    break-after:page;
+}
+.batch-entry:last-child {
+    break-after:auto;
+}
+.batch-page .invoice-preview-host,
+.batch-page .invoice-preview-stage {
+    width:auto!important;
+    max-width:none!important;
+    height:auto!important;
+    overflow:visible!important;
+}
+.batch-page .invoice-preview-inner {
+    position:static!important;
+    width:auto!important;
+    transform:none!important;
+}
+.batch-sheet {
+    width:${width}!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:0!important;
+    box-shadow:none!important;
+}
             }
         `}</style>
-        <div className="batch-controls mx-auto mb-4 max-w-3xl space-y-3">
+        <div className="batch-controls mx-auto mb-6 max-w-3xl space-y-4 rounded-2xl border border-border bg-surface p-4 text-center sm:p-5">
             <h1 className="text-xl font-semibold">ინვოისები — {entries.length} / {total ?? "…"}</h1>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-3">
+                <a
+                    href="/dashboard/orders"
+                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-semibold transition-colors hover:bg-surface"
+                >
+                    <Icon icon="solar:arrow-left-linear" className="h-5 w-5 text-accent" />
+                    უკან
+                </a>
                 <select aria-label="ბეჭდვის ფორმატი" value={paper} disabled={busy} onChange={event => {
                     if (!isInvoicePaper(event.target.value)) return;
                     setPaper(event.target.value);
                     try { localStorage.setItem("marteo.invoice-paper", event.target.value); } catch { /* არჩევანი მუშაობს */ }
-                }} className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-[16px]"><option value="a4">A4</option><option value="100x150">10 × 15 სმ</option><option value="80mm">80 მმ</option><option value="58mm">58 მმ</option></select>
-                <button disabled={!ready || !entries.length || busy} onClick={print} className="inline-flex h-11 items-center gap-2 rounded-xl bg-success px-4 font-semibold text-white disabled:opacity-50"><Icon icon="solar:documents-linear" className="h-5 w-5" />{busy ? "მზადდება…" : "ყველას ბეჭდვა / PDF"}</button>
-                <a href="/dashboard/orders" className="inline-flex h-11 items-center px-3">შეკვეთები</a>
+                }} className="h-11 rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary"><option value="a4">A4</option><option value="100x150">10 × 15 სმ</option><option value="80mm">80 მმ</option><option value="58mm">58 მმ</option></select>
+                <button
+                    disabled={!printReady || busy}
+                    onClick={print}
+                    className="inline-flex h-11 items-center gap-2 rounded-xl bg-success px-4 font-semibold text-white disabled:opacity-50"
+                >
+                    <Icon
+                        icon="solar:documents-linear"
+                        className="h-5 w-5"
+                    />
+                    {busy || (ready && entries.length > 0 && !printReady && !preparationError)
+                        ? "მზადდება…"
+                        : "ყველას ბეჭდვა / PDF"}
+                </button>
             </div>
-            <p className="text-xs text-slate-600">თითო ინვოისი ცალკე გვერდიდან იწყება. გამორთე ბრაუზერის ჰედერი/ფუტერი და გამოიყენე 100% მასშტაბი. თერმული ფორმატისთვის პრინტერშიც აირჩიე შესაბამისი ქაღალდი.</p>
+            <p className="text-xs leading-relaxed text-text-secondary">თითო ინვოისი ცალკე გვერდიდან იწყება. გამორთე ბრაუზერის ჰედერი/ფუტერი და გამოიყენე 100% მასშტაბი. თერმული ფორმატისთვის პრინტერშიც აირჩიე შესაბამისი ქაღალდი.</p>
             {ready && entries.length === 0 && <p role="status">დასაბეჭდი ინვოისები არ არის.</p>}
             {!ready && !error && <p role="status">ინვოისები იტვირთება…</p>}
-            {error && <p role="alert" className="text-sm text-red-700">{error} {!ready && <button onClick={() => window.location.reload()} className="underline">ხელახლა ჩატვირთვა</button>}</p>}
-            {ready && entries.length > 0 && <div className="rounded-xl border border-slate-300 bg-white p-3 text-sm">
+            {preparationError && (
+                <p role="alert" className="text-sm text-danger">
+                    {preparationError}
+                </p>
+            )}
+            {error && <p role="alert" className="text-sm text-danger">{error} {!ready && <button onClick={() => window.location.reload()} className="underline">ხელახლა ჩატვირთვა</button>}</p>}
+            {ready && entries.length > 0 && <div className="rounded-xl border border-border bg-background p-3 text-sm">
                 <p role="status">დადასტურებულია: {confirmed.length} / {entries.length}</p>
                 {confirmed.length < entries.length && <>
                     {prompt && <p className="mt-2">ყველა ინვოისი წარმატებით დაბეჭდე ან PDF-ად შეინახე?</p>}
@@ -180,6 +336,25 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                 </>}
             </div>}
         </div>
-        <div ref={sheets} className="batch-scroll overflow-x-auto">{entries.map(entry => <div key={entry.id} className="batch-sheet mx-auto mb-5 bg-white shadow-sm" style={{ width }}><InvoiceDocument invoice={entry.invoice} paper={paper} /></div>)}</div>
+        <div
+            ref={sheets}
+            className="batch-scroll mx-auto w-full min-w-0 max-w-3xl"
+        >
+            {entries.map(entry => (
+                <div key={entry.id} className="batch-entry mb-5">
+                    <InvoicePreview width={width}>
+                        <div
+                            className="batch-sheet bg-white shadow-sm"
+                            style={{ width }}
+                        >
+                            <InvoiceDocument
+                                invoice={entry.invoice}
+                                paper={paper}
+                            />
+                        </div>
+                    </InvoicePreview>
+                </div>
+            ))}
+        </div>
     </main>;
 }

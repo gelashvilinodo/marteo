@@ -479,7 +479,7 @@ export default function ContentForm({
                             </label>
                         )}
 
-                        <div className="grid min-w-0 grid-cols-2 gap-3">
+                        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
                             <label className="block min-w-0 text-sm text-text-secondary">
                                 თარიღი *
                                 <input
@@ -492,7 +492,7 @@ export default function ContentForm({
                                             event.target.value,
                                         )
                                     }
-                                    className={field}
+                                    className={`${field} native-date-time-field`}
                                 />
                             </label>
 
@@ -508,7 +508,7 @@ export default function ContentForm({
                                             event.target.value,
                                         )
                                     }
-                                    className={field}
+                                    className={`${field} native-date-time-field`}
                                 />
                             </label>
                         </div>

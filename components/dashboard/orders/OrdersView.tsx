@@ -691,7 +691,7 @@ export default function OrdersView({
         try {
             const key = crypto.randomUUID();
             sessionStorage.setItem(`marteo.invoice-selection.${key}`, JSON.stringify(checkedIds));
-            window.open(`/print/orders?selection=${encodeURIComponent(key)}`, "_blank");
+            window.location.assign(`/print/orders?selection=${encodeURIComponent(key)}`);
             setPrintError("");
         } catch { setPrintError("ბრაუზერის დროებით საცავში მონიშვნა ვერ შეინახა. მონიშვნა შენარჩუნებულია; სცადე ხელახლა."); }
     }
@@ -951,8 +951,32 @@ export default function OrdersView({
                 if (from > to) { const field = event.currentTarget.elements.namedItem("to") as HTMLInputElement; field.setCustomValidity("ბოლო თარიღი საწყისზე ადრე არ უნდა იყოს."); field.reportValidity(); return; }
                 startTransition(() => navigate(data.filter, data.query, 1, { period: "custom", from, to }));
             }}>
-                <label className="block min-w-0"><span className="mb-1.5 block text-sm text-text-secondary">თარიღიდან</span><input type="date" name="from" required defaultValue={data.from} className={inputClass} /></label>
-                <label className="block min-w-0"><span className="mb-1.5 block text-sm text-text-secondary">თარიღამდე</span><input type="date" name="to" required defaultValue={data.to} onChange={event => event.currentTarget.setCustomValidity("")} className={inputClass} /></label>
+                <label className="block min-w-0">
+                    <span className="mb-1.5 block text-sm text-text-secondary">
+                        თარიღიდან
+                    </span>
+                    <input
+                        type="date"
+                        name="from"
+                        required
+                        defaultValue={data.from}
+                        className={`${inputClass} native-date-time-field`}
+                    />
+                </label>
+
+                <label className="block min-w-0">
+                    <span className="mb-1.5 block text-sm text-text-secondary">
+                        თარიღამდე
+                    </span>
+                    <input
+                        type="date"
+                        name="to"
+                        required
+                        defaultValue={data.to}
+                        onChange={event => event.currentTarget.setCustomValidity("")}
+                        className={`${inputClass} native-date-time-field`}
+                    />
+                </label>
                 <button disabled={pending} className="h-11 rounded-xl bg-accent px-5 text-sm font-semibold text-white">ჩვენება</button>
             </form>}
             <p className="mt-3 text-xs text-text-secondary">პერიოდი: {data.from.split("-").reverse().join(".")} — {data.to.split("-").reverse().join(".")}</p>
@@ -1083,8 +1107,6 @@ export default function OrdersView({
                                 {data.invoiceCounts.new > 0 && (
                                     <a
                                         href="/print/orders?mode=new"
-                                        target="_blank"
-                                        rel="noreferrer"
                                         className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-3 text-sm text-text-primary"
                                     >
                                         <Icon
@@ -1098,8 +1120,6 @@ export default function OrdersView({
                                 {data.invoiceCounts.updated > 0 && (
                                     <a
                                         href="/print/orders?mode=pending"
-                                        target="_blank"
-                                        rel="noreferrer"
                                         className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-3 text-sm text-text-primary"
                                     >
                                         <Icon
@@ -1134,7 +1154,7 @@ export default function OrdersView({
                                             icon="solar:documents-linear"
                                             className="h-5 w-5"
                                         />
-                                         ბეჭდვა
+                                        ბეჭდვა
                                     </button>
                                 )}
 

@@ -6,6 +6,7 @@ import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
 import InvoiceDocument, { type InvoicePaper, isInvoicePaper } from "./InvoiceDocument";
 import InvoicePreview from "./InvoicePreview";
 import { prepareInvoiceQr } from "@/lib/orders/prepare-invoice-qr-client";
+import { waitForInvoiceImage } from "@/lib/orders/wait-for-invoice-image";
 
 export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: string; initialPaper: InvoicePaper }) {
     const [paper, setPaper] = useState(initialPaper);
@@ -51,11 +52,13 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
                 await Promise.race([
                     Promise.all([
                         document.fonts.ready,
-                        ...images.map(image => image.decode()),
+                        ...images.map(waitForInvoiceImage),
                     ]),
                     new Promise<never>((_, reject) => {
                         timeout = setTimeout(
-                            () => reject(new Error("Preparation timed out")),
+                            () => reject(new Error(
+                                "ინვოისის მომზადების დრო ამოიწურა. განაახლე გვერდი და სცადე ხელახლა.",
+                            )),
                             15000,
                         );
                     }),
@@ -66,7 +69,7 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
                 if (paper === "58mm" || paper === "80mm") {
                     const rectangle = element.getBoundingClientRect();
                     if (rectangle.width <= 0) {
-                        throw new Error("Invalid invoice width");
+                        throw new Error("ინვოისის ზომის განსაზღვრა ვერ მოხერხდა.");
                     }
 
                     const contentWidth = paper === "80mm" ? 74 : 52;
@@ -88,10 +91,12 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
                         }
                     });
                 });
-            } catch {
+            } catch (cause: unknown) {
                 if (active) {
                     setPreparationError(
-                        "ინვოისის მომზადება ვერ მოხერხდა. სცადე ხელახლა.",
+                        cause instanceof Error
+                            ? cause.message
+                            : "ინვოისის მომზადება ვერ მოხერხდა. სცადე ხელახლა.",
                     );
                 }
             } finally {

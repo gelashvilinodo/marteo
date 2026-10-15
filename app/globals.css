@@ -255,39 +255,59 @@ dialog:modal {
 }
 
 @keyframes calendar-body-enter-next {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 @keyframes calendar-body-exit-next {
-  from { transform: translateX(0); }
-  to { transform: translateX(-100%); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
 }
 
 @keyframes calendar-body-enter-previous {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 @keyframes calendar-body-exit-previous {
-  from { transform: translateX(0); }
-  to { transform: translateX(100%); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .calendar-body-enter-next {
-  animation: calendar-body-enter-next 420ms cubic-bezier(.22,.61,.36,1) both;
+  animation: calendar-body-enter-next 420ms cubic-bezier(0.22, 0.61, 0.36, 1)
+    both;
 }
 
 .calendar-body-exit-next {
-  animation: calendar-body-exit-next 420ms cubic-bezier(.22,.61,.36,1) both;
+  animation: calendar-body-exit-next 420ms cubic-bezier(0.22, 0.61, 0.36, 1)
+    both;
 }
 
 .calendar-body-enter-previous {
-  animation: calendar-body-enter-previous 420ms cubic-bezier(.22,.61,.36,1) both;
+  animation: calendar-body-enter-previous 420ms
+    cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
 .calendar-body-exit-previous {
-  animation: calendar-body-exit-previous 420ms cubic-bezier(.22,.61,.36,1) both;
+  animation: calendar-body-exit-previous 420ms cubic-bezier(0.22, 0.61, 0.36, 1)
+    both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -307,4 +327,23 @@ dialog:modal {
   :root {
     --content-tint-opacity: 0.22;
   }
+}
+
+.native-date-time-field {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.native-date-time-field::-webkit-date-and-time-value {
+  min-width: 0;
+  text-align: left;
+}
+
+.native-date-time-field::-webkit-datetime-edit {
+  min-width: 0;
+  padding: 0;
 }
