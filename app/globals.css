@@ -347,3 +347,20 @@ dialog:modal {
   min-width: 0;
   padding: 0;
 }
+
+@media (prefers-color-scheme: dark) {
+  ::selection {
+    background-color: var(--marteo-warning);
+    color: var(--marteo-background);
+  }
+}
+
+* {
+  scrollbar-color: var(--marteo-primary) transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  * {
+    scrollbar-color: var(--marteo-warning) transparent;
+  }
+}
