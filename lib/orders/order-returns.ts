@@ -4,6 +4,7 @@ import { OrderValidationError } from "./validate-order";
 import { allocateCost } from "@/lib/analytics/allocate-cost";
 import { orderPayableTotal } from "./order-payable-total";
 import { paymentState } from "./order-rules";
+import { restoreStockLot } from "./restore-stock-lot";
 
 function fail(message: string, status = 422): never {
     throw new OrderValidationError(message, status);
@@ -196,9 +197,11 @@ export async function receiveOrderReturn(
         }
         let remaining = returned.quantity;
         for (const allocation of item.allocations) {
-            const batch = allocation.purchaseItem;
-            if (batch.purchase.businessId !== businessId || batch.inventoryItemId !== item.inventoryItemId) {
-                fail("მარაგის განაწილება არასწორია.", 409);
+            if (!allocation.stockLotId) {
+                fail(
+                    "მარაგის მონაცემების ახალ ფორმატში გადატანა დასრულებული არ არის.",
+                    409,
+                );
             }
             const availableQuantity =
                 allocation.quantity -
@@ -235,18 +238,19 @@ export async function receiveOrderReturn(
                         : {}),
                 },
             });
-            await tx.purchaseItem.update({
-                where: { id: batch.id }, data: {
-                    remainingQuantity: { increment: quantity },
-                    remainingCost: restoredCost !== null
-                        ? { increment: restoredCost }
-                        : null,
-                    ...(returned.condition === "DEFECTIVE" ? { remainingDefectiveQuantity: { increment: quantity } } : {}),
-                }
+            const restored = await restoreStockLot(tx, {
+                businessId,
+                inventoryItemId: item.inventoryItemId,
+                stockLotId: allocation.stockLotId,
+                quantity,
+                condition: returned.condition,
+                totalCost: restoredCost,
             });
             await tx.inventoryMovement.create({
                 data: {
-                    inventoryItemId: item.inventoryItemId, purchaseItemId: batch.id, orderItemId: item.id,
+                    inventoryItemId: item.inventoryItemId,
+                    purchaseItemId: restored.purchaseItemId,
+                    orderItemId: item.id,
                     type: "CUSTOMER_RETURN_IN", condition: returned.condition, quantity,
                     note: `დაბრუნება ${entry.id}; მიზეზი ${returned.reason}${returned.note ? `; ${returned.note}` : ""}`,
                 }

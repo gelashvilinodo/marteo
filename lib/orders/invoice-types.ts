@@ -6,7 +6,16 @@ export type OrderInvoiceData = {
     paymentStatus: "UNPAID" | "PAID" | "COURIER_ONLY_PAID" | "PARTIALLY_PAID";
     business: { name: string; logoUrl: string | null; phone: string | null; email: string | null; address: string | null };
     recipient: { name: string; phone: string; address: string };
-    items: { name: string; color: string | null; size: string | null; condition: "GOOD" | "DEFECTIVE"; quantity: number; unitPrice: string; total: string }[];
+    items: {
+        name: string;
+        imageUrl?: string | null;
+        color: string | null;
+        size: string | null;
+        condition: "GOOD" | "DEFECTIVE";
+        quantity: number;
+        unitPrice: string;
+        total: string;
+    }[];
     productsTotal: string;
     courierFee: string;
     total: string;

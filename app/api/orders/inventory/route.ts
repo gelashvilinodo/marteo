@@ -120,14 +120,21 @@ export async function GET(request: Request) {
         const where: Prisma.InventoryItemWhereInput = {
             businessId,
             isActive: true,
-            currentStock: { gt: 0 },
             product: { businessId },
-            purchaseItems: {
+            stockLots: {
                 some: {
-                    purchase: {
-                        businessId,
-                        receiptStatus: "RECEIVED",
-                    },
+                    remainingQuantity: { gt: 0 },
+                    OR: [
+                        { purchaseItemId: null },
+                        {
+                            purchaseItem: {
+                                purchase: {
+                                    businessId,
+                                    receiptStatus: "RECEIVED",
+                                },
+                            },
+                        },
+                    ],
                 },
             },
             ...(searchConditions.length > 0
@@ -184,43 +191,49 @@ export async function GET(request: Request) {
                         },
                     });
 
-                const defectiveBalances =
-                    products.length > 0
-                        ? await tx.purchaseItem.groupBy({
-                              by: ["inventoryItemId"],
-                              where: {
-                                  inventoryItemId: {
-                                      in: products.map(
-                                          (product) =>
-                                              product.id,
-                                      ),
-                                  },
-                                  purchase: {
-                                      businessId,
-                                      receiptStatus:
-                                          "RECEIVED",
-                                  },
-                              },
-                              _sum: {
-                                  remainingDefectiveQuantity:
-                                      true,
-                              },
-                          })
-                        : [];
-
-                const defectiveById = new Map(
-                    defectiveBalances.map((balance) => [
+                const defectiveBalances = products.length > 0
+                    ? await tx.inventoryStockLot.groupBy({
+                        by: ["inventoryItemId"],
+                        where: {
+                            inventoryItemId: {
+                                in: products.map(product => product.id),
+                            },
+                            inventoryItem: { businessId },
+                            OR: [
+                                { purchaseItemId: null },
+                                {
+                                    purchaseItem: {
+                                        purchase: {
+                                            businessId,
+                                            receiptStatus: "RECEIVED",
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        _sum: {
+                            remainingQuantity: true,
+                            remainingDefectiveQuantity: true,
+                        },
+                    })
+                    : [];
+                const stockById = new Map(
+                    defectiveBalances.map(balance => [
                         balance.inventoryItemId,
-                        balance._sum
-                            .remainingDefectiveQuantity ?? 0,
+                        {
+                            totalStock:
+                                balance._sum.remainingQuantity ?? 0,
+                            defectiveStock:
+                                balance._sum.remainingDefectiveQuantity ?? 0,
+                        },
                     ]),
                 );
 
                 return {
                     products: products.map((product) => {
-                        const defectiveStock =
-                            defectiveById.get(product.id) ??
-                            0;
+                        const stock = stockById.get(product.id);
+                        const totalStock = stock?.totalStock ?? 0;
+                        const defectiveStock = stock?.defectiveStock ?? 0;
 
                         return {
                             id: product.id,
@@ -240,11 +253,8 @@ export async function GET(request: Request) {
                             salePrice:
                                 product.salePrice
                                     ?.toFixed(2) ?? null,
-                            totalStock:
-                                product.currentStock,
-                            goodStock:
-                                product.currentStock -
-                                defectiveStock,
+                            totalStock,
+                            goodStock: totalStock - defectiveStock,
                             defectiveStock,
                         };
                     }),

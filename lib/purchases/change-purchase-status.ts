@@ -2,6 +2,11 @@ import "server-only";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
+import {
+    getPurchaseDeleteImpact,
+    type PurchaseDeleteExpectation,
+} from "./get-purchase-delete-impact";
+import { freezePurchaseStockLots } from "./freeze-purchase-stock-lots";
 
 export type PurchaseAction = "delete" | "archive" | "restore";
 
@@ -18,6 +23,7 @@ export class PurchaseActionError extends Error {
 export async function changePurchaseStatus(
     purchaseId: string,
     action: PurchaseAction,
+    expectedDelete?: PurchaseDeleteExpectation,
 ) {
     if (!purchaseId || purchaseId.length > 100) {
         throw new PurchaseActionError("პარტიის კოდი არასწორია.");
@@ -90,6 +96,8 @@ export async function changePurchaseStatus(
                             select: {
                                 remainingQuantity: true,
                                 remainingDefectiveQuantity: true,
+                                id: true,
+                                inventoryItemId: true,
                             },
                         },
                     },
@@ -103,53 +111,118 @@ export async function changePurchaseStatus(
                 }
 
                 if (action === "delete") {
-                    if (purchase.receiptStatus !== "IN_TRANSIT") {
+                    if (!expectedDelete) {
                         throw new PurchaseActionError(
-                            "ჩამოსული პარტიის წაშლა შეუძლებელია. გამოიყენე დაარქივება.",
+                            "წაშლამდე გახსენი განახლებული დადასტურების ფანჯარა.",
                             409,
                         );
                     }
 
-                    if (purchase.archivedAt !== null) {
-                        throw new PurchaseActionError(
-                            "არქივში არსებული პარტიის წაშლა შეუძლებელია.",
-                            409,
-                        );
-                    }
-
-                    const hasBalance = purchase.items.some(
-                        (item) =>
-                            item.remainingQuantity !== 0 ||
-                            item.remainingDefectiveQuantity !== 0,
+                    const impact = await getPurchaseDeleteImpact(
+                        tx,
+                        businessId,
+                        purchase.id,
                     );
 
-                    const movement = await tx.inventoryMovement.findFirst({
-                        where: {
-                            purchaseItem: {
-                                purchaseId: purchase.id,
-                            },
-                        },
-                        select: { id: true },
-                    });
-
-                    const allocation =
-                        await tx.orderItemAllocation.findFirst({
-                            where: {
-                                purchaseItem: {
-                                    purchaseId: purchase.id,
-                                },
-                            },
-                            select: { id: true },
-                        });
-
-                    if (hasBalance || movement || allocation) {
+                    if (
+                        expectedDelete.updatedAt !== impact.updatedAt ||
+                        expectedDelete.remainingQuantity !==
+                        impact.remainingQuantity ||
+                        expectedDelete.usedQuantity !== impact.usedQuantity
+                    ) {
                         throw new PurchaseActionError(
-                            "პარტიაზე მარაგის მოძრაობა ან ნაშთია დაფიქსირებული და მისი წაშლა შეუძლებელია.",
+                            "პარტიის მონაცემები შეიცვალა. ხელახლა გახსენი წაშლის ფანჯარა და გადაამოწმე რაოდენობები.",
                             409,
                         );
                     }
 
-                    // PurchaseItem ჩანაწერები იშლება Cascade კავშირით.
+                    if (purchase.receiptStatus === "RECEIVED") {
+                        // გამოყენებული ნაწილი ძველ ვარიანტთან რჩება.
+                        await freezePurchaseStockLots(
+                            tx,
+                            businessId,
+                            purchase.id,
+                        );
+
+                        const quantities = new Map<string, number>();
+
+                        for (const item of purchase.items) {
+                            quantities.set(
+                                item.inventoryItemId,
+                                (quantities.get(item.inventoryItemId) ?? 0) +
+                                item.remainingQuantity,
+                            );
+                        }
+
+                        for (
+                            const [inventoryItemId, quantity] of
+                            [...quantities.entries()].sort(
+                                ([first], [second]) =>
+                                    first.localeCompare(second),
+                            )
+                        ) {
+                            if (quantity === 0) continue;
+
+                            const result = await tx.inventoryItem.updateMany({
+                                where: {
+                                    id: inventoryItemId,
+                                    businessId,
+                                    currentStock: { gte: quantity },
+                                },
+                                data: {
+                                    currentStock: { decrement: quantity },
+                                },
+                            });
+
+                            if (result.count !== 1) {
+                                throw new PurchaseActionError(
+                                    "მარაგის ნაშთი პარტიას არ შეესაბამება. წაშლა გაუქმდა.",
+                                    409,
+                                );
+                            }
+                        }
+
+                        const movements = purchase.items.flatMap(item => {
+                            const goodQuantity =
+                                item.remainingQuantity -
+                                item.remainingDefectiveQuantity;
+
+                            return [
+                                {
+                                    inventoryItemId: item.inventoryItemId,
+                                    purchaseItemId: item.id,
+                                    type: "ADJUSTMENT_OUT" as const,
+                                    condition: "GOOD" as const,
+                                    quantity: goodQuantity,
+                                },
+                                {
+                                    inventoryItemId: item.inventoryItemId,
+                                    purchaseItemId: item.id,
+                                    type: "ADJUSTMENT_OUT" as const,
+                                    condition: "DEFECTIVE" as const,
+                                    quantity:
+                                        item.remainingDefectiveQuantity,
+                                },
+                            ].filter(movement => movement.quantity > 0);
+                        });
+
+                        if (movements.length > 0) {
+                            await tx.inventoryMovement.createMany({
+                                data: movements,
+                            });
+                        }
+                    } else if (
+                        impact.remainingQuantity !== 0 ||
+                        impact.usedQuantity !== 0
+                    ) {
+                        throw new PurchaseActionError(
+                            "გზაში მყოფ პარტიაზე მარაგის გამოყენებაა დაფიქსირებული. წაშლა შეჩერებულია.",
+                            409,
+                        );
+                    }
+
+                    // პარტია და მისი სტრიქონები სრულად იშლება.
+                    // შეკვეთები და ფინანსური ჩანაწერები არ იშლება.
                     await tx.purchase.delete({
                         where: { id: purchase.id },
                     });
@@ -158,6 +231,7 @@ export async function changePurchaseStatus(
                         id: purchase.id,
                         number: purchase.number,
                         action,
+                        removedQuantity: impact.remainingQuantity,
                     };
                 }
 

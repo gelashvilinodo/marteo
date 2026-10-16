@@ -162,6 +162,7 @@ export async function GET(
             },
             items: invoiceItems.map(item => ({
                 name: item.name,
+                imageUrl: item.imageUrl,
                 color: item.color,
                 size: item.size,
                 condition: item.condition,

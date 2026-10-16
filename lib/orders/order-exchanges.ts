@@ -141,6 +141,7 @@ export async function exchangeOrderProducts(
 
                 return {
                     purchaseItemId: allocation.purchaseItemId,
+                    stockLotId: allocation.stockLotId,
                     condition: allocation.condition,
                     quantity: carriedQuantity,
                     unitCost: allocation.unitCost,

@@ -2,6 +2,8 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { OrderValidationError, type ValidatedOrder } from "./validate-order";
 import { allocateCost } from "@/lib/analytics/allocate-cost";
+import { allocateStockLots } from "./allocate-stock-lots";
+import { restoreStockLot } from "./restore-stock-lot";
 
 function fail(message: string, status = 400): never { throw new OrderValidationError(message, status); }
 export async function resolveOrderCustomer(
@@ -148,7 +150,8 @@ export async function createOrderItems(
                 : null;
 
         const allocations: Array<{
-            purchaseItemId: string;
+            stockLotId: string;
+            purchaseItemId: string | null;
             quantity: number;
             unitCost: Prisma.Decimal;
             totalCost: Prisma.Decimal | null;
@@ -193,115 +196,24 @@ export async function createOrderItems(
 
             imageUrl = inventory.imageUrl;
 
-            // ჯერ ყველაზე ძველი პარტიიდან ვყიდით.
-            const batches =
-                await tx.purchaseItem.findMany({
-                    where: {
-                        inventoryItemId:
-                            inventory.id,
-                        remainingQuantity: {
-                            gt: 0,
-                        },
-                        purchase: {
-                            businessId,
-                            receiptStatus:
-                                "RECEIVED",
-                        },
-                    },
-                    orderBy: [
-                        {
-                            purchase: {
-                                purchaseDate: "asc",
-                            },
-                        },
-                        { createdAt: "asc" },
-                        { id: "asc" },
-                    ],
-                    select: {
-                        id: true,
-                        remainingQuantity: true,
-                        remainingDefectiveQuantity:
-                            true,
-                        finalUnitCost: true,
-                        remainingCost: true,
-                    },
-                });
+            allocations.push(
+                ...await allocateStockLots(tx, {
+                    businessId,
+                    inventoryItemId: inventory.id,
+                    name: item.name,
+                    quantity: item.quantity,
+                    condition: item.condition,
+                }),
+            );
 
-            let needed = item.quantity;
-            let costTotal = new Prisma.Decimal(0);
-
-            for (const batch of batches) {
-                if (needed === 0) break;
-
-                const available =
-                    item.condition === "DEFECTIVE"
-                        ? batch.remainingDefectiveQuantity
-                        : batch.remainingQuantity -
-                        batch.remainingDefectiveQuantity;
-
-                const quantity = Math.min(
-                    needed,
-                    available,
-                );
-
-                if (quantity <= 0) continue;
-
-                const split = batch.remainingCost === null
-                    ? null
-                    : allocateCost(
-                        batch.remainingCost,
-                        [quantity, batch.remainingQuantity - quantity],
-                    );
-
-                const allocatedCost = split?.[0] ?? null;
-
-                allocations.push({
-                    purchaseItemId: batch.id,
-                    quantity,
-                    unitCost: batch.finalUnitCost,
-                    totalCost: allocatedCost,
-                });
-
-                costTotal = costTotal.plus(
-                    allocatedCost ?? batch.finalUnitCost.mul(quantity),
-                );
-
-                await tx.purchaseItem.update({
-                    where: { id: batch.id },
-                    data: {
-                        remainingQuantity: {
-                            decrement: quantity,
-                        },
-                        ...(split
-                            ? { remainingCost: split[1] }
-                            : {}),
-                        ...(item.condition ===
-                            "DEFECTIVE"
-                            ? {
-                                remainingDefectiveQuantity:
-                                {
-                                    decrement:
-                                        quantity,
-                                },
-                            }
-                            : {}),
-                    },
-                });
-
-                needed -= quantity;
-            }
-
-            if (needed > 0) {
-                const conditionLabel =
-                    item.condition === "DEFECTIVE"
-                        ? "წუნდებული"
-                        : "დაუზიანებელი";
-
-                fail(
-                    `${item.name}: საკმარისი ${conditionLabel} პროდუქტი არ არის.`,
-                    409,
-                );
-            }
+            const costTotal = allocations.reduce(
+                (sum, allocation) =>
+                    sum.plus(
+                        allocation.totalCost ??
+                        allocation.unitCost.mul(allocation.quantity),
+                    ),
+                new Prisma.Decimal(0),
+            );
 
             exactTotalCost = allocations.every(
                 allocation => allocation.totalCost !== null,
@@ -432,35 +344,66 @@ export async function restoreOrderStock(
             if (!item.inventoryItemId || item.allocations.reduce((sum, value) => sum + value.quantity, 0) !== item.quantity) {
                 fail("ნივთის მარაგის განაწილების მონაცემები აკლია.", 409);
             }
+            const restorableQuantity = item.allocations.reduce(
+                (sum, allocation) =>
+                    sum +
+                    allocation.quantity -
+                    allocation.returnedQuantity -
+                    allocation.transferredQuantity,
+                0,
+            );
+
+            if (restorableQuantity !== item.quantity) {
+                fail(
+                    "აღსადგენი მარაგის რაოდენობა შეკვეთას არ ემთხვევა.",
+                    409,
+                );
+            }
+
             for (const allocation of item.allocations) {
-                const batch = allocation.purchaseItem;
-                if (batch.inventoryItemId !== item.inventoryItemId || batch.purchase.businessId !== order.businessId) {
+                const quantity =
+                    allocation.quantity -
+                    allocation.returnedQuantity -
+                    allocation.transferredQuantity;
+
+                if (quantity < 0) {
                     fail("მარაგის განაწილება არასწორია.", 409);
                 }
-                await tx.purchaseItem.update({
-                    where: { id: batch.id },
-                    data: {
-                        remainingQuantity: { increment: allocation.quantity },
-                        remainingCost: allocation.totalCost !== null
-                            ? {
-                                increment: allocation.totalCost.minus(
-                                    allocation.returnedCost,
-                                ),
-                            }
-                            : null,
-                        ...(allocation.condition === "DEFECTIVE"
-                            ? { remainingDefectiveQuantity: { increment: allocation.quantity } }
-                            : {}),
-                    },
+
+                if (quantity === 0) continue;
+
+                if (!allocation.stockLotId) {
+                    fail(
+                        "მარაგის მონაცემების ახალ ფორმატში გადატანა დასრულებული არ არის.",
+                        409,
+                    );
+                }
+
+                const restoredCost =
+                    allocation.totalCost !== null &&
+                        allocation.transferredCost !== null
+                        ? allocation.totalCost
+                            .minus(allocation.returnedCost)
+                            .minus(allocation.transferredCost)
+                        : null;
+
+                const restored = await restoreStockLot(tx, {
+                    businessId: order.businessId,
+                    inventoryItemId: item.inventoryItemId,
+                    stockLotId: allocation.stockLotId,
+                    quantity,
+                    condition: allocation.condition,
+                    totalCost: restoredCost,
                 });
+
                 await tx.inventoryMovement.create({
                     data: {
                         inventoryItemId: item.inventoryItemId,
-                        purchaseItemId: batch.id,
+                        purchaseItemId: restored.purchaseItemId,
                         orderItemId: item.id,
                         type: "CUSTOMER_RETURN_IN",
                         condition: allocation.condition,
-                        quantity: allocation.quantity,
+                        quantity,
                         note: `${reason}; შეკვეთა ${order.number ?? order.id}`,
                     },
                 });

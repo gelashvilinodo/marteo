@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
+import { productThumbnailUrl } from "@/lib/images/product-thumbnail-url";
 
 export type InvoicePaper =
     | "a4"
@@ -154,6 +155,40 @@ export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: Or
                 .invoice-document thead { display:table-header-group; }
                 .invoice-document tr,.invoice-document .invoice-top,.invoice-document .invoice-recipient,.invoice-document .invoice-bottom { break-inside:avoid; }
             }
+                .invoice-document .invoice-product {
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    min-width:0;
+}
+
+.invoice-document .invoice-product-copy {
+    flex:1;
+    min-width:0;
+    overflow-wrap:anywhere;
+}
+
+.invoice-document .invoice-product-photo {
+    display:block;
+    flex:0 0 auto;
+    width:36px;
+    height:36px;
+    border:1px solid #ddd;
+    border-radius:4px;
+    object-fit:contain;
+    background:#fff;
+}
+
+.invoice-document[data-paper="100x150"] .invoice-product-photo {
+    width:28px;
+    height:28px;
+}
+
+.invoice-document[data-paper="80mm"] .invoice-product-photo,
+.invoice-document[data-paper="58mm"] .invoice-product-photo {
+    width:24px;
+    height:24px;
+}
         `}</style>
         <header className="invoice-top">
             <div className="invoice-brand">
@@ -169,8 +204,101 @@ export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: Or
                 <p>{invoice.notes}</p>
             </section>
         )}
-        {thermal ? <div>{invoice.items.map((item, index) => <div key={index} className="invoice-thermal-item"><p className="invoice-item">{item.name}</p><p className="invoice-variant">{[item.color, item.size, item.condition === "DEFECTIVE" ? "წუნდებული" : null].filter(Boolean).join(" · ")}</p><div className="invoice-thermal-line"><span>{item.quantity} × {item.unitPrice} ₾</span><strong>{item.total} ₾</strong></div></div>)}</div> :
-            <table><thead><tr><th style={{ width: "46%" }}>პროდუქტი</th><th style={{ width: "12%" }}>რაოდ.</th><th className="invoice-right" style={{ width: "20%" }}>ფასი ₾</th><th className="invoice-right" style={{ width: "22%" }}>ჯამი ₾</th></tr></thead><tbody>{invoice.items.map((item, index) => <tr key={index}><td><p className="invoice-item">{item.name}</p><p className="invoice-variant">{[item.color, item.size, item.condition === "DEFECTIVE" ? "წუნდებული" : null].filter(Boolean).join(" · ")}</p></td><td>{item.quantity}</td><td className="invoice-right">{item.unitPrice}</td><td className="invoice-right">{item.total}</td></tr>)}</tbody></table>}
+        {thermal ? (
+            <div>
+                {invoice.items.map((item, index) => (
+                    <div key={index} className="invoice-thermal-item">
+                        <div className="invoice-product">
+                            {item.imageUrl && (
+                                <Image
+                                    src={productThumbnailUrl(item.imageUrl)}
+                                    alt=""
+                                    width={36}
+                                    height={36}
+                                    unoptimized
+                                    loading="eager"
+                                    className="invoice-product-photo"
+                                />
+                            )}
+
+                            <div className="invoice-product-copy">
+                                <p className="invoice-item">{item.name}</p>
+                                <p className="invoice-variant">
+                                    {[
+                                        item.color,
+                                        item.size,
+                                        item.condition === "DEFECTIVE"
+                                            ? "წუნდებული"
+                                            : null,
+                                    ].filter(Boolean).join(" · ")}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="invoice-thermal-line">
+                            <span>
+                                {item.quantity} × {item.unitPrice} ₾
+                            </span>
+                            <strong>{item.total} ₾</strong>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        ) : (
+            <table>
+                <thead>
+                    <tr>
+                        <th style={{ width: "46%" }}>პროდუქტი</th>
+                        <th style={{ width: "12%" }}>რაოდ.</th>
+                        <th className="invoice-right" style={{ width: "20%" }}>
+                            ფასი ₾
+                        </th>
+                        <th className="invoice-right" style={{ width: "22%" }}>
+                            ჯამი ₾
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {invoice.items.map((item, index) => (
+                        <tr key={index}>
+                            <td>
+                                <div className="invoice-product">
+                                    {item.imageUrl && (
+                                        <Image
+                                            src={productThumbnailUrl(item.imageUrl)}
+                                            alt=""
+                                            width={36}
+                                            height={36}
+                                            unoptimized
+                                            loading="eager"
+                                            className="invoice-product-photo"
+                                        />
+                                    )}
+
+                                    <div className="invoice-product-copy">
+                                        <p className="invoice-item">{item.name}</p>
+                                        <p className="invoice-variant">
+                                            {[
+                                                item.color,
+                                                item.size,
+                                                item.condition === "DEFECTIVE"
+                                                    ? "წუნდებული"
+                                                    : null,
+                                            ].filter(Boolean).join(" · ")}
+                                        </p>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td>{item.quantity}</td>
+                            <td className="invoice-right">{item.unitPrice}</td>
+                            <td className="invoice-right">{item.total}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        )}
         <div className="invoice-bottom">
             {invoice.qrDataUrl && <div className="invoice-qr"><Image src={invoice.qrDataUrl} alt="შეკვეთის გვერდის QR კოდი" width={128} height={128} unoptimized /><p>შეკვეთის დეტალების ნახვა</p></div>}
             <dl className="invoice-totals">

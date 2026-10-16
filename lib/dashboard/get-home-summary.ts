@@ -80,20 +80,27 @@ export async function getHomeSummary(
                     AND o."createdAt" >= ${range.start}
                     AND o."createdAt" < ${range.end}
             ),
-            stock AS (
-                SELECT COALESCE(SUM(i."currentStock"), 0) AS total
-                FROM "InventoryItem" i
+                        stock AS (
+                SELECT COALESCE(
+                    SUM(lot."remainingQuantity"),
+                    0
+                ) AS total
+                FROM "InventoryStockLot" lot
+                JOIN "InventoryItem" i
+                    ON i.id = lot."inventoryItemId"
+                LEFT JOIN "PurchaseItem" source
+                    ON source.id = lot."purchaseItemId"
+                LEFT JOIN "Purchase" p
+                    ON p.id = source."purchaseId"
                 WHERE ${includeStock}::boolean
-    AND i."businessId" = ${businessId}
-    AND i."isActive" = TRUE
-                    AND EXISTS (
-                        SELECT 1
-                        FROM "PurchaseItem" pi
-                        JOIN "Purchase" p
-                            ON p.id = pi."purchaseId"
-                        WHERE pi."inventoryItemId" = i.id
-                            AND p."businessId" = ${businessId}
+                    AND i."businessId" = ${businessId}
+                    AND i."isActive" = TRUE
+                    AND (
+                        lot."purchaseItemId" IS NULL
+                        OR (
+                            p."businessId" = ${businessId}
                             AND p."receiptStatus" = 'RECEIVED'
+                        )
                     )
             )
             SELECT

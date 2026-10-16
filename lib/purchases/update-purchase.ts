@@ -5,6 +5,9 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
 
 import { createInventorySkuAllocator } from "./create-inventory-sku";
+import { getPurchaseEditUsage } from "./get-purchase-edit-usage";
+import { planPurchaseEdit } from "./plan-purchase-edit";
+import { freezePurchaseStockLots } from "./freeze-purchase-stock-lots";
 
 import { validatePurchase } from "./validate-purchases";
 import {
@@ -194,6 +197,74 @@ export async function updatePurchase(
                 const isReceived =
                     purchase.receiptStatus === "RECEIVED";
 
+                const usage = await getPurchaseEditUsage(
+                    tx,
+                    businessId,
+                    purchase.id,
+                );
+
+                const balances = planPurchaseEdit(input, usage);
+
+                type MovementDelta = {
+                    inventoryItemId: string;
+                    purchaseItemId: string;
+                    condition: "GOOD" | "DEFECTIVE";
+                    quantity: number;
+                };
+
+                const movementDeltas = new Map<string, MovementDelta>();
+
+                function addMovementDelta(
+                    inventoryItemId: string,
+                    purchaseItemId: string,
+                    condition: "GOOD" | "DEFECTIVE",
+                    quantity: number,
+                ) {
+                    if (quantity === 0) return;
+
+                    const key = JSON.stringify([
+                        inventoryItemId,
+                        purchaseItemId,
+                        condition,
+                    ]);
+
+                    const previous = movementDeltas.get(key);
+
+                    movementDeltas.set(key, {
+                        inventoryItemId,
+                        purchaseItemId,
+                        condition,
+                        quantity: (previous?.quantity ?? 0) + quantity,
+                    });
+                }
+
+                if (isReceived) {
+                    await freezePurchaseStockLots(
+                        tx,
+                        businessId,
+                        purchase.id,
+                    );
+
+                    for (const previous of purchase.items) {
+                        addMovementDelta(
+                            previous.inventoryItemId,
+                            previous.id,
+                            "GOOD",
+                            -(
+                                previous.remainingQuantity -
+                                previous.remainingDefectiveQuantity
+                            ),
+                        );
+
+                        addMovementDelta(
+                            previous.inventoryItemId,
+                            previous.id,
+                            "DEFECTIVE",
+                            -previous.remainingDefectiveQuantity,
+                        );
+                    }
+                }
+
                 if (isReceived) {
                     // ერთი მარაგის ჩანაწერი პარტიაში შეიძლება
                     // რამდენიმე სტრიქონში გვხვდებოდეს.
@@ -231,17 +302,6 @@ export async function updatePurchase(
                             );
                         }
                     }
-
-                    // დასაშვებია მხოლოდ გაუყიდავი პარტიის
-                    // საწყისი მიღების ჩანაწერების ჩანაცვლება.
-                    await tx.inventoryMovement.deleteMany({
-                        where: {
-                            type: "PURCHASE_IN",
-                            purchaseItem: {
-                                purchaseId: purchase.id,
-                            },
-                        },
-                    });
                 }
 
                 const retainedIds: string[] = [];
@@ -259,6 +319,8 @@ export async function updatePurchase(
                     };
 
                     const calculated = input.calculation.items[index];
+
+                    const balance = balances[index];
 
                     const source = item.sourceInventoryItemId
                         ? await tx.inventoryItem.findFirst({
@@ -423,12 +485,14 @@ export async function updatePurchase(
                                 businessId,
                                 currentStock: {
                                     gte: 0,
-                                    lte: 2147483647 - calculated.quantity,
+                                    lte:
+                                        2147483647 -
+                                        balance.remainingQuantity,
                                 },
                             },
                             data: {
                                 currentStock: {
-                                    increment: calculated.quantity,
+                                    increment: balance.remainingQuantity,
                                 },
                                 isActive: true,
                             },
@@ -441,164 +505,165 @@ export async function updatePurchase(
                             );
                         }
 
-                        // თუ ამ პროდუქტს სხვა მიღებული პარტიაც იყენებს,
-                        // მის საერთო გასაყიდ ფასს ჩუმად არ შევცვლით.
-                        const otherReceivedItem =
-                            await tx.purchaseItem.findFirst({
-                                where: {
-                                    inventoryItemId: inventory.id,
-                                    purchase: {
-                                        businessId,
-                                        receiptStatus: "RECEIVED",
-                                        id: { not: purchase.id },
-                                    },
+                        await tx.inventoryItem.update({
+                            where: { id: inventory.id },
+                            data: {
+                                pricingMethod: item.pricingMethod,
+                                pricingValue,
+                                salePrice,
+                            },
+                        });
+                    }
+
+                    const data = {
+                            inventoryItemId: inventory.id,
+                            quantity: balance.quantity,
+                            remainingCost: balance.remainingCost,
+                            remainingQuantity: balance.remainingQuantity,
+                            defectiveQuantity: balance.defectiveQuantity,
+                            remainingDefectiveQuantity:
+                                balance.remainingDefectiveQuantity,
+                            defectNote: isReceived
+                                ? item.defectNote || null
+                                : null,
+                            unitPurchasePrice: checkedMoney(
+                                calculated.unitPurchasePrice,
+                            ),
+                            allocatedExtraCostTotal: checkedMoney(
+                                calculated.allocatedExtraCostTotal,
+                            ),
+                            finalUnitCost: cost,
+                            plannedPricingMethod: item.pricingMethod,
+                            plannedPricingValue: pricingValue,
+                        };
+
+                        const savedItem = item.purchaseItemId
+                            ? await tx.purchaseItem.update({
+                                where: { id: item.purchaseItemId },
+                                data,
+                                select: { id: true },
+                            })
+                            : await tx.purchaseItem.create({
+                                data: {
+                                    purchaseId: purchase.id,
+                                    ...data,
                                 },
                                 select: { id: true },
                             });
 
-                        if (!otherReceivedItem) {
-                            await tx.inventoryItem.update({
-                                where: { id: inventory.id },
+                        if (isReceived) {
+                            await tx.inventoryStockLot.create({
                                 data: {
-                                    pricingMethod: item.pricingMethod,
-                                    pricingValue,
-                                    salePrice,
+                                    inventoryItemId: inventory.id,
+                                    purchaseItemId: savedItem.id,
+
+                                    // გამოყენებული ნაწილი უკვე ცალკეა.
+                                    quantity: balance.remainingQuantity,
+                                    remainingQuantity:
+                                        balance.remainingQuantity,
+                                    defectiveQuantity:
+                                        balance.remainingDefectiveQuantity,
+                                    remainingDefectiveQuantity:
+                                        balance.remainingDefectiveQuantity,
+
+                                    unitCost: balance.unitCost,
+                                    remainingCost: balance.remainingCost,
+
+                                    availableAt: new Date(
+                                        `${input.purchaseDate}T00:00:00+04:00`,
+                                    ),
                                 },
                             });
+
+                            addMovementDelta(
+                                inventory.id,
+                                savedItem.id,
+                                "GOOD",
+                                balance.remainingQuantity -
+                                balance.remainingDefectiveQuantity,
+                            );
+
+                            addMovementDelta(
+                                inventory.id,
+                                savedItem.id,
+                                "DEFECTIVE",
+                                balance.remainingDefectiveQuantity,
+                            );
                         }
+
+                        retainedIds.push(savedItem.id);
                     }
 
-                    const data = {
-                        inventoryItemId: inventory.id,
-                        quantity: calculated.quantity,
-                        remainingCost: isReceived
-                            ? new Prisma.Decimal(calculated.unitPurchasePrice)
-                                .mul(calculated.quantity)
-                                .plus(calculated.allocatedExtraCostTotal)
-                            : new Prisma.Decimal(0),
-                        remainingQuantity: isReceived
-                            ? calculated.quantity
-                            : 0,
-                        defectiveQuantity: isReceived
-                            ? item.defectiveQuantity
-                            : 0,
-                        remainingDefectiveQuantity: isReceived
-                            ? item.defectiveQuantity
-                            : 0,
-                        defectNote: isReceived
-                            ? item.defectNote || null
-                            : null,
-                        unitPurchasePrice: checkedMoney(
-                            calculated.unitPurchasePrice,
-                        ),
-                        allocatedExtraCostTotal: checkedMoney(
-                            calculated.allocatedExtraCostTotal,
-                        ),
-                        finalUnitCost: cost,
-                        plannedPricingMethod: item.pricingMethod,
-                        plannedPricingValue: pricingValue,
-                    };
+                    const movementChanges = [...movementDeltas.values()]
+                        .filter(change => change.quantity !== 0);
 
-                    const savedItem = item.purchaseItemId
-                        ? await tx.purchaseItem.update({
-                            where: { id: item.purchaseItemId },
-                            data,
-                            select: { id: true },
-                        })
-                        : await tx.purchaseItem.create({
-                            data: {
-                                purchaseId: purchase.id,
-                                ...data,
-                            },
-                            select: { id: true },
+                    if (movementChanges.length > 0) {
+                        await tx.inventoryMovement.createMany({
+                            data: movementChanges.map(change => ({
+                                inventoryItemId: change.inventoryItemId,
+                                purchaseItemId: change.purchaseItemId,
+                                condition: change.condition,
+                                quantity: Math.abs(change.quantity),
+                                type: change.quantity > 0
+                                    ? "ADJUSTMENT_IN" as const
+                                    : "ADJUSTMENT_OUT" as const,
+                            })),
                         });
-
-                    if (isReceived) {
-                        const goodQuantity =
-                            calculated.quantity - item.defectiveQuantity;
-
-                        if (goodQuantity > 0) {
-                            await tx.inventoryMovement.create({
-                                data: {
-                                    inventoryItemId: inventory.id,
-                                    purchaseItemId: savedItem.id,
-                                    type: "PURCHASE_IN",
-                                    condition: "GOOD",
-                                    quantity: goodQuantity,
-                                },
-                            });
-                        }
-
-                        if (item.defectiveQuantity > 0) {
-                            await tx.inventoryMovement.create({
-                                data: {
-                                    inventoryItemId: inventory.id,
-                                    purchaseItemId: savedItem.id,
-                                    type: "PURCHASE_IN",
-                                    condition: "DEFECTIVE",
-                                    quantity: item.defectiveQuantity,
-                                    note: item.defectNote || null,
-                                },
-                            });
-                        }
                     }
 
-                    retainedIds.push(savedItem.id);
-                }
+                    // ვშლით მხოლოდ ამ პარტიიდან ამოღებულ სტრიქონებს.
+                    // Product და InventoryItem ჩანაწერებს არ ვშლით.
+                    await tx.purchaseItem.deleteMany({
+                        where: {
+                            purchaseId: purchase.id,
+                            id: { notIn: retainedIds },
+                        },
+                    });
 
-                // ვშლით მხოლოდ ამ პარტიიდან ამოღებულ სტრიქონებს.
-                // Product და InventoryItem ჩანაწერებს არ ვშლით.
-                await tx.purchaseItem.deleteMany({
-                    where: {
-                        purchaseId: purchase.id,
-                        id: { notIn: retainedIds },
-                    },
-                });
+                    // ვერსია აუცილებლად შეიცვლება, თუნდაც
+                    // ორი შენახვა ერთ მილიწამში შესრულდეს.
+                    const updatedAt = new Date(
+                        Math.max(
+                            Date.now(),
+                            purchase.updatedAt.getTime() + 1,
+                        ),
+                    );
 
-                // ვერსია აუცილებლად შეიცვლება, თუნდაც
-                // ორი შენახვა ერთ მილიწამში შესრულდეს.
-                const updatedAt = new Date(
-                    Math.max(
-                        Date.now(),
-                        purchase.updatedAt.getTime() + 1,
-                    ),
-                );
+                    const updated = await tx.purchase.update({
+                        where: { id: purchase.id },
+                        data: {
+                            name: input.name || null,
+                            note: input.note || null,
+                            purchaseDate: new Date(
+                                `${input.purchaseDate}T00:00:00+04:00`,
+                            ),
+                            shippingCost: checkedMoney(
+                                input.calculation.shippingCost,
+                            ),
+                            customsCost: checkedMoney(
+                                input.calculation.customsCost,
+                            ),
+                            otherCost: checkedMoney(
+                                input.calculation.otherCost,
+                            ),
+                            updatedAt,
+                        },
+                        select: {
+                            id: true,
+                            number: true,
+                            updatedAt: true,
+                        },
+                    });
 
-                const updated = await tx.purchase.update({
-                    where: { id: purchase.id },
-                    data: {
-                        name: input.name || null,
-                        note: input.note || null,
-                        purchaseDate: new Date(
-                            `${input.purchaseDate}T00:00:00+04:00`,
-                        ),
-                        shippingCost: checkedMoney(
-                            input.calculation.shippingCost,
-                        ),
-                        customsCost: checkedMoney(
-                            input.calculation.customsCost,
-                        ),
-                        otherCost: checkedMoney(
-                            input.calculation.otherCost,
-                        ),
-                        updatedAt,
-                    },
-                    select: {
-                        id: true,
-                        number: true,
-                        updatedAt: true,
-                    },
-                });
-
-                return {
-                    id: updated.id,
-                    number: updated.number,
-                    updatedAt: updated.updatedAt.toISOString(),
-                };
-            },
-            {
-                maxWait: 10000,
-                timeout: 60000,
+                    return {
+                        id: updated.id,
+                        number: updated.number,
+                        updatedAt: updated.updatedAt.toISOString(),
+                    };
+                },
+                {
+                    maxWait: 10000,
+                        timeout: 60000,
             },
         );
     } catch (error) {

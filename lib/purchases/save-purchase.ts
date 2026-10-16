@@ -492,6 +492,31 @@ export async function savePurchase(
                         },
                     });
 
+                    if (isReceived) {
+                        await tx.inventoryStockLot.create({
+                            data: {
+                                id: purchaseItem.id,
+                                inventoryItemId: savedInventory.id,
+                                purchaseItemId: purchaseItem.id,
+
+                                quantity: purchaseItem.quantity,
+                                remainingQuantity:
+                                    purchaseItem.remainingQuantity,
+
+                                defectiveQuantity:
+                                    purchaseItem.defectiveQuantity,
+                                remainingDefectiveQuantity:
+                                    purchaseItem.remainingDefectiveQuantity,
+
+                                unitCost: purchaseItem.finalUnitCost,
+                                remainingCost: purchaseItem.remainingCost,
+
+                                availableAt: purchase.purchaseDate,
+                                createdAt: purchaseItem.createdAt,
+                            },
+                        });
+                    }
+
                     if (receivedGoodQuantity > 0) {
                         await tx.inventoryMovement.create({
                             data: {

@@ -67,20 +67,42 @@ export async function getInventoryPage(
     // One statement gives counts and the page the same database snapshot.
     // Only the page joins descriptions, photos and sale prices.
     const [row] = await prisma.$queryRaw<{ snapshot: Snapshot }[]>(Prisma.sql`
-        WITH balances AS (
-            SELECT pi."inventoryItemId" AS id,
-                sum(pi."remainingDefectiveQuantity") AS defective,
-                round(sum(pi."finalUnitCost" * (pi."remainingQuantity" - pi."remainingDefectiveQuantity")) * 100) AS cents
-            FROM "PurchaseItem" pi
-            JOIN "Purchase" pu ON pu.id = pi."purchaseId"
-            JOIN "InventoryItem" i ON i.id = pi."inventoryItemId"
-            WHERE pu."businessId" = ${businessId} AND pu."receiptStatus" = 'RECEIVED'
-                AND i."businessId" = ${businessId} AND i."isActive" = TRUE
-            GROUP BY pi."inventoryItemId"
+                WITH balances AS (
+            SELECT
+                lot."inventoryItemId" AS id,
+                SUM(lot."remainingQuantity") AS total,
+                SUM(lot."remainingDefectiveQuantity") AS defective,
+                ROUND(
+                    SUM(
+                        lot."unitCost" *
+                        (
+                            lot."remainingQuantity" -
+                            lot."remainingDefectiveQuantity"
+                        )
+                    ) * 100
+                ) AS cents
+            FROM "InventoryStockLot" lot
+            JOIN "InventoryItem" i
+                ON i.id = lot."inventoryItemId"
+            LEFT JOIN "PurchaseItem" source
+                ON source.id = lot."purchaseItemId"
+            LEFT JOIN "Purchase" pu
+                ON pu.id = source."purchaseId"
+            WHERE i."businessId" = ${businessId}
+                AND i."isActive" = TRUE
+                AND (
+                    lot."purchaseItemId" IS NULL
+                    OR (
+                        pu."businessId" = ${businessId}
+                        AND pu."receiptStatus" = 'RECEIVED'
+                    )
+                )
+            GROUP BY lot."inventoryItemId"
         ), base AS (
             SELECT i.id, i."productId", i."createdAt", i.color, i.size, i.sku,
-                p.name, p.category, i."currentStock" AS "totalStock",
-                ba.defective AS "defectiveStock", i."currentStock" - ba.defective AS "goodStock",
+                p.name, p.category, ba.total AS "totalStock",
+                ba.defective AS "defectiveStock",
+                ba.total - ba.defective AS "goodStock",
                 ba.cents AS "goodStockValueCents",
                 lower(normalize(concat_ws(' ', p.name, i.sku, p.brand, p.category, i.color, i.size), NFKC)) AS searchable
             FROM "InventoryItem" i

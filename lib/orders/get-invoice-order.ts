@@ -23,6 +23,7 @@ type InvoiceOrderRow = {
     items: Array<{
         id: string;
         name: string;
+        imageUrl: string | null;
         color: string | null;
         size: string | null;
         condition: OrderInvoiceData["items"][number]["condition"];
@@ -56,7 +57,8 @@ export async function getInvoiceOrder(
             ) AS "business",
             COALESCE((
                 SELECT jsonb_agg(jsonb_build_object(
-                    'id', i."id", 'name', i."name", 'color', i."color",
+                    'id', i."id", 'name', i."name",
+                    'imageUrl', i."imageUrl", 'color', i."color",
                     'size', i."size", 'condition', i."condition",
                     'quantity', i."quantity", 'unitPrice', i."unitPrice"::text
                 ) ORDER BY i."createdAt", i."id")

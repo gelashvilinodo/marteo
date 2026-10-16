@@ -6,6 +6,7 @@ import { createPrismaClient } from "@/lib/prisma";
 import { updatePurchase } from "@/lib/purchases/update-purchase";
 import { PurchaseEditError } from "@/lib/purchases/lock-purchase-for-edit";
 import { PurchaseValidationError } from "@/lib/purchases/validate-purchases";
+import { getPurchaseEditUsage } from "@/lib/purchases/get-purchase-edit-usage";
 
 import {
     readPurchaseForm,
@@ -78,31 +79,59 @@ export async function GET(
             );
         }
 
-        const purchase = await prisma.purchase.findFirst({
-            where: {
-                id: purchaseId,
-                businessId: membership.businessId,
-            },
-            include: {
-                items: {
-                    orderBy: [
-                        { createdAt: "asc" },
-                        { id: "asc" },
-                    ],
+        const { purchase, usage } = await prisma.$transaction(
+            async tx => {
+                // მონაცემების წაკითხვის განმავლობაში გაყიდვა და
+                // პარტიის ცვლილება ამავე ბიზნესზე დაგველოდება.
+                await tx.$queryRaw`
+                    SELECT "id"
+                    FROM "Business"
+                    WHERE "id" = ${membership.businessId}
+                    FOR SHARE
+                `;
+
+                const purchase = await tx.purchase.findFirst({
+                    where: {
+                        id: purchaseId,
+                        businessId: membership.businessId,
+                    },
                     include: {
-                        inventoryItem: {
+                        items: {
+                            orderBy: [
+                                { createdAt: "asc" },
+                                { id: "asc" },
+                            ],
                             include: {
-                                product: true,
+                                inventoryItem: {
+                                    include: { product: true },
+                                },
                             },
                         },
                     },
-                },
-            },
-        });
+                });
 
-        if (!purchase) {
-            return errorResponse("პარტია ვერ მოიძებნა.", 404);
-        }
+                if (!purchase) {
+                    throw new PurchaseEditError(
+                        "პარტია ვერ მოიძებნა.",
+                        404,
+                    );
+                }
+
+                await assertPurchaseEditable(tx, purchase);
+
+                const usage = await getPurchaseEditUsage(
+                    tx,
+                    membership.businessId,
+                    purchase.id,
+                );
+
+                return { purchase, usage };
+            },
+            {
+                maxWait: 10000,
+                timeout: 15000,
+            },
+        );
 
         await prisma.$transaction(async (tx) => {
             await assertPurchaseEditable(tx, purchase);
@@ -142,6 +171,12 @@ export async function GET(
 
                     items: purchase.items.map((item) => ({
                         purchaseItemId: item.id,
+                        editUsage: usage.get(item.id) ?? {
+                            usedQuantity: 0,
+                            usedGoodQuantity: 0,
+                            usedDefectiveQuantity: 0,
+                            entries: [],
+                        },
                         sourceInventoryItemId: item.inventoryItemId,
                         sourceProductId: item.inventoryItem.productId,
 

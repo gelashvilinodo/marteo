@@ -22,6 +22,23 @@ type PricingMethod =
     | "MARKUP_PERCENT"
     | "MARGIN_PERCENT";
 
+type PurchaseEditUsage = {
+    usedQuantity: number;
+    usedGoodQuantity: number;
+    usedDefectiveQuantity: number;
+    entries: Array<{
+        orderNumber: number | null;
+        orderStatus: string;
+        name: string;
+        color: string | null;
+        size: string | null;
+        quantity: number;
+        unitCost: string;
+        unitPrice: string;
+        totalCost: string | null;
+    }>;
+};
+
 type ProductDraft = {
     id: string;
     purchaseItemId: string | null;
@@ -42,6 +59,7 @@ type ProductDraft = {
     unitPurchasePrice: string;
     pricingMethod: PricingMethod;
     pricingValue: string;
+    editUsage?: PurchaseEditUsage;
 };
 
 type EditablePurchase = {
@@ -72,6 +90,7 @@ type EditablePurchase = {
         unitPurchasePrice: string;
         pricingMethod: PricingMethod;
         pricingValue: string;
+        editUsage: PurchaseEditUsage;
     }>;
 };
 
@@ -1553,6 +1572,112 @@ export default function NewPurchasePanel({
                                                 }}
                                             >
 
+                                                {product.editUsage &&
+                                                    product.editUsage.usedQuantity > 0 && (
+                                                        <div className="mb-3 min-w-0 rounded-lg border border-accent/30 bg-accent/5 p-3 text-xs leading-relaxed">
+                                                            <p className="font-medium text-text-primary">
+                                                                გამოყენებული რაოდენობა:{" "}
+                                                                {product.editUsage.usedQuantity} ერთეული
+                                                            </p>
+
+                                                            <p className="mt-1 text-text-secondary">
+                                                                რაოდენობა ამაზე ნაკლები ვერ იქნება.
+                                                                ცვლილება უკვე არსებულ შეკვეთებში
+                                                                შენახულ ფასებსა და თვითღირებულებას
+                                                                არ გადაწერს.
+                                                            </p>
+
+                                                            <p className="mt-1 text-text-secondary">
+                                                                დაუზიანებელი:{" "}
+                                                                {product.editUsage.usedGoodQuantity}
+                                                                {" · "}
+                                                                წუნდებული:{" "}
+                                                                {product.editUsage.usedDefectiveQuantity}
+                                                            </p>
+
+                                                            {product.editUsage.entries.length > 0 && (
+                                                                <details className="mt-2 min-w-0">
+                                                                    <summary className="cursor-pointer font-medium text-accent">
+                                                                        შეკვეთებში შენახული ფასები
+                                                                    </summary>
+
+                                                                    <div className="mt-2 space-y-2">
+                                                                        {product.editUsage.entries.map(
+                                                                            (entry, entryIndex) => {
+                                                                                const previousCost =
+                                                                                    entry.totalCost !== null
+                                                                                        ? Number(entry.totalCost) /
+                                                                                        entry.quantity
+                                                                                        : Number(entry.unitCost);
+
+                                                                                const difference =
+                                                                                    cost - previousCost;
+
+                                                                                return (
+                                                                                    <div
+                                                                                        key={entryIndex}
+                                                                                        className="min-w-0 rounded-lg border border-border bg-surface p-2"
+                                                                                    >
+                                                                                        <p className="break-words font-medium">
+                                                                                            {entry.orderNumber !== null
+                                                                                                ? `#${String(entry.orderNumber).padStart(4, "0")}`
+                                                                                                : "შეკვეთა"}
+                                                                                            {" · "}
+                                                                                            {entry.quantity} ერთეული
+                                                                                        </p>
+
+                                                                                        <p className="break-words text-text-secondary">
+                                                                                            {[
+                                                                                                entry.name,
+                                                                                                entry.color,
+                                                                                                entry.size,
+                                                                                            ].filter(Boolean).join(" · ")}
+                                                                                        </p>
+
+                                                                                        <p className="mt-1">
+                                                                                            შენახული თვითღირებულება:{" "}
+                                                                                            {money(previousCost)} / ერთეული
+                                                                                        </p>
+
+                                                                                        <p>
+                                                                                            შეკვეთის გასაყიდი ფასი:{" "}
+                                                                                            {money(Number(entry.unitPrice))}
+                                                                                        </p>
+
+                                                                                        {product.unitPurchasePrice.trim() && (
+                                                                                            <p className="mt-1 text-text-secondary">
+                                                                                                დარჩენილის ახალი სავარაუდო
+                                                                                                თვითღირებულება:{" "}
+                                                                                                {money(cost)}
+                                                                                                {" · "}
+                                                                                                სხვაობა:{" "}
+                                                                                                {difference >= 0 ? "+" : ""}
+                                                                                                {money(difference)}
+                                                                                            </p>
+                                                                                        )}
+
+                                                                                        {hasPrice && price !== null && (
+                                                                                            <p className="text-text-secondary">
+                                                                                                ახალი გასაყიდი ფასი:{" "}
+                                                                                                {money(price)}
+                                                                                                {" · "}
+                                                                                                სხვაობა:{" "}
+                                                                                                {price - Number(entry.unitPrice) >= 0
+                                                                                                    ? "+"
+                                                                                                    : ""}
+                                                                                                {money(price - Number(entry.unitPrice))}
+                                                                                            </p>
+                                                                                        )}
+                                                                                    </div>
+                                                                                );
+                                                                            },
+                                                                        )}
+                                                                    </div>
+                                                                </details>
+                                                            )}
+                                                        </div>
+                                                    )}
+
                                                 <div className="mb-3 min-w-0">
                                                     <InventoryPicker
                                                         options={inventoryOptions}
@@ -1705,7 +1830,7 @@ export default function NewPurchasePanel({
                                                             <input
                                                                 aria-label="სულ რაოდენობა"
                                                                 type="number"
-                                                                min="1"
+                                                                min={Math.max(1, product.editUsage?.usedQuantity ?? 0)}
                                                                 step="1"
                                                                 required
                                                                 value={product.quantity}
@@ -1723,8 +1848,12 @@ export default function NewPurchasePanel({
                                                                 <input
                                                                     aria-label="აქედან წუნდებული რაოდენობა"
                                                                     type="number"
-                                                                    min="0"
-                                                                    max={numberValue(product.quantity)}
+                                                                    min={product.editUsage?.usedDefectiveQuantity ?? 0}
+                                                                    max={Math.max(
+                                                                        0,
+                                                                        numberValue(product.quantity) -
+                                                                        (product.editUsage?.usedGoodQuantity ?? 0),
+                                                                    )}
                                                                     step="1"
                                                                     placeholder="0"
                                                                     value={product.defectiveQuantity}
@@ -1743,7 +1872,7 @@ export default function NewPurchasePanel({
                                                         )}
                                                     </div>
 
-                                                    <Field label="შესყიდვა / ცალი · ₾ *">
+                                                    <Field label="თვითღირებულება / ცალი · ₾ *">
                                                         <input
                                                             type="number"
                                                             min="0.01"

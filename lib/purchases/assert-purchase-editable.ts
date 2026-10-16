@@ -1,10 +1,9 @@
 import "server-only";
 
-import { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import { PurchaseEditError } from "./lock-purchase-for-edit";
 
 type PurchaseForEditCheck = {
-    id: string;
     archivedAt: Date | null;
     receiptStatus: "IN_TRANSIT" | "RECEIVED";
     items: Array<{
@@ -16,7 +15,7 @@ type PurchaseForEditCheck = {
 };
 
 export async function assertPurchaseEditable(
-    tx: Prisma.TransactionClient,
+    _tx: Prisma.TransactionClient,
     purchase: PurchaseForEditCheck,
 ) {
     if (purchase.archivedAt !== null) {
@@ -26,62 +25,40 @@ export async function assertPurchaseEditable(
         );
     }
 
-    const allocation = await tx.orderItemAllocation.findFirst({
-        where: {
-            purchaseItem: {
-                purchaseId: purchase.id,
-            },
-        },
-        select: { id: true },
-    });
+    for (const item of purchase.items) {
+        const quantities = [
+            item.quantity,
+            item.remainingQuantity,
+            item.defectiveQuantity,
+            item.remainingDefectiveQuantity,
+        ];
 
-    if (allocation) {
-        throw new PurchaseEditError(
-            "ამ პარტიიდან გაყიდვა უკვე დაფიქსირდა და რედაქტირება აღარ არის შესაძლებელი.",
-            409,
-        );
-    }
-
-    const movement = await tx.inventoryMovement.findFirst({
-        where: {
-            purchaseItem: {
-                purchaseId: purchase.id,
-            },
-            ...(purchase.receiptStatus === "RECEIVED"
-                ? { type: { not: "PURCHASE_IN" as const } }
-                : {}),
-        },
-        select: {
-            id: true,
-            type: true,
-        },
-    });
-
-    if (movement) {
-        throw new PurchaseEditError(
-            "ამ პარტიაზე მარაგის შემდგომი მოძრაობაა დაფიქსირებული და რედაქტირება აღარ არის შესაძლებელი.",
-            409,
-        );
-    }
-
-    const hasUnexpectedBalance = purchase.items.some((item) => {
-        if (purchase.receiptStatus === "IN_TRANSIT") {
-            return (
-                item.remainingQuantity !== 0 ||
-                item.remainingDefectiveQuantity !== 0
+        if (
+            quantities.some(
+                value => !Number.isSafeInteger(value) || value < 0,
+            ) ||
+            item.quantity < 1 ||
+            item.remainingQuantity > item.quantity ||
+            item.defectiveQuantity > item.quantity ||
+            item.remainingDefectiveQuantity > item.remainingQuantity
+        ) {
+            throw new PurchaseEditError(
+                "პარტიის რაოდენობები არასწორია. ცვლილებები არ შენახულა.",
+                409,
             );
         }
 
-        return (
-            item.remainingQuantity !== item.quantity ||
-            item.remainingDefectiveQuantity !== item.defectiveQuantity
-        );
-    });
-
-    if (hasUnexpectedBalance) {
-        throw new PurchaseEditError(
-            "პარტიის ნაშთები საწყის რაოდენობებს არ ემთხვევა. რედაქტირებამდე საჭიროა მათი შემოწმება.",
-            409,
-        );
+        if (
+            purchase.receiptStatus === "IN_TRANSIT" &&
+            (
+                item.remainingQuantity !== 0 ||
+                item.remainingDefectiveQuantity !== 0
+            )
+        ) {
+            throw new PurchaseEditError(
+                "გზაში მყოფ პარტიაზე მიღებული მარაგია დაფიქსირებული.",
+                409,
+            );
+        }
     }
 }

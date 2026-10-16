@@ -2,7 +2,10 @@ import type { OrderInvoiceData } from "./invoice-types";
 import type {
     PDFFont,
     PDFPage,
+    PDFImage,
 } from "pdf-lib";
+
+import { productThumbnailUrl } from "@/lib/images/product-thumbnail-url";
 
 type Paper = "a4" | "100x150" | "80mm" | "58mm";
 
@@ -217,7 +220,7 @@ export async function createInvoicePdf(
     }
 
     function gap(height = 6) {
-        blocks.push({ height, draw: () => {} });
+        blocks.push({ height, draw: () => { } });
     }
 
     function text(
@@ -265,44 +268,97 @@ export async function createInvoicePdf(
         });
     }
 
-    function row(values: string[], strong = false) {
+    function row(
+        values: string[],
+        strong = false,
+        photo?: PDFImage | null,
+    ) {
         const font = strong ? bold : regular;
         const proportions = [0.46, 0.12, 0.20, 0.22];
+        const photoSize = paper === "a4" ? 28 : 22;
+        const photoSpace = photo ? photoSize + 6 : 0;
+
         const cells = values.map((value, index) =>
             wrap(
                 value,
                 font,
                 size,
-                contentWidth * proportions[index] - 5,
+                Math.max(
+                    10,
+                    contentWidth * proportions[index] -
+                    5 -
+                    (index === 0 ? photoSpace : 0),
+                ),
             ),
         );
+
+        const lineHeight = size * 1.5;
         const count = Math.max(...cells.map(cell => cell.length));
 
-        for (let line = 0; line < count; line++) {
+        // ფოტო და ტექსტის პირველი ხაზები ერთ გვერდზე რჩება.
+        const firstLineCount = photo
+            ? Math.min(count, Math.ceil(photoSize / lineHeight))
+            : 1;
+
+        function drawLines(
+            page: PDFPage,
+            top: number,
+            start: number,
+            length: number,
+        ) {
+            for (let line = start; line < start + length; line++) {
+                let x = margin;
+
+                cells.forEach((cell, index) => {
+                    const value = cell[line] ?? "";
+                    const width = contentWidth * proportions[index];
+
+                    page.drawText(value, {
+                        x: index >= 2
+                            ? x + width - textWidth(font, value, size)
+                            : x + (index === 0 ? photoSpace : 0),
+                        y: top - (line - start) * lineHeight - size,
+                        font,
+                        size,
+                        color: ink,
+                    });
+
+                    x += width;
+                });
+            }
+        }
+
+        blocks.push({
+            height: Math.max(
+                firstLineCount * lineHeight,
+                photo ? photoSize : 0,
+            ),
+            draw(page, top) {
+                if (photo) {
+                    const scale =
+                        photoSize / Math.max(photo.width, photo.height);
+                    const width = photo.width * scale;
+                    const height = photo.height * scale;
+
+                    page.drawImage(photo, {
+                        x: margin + (photoSize - width) / 2,
+                        y: top - height,
+                        width,
+                        height,
+                    });
+                }
+
+                drawLines(page, top, 0, firstLineCount);
+            },
+        });
+
+        for (let line = firstLineCount; line < count; line++) {
             const lineIndex = line;
 
             blocks.push({
-                height: size * 1.5,
+                height: lineHeight,
                 draw(page, top) {
-                    let x = margin;
-
-                    cells.forEach((cell, index) => {
-                        const value = cell[lineIndex] ?? "";
-                        const width = contentWidth * proportions[index];
-
-                        page.drawText(value, {
-                            x: index >= 2
-                                ? x + width -
-                                    textWidth(font, value, size)
-                                : x,
-                            y: top - size,
-                            font,
-                            size,
-                            color: ink,
-                        });
-
-                        x += width;
-                    });
+                    drawLines(page, top, lineIndex, 1);
                 },
             });
         }
@@ -387,6 +443,98 @@ export async function createInvoicePdf(
         rule();
     }
 
+    const productPhotos = new Map<string, Promise<PDFImage | null>>();
+
+    function readProductPhoto(url: string): Promise<PDFImage | null> {
+        const thumbnailUrl = productThumbnailUrl(url);
+        let pending = productPhotos.get(thumbnailUrl);
+
+        if (!pending) {
+            pending = logoPng(thumbnailUrl)
+                .then(bytes => pdf.embedPng(bytes))
+                .catch(() => null);
+
+            productPhotos.set(thumbnailUrl, pending);
+        }
+
+        return pending;
+    }
+
+    function thermalProduct(
+        name: string,
+        variant: string,
+        photo: PDFImage,
+    ) {
+        const photoSize = 20;
+        const textX = margin + photoSize + 6;
+        const availableWidth = contentWidth - photoSize - 6;
+
+        const lines = [
+            ...wrap(name, bold, size, availableWidth).map(value => ({
+                value,
+                font: bold,
+                textSize: size,
+            })),
+            ...(variant
+                ? wrap(variant, regular, size - 1, availableWidth).map(value => ({
+                    value,
+                    font: regular,
+                    textSize: size - 1,
+                }))
+                : []),
+        ];
+
+        const lineHeight = size * 1.5;
+        const firstLineCount = Math.min(
+            lines.length,
+            Math.ceil(photoSize / lineHeight),
+        );
+
+        function drawLine(page: PDFPage, top: number, index: number) {
+            const line = lines[index];
+
+            page.drawText(line.value, {
+                x: textX,
+                y: top - line.textSize,
+                font: line.font,
+                size: line.textSize,
+                color: ink,
+            });
+        }
+
+        blocks.push({
+            height: Math.max(photoSize, firstLineCount * lineHeight),
+            draw(page, top) {
+                const scale =
+                    photoSize / Math.max(photo.width, photo.height);
+                const width = photo.width * scale;
+                const height = photo.height * scale;
+
+                page.drawImage(photo, {
+                    x: margin + (photoSize - width) / 2,
+                    y: top - height,
+                    width,
+                    height,
+                });
+
+                for (let index = 0; index < firstLineCount; index++) {
+                    drawLine(page, top - index * lineHeight, index);
+                }
+            },
+        });
+
+        for (let index = firstLineCount; index < lines.length; index++) {
+            const lineIndex = index;
+
+            blocks.push({
+                height: lineHeight,
+                draw(page, top) {
+                    drawLine(page, top, lineIndex);
+                },
+            });
+        }
+    }
+
     for (const item of invoice.items) {
         if (performance.now() - lastYield >= 12) await yieldToBrowser();
         const variant = [
@@ -395,19 +543,32 @@ export async function createInvoicePdf(
             item.condition === "DEFECTIVE" ? "წუნდებული" : null,
         ].filter(Boolean).join(" · ");
 
+        const photo = item.imageUrl
+            ? await readProductPhoto(item.imageUrl)
+            : null;
+
         if (thermal) {
-            text(item.name, true);
-            if (variant) text(variant, false, size - 1);
+            if (photo) {
+                thermalProduct(item.name, variant, photo);
+            } else {
+                text(item.name, true);
+                if (variant) text(variant, false, size - 1);
+            }
+
             text(
                 `${item.quantity} × ${item.unitPrice} ₾ = ${item.total} ₾`,
             );
         } else {
-            row([
-                [item.name, variant].filter(Boolean).join("\n"),
-                String(item.quantity),
-                item.unitPrice,
-                item.total,
-            ]);
+            row(
+                [
+                    [item.name, variant].filter(Boolean).join("\n"),
+                    String(item.quantity),
+                    item.unitPrice,
+                    item.total,
+                ],
+                false,
+                photo,
+            );
         }
 
         rule();

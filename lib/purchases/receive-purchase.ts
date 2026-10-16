@@ -329,7 +329,7 @@ export async function receivePurchase(
                         );
                     }
 
-                    await tx.purchaseItem.update({
+                    const receivedItem = await tx.purchaseItem.update({
                         where: { id: item.id },
                         data: {
                             remainingQuantity: item.quantity,
@@ -341,6 +341,30 @@ export async function receivePurchase(
                             remainingDefectiveQuantity:
                                 submitted.defectiveQuantity,
                             defectNote: submitted.defectNote || null,
+                        },
+                    });
+
+                                        await tx.inventoryStockLot.create({
+                        data: {
+                            id: receivedItem.id,
+                            inventoryItemId:
+                                receivedItem.inventoryItemId,
+                            purchaseItemId: receivedItem.id,
+
+                            quantity: receivedItem.quantity,
+                            remainingQuantity:
+                                receivedItem.remainingQuantity,
+
+                            defectiveQuantity:
+                                receivedItem.defectiveQuantity,
+                            remainingDefectiveQuantity:
+                                receivedItem.remainingDefectiveQuantity,
+
+                            unitCost: receivedItem.finalUnitCost,
+                            remainingCost: receivedItem.remainingCost,
+
+                            availableAt: purchase.purchaseDate,
+                            createdAt: receivedItem.createdAt,
                         },
                     });
 
