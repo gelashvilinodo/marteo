@@ -124,6 +124,60 @@ export async function getPurchaseEditUsage(
         });
     }
 
+    const writtenOffLots = await tx.inventoryStockLot.groupBy({
+        by: ["purchaseItemId"],
+        where: {
+            purchaseItem: {
+                purchaseId,
+                purchase: { businessId },
+            },
+        },
+        _sum: {
+            writtenOffQuantity: true,
+            writtenOffDefectiveQuantity: true,
+        },
+    });
+
+    for (const lot of writtenOffLots) {
+        const purchaseItemId = lot.purchaseItemId;
+
+        if (!purchaseItemId) {
+            throw new PurchaseEditError(
+                "ჩამოწერილი მარაგის კავშირი არასწორია.",
+                409,
+            );
+        }
+
+        const quantity = lot._sum.writtenOffQuantity ?? 0;
+        const defective = lot._sum.writtenOffDefectiveQuantity ?? 0;
+
+        if (
+            !Number.isSafeInteger(quantity) ||
+            !Number.isSafeInteger(defective) ||
+            quantity < 0 ||
+            defective < 0 ||
+            defective > quantity
+        ) {
+            throw new PurchaseEditError(
+                "ჩამოწერილი მარაგის რაოდენობები არასწორია.",
+                409,
+            );
+        }
+
+        const current = usage.get(purchaseItemId) ?? {
+            usedQuantity: 0,
+            usedGoodQuantity: 0,
+            usedDefectiveQuantity: 0,
+            entries: [],
+        };
+
+        current.usedQuantity += quantity;
+        current.usedGoodQuantity += quantity - defective;
+        current.usedDefectiveQuantity += defective;
+
+        usage.set(purchaseItemId, current);
+    }
+
     for (const allocation of allocations) {
         const item = allocation.orderItem;
 

@@ -1,5 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import PurchasesListSkeleton from "./PurchasesListSkeleton";
 import type { PurchasesSnapshot } from "@/lib/purchases/get-purchases-snapshot";
 import { PURCHASES_CHANGED } from "@/lib/purchases/refresh-purchases-client";
 import NewPurchasePanel from "./NewPurchasePanel";
@@ -10,7 +12,6 @@ import PurchaseActionButton from "./PurchaseActionButton";
 import PaginationLink from "./PaginationLink";
 import Image from "next/image";
 import { Icon } from "@iconify/react";
-import Form from "next/form";
 import Link from "next/link";
 function displayMoney(value: string) {
   const [integer, decimal] = value.split(".");
@@ -21,6 +22,29 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
   const [previous, setPrevious] = useState(initialSnapshot);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
+  const [navigating, startNavigation] = useTransition();
+  const [filterResetKey, setFilterResetKey] = useState(0);
+
+  const listLoading = refreshing || navigating;
+
+  function navigateList(href: string) {
+    setError("");
+
+    startNavigation(() => {
+      const destination = new URL(href, window.location.origin);
+      const current = new URL(window.location.href);
+
+      if (
+        destination.pathname === current.pathname &&
+        destination.search === current.search
+      ) {
+        router.refresh();
+      } else {
+        router.push(href, { scroll: false });
+      }
+    });
+  }
   if (previous !== initialSnapshot) { setPrevious(initialSnapshot); setSnapshot(initialSnapshot); setRefreshing(false); setError(""); }
   useEffect(() => {
     let active = true;
@@ -58,13 +82,8 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
   }, [initialSnapshot]);
   const { view, isArchive, query, from, to, filterError, hasFilters, totalPurchases, currentPage, totalPages, pageSize, paginationItems, purchases, inventoryOptions, attributeOptions } = snapshot;
   const paginationClass = "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-sm font-medium text-text-primary transition hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-  function pageHref(
-    page: number,
-    selectedView: "active" | "archive" = view,
-  ) {
+  function pageHref(page: number) {
     const search = new URLSearchParams();
-
-    if (selectedView === "archive") search.set("view", "archive");
     if (query) search.set("q", query);
     if (from) search.set("from", from);
     if (to) search.set("to", to);
@@ -84,31 +103,6 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
           </h1>
 
           <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
-            <nav
-              aria-label="პარტიების სია"
-              className="order-2 grid min-w-0 grid-cols-2 gap-1 rounded-xl border border-border bg-surface p-1 sm:order-1 sm:w-60 sm:shrink-0"
-            >
-              {([
-                { value: "active", label: "აქტიური" },
-                { value: "archive", label: "არქივი" },
-              ] as const).map((tab) => (
-                <Link
-                  key={tab.value}
-                  href={pageHref(1, tab.value)}
-                  aria-current={view === tab.value ? "page" : undefined}
-                  className={[
-                    "flex h-9 min-w-0 items-center justify-center rounded-lg px-3 text-sm font-medium transition-colors",
-                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                    view === tab.value
-                      ? "bg-accent text-white"
-                      : "text-text-secondary hover:bg-background hover:text-text-primary",
-                  ].join(" ")}
-                >
-                  {tab.label}
-                </Link>
-              ))}
-            </nav>
-
             <div className="order-1 min-w-0 sm:order-2">
               <NewPurchasePanel
                 inventoryOptions={inventoryOptions}
@@ -123,11 +117,29 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
           defaultOpen={hasFilters || Boolean(filterError)}
           hasFilters={hasFilters}
         >
-          <Form
-            action="/dashboard/purchases"
+          <form
+            key={`${query}|${from}|${to}|${filterResetKey}`}
+            onSubmit={event => {
+              event.preventDefault();
+              if (listLoading) return;
+
+              const values = new FormData(event.currentTarget);
+              const params = new URLSearchParams();
+
+              const search = String(values.get("q") ?? "").trim();
+              const start = String(values.get("from") ?? "").trim();
+              const end = String(values.get("to") ?? "").trim();
+
+              if (search) params.set("q", search);
+              if (start) params.set("from", start);
+              if (end) params.set("to", end);
+
+              navigateList(
+                `/dashboard/purchases${params.size ? `?${params}` : ""}`,
+              );
+            }}
             className="border-t border-border p-3 sm:border-t-0 sm:p-4"
           >
-            <input type="hidden" name="view" value={view} />
             <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-end">
               <label className="block min-w-0 sm:col-span-2 xl:col-span-1">
                 <span className="mb-1.5 block text-xs font-medium text-text-secondary">
@@ -170,42 +182,54 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
 
               <button
                 type="submit"
+                disabled={listLoading}
+                aria-busy={listLoading}
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-accent px-5 text-sm font-medium text-white transition hover:opacity-90 sm:col-span-2 xl:col-span-1"
               >
                 ძებნა
               </button>
             </div>
 
-            {hasFilters && (
-              <div className="mt-3 flex justify-end">
-                <Link
-                  href={
-                    isArchive
-                      ? "/dashboard/purchases?view=archive"
-                      : "/dashboard/purchases"
-                  }
-                  className="inline-flex min-h-9 items-center text-sm text-text-secondary underline underline-offset-4 hover:text-accent"
-                >
-                  გასუფთავება
-                </Link>
-              </div>
-            )}
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                disabled={listLoading}
+                onClick={() => {
+                  setFilterResetKey(value => value + 1);
+                  navigateList("/dashboard/purchases");
+                }}
+                className="inline-flex min-h-9 items-center text-sm text-text-secondary underline underline-offset-4 hover:text-accent disabled:opacity-50"
+              >
+                გასუფთავება
+              </button>
+            </div>
 
             {filterError && (
               <p role="alert" className="mt-3 text-sm text-red-500">
                 {filterError}
               </p>
             )}
-          </Form>
+          </form>
         </PurchaseFiltersDisclosure>
 
-        {refreshing && <p role="status" className="mt-4 text-sm text-text-secondary">პარტიები ახლდება…</p>}
         {error && <p role="alert" className="mt-4 text-sm text-danger">{error} <button type="button" className="underline" onClick={() => window.dispatchEvent(new Event(PURCHASES_CHANGED, { cancelable: true }))}>სიის განახლება</button></p>}
-        <p className="mt-4 text-sm text-text-secondary">
-          {totalPurchases} პარტია
+        <p className="mt-4 min-h-5 text-sm text-text-secondary">
+          {listLoading ? (
+            <span
+              aria-hidden="true"
+              className="block h-5 w-24 animate-pulse rounded bg-text-secondary/10 motion-reduce:animate-none"
+            />
+          ) : (
+            `${totalPurchases} პარტია`
+          )}
         </p>
 
-        <div aria-busy={refreshing} className="mt-6 space-y-4">
+        {listLoading && <PurchasesListSkeleton />}
+
+        <div
+          aria-busy={listLoading}
+          className={listLoading ? "hidden" : "mt-6 space-y-4"}
+        >
           {purchases.length === 0 ? (
             <div className="flex min-h-[240px] items-center justify-center rounded-2xl border border-border bg-surface px-6 text-center">
               <h2 className="text-base font-medium text-text-secondary">
@@ -476,7 +500,7 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
           )}
         </div>
 
-        {totalPurchases > pageSize && (
+        {!listLoading && totalPurchases > pageSize && (
           <nav
             aria-label="შესყიდვების გვერდები"
             className="mt-6 flex min-w-0 items-center justify-center gap-2"

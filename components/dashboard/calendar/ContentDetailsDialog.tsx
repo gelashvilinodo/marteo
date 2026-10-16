@@ -389,7 +389,7 @@ export default function ContentDetailsDialog({
                                                     "კონტენტი წარმატებით წაიშალა.",
                                             })
                                         }
-                                        className="h-10 rounded-xl bg-red-500 px-4 text-sm font-semibold text-white disabled:opacity-50"
+                                        className="delete-button h-10 rounded-xl px-4 text-sm font-semibold disabled:opacity-50"
                                     >
                                         წაშლა
                                     </button>
@@ -422,7 +422,7 @@ export default function ContentDetailsDialog({
                                     type="button"
                                     disabled={busy || loading || uncertain}
                                     onClick={() => setConfirming(true)}
-                                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-red-400/20 px-4 text-sm text-red-400 disabled:opacity-50"
+                                    className="delete-action inline-flex h-11 items-center gap-2 rounded-xl border px-4 text-sm disabled:opacity-50"
                                 >
                                     <Icon
                                         icon="solar:trash-bin-trash-linear"

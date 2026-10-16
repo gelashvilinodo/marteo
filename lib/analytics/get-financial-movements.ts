@@ -7,7 +7,7 @@ import type { AnalyticsSearchParams } from "./get-analytics-page";
 
 export type FinancialMovement = {
     key: string;
-    source: "financial" | "payment" | "expense" | "purchase";
+    source: "financial" | "payment" | "expense" | "purchase" | "writeoff";
     kind: string;
     occurredAt: string;
     orderNumber: number | null;
@@ -39,7 +39,14 @@ export async function getFinancialMovements(
             ? params[key].trim()
             : "";
 
-    const allowed = ["all", "financial", "payment", "expense", "purchase"];
+    const allowed = [
+        "all",
+        "financial",
+        "payment",
+        "expense",
+        "purchase",
+        "writeoff",
+    ];
 
     const source = allowed.includes(text("movement"))
         ? text("movement")
@@ -156,8 +163,34 @@ p.number,
             WHERE p."businessId" = ${businessId}
                 AND p."purchaseDate" >= ${range.start}
                 AND p."purchaseDate" < ${range.end}
-        ),
-                selected_movements AS (
+
+UNION ALL
+
+SELECT
+    'writeoff:' || w.id,
+    'writeoff'::text,
+    'INVENTORY_WRITE_OFF'::text,
+    w."createdAt",
+    w."createdAt",
+    NULL::integer,
+    concat_ws(
+        ' · ',
+        w.name,
+        NULLIF(w.color, ''),
+        NULLIF(w.size, ''),
+        w.quantity::text || ' ერთეული'
+    ),
+    -w."totalCost",
+    NULL::numeric,
+    TRUE,
+    NULL::text
+FROM "InventoryWriteOff" w
+WHERE w."businessId" = ${businessId}
+    AND w."createdAt" >= ${range.start}
+    AND w."createdAt" < ${range.end}
+    AND w.quantity > 0
+),
+selected_movements AS (
             SELECT *
             FROM movements
             WHERE (

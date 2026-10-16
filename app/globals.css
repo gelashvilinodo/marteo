@@ -364,3 +364,33 @@ dialog:modal {
     scrollbar-color: var(--marteo-warning) transparent;
   }
 }
+
+.delete-button {
+  background-color: var(--color-red-600);
+  border-color: var(--color-red-600);
+  color: #fff;
+}
+
+.delete-button:hover:not(:disabled) {
+  background-color: var(--color-red-700);
+  border-color: var(--color-red-700);
+}
+
+.delete-button svg {
+  color: inherit;
+}
+
+.delete-action {
+  color: var(--color-red-600);
+  background-color: transparent;
+  border-color: color-mix(in srgb, var(--color-red-600) 30%, transparent);
+}
+
+.delete-action:hover:not(:disabled) {
+  color: var(--color-red-700);
+  background-color: color-mix(in srgb, var(--color-red-600) 10%, transparent);
+}
+
+.delete-action svg {
+  color: inherit;
+}

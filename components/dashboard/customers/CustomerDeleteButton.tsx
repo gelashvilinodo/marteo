@@ -99,12 +99,7 @@ export default function CustomerDeleteButton({
                 type="button"
                 disabled={!ids.length}
                 onClick={() => setConfirming(true)}
-                className={
-                    "inline-flex items-center gap-2 rounded-xl " +
-                    "border border-border px-4 py-3 text-sm " +
-                    "text-red-400 transition hover:border-red-400 " +
-                    "disabled:opacity-50"
-                }
+                className="delete-action inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm transition disabled:opacity-50"
             >
                 <Icon
                     icon="solar:trash-bin-trash-linear"
@@ -164,11 +159,7 @@ export default function CustomerDeleteButton({
                     type="button"
                     disabled={saving || uncertain}
                     onClick={() => void remove()}
-                    className={
-                        "inline-flex items-center gap-2 rounded-xl " +
-                        "bg-red-500 px-4 py-2 text-sm font-semibold " +
-                        "text-white disabled:opacity-50"
-                    }
+                    className="delete-button inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
                 >
                     <Icon
                         icon={

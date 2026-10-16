@@ -216,7 +216,16 @@ export default function OrderReturnButton({
             const item = order.items.find(value => value.id === choice.orderItemId);
             const quantity = Number(choice.quantityText);
             if (!/^\d+$/.test(choice.quantityText) || !Number.isSafeInteger(quantity) || quantity < 1 || !item || quantity > item.returnableQuantity) {
-                setError(`${item?.name ?? "პროდუქტი"}: მიუთითე დასაბრუნებელი რაოდენობა 1-დან ${item?.returnableQuantity ?? 0}-მდე.`); return;
+                const available = item?.returnableQuantity ?? 0;
+
+setError(
+    available === 0
+        ? `${item?.name ?? "პროდუქტი"}: დასაბრუნებელი ერთეული აღარ დარჩა.`
+        : available === 1
+            ? `${item?.name ?? "პროდუქტი"}: დასაბრუნებლად დარჩენილია მხოლოდ 1 ერთეული. მიუთითე 1.`
+            : `${item?.name ?? "პროდუქტი"}: მიუთითე მთელი რაოდენობა 1-დან ${available}-მდე.`,
+);
+return;
             }
         }
         void send({

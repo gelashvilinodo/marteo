@@ -21,10 +21,8 @@ function validDate(value: string) {
 
 
 export async function getPurchasesSnapshot(businessId: string, params: PurchasesSearchParams) {
-  const view =
-    singleValue(params.view) === "archive" ? "archive" : "active";
-
-  const isArchive = view === "archive";
+  const view = "active" as const;
+  const isArchive = false;
 
   const query = singleValue(params.q).slice(0, 150);
   const rawFrom = singleValue(params.from);
@@ -58,8 +56,7 @@ export async function getPurchasesSnapshot(businessId: string, params: Purchases
   try {
     return await prisma.$transaction(async tx => {
       const where: Prisma.PurchaseWhereInput = {
-        businessId: businessId,
-        archivedAt: isArchive ? { not: null } : null,
+        businessId,
       };
 
       if (query) {

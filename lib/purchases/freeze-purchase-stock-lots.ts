@@ -61,7 +61,7 @@ export async function freezePurchaseStockLots(
             lot.sourcePurchaseItemId !== null ||
             lot.remainingQuantity !== item.remainingQuantity ||
             lot.remainingDefectiveQuantity !==
-                item.remainingDefectiveQuantity ||
+            item.remainingDefectiveQuantity ||
             historicalQuantity + lot.quantity !== item.quantity
         ) {
             throw new PurchaseEditError(
@@ -102,14 +102,30 @@ export async function freezePurchaseStockLots(
             }
         }
 
-        if (usedQuantity !== lot.quantity - lot.remainingQuantity) {
+        const committedQuantity =
+            usedQuantity + lot.writtenOffQuantity;
+
+        const committedDefectiveQuantity =
+            usedDefectiveQuantity + lot.writtenOffDefectiveQuantity;
+
+        if (
+            lot.writtenOffQuantity < 0 ||
+            lot.writtenOffDefectiveQuantity < 0 ||
+            lot.writtenOffDefectiveQuantity > lot.writtenOffQuantity ||
+            committedQuantity !== lot.quantity - lot.remainingQuantity ||
+            committedDefectiveQuantity < 0 ||
+            committedDefectiveQuantity > committedQuantity
+        ) {
             throw new PurchaseEditError(
-                "გამოყენებული რაოდენობა მარაგის ნაშთს არ ემთხვევა.",
+                "გამოყენებული და ჩამოწერილი რაოდენობები მარაგის ნაშთს არ ემთხვევა.",
                 409,
             );
         }
 
-        if (lot.orderAllocations.length === 0) {
+        if (
+            lot.orderAllocations.length === 0 &&
+            lot.writtenOffQuantity === 0
+        ) {
             await tx.inventoryStockLot.delete({
                 where: { id: lot.id },
             });
@@ -121,8 +137,8 @@ export async function freezePurchaseStockLots(
                 data: {
                     purchaseItemId: null,
                     sourcePurchaseItemId: item.id,
-                    quantity: usedQuantity,
-                    defectiveQuantity: usedDefectiveQuantity,
+                    quantity: committedQuantity,
+                    defectiveQuantity: committedDefectiveQuantity,
                     remainingQuantity: 0,
                     remainingDefectiveQuantity: 0,
                     remainingCost: new Prisma.Decimal(0),

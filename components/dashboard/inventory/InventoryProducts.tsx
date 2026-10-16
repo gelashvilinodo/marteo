@@ -6,7 +6,20 @@ import { useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 import { Icon } from "@iconify/react";
 
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+
 import type { InventoryProduct } from "./InventoryView";
+
+const InventoryEditDialog = dynamic(
+    () => import("./InventoryEditDialog"),
+    { ssr: false },
+);
+
+const InventoryDeleteDialog = dynamic(
+    () => import("./InventoryDeleteDialog"),
+    { ssr: false },
+);
 
 type Props = {
     products: InventoryProduct[];
@@ -72,6 +85,9 @@ export default function InventoryProducts({
     showDefective,
 }: Props) {
     const [selected, setSelected] = useState<InventoryProduct | null>(null);
+    const router = useRouter();
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
     const dialogRef = useRef<HTMLDialogElement>(null);
     const titleId = useId();
 
@@ -111,6 +127,7 @@ export default function InventoryProducts({
             ["სულ დარჩენილი", `${formatQuantity(selected.totalStock)} პროდუქტი`],
             ["რეალიზებადი", `${formatQuantity(selected.goodStock)} პროდუქტი`],
             ["წუნდებული", `${formatQuantity(selected.defectiveStock)} პროდუქტი`],
+            ["საშუალო თვითღირებულება", formatMoney(selected.averageUnitCost)],
             ["გასაყიდი ფასი", formatMoney(selected.salePrice)],
             ["დამატების თარიღი", formatDate(selected.createdAt)],
         ]
@@ -386,6 +403,44 @@ export default function InventoryProducts({
                             ))}
                         </div>
 
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const id = selected.id;
+
+                                closeDetails();
+
+                                // ჯერ დეტალების ფანჯარა დაიხუროს,
+                                // შემდეგ გაიხსნას რედაქტირება.
+                                requestAnimationFrame(() => setEditingId(id));
+                            }}
+                            className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-accent/30 bg-accent/10 px-4 text-sm font-medium text-accent"
+                        >
+                            <Icon
+                                icon="solar:pen-linear"
+                                className="h-5 w-5"
+                                aria-hidden="true"
+                            />
+                            რედაქტირება
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const id = selected.id;
+                                closeDetails();
+                                requestAnimationFrame(() => setDeletingId(id));
+                            }}
+                            className="delete-action mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium"
+                        >
+                            <Icon
+                                icon="solar:trash-bin-trash-linear"
+                                className="h-5 w-5"
+                                aria-hidden="true"
+                            />
+                            წაშლა
+                        </button>
+
                         <dl className="mt-4 divide-y divide-border">
                             {details.map(([label, value]) => (
                                 <div
@@ -417,6 +472,28 @@ export default function InventoryProducts({
                     </div>
                 )}
             </dialog>
+            {editingId && (
+                <InventoryEditDialog
+                    key={editingId}
+                    inventoryItemId={editingId}
+                    onClose={() => setEditingId(null)}
+                    onSaved={() => {
+                        setEditingId(null);
+                        router.refresh();
+                    }}
+                />
+            )}
+            {deletingId && (
+                <InventoryDeleteDialog
+                    key={deletingId}
+                    inventoryItemId={deletingId}
+                    onClose={() => setDeletingId(null)}
+                    onDeleted={() => {
+                        setDeletingId(null);
+                        router.refresh();
+                    }}
+                />
+            )}
         </>
     );
 }

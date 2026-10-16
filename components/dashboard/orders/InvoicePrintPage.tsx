@@ -180,7 +180,33 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
     }
 
     function print() {
-        if (!invoice || !printReady || printing || confirming) return;
+        if (
+            !invoice ||
+            !printReady ||
+            printing ||
+            confirming ||
+            downloadInFlight.current
+        ) return;
+
+        const appleNavigator = navigator as Navigator & {
+            standalone?: boolean;
+        };
+
+        const standalone =
+            window.matchMedia("(display-mode: standalone)").matches ||
+            appleNavigator.standalone === true;
+
+        const isIOS =
+            /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (
+                navigator.platform === "MacIntel" &&
+                navigator.maxTouchPoints > 1
+            );
+
+        if (isIOS && standalone) {
+            void downloadPdf();
+            return;
+        }
 
         setPrinting(true);
         setError("");

@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     }
 
     const key = new URL(request.url).searchParams.get("key") ?? "";
-    const match = /^(financial|payment|expense|purchase):([^:]+)$/.exec(key);
+    const match = /^(financial|payment|expense|purchase|writeoff):([^:]+)$/.exec(key);
 
     if (!match) {
         return orderJson(
@@ -43,6 +43,29 @@ export async function GET(request: Request) {
         );
 
     try {
+        if (source === "writeoff") {
+            const entry = await prisma.inventoryWriteOff.findFirst({
+                where: { id, businessId },
+            });
+
+            if (!entry) return missing();
+
+            return orderJson({
+                success: true,
+                detail: {
+                    source,
+                    id: entry.id,
+                    title: entry.name,
+                    color: entry.color,
+                    size: entry.size,
+                    quantity: entry.quantity,
+                    defectiveQuantity: entry.defectiveQuantity,
+                    amount: entry.totalCost.negated().toFixed(2),
+                    occurredAt: entry.createdAt.toISOString(),
+                    editable: false,
+                },
+            });
+        }
         if (source === "expense") {
             const expense = await prisma.expense.findFirst({
                 where: { id, businessId },

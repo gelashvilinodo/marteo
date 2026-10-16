@@ -31,6 +31,7 @@ const kinds: Record<string, string> = {
     COMMISSION: "საკომისიო",
     OTHER: "სხვა ხარჯი",
     ORDER_SUMMARY: "შეკვეთის ფინანსები",
+    INVENTORY_WRITE_OFF: "მარაგის ჩამოწერა",
 };
 
 const methods: Record<string, string> = {
@@ -61,7 +62,11 @@ function description(row: FinancialMovement) {
         return methods[row.title] ?? row.title;
     }
 
-    if (row.source === "expense" || row.source === "purchase") {
+    if (
+        row.source === "expense" ||
+        row.source === "purchase" ||
+        row.source === "writeoff"
+    ) {
         return row.title;
     }
 
@@ -69,6 +74,14 @@ function description(row: FinancialMovement) {
 }
 
 function movementStyle(row: FinancialMovement) {
+    if (row.source === "writeoff") {
+        return {
+            label: "მარაგის ჩამოწერა",
+            icon: "solar:box-linear",
+            row: "bg-danger/[0.06]",
+            badge: "bg-danger/10 text-danger",
+        };
+    }
     if (row.source === "purchase") {
         return {
             label: "შესყიდვა",
@@ -125,7 +138,14 @@ function isMovementData(value: unknown): value is FinancialMovementsData {
     }
 
     const data = value as Record<string, unknown>;
-    const sources = ["all", "financial", "payment", "expense", "purchase"];
+    const sources = [
+        "all",
+        "financial",
+        "payment",
+        "expense",
+        "purchase",
+        "writeoff",
+    ];
 
     return (
         typeof data.source === "string" &&
@@ -151,7 +171,7 @@ function isMovementData(value: unknown): value is FinancialMovementsData {
             return (
                 typeof row.key === "string" &&
                 typeof row.source === "string" &&
-                ["financial", "payment", "expense", "purchase"].includes(
+                ["financial", "payment", "expense", "purchase", "writeoff"].includes(
                     row.source,
                 ) &&
                 typeof row.kind === "string" &&
@@ -333,6 +353,7 @@ export default function FinancialMovements({
                     <option value="payment">გადახდები და თანხის დაბრუნება</option>
                     <option value="purchase">შესყიდვები</option>
                     <option value="expense">ხელით დამატებული ხარჯები</option>
+                    <option value="writeoff">მარაგის ჩამოწერა</option>
                 </select>
             </div>
 

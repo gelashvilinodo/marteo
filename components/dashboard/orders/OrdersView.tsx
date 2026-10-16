@@ -1525,7 +1525,7 @@ export default function OrdersView({
                 </dl>
                 <h3 className="mt-5 font-semibold">პროდუქტები</h3>
                 <div className="mt-2 space-y-2">
-                    {selected.items.map(item => (
+                    {selected.items.filter(item => item.currentQuantity > 0).map(item => (
                         <article
                             key={item.id}
                             className="rounded-xl border border-border p-3"
@@ -1566,7 +1566,7 @@ export default function OrdersView({
 
                                     <div className="mt-2 flex flex-wrap justify-between gap-2 text-sm">
                                         <span>
-                                            {item.quantity} × {item.unitPrice} ₾
+                                            {item.currentQuantity} × {item.unitPrice} ₾
                                         </span>
                                         <span className="font-semibold">
                                             {item.total} ₾

@@ -396,7 +396,7 @@ export default function ExpenseManageDialog({
                             type="submit"
                             disabled={busy || loading}
                             className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white disabled:opacity-50 ${
-                                mode === "delete" ? "bg-red-500" : "bg-success"
+                                mode === "delete" ? "delete-button" : "bg-success"
                             }`}
                         >
                             {busy && (

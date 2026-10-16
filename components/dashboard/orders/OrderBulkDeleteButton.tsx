@@ -189,7 +189,7 @@ export default function OrderBulkDeleteButton({
             type="button"
             onClick={() => void show()}
             disabled={!orderIds.length || busy}
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-danger/30 px-3 text-sm font-medium text-danger disabled:opacity-40"
+            className="delete-action inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 text-sm font-medium disabled:opacity-40"
         >
             <Icon icon="solar:trash-bin-trash-linear" className="h-5 w-5" />
             მონიშნულების წაშლა
@@ -225,7 +225,7 @@ export default function OrderBulkDeleteButton({
             <footer className="mt-5 flex flex-wrap items-center justify-between gap-2">
                 <button type="button" disabled={busy} onClick={() => { if (canLeave()) leave(); }} className="h-11 rounded-xl border border-border px-4 text-sm disabled:opacity-40">დახურვა</button>
                 {busy && <button type="button" onClick={() => controller.current?.abort()} className="text-xs text-text-secondary underline">შეაჩერე ლოდინი</button>}
-                {actionable > 0 && <button type="button" disabled={busy} onClick={() => void remove()} className="inline-flex h-11 items-center gap-2 rounded-xl bg-danger px-4 text-sm font-semibold text-white disabled:opacity-40">
+                {actionable > 0 && <button type="button" disabled={busy} onClick={() => void remove()} className="delete-button inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold disabled:opacity-40">
                     <Icon icon="solar:trash-bin-trash-linear" className="h-5 w-5" />
                     {uncertain ? "ხელახლა ცდა" : `წაშლის დადასტურება (${actionable})`}
                 </button>}

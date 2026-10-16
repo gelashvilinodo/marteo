@@ -60,9 +60,8 @@ export default function DateTimeField({
                 className="pointer-events-none flex min-w-0 flex-1 items-center justify-between gap-3"
             >
                 <span
-                    className={`min-w-0 truncate tabular-nums ${
-                        selected ? "" : "text-text-secondary"
-                    }`}
+                    className={`min-w-0 truncate tabular-nums ${selected ? "" : "text-text-secondary"
+                        }`}
                 >
                     {displayValue(selected, type)}
                 </span>
@@ -104,6 +103,24 @@ export default function DateTimeField({
                 type={type}
                 value={selected}
                 disabled={disabled}
+                onClick={event => {
+                    inputProps.onClick?.(event);
+
+                    if (
+                        event.defaultPrevented ||
+                        event.currentTarget.disabled ||
+                        event.currentTarget.readOnly
+                    ) {
+                        return;
+                    }
+
+                    try {
+                        event.currentTarget.showPicker?.();
+                    } catch {
+                        // თუ ბრაუზერი showPicker-ს არ უშვებს,
+                        // ველის სტანდარტული ქცევა შენარჩუნდება.
+                    }
+                }}
                 onChange={event => {
                     if (value === undefined) {
                         setLocalValue(event.target.value);

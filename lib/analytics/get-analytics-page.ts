@@ -61,11 +61,22 @@ export async function getAnalyticsPage(
                     AND p."createdAt" < ${range.end}
             ),
             expenses AS (
-                SELECT COALESCE(SUM(e.amount), 0) AS total
-                FROM "Expense" e
-                WHERE e."businessId" = ${businessId}
-                    AND e."expenseDate" >= ${range.start}
-                    AND e."expenseDate" < ${range.end}
+    SELECT
+        COALESCE((
+            SELECT SUM(e.amount)
+            FROM "Expense" e
+            WHERE e."businessId" = ${businessId}
+                AND e."expenseDate" >= ${range.start}
+                AND e."expenseDate" < ${range.end}
+        ), 0)
+        +
+        COALESCE((
+            SELECT SUM(w."totalCost")
+            FROM "InventoryWriteOff" w
+            WHERE w."businessId" = ${businessId}
+                AND w."createdAt" >= ${range.start}
+                AND w."createdAt" < ${range.end}
+        ), 0) AS total
 ),
 financial AS (
     SELECT

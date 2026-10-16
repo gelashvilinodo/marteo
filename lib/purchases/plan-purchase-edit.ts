@@ -68,21 +68,21 @@ export function planPurchaseEdit(
 
         if (quantity < usedQuantity) {
             throw new PurchaseEditError(
-                `${item.name}: შეკვეთებზე გამოყენებულია ${usedQuantity} ერთეული. რაოდენობა ამაზე ნაკლები ვერ იქნება.`,
+                `${item.name}: გამოყენებული ან ჩამოწერილია ${usedQuantity} ერთეული. რაოდენობა ამაზე ნაკლები ვერ იქნება.`,
                 409,
             );
         }
 
         if (defectiveQuantity < usedDefectiveQuantity) {
             throw new PurchaseEditError(
-                `${item.name}: შეკვეთებზე გამოყენებულია ${usedDefectiveQuantity} წუნდებული ერთეული. წუნდებული რაოდენობა ამაზე ნაკლები ვერ იქნება.`,
+                `${item.name}: გამოყენებული ან ჩამოწერილია ${usedDefectiveQuantity} წუნდებული ერთეული. წუნდებული რაოდენობა ამაზე ნაკლები ვერ იქნება.`,
                 409,
             );
         }
 
         if (quantity - defectiveQuantity < usedGoodQuantity) {
             throw new PurchaseEditError(
-                `${item.name}: შეკვეთებზე გამოყენებულია ${usedGoodQuantity} დაუზიანებელი ერთეული. დაუზიანებელი რაოდენობა ამაზე ნაკლები ვერ იქნება.`,
+                `${item.name}: გამოყენებული ან ჩამოწერილია ${usedGoodQuantity} დაუზიანებელი ერთეული. დაუზიანებელი რაოდენობა ამაზე ნაკლები ვერ იქნება.`,
                 409,
             );
         }

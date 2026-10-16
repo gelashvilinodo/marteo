@@ -22,6 +22,18 @@ export function serializeOrderRecord(order: OrderRecord, details: boolean) {
         }
     }
 
+    const currentQuantity = (item: OrderRecord["items"][number]) =>
+        order.stockReturnedAt
+            ? 0
+            : Math.max(
+                0,
+                item.quantity - (receivedQuantities.get(item.id) ?? 0),
+            );
+
+    const currentItems = order.items.filter(
+        item => currentQuantity(item) > 0,
+    );
+
     const total = orderPayableTotal(
         order,
         receivedQuantities,
@@ -111,15 +123,14 @@ export function serializeOrderRecord(order: OrderRecord, details: boolean) {
             paidAmount.minus(total),
             0,
         ).toFixed(2),
-        productQuantity: order.items.reduce(
-            (sum, item) =>
-                sum + item.quantity,
+        productQuantity: currentItems.reduce(
+            (sum, item) => sum + currentQuantity(item),
             0,
         ),
     };
     if (!details) {
-        const previewItems = rawItems.slice(0, 1);
-        const photoItem = rawItems.find(item => item.imageUrl);
+        const previewItems = currentItems.slice(0, 1);
+        const photoItem = currentItems.find(item => item.imageUrl);
         if (photoItem && photoItem !== previewItems[0]) previewItems.push(photoItem);
         return {
             ...summary,
@@ -134,6 +145,7 @@ export function serializeOrderRecord(order: OrderRecord, details: boolean) {
         shippingAddress,
         items: order.items.map((item) => ({
             ...item,
+            currentQuantity: currentQuantity(item),
             totalCost: item.totalCost?.toFixed(2) ?? null,
             stockRestoredAt:
                 item.stockRestoredAt?.toISOString() ?? null,
@@ -142,7 +154,7 @@ export function serializeOrderRecord(order: OrderRecord, details: boolean) {
             unitCost:
                 item.unitCost.toFixed(2),
             total: item.unitPrice
-                .mul(item.quantity)
+                .mul(currentQuantity(item))
                 .toFixed(2),
         })),
         payments: order.payments.map(

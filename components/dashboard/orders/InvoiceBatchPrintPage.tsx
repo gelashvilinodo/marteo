@@ -15,6 +15,7 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
     const [paper, setPaper] = useState<InvoicePaper>("a4");
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
+    const [pdfProgress, setPdfProgress] = useState("");
     const [prompt, setPrompt] = useState(false);
     const [confirmed, setConfirmed] = useState<string[]>([]);
     const [rollHeight, setRollHeight] = useState(200);
@@ -192,8 +193,108 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
         element.querySelectorAll(".batch-sheet").forEach(sheet => observer.observe(sheet));
         return () => observer.disconnect();
     }, [entries, paper]);
+    async function downloadPdf() {
+        if (!printReady || operation.current) return;
+
+        operation.current = true;
+        setBusy(true);
+        setError("");
+        setPdfProgress("PDF მზადდება…");
+
+        try {
+            const [{ createInvoicePdf }, { PDFDocument }] =
+                await Promise.all([
+                    import("@/lib/orders/create-invoice-pdf"),
+                    import("pdf-lib"),
+                ]);
+
+            const combined = await PDFDocument.create();
+
+            for (let index = 0; index < entries.length; index++) {
+                setPdfProgress(
+                    `PDF მზადდება: ${index + 1} / ${entries.length}`,
+                );
+
+                const blob = await createInvoicePdf(
+                    entries[index].invoice,
+                    paper,
+                );
+
+                const source = await PDFDocument.load(
+                    await blob.arrayBuffer(),
+                );
+
+                const pages = await combined.copyPages(
+                    source,
+                    source.getPageIndices(),
+                );
+
+                for (const page of pages) {
+                    combined.addPage(page);
+                }
+            }
+
+            combined.setTitle("Marteo — ინვოისები");
+            combined.setCreator("Marteo");
+
+            const bytes = await combined.save({
+                objectsPerTick: 10,
+            });
+
+            const blob = new Blob(
+                [new Uint8Array(bytes).buffer],
+                { type: "application/pdf" },
+            );
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+            link.href = url;
+            link.download =
+                `Marteo-invoices-${entries.length}-${paper}.pdf`;
+
+            document.body.appendChild(link);
+
+            try {
+                link.click();
+            } finally {
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 60000);
+            }
+        } catch (cause: unknown) {
+            setError(
+                cause instanceof Error
+                    ? cause.message
+                    : "PDF-ის შექმნა ვერ მოხერხდა. სცადე ხელახლა.",
+            );
+        } finally {
+            operation.current = false;
+            setBusy(false);
+            setPdfProgress("");
+        }
+    }
     function print() {
         if (!printReady || operation.current) return;
+
+        const appleNavigator = navigator as Navigator & {
+            standalone?: boolean;
+        };
+
+        const standalone =
+            window.matchMedia("(display-mode: standalone)").matches ||
+            appleNavigator.standalone === true;
+
+        const isIOS =
+            /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (
+                navigator.platform === "MacIntel" &&
+                navigator.maxTouchPoints > 1
+            );
+
+        if (isIOS && standalone) {
+            void downloadPdf();
+            return;
+        }
 
         operation.current = true;
         setBusy(true);
@@ -317,6 +418,20 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                         ? "მზადდება…"
                         : "ყველას ბეჭდვა / PDF"}
                 </button>
+                <button
+                    type="button"
+                    disabled={!printReady || busy}
+                    onClick={downloadPdf}
+                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-semibold disabled:opacity-50"
+                >
+                    <Icon icon="solar:download-linear" className="h-5 w-5 text-accent" />
+                    PDF-ის გადმოწერა
+                </button>
+                {pdfProgress && (
+                    <p role="status" aria-live="polite" className="w-full text-sm text-text-secondary">
+                        {pdfProgress}
+                    </p>
+                )}
             </div>
             <p className="text-xs leading-relaxed text-text-secondary">თითო ინვოისი ცალკე გვერდიდან იწყება. გამორთე ბრაუზერის ჰედერი/ფუტერი და გამოიყენე 100% მასშტაბი. თერმული ფორმატისთვის პრინტერშიც აირჩიე შესაბამისი ქაღალდი.</p>
             {ready && entries.length === 0 && <p role="status">დასაბეჭდი ინვოისები არ არის.</p>}

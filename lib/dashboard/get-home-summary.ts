@@ -64,13 +64,25 @@ export async function getHomeSummary(
                     AND f."occurredAt" < ${range.end}
             ),
             expenses AS (
-                SELECT COALESCE(SUM(e.amount), 0) AS total
-                FROM "Expense" e
-                WHERE ${includeFinance}::boolean
-    AND e."businessId" = ${businessId}
-    AND e."expenseDate" >= ${range.start}
-                    AND e."expenseDate" < ${range.end}
-            ),
+    SELECT
+        COALESCE((
+            SELECT SUM(e.amount)
+            FROM "Expense" e
+            WHERE ${includeFinance}::boolean
+                AND e."businessId" = ${businessId}
+                AND e."expenseDate" >= ${range.start}
+                AND e."expenseDate" < ${range.end}
+        ), 0)
+        +
+        COALESCE((
+            SELECT SUM(w."totalCost")
+            FROM "InventoryWriteOff" w
+            WHERE ${includeFinance}::boolean
+                AND w."businessId" = ${businessId}
+                AND w."createdAt" >= ${range.start}
+                AND w."createdAt" < ${range.end}
+        ), 0) AS total
+),
             orders AS (
                 SELECT COUNT(*) AS total
                 FROM "Order" o

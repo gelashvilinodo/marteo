@@ -73,6 +73,15 @@ export async function getInventoryPage(
                 SUM(lot."remainingQuantity") AS total,
                 SUM(lot."remainingDefectiveQuantity") AS defective,
                 ROUND(
+    SUM(
+        COALESCE(
+            lot."remainingCost",
+            lot."unitCost" * lot."remainingQuantity"
+        )
+    ) / NULLIF(SUM(lot."remainingQuantity"), 0),
+    2
+) AS "averageUnitCost",
+                ROUND(
                     SUM(
                         lot."unitCost" *
                         (
@@ -104,6 +113,7 @@ export async function getInventoryPage(
                 ba.defective AS "defectiveStock",
                 ba.total - ba.defective AS "goodStock",
                 ba.cents AS "goodStockValueCents",
+                ba."averageUnitCost" AS "averageUnitCost",
                 lower(normalize(concat_ws(' ', p.name, i.sku, p.brand, p.category, i.color, i.size), NFKC)) AS searchable
             FROM "InventoryItem" i
             JOIN "Product" p ON p.id = i."productId"
@@ -129,7 +139,10 @@ export async function getInventoryPage(
                 'id', b.id, 'createdAt', to_char(b."createdAt", 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
                 'sku', b.sku, 'name', b.name, 'brand', p.brand, 'category', b.category,
                 'description', p.description, 'color', b.color, 'size', b.size, 'imageUrl', i."imageUrl",
-                'salePrice', i."salePrice"::text, 'totalStock', b."totalStock", 'goodStock', b."goodStock",
+                'salePrice', i."salePrice"::text,
+'averageUnitCost', b."averageUnitCost"::text,
+'totalStock', b."totalStock",
+'goodStock', b."goodStock",
                 'defectiveStock', b."defectiveStock", 'goodStockValueCents', b."goodStockValueCents"::text
             ) ORDER BY ${order}) FROM page_rows b JOIN "InventoryItem" i ON i.id=b.id JOIN "Product" p ON p.id=b."productId"), '[]'::jsonb),
             'totalProducts', pg.total, 'currentPage', pg.page, 'totalPages', pg.pages,

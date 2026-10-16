@@ -201,7 +201,7 @@ export default function OrderProductEditor({
             </div>
             <div className="min-w-0 flex-1"><p className="text-xs font-medium text-text-secondary">პროდუქტი {productLabelNumber} · {item.source === "INVENTORY" ? "მარაგიდან" : "ხელით დამატებული"}</p>{item.source === "INVENTORY" && <p className="mt-1 text-xs text-text-secondary">ხელმისაწვდომია: {available ?? "—"}</p>}</div>
             <p className="shrink-0 text-sm font-semibold tabular-nums text-text-primary">{total}{total !== "—" ? " ₾" : ""}</p>
-            <button type="button" onClick={animatedRemove} aria-label={`პროდუქტი ${productLabelNumber} წაშლა`} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-danger hover:bg-danger/10"><Icon icon="solar:trash-bin-trash-linear" className="h-5 w-5" /></button>
+            <button type="button" onClick={animatedRemove} aria-label={`პროდუქტი ${productLabelNumber} წაშლა`} className="delete-action flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"><Icon icon="solar:trash-bin-trash-linear" className="h-5 w-5" /></button>
         </div>
         {item.source === "MANUAL" && (
             <OrderPhotoUpload

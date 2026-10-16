@@ -13,19 +13,59 @@ export function useOrderLeaveGuard({ open, dirty, canLeave, leave }: Options) {
         return () => window.removeEventListener("beforeunload", unload);
     }, [dirty]);
     useEffect(() => {
-        if (!dirty) return;
+        if (!open) return;
+
         const click = (event: MouseEvent) => {
-            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !(event.target instanceof Element)) return;
+            if (
+                event.defaultPrevented ||
+                event.button !== 0 ||
+                event.metaKey ||
+                event.ctrlKey ||
+                event.shiftKey ||
+                event.altKey ||
+                !(event.target instanceof Element)
+            ) {
+                return;
+            }
+
             const link = event.target.closest<HTMLAnchorElement>("a[href]");
-            if (!link || link.hasAttribute("download") || link.target && link.target !== "_self") return;
+
+            if (
+                !link ||
+                link.hasAttribute("download") ||
+                (link.target && link.target !== "_self")
+            ) {
+                return;
+            }
+
             const target = new URL(link.href, window.location.href);
-            if (target.origin !== window.location.origin || target.pathname === location.pathname && target.search === location.search) return;
-            if (!actions.current.canLeave()) { event.preventDefault(); event.stopImmediatePropagation(); }
-            else actions.current.leave();
+            const current = new URL(window.location.href);
+
+            if (
+                target.origin !== current.origin ||
+                (
+                    target.pathname === current.pathname &&
+                    target.search === current.search
+                )
+            ) {
+                return;
+            }
+
+            if (!actions.current.canLeave()) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                return;
+            }
+
+            actions.current.leave();
         };
+
         document.addEventListener("click", click, true);
-        return () => document.removeEventListener("click", click, true);
-    }, [dirty]);
+
+        return () => {
+            document.removeEventListener("click", click, true);
+        };
+    }, [open]);
     useEffect(() => {
         if (!open) return;
         // Back პირველად დახურავს ფანჯარას; Next-ის ისტორიის მონაცემებს ვინარჩუნებთ.

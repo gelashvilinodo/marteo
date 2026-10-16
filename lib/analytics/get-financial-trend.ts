@@ -98,6 +98,18 @@ export async function getFinancialTrend(
                 WHERE e."businessId" = ${businessId}
                     AND e."expenseDate" >= ${range.start}
                     AND e."expenseDate" < ${range.end}
+                    UNION ALL
+
+SELECT
+    (w."createdAt" + INTERVAL '4 hours')::date AS day,
+    0::numeric AS sales,
+    0::numeric AS cost_of_goods,
+    w."totalCost" AS expenses,
+    TRUE AS cost_complete
+FROM "InventoryWriteOff" w
+WHERE w."businessId" = ${businessId}
+    AND w."createdAt" >= ${range.start}
+    AND w."createdAt" < ${range.end}
             )
             SELECT
                 date_trunc(${bucket}, day)::date::text AS date,

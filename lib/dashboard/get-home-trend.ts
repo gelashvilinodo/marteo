@@ -81,6 +81,18 @@ export async function getHomeTrend(
                 WHERE e."businessId" = ${businessId}
                     AND e."expenseDate" >= ${start}
                     AND e."expenseDate" < ${end}
+                    UNION ALL
+
+SELECT
+    (w."createdAt" + INTERVAL '4 hours')::date AS day,
+    0::numeric AS sales,
+    0::numeric AS costs,
+    w."totalCost" AS expenses,
+    TRUE AS complete
+FROM "InventoryWriteOff" w
+WHERE w."businessId" = ${businessId}
+    AND w."createdAt" >= ${start}
+    AND w."createdAt" < ${end}
             ),
             grouped AS (
                 SELECT

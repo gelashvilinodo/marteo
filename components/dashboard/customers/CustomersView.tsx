@@ -433,12 +433,7 @@ export default function CustomersView({
                                     type="button"
                                     disabled={!checkedIds.length || pending}
                                     onClick={() => setBulkIds([...checkedIds])}
-                                    className={
-                                        "inline-flex h-10 items-center gap-2 " +
-                                        "rounded-xl border border-border px-3 " +
-                                        "text-sm text-red-400 transition " +
-                                        "hover:border-red-400 disabled:opacity-50"
-                                    }
+                                    className="delete-action inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-sm transition disabled:opacity-50"
                                 >
                                     <Icon
                                         icon="solar:trash-bin-trash-linear"

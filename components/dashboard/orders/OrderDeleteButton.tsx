@@ -188,7 +188,7 @@ export default function OrderDeleteButton({
     const blocked = loading || saving || Boolean(pending);
 
     return <>
-        {!autoOpen && <button type="button" onClick={show} title="შეკვეთის წაშლა" aria-label="შეკვეთის წაშლა" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-danger/25 text-danger hover:bg-danger/10"><Icon icon="solar:trash-bin-trash-linear" className="h-5 w-5" /></button>}
+        {!autoOpen && <button type="button" onClick={show} title="შეკვეთის წაშლა" aria-label="შეკვეთის წაშლა" className="delete-action inline-flex h-10 w-10 items-center justify-center rounded-xl border"><Icon icon="solar:trash-bin-trash-linear" className="h-5 w-5" /></button>}
         <dialog ref={dialog} onCancel={event => { event.preventDefault(); event.stopPropagation(); if (canLeave()) leave(); }} onClose={event => event.stopPropagation()} aria-label="შეკვეთის წაშლა" className="m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl border border-border bg-surface p-5 text-text-primary shadow-2xl backdrop:bg-black/35 backdrop:backdrop-blur-sm">
             <h2 className="flex items-center gap-2 text-lg font-semibold"><Icon icon="solar:trash-bin-trash-linear" className="h-6 w-6 text-danger" />შეკვეთის წაშლა</h2>
             {loading && <p role="status" className="my-5 flex items-center gap-2 text-sm text-text-secondary"><Icon icon="solar:refresh-linear" className="h-5 w-5 animate-spin" />იტვირთება…</p>}
@@ -300,7 +300,7 @@ export default function OrderDeleteButton({
                 saving ||
                 (!order && !pending) ||
                 (!pending && financialDeletionBlocked)
-            } onClick={() => pending ? void send(pending) : submit()} className="inline-flex h-11 items-center gap-2 rounded-xl bg-danger px-4 text-sm font-semibold text-white disabled:opacity-50"><Icon icon={saving ? "solar:refresh-linear" : "solar:trash-bin-trash-linear"} className={`h-5 w-5 ${saving ? "animate-spin" : ""}`} />{saving ? "ინახება…" : pending ? "ხელახლა ცდა" : mode === "WAIT_FOR_RETURN" ? "წაშლის მოთხოვნა" : "წაშლა"}</button></div>
+            } onClick={() => pending ? void send(pending) : submit()} className="delete-button inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold disabled:opacity-50"><Icon icon={saving ? "solar:refresh-linear" : "solar:trash-bin-trash-linear"} className={`h-5 w-5 ${saving ? "animate-spin" : ""}`} />{saving ? "ინახება…" : pending ? "ხელახლა ცდა" : mode === "WAIT_FOR_RETURN" ? "წაშლის მოთხოვნა" : "წაშლა"}</button></div>
         </dialog>
     </>;
 }

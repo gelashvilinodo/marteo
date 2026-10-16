@@ -48,6 +48,16 @@ export async function getExpenseBreakdown(
                 AND e."expenseDate" >= ${range.start}
                 AND e."expenseDate" < ${range.end}
             GROUP BY e.category
+            UNION ALL
+
+SELECT
+    'INVENTORY_WRITE_OFF' AS id,
+    COALESCE(SUM(w."totalCost"), 0)::text AS amount,
+    TRUE AS complete
+FROM "InventoryWriteOff" w
+WHERE w."businessId" = ${businessId}
+    AND w."createdAt" >= ${range.start}
+    AND w."createdAt" < ${range.end}
         `,
     );
 
@@ -68,9 +78,11 @@ export async function getExpenseBreakdown(
                 label:
                     row.id === "COGS"
                         ? "გაყიდული პროდუქტების ხარჯი"
-                        : expenseCategories.find(
-                            category => category.value === row.id,
-                        )?.label ?? "სხვა ხარჯი",
+                        : row.id === "INVENTORY_WRITE_OFF"
+                            ? "მარაგის ჩამოწერა"
+                            : expenseCategories.find(
+                                category => category.value === row.id,
+                            )?.label ?? "სხვა ხარჯი",
                 amount: new Prisma.Decimal(
                     row.amount,
                 ).toFixed(2),

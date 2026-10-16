@@ -326,7 +326,7 @@ function AnimatedProductCard({
                         disabled={removing}
                         aria-label={`${label} — წაშლა`}
                         onClick={removeCard}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-secondary transition hover:bg-red-500/10 hover:text-red-500 disabled:cursor-wait"
+                        className="delete-action flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition disabled:cursor-wait"
                     >
                         <Icon
                             icon="solar:trash-bin-trash-linear"
@@ -1781,7 +1781,7 @@ export default function NewPurchasePanel({
                                                                                 imageAction: "remove",
                                                                             });
                                                                         }}
-                                                                        className="flex h-7 w-7 items-center justify-center rounded-md text-red-500 transition hover:bg-red-500/10"
+                                                                        className="delete-action flex h-7 w-7 items-center justify-center rounded-md transition"
                                                                     >
                                                                         <Icon
                                                                             icon="solar:trash-bin-trash-linear"

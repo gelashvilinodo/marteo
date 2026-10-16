@@ -119,7 +119,8 @@ export default function DashboardHeader({
                     {/* იზრდება მხოლოდ ფონი და კონტეინერი */}
                     <div
                         className={[
-                            "absolute right-0 top-0 z-0 overflow-hidden rounded-2xl",
+                            "absolute right-0 top-0 z-0 overflow-hidden rounded-2xl ring-1 ring-inset ring-white/10",
+                            "[--account-panel-height:216px]",
                             "transition-[width,height,background-color,box-shadow]",
                             "duration-[550ms] ease-in-out",
                             "motion-reduce:transition-none",
@@ -130,24 +131,46 @@ export default function DashboardHeader({
                             width: accountOpen
                                 ? "max(100%, min(320px, calc(100vw - 2rem)))"
                                 : "100%",
-                            height: accountOpen ? 216 : 48,
+                            height: accountOpen
+                                ? "var(--account-panel-height)"
+                                : 48,
                         }}
                     >
+                        <div
+                            aria-hidden={!accountOpen}
+                            className={[
+                                "pointer-events-none absolute right-24 top-0",
+                                "flex h-12 w-[max(0px,min(208px,calc(100vw-9rem)))]",
+                                "flex-col justify-center sm:hidden",
+                            ].join(" ")}
+                        >
+                            <p
+                                title={businessName}
+                                className="truncate text-sm font-semibold text-white"
+                            >
+                                {businessName}
+                            </p>
+
+                            <p
+                                title={userName || userEmail}
+                                className="mt-0.5 truncate text-xs text-slate-300"
+                            >
+                                {userName || userEmail}
+                            </p>
+                        </div>
                         <div
                             id={accountPanelId}
                             inert={!accountOpen}
                             aria-hidden={!accountOpen}
                             className={[
-                                "absolute inset-x-0 top-12 px-2 pb-2",
-                                "transition-[opacity,transform] duration-[400ms] ease-in-out",
-                                "motion-reduce:transition-none",
-                                accountOpen
-                                    ? "translate-y-0 opacity-100 delay-[150ms]"
-                                    : "pointer-events-none -translate-y-2 opacity-0 delay-0",
+                                "absolute right-0 top-[calc(3.5rem_-_0.5px)]",
+                                "w-[min(320px,calc(100vw-2rem))]",
+                                "border-t border-white/15 px-2 pb-2",
+                                accountOpen ? "" : "pointer-events-none",
                             ].join(" ")}
                         >
 
-                            {accountItems.map((item) => (
+                            {accountItems.map((item, index) => (
                                 <button
                                     key={item.label}
                                     type="button"
@@ -155,14 +178,17 @@ export default function DashboardHeader({
                                         setAccountOpen(false);
                                         accountButtonRef.current?.focus();
                                     }}
-                                    className={
-                                        "flex h-12 w-full items-center justify-start gap-3 " +
-                                        "rounded-xl px-2.5 text-left text-sm " +
-                                        "font-medium text-slate-200 transition-colors " +
-                                        "hover:bg-white/10 hover:text-white " +
-                                        "focus-visible:bg-white/10 " +
-                                        "focus-visible:outline-2 focus-visible:outline-accent"
-                                    }
+                                    className={[
+                                        "relative flex h-12 w-full items-center justify-start gap-3",
+                                        "rounded-xl px-2.5 text-left text-sm",
+                                        "font-medium text-slate-200 transition-colors",
+                                        "hover:bg-white/10 hover:text-white",
+                                        "focus-visible:bg-white/10",
+                                        "focus-visible:outline-2 focus-visible:outline-accent",
+                                        index < accountItems.length - 1
+                                            ? "after:pointer-events-none after:absolute after:bottom-0 after:left-11 after:right-3 after:h-px after:bg-white/10 after:content-['']"
+                                            : "",
+                                    ].join(" ")}
                                 >
                                     <Icon
                                         icon={item.icon}
@@ -188,7 +214,7 @@ export default function DashboardHeader({
                             "relative z-10 flex h-12 items-center gap-3",
                             "rounded-2xl px-2.5 text-left transition-colors",
                             "focus-visible:outline-2 focus-visible:outline-accent",
-                            accountOpen ? "bg-transparent" : "hover:bg-white/10",
+                            "bg-transparent",
                         ].join(" ")}
                     >
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/10">

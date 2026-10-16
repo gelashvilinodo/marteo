@@ -102,11 +102,32 @@ export async function restoreStockLot(
             lot.purchaseItem.purchase.businessId !== input.businessId ||
             lot.purchaseItem.remainingQuantity !== lot.remainingQuantity ||
             lot.purchaseItem.remainingDefectiveQuantity !==
-                lot.remainingDefectiveQuantity
+            lot.remainingDefectiveQuantity
         )
     ) {
         throw new OrderValidationError(
             "შესყიდვისა და მარაგის ნაშთები ერთმანეთს არ ემთხვევა.",
+            409,
+        );
+    }
+
+    const nextQuantity = lot.remainingQuantity + input.quantity;
+
+    const nextDefectiveQuantity =
+        lot.remainingDefectiveQuantity +
+        (input.condition === "DEFECTIVE" ? input.quantity : 0);
+
+    if (
+        !Number.isSafeInteger(nextQuantity) ||
+        !Number.isSafeInteger(nextDefectiveQuantity) ||
+        lot.writtenOffQuantity < 0 ||
+        lot.writtenOffDefectiveQuantity < 0 ||
+        lot.writtenOffDefectiveQuantity > lot.writtenOffQuantity ||
+        nextDefectiveQuantity > nextQuantity ||
+        nextQuantity + lot.writtenOffQuantity > lot.quantity
+    ) {
+        throw new OrderValidationError(
+            "დასაბრუნებელი რაოდენობა მარაგის დასაშვებ ნაშთს აღემატება.",
             409,
         );
     }
@@ -145,6 +166,20 @@ export async function restoreStockLot(
             data: balanceChange,
         });
     }
+
+    // რეალურად დაბრუნებული ნივთი ისევ გამოჩნდება მარაგებში.
+    // currentStock-ს არსებული გამომძახებელი ზრდის;
+    // აქ მეორედ არ ვზრდით.
+    await tx.inventoryItem.updateMany({
+        where: {
+            id: input.inventoryItemId,
+            businessId: input.businessId,
+            isActive: false,
+        },
+        data: {
+            isActive: true,
+        },
+    });
 
     return { purchaseItemId: lot.purchaseItemId };
 }

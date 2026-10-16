@@ -233,7 +233,7 @@ export default function PurchaseActionButton({
                 title={label}
                 className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border transition disabled:opacity-50 ${
                     isDelete
-                        ? "text-red-500 hover:border-red-500 hover:bg-red-500/10"
+                        ? "delete-action"
                         : "text-text-secondary hover:border-accent hover:text-accent"
                 }`}
             >
@@ -336,7 +336,7 @@ export default function PurchaseActionButton({
                         onClick={() => void confirmAction()}
                         className={`min-h-11 min-w-0 rounded-xl px-3 text-sm font-medium text-white disabled:opacity-50 ${
                             isDelete
-                                ? "bg-red-600 hover:bg-red-700"
+                                ? "delete-button"
                                 : "bg-accent hover:bg-accent-hover"
                         }`}
                     >
