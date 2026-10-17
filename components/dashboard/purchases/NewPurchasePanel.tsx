@@ -1,7 +1,7 @@
 "use client";
 import { refreshPurchasesAfterMutation } from "@/lib/purchases/refresh-purchases-client";
 
-import { createProductThumbnail } from "@/lib/images/create-product-thumbnail";
+import { prepareProductPhoto } from "@/lib/images/prepare-product-photo";
 
 import {
     useEffect,
@@ -430,6 +430,34 @@ export default function NewPurchasePanel({
 
     const photoUrls = useRef(new Map<string, string>());
 
+    const photoJobs = useRef(new Map<string, symbol>());
+
+    const preparedThumbnails = useRef(
+        new Map<string, { file: File; thumbnail: File | null }>(),
+    );
+
+    const [processingPhotos, setProcessingPhotos] = useState<
+        Set<string>
+    >(() => new Set());
+
+    const [photoErrors, setPhotoErrors] = useState<
+        Record<string, string>
+    >({});
+
+    useEffect(() => {
+        if (mounted && visible) return;
+
+        photoJobs.current.clear();
+
+        setProcessingPhotos(current =>
+            current.size > 0 ? new Set<string>() : current,
+        );
+
+        setPhotoErrors(current =>
+            Object.keys(current).length > 0 ? {} : current,
+        );
+    }, [mounted, visible]);
+
     const productsListRef = useRef<HTMLDivElement>(null);
     const pendingProductFocus = useRef(false);
 
@@ -549,12 +577,40 @@ export default function NewPurchasePanel({
 
     useEffect(() => {
         const urls = photoUrls.current;
+        const jobs = photoJobs.current;
+        const thumbnails = preparedThumbnails.current;
 
         return () => {
-            urls.forEach((url) => URL.revokeObjectURL(url));
+            jobs.clear();
+            thumbnails.clear();
+            urls.forEach(url => URL.revokeObjectURL(url));
             urls.clear();
         };
     }, []);
+
+    useEffect(() => {
+        const activeIds = new Set(products.map(product => product.id));
+
+        for (const id of photoJobs.current.keys()) {
+            if (!activeIds.has(id)) {
+                photoJobs.current.delete(id);
+            }
+        }
+
+        for (const id of preparedThumbnails.current.keys()) {
+            if (!activeIds.has(id)) {
+                preparedThumbnails.current.delete(id);
+            }
+        }
+
+        setProcessingPhotos(current => {
+            const next = new Set(
+                [...current].filter(id => activeIds.has(id)),
+            );
+
+            return next.size === current.size ? current : next;
+        });
+    }, [products]);
 
     useEffect(() => {
         const activeIds = new Set(
@@ -824,6 +880,25 @@ export default function NewPurchasePanel({
     }
 
     function releasePhoto(id: string) {
+        // წინა დამუშავების შედეგი აღარ გამოიყენება.
+        setPhotoErrors(current => {
+            if (!(id in current)) return current;
+
+            const next = { ...current };
+            delete next[id];
+            return next;
+        });
+        photoJobs.current.delete(id);
+        preparedThumbnails.current.delete(id);
+
+        setProcessingPhotos(current => {
+            if (!current.has(id)) return current;
+
+            const next = new Set(current);
+            next.delete(id);
+            return next;
+        });
+
         const previousUrl = photoUrls.current.get(id);
 
         if (previousUrl) {
@@ -868,33 +943,92 @@ export default function NewPurchasePanel({
         });
     }
 
-    function selectPhoto(id: string, file: File | undefined) {
+    async function selectPhoto(
+        id: string,
+        file: File | undefined,
+    ) {
         if (!file) return;
 
-        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-            setError("აირჩიე JPG, PNG ან WebP ფოტო.");
-            return;
-        }
+        const job = Symbol("photo");
+        photoJobs.current.set(id, job);
 
-        if (file.size > 5 * 1024 * 1024) {
-            setError("ფოტოს ზომა მაქსიმუმ 5 MB უნდა იყოს.");
-            return;
-        }
-
-        releasePhoto(id);
-
-        const url = URL.createObjectURL(file);
-        photoUrls.current.set(id, url);
-
-        updateProduct(id, {
-            imageUrl: url,
-            imageFile: file,
-            imageAction: "upload",
+        setPhotoErrors(current => {
+            const next = { ...current };
+            delete next[id];
+            return next;
         });
+
+        setProcessingPhotos(current => {
+            const next = new Set(current);
+            next.add(id);
+            return next;
+        });
+
+        setDirty(true);
+        setError("");
+
+        try {
+            const prepared = await prepareProductPhoto(file);
+
+            if (photoJobs.current.get(id) !== job) return;
+
+            releasePhoto(id);
+
+            const url = URL.createObjectURL(prepared.file);
+            photoUrls.current.set(id, url);
+
+            preparedThumbnails.current.set(id, {
+                file: prepared.file,
+                thumbnail: prepared.thumbnail,
+            });
+
+            updateProduct(id, {
+                imageUrl: url,
+                imageFile: prepared.file,
+                imageAction: "upload",
+            });
+        } catch (cause: unknown) {
+            if (photoJobs.current.get(id) !== job) return;
+
+            const message =
+                cause instanceof Error
+                    ? cause.message
+                    : "ფოტოს მომზადება ვერ მოხერხდა.";
+
+            setPhotoErrors(current => ({
+                ...current,
+                [id]: message,
+            }));
+        } finally {
+            if (photoJobs.current.get(id) === job) {
+                photoJobs.current.delete(id);
+
+                setProcessingPhotos(current => {
+                    const next = new Set(current);
+                    next.delete(id);
+                    return next;
+                });
+            }
+        }
     }
 
     async function handleSave() {
         if (requestLocked.current) return;
+        if (photoJobs.current.size > 0) {
+            setError("დაელოდე ფოტოების მომზადებას.");
+            return;
+        }
+
+        const hasPhotoErrors = products.some(
+            product => Boolean(photoErrors[product.id]),
+        );
+
+        if (hasPhotoErrors) {
+            setError(
+                "ერთ-ერთი ფოტო ვერ მომზადდა. პროდუქტთან აირჩიე სხვა ფოტო ან გააგრძელე მის გარეშე.",
+            );
+            return;
+        }
 
         setError("");
 
@@ -1006,7 +1140,13 @@ export default function NewPurchasePanel({
                     }
 
                     totalSize += product.imageFile.size;
-                    const thumbnail = await createProductThumbnail(product.imageFile);
+                    const prepared =
+                        preparedThumbnails.current.get(product.id);
+
+                    const thumbnail =
+                        prepared?.file === product.imageFile
+                            ? prepared.thumbnail
+                            : null;
                     if (thumbnail) {
                         submission.set("thumbnail-" + index, thumbnail);
                         totalSize += thumbnail.size;
@@ -1739,11 +1879,15 @@ export default function NewPurchasePanel({
                                                                     className="h-4 w-4 shrink-0"
                                                                 />
 
-                                                                <span>ფოტო</span>
+                                                                <span role="status">
+                                                                    {processingPhotos.has(product.id)
+                                                                        ? "იტვირთება…"
+                                                                        : "ფოტო"}
+                                                                </span>
 
                                                                 <input
                                                                     type="file"
-                                                                    accept="image/jpeg,image/png,image/webp"
+                                                                    accept="image/*,.heic,.heif,.dng"
                                                                     aria-label={
                                                                         product.imageUrl
                                                                             ? "პროდუქტის ფოტოს შეცვლა"
@@ -1759,6 +1903,40 @@ export default function NewPurchasePanel({
                                                                     }}
                                                                 />
                                                             </label>
+
+                                                            {processingPhotos.has(product.id) && (
+                                                                <p
+                                                                    role="status"
+                                                                    className="text-xs text-text-secondary"
+                                                                >
+                                                                    ფოტო მცირდება…
+                                                                </p>
+                                                            )}
+
+                                                            {photoErrors[product.id] && (
+                                                                <div
+                                                                    role="alert"
+                                                                    className="space-y-1 text-xs text-danger"
+                                                                >
+                                                                    <p>
+                                                                        {photoErrors[product.id]}
+                                                                    </p>
+
+                                                                    <button
+                                                                        type="button"
+                                                                        className="underline underline-offset-2"
+                                                                        onClick={() => {
+                                                                            setPhotoErrors(current => {
+                                                                                const next = { ...current };
+                                                                                delete next[product.id];
+                                                                                return next;
+                                                                            });
+                                                                        }}
+                                                                    >
+                                                                        გაგრძელება ამ ფოტოს გარეშე
+                                                                    </button>
+                                                                </div>
+                                                            )}
 
                                                             {product.imageUrl && (
                                                                 <div className="flex flex-wrap items-center gap-1">
@@ -2182,7 +2360,11 @@ export default function NewPurchasePanel({
                             <button
                                 type="button"
                                 onClick={() => void handleSave()}
-                                disabled={saving || !visible}
+                                disabled={
+                                    saving ||
+                                    !visible ||
+                                    processingPhotos.size > 0
+                                }
                                 className="inline-flex h-10 items-center gap-2 rounded-lg bg-success px-4 text-sm font-medium text-white transition hover:bg-success-hover disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <Icon

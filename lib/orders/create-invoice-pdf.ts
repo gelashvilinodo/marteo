@@ -206,7 +206,7 @@ export async function createInvoicePdf(
     );
     const margin = mm(paper === "a4" ? 12 : 3);
     const contentWidth = pageWidth - margin * 2;
-    const size = paper === "a4" ? 11 : paper === "58mm" ? 8 : 9;
+    const size = paper === "a4" ? 9 : paper === "58mm" ? 8 : 9;
     const ink = rgb(0.07, 0.07, 0.07);
     const blocks: Block[] = [];
     let lastYield = performance.now();
@@ -410,6 +410,124 @@ export async function createInvoicePdf(
 
     rule();
 
+    if (paper === "a4") {
+        // აქამდე აგებული ვერტიკალური ჰედერი იცვლება
+        // პრევიუს მსგავსი ჰორიზონტალური ჰედერით.
+        blocks.length = 0;
+
+        const logo = logoBytes
+            ? await pdf.embedPng(logoBytes)
+            : null;
+
+        const logoSize = 36;
+        const brandX = margin + (logo ? logoSize + 9 : 0);
+        const headingWidth = 150;
+        const brandWidth =
+            contentWidth - headingWidth - 16 -
+            (logo ? logoSize + 9 : 0);
+
+        const brandLines = wrap(
+            invoice.business.name,
+            bold,
+            13.5,
+            brandWidth,
+        );
+
+        const contactLines = contacts
+            ? wrap(contacts, regular, 7.5, brandWidth)
+            : [];
+
+        const invoiceDate = new Intl.DateTimeFormat("ka-GE", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            timeZone: "Asia/Tbilisi",
+        }).format(new Date(invoice.createdAt));
+
+        const brandHeight =
+            brandLines.length * 20.25 +
+            contactLines.length * 11.25;
+
+        const headerHeight =
+            Math.max(logo ? logoSize : 0, brandHeight, 27) + 11;
+
+        blocks.push({
+            height: headerHeight,
+            draw(page, top) {
+                if (logo) {
+                    const scale =
+                        logoSize / Math.max(logo.width, logo.height);
+
+                    page.drawImage(logo, {
+                        x: margin,
+                        y: top - logo.height * scale,
+                        width: logo.width * scale,
+                        height: logo.height * scale,
+                    });
+                }
+
+                let brandTop = top;
+
+                for (const line of brandLines) {
+                    page.drawText(line, {
+                        x: brandX,
+                        y: brandTop - 13.5,
+                        size: 13.5,
+                        font: bold,
+                        color: ink,
+                    });
+                    brandTop -= 20.25;
+                }
+
+                for (const line of contactLines) {
+                    page.drawText(line, {
+                        x: brandX,
+                        y: brandTop - 7.5,
+                        size: 7.5,
+                        font: regular,
+                        color: rgb(0.27, 0.27, 0.27),
+                    });
+                    brandTop -= 11.25;
+                }
+
+                const heading = `ინვოისი${number}`;
+
+                page.drawText(heading, {
+                    x: pageWidth - margin -
+                        textWidth(bold, heading, 9),
+                    y: top - 9,
+                    size: 9,
+                    font: bold,
+                    color: ink,
+                });
+
+                page.drawText(invoiceDate, {
+                    x: pageWidth - margin -
+                        textWidth(regular, invoiceDate, 9),
+                    y: top - 22.5,
+                    size: 9,
+                    font: regular,
+                    color: ink,
+                });
+
+                page.drawLine({
+                    start: {
+                        x: margin,
+                        y: top - headerHeight,
+                    },
+                    end: {
+                        x: pageWidth - margin,
+                        y: top - headerHeight,
+                    },
+                    thickness: 0.75,
+                    color: rgb(0.8, 0.8, 0.8),
+                });
+            },
+        });
+
+        gap(12);
+    }
+
     text(`მიმღები: ${invoice.recipient.name || "—"}`, true);
     text(invoice.recipient.phone);
     if (invoice.recipient.address) text(invoice.recipient.address);
@@ -585,32 +703,168 @@ export async function createInvoicePdf(
             : []),
     ];
 
-    for (const [label, value] of totals) {
-        text(`${label}: ${value} ₾`, label === "სულ");
-    }
+    if (paper === "a4") {
+        const qr = invoice.qrDataUrl
+            ? await pdf.embedPng(invoice.qrDataUrl)
+            : null;
 
-    if (invoice.qrDataUrl) {
-        gap(10);
-        const qr = await pdf.embedPng(invoice.qrDataUrl);
-        const qrSize = Math.min(mm(28), contentWidth);
+        const totalsWidth = 195;
+        const totalsX = pageWidth - margin - totalsWidth;
+        const qrSize = mm(32);
+        const qrCaption = "შეკვეთის დეტალების ნახვა";
+
+        const totalRows = totals.map(([label, value]) => {
+            const strong = label === "სულ";
+            const font = strong ? bold : regular;
+            const fontSize = strong ? 11.25 : 9;
+            const valueText = `${value} ₾`;
+            const valueWidth = textWidth(font, valueText, fontSize);
+
+            const lines = wrap(
+                label,
+                font,
+                fontSize,
+                Math.max(20, totalsWidth - valueWidth - 9),
+            );
+
+            return {
+                strong,
+                font,
+                fontSize,
+                valueText,
+                valueWidth,
+                lines,
+                height:
+                    lines.length * fontSize * 1.5 +
+                    (strong ? 10 : 4),
+            };
+        });
+
+        const totalsHeight = totalRows.reduce(
+            (sum, row) => sum + row.height,
+            0,
+        );
+
+        const bottomHeight = Math.max(
+            totalsHeight,
+            qr ? qrSize + 16 : 0,
+        );
+
+        gap(13.5);
 
         blocks.push({
-            height: qrSize + 6,
+            height: bottomHeight,
             draw(page, top) {
-                page.drawImage(qr, {
-                    x: margin,
-                    y: top - qrSize,
-                    width: qrSize,
-                    height: qrSize,
-                });
+                if (qr) {
+                    page.drawImage(qr, {
+                        x: margin,
+                        y: top - qrSize,
+                        width: qrSize,
+                        height: qrSize,
+                    });
+
+                    page.drawText(qrCaption, {
+                        x: margin + (
+                            qrSize -
+                            textWidth(regular, qrCaption, 7.5)
+                        ) / 2,
+                        y: top - qrSize - 11,
+                        size: 7.5,
+                        font: regular,
+                        color: ink,
+                    });
+                }
+
+                let rowTop = top;
+
+                for (const row of totalRows) {
+                    if (row.strong) {
+                        page.drawLine({
+                            start: { x: totalsX, y: rowTop },
+                            end: {
+                                x: pageWidth - margin,
+                                y: rowTop,
+                            },
+                            thickness: 0.75,
+                            color: rgb(0.75, 0.75, 0.75),
+                        });
+
+                        rowTop -= 6;
+                    }
+
+                    row.lines.forEach((line, index) => {
+                        page.drawText(line, {
+                            x: totalsX,
+                            y: rowTop - row.fontSize -
+                                index * row.fontSize * 1.5,
+                            size: row.fontSize,
+                            font: row.font,
+                            color: ink,
+                        });
+                    });
+
+                    page.drawText(row.valueText, {
+                        x: pageWidth - margin - row.valueWidth,
+                        y: rowTop - row.fontSize,
+                        size: row.fontSize,
+                        font: row.font,
+                        color: ink,
+                    });
+
+                    rowTop -= row.height -
+                        (row.strong ? 6 : 0);
+                }
             },
         });
 
-        text("შეკვეთის დეტალების ნახვა", false, size - 1);
-    }
+        gap(10.5);
 
-    gap();
-    text("შექმნილია MARTEO-ს დახმარებით", false, size - 1);
+        const footer = "შექმნილია MARTEO-ს დახმარებით";
+
+        blocks.push({
+            height: 12,
+            draw(page, top) {
+                page.drawText(footer, {
+                    x: margin + (
+                        contentWidth -
+                        textWidth(regular, footer, 7.5)
+                    ) / 2,
+                    y: top - 7.5,
+                    size: 7.5,
+                    font: regular,
+                    color: rgb(0.27, 0.27, 0.27),
+                });
+            },
+        });
+    } else {
+        for (const [label, value] of totals) {
+            text(`${label}: ${value} ₾`, label === "სულ");
+        }
+
+        if (invoice.qrDataUrl) {
+            gap(10);
+
+            const qr = await pdf.embedPng(invoice.qrDataUrl);
+            const qrSize = Math.min(mm(28), contentWidth);
+
+            blocks.push({
+                height: qrSize + 6,
+                draw(page, top) {
+                    page.drawImage(qr, {
+                        x: margin,
+                        y: top - qrSize,
+                        width: qrSize,
+                        height: qrSize,
+                    });
+                },
+            });
+
+            text("შეკვეთის დეტალების ნახვა", false, size - 1);
+        }
+
+        gap();
+        text("შექმნილია MARTEO-ს დახმარებით", false, size - 1);
+    }
 
     const totalHeight =
         blocks.reduce((sum, block) => sum + block.height, 0) +

@@ -1017,54 +1017,62 @@ export default function OrdersView({
                     <span className="text-sm text-text-secondary">{data.totalOrders} შეკვეთა</span>
                     {pending && <Icon icon="solar:refresh-linear" className="h-4 w-4 animate-spin text-accent" aria-label="იტვირთება" />}
                 </div>
-                <div className="px-3 pb-4 sm:px-4">
-                    <InventoryFiltersDisclosure defaultOpen={false} hasFilters={Boolean(data.query || data.filter !== "all" || data.payment !== "all" || data.sort !== "date-desc")}>
-                        <form key={`${data.query}-${data.filter}-${data.payment}-${data.sort}`} className="grid min-w-0 grid-cols-1 gap-3 border-t border-border p-3 sm:grid-cols-2 xl:grid-cols-4 sm:p-4" onSubmit={event => {
-                            event.preventDefault();
-                            const values = new FormData(event.currentTarget);
-                            startTransition(() => navigate(String(values.get("status")) as OrdersFilter, search.current?.value || "", 1, {
-                                sort: String(values.get("sort")) as OrdersSort,
-                                payment: String(values.get("payment")) as OrdersPaymentFilter,
-                            }));
-                        }}>
-                            <label className="block min-w-0"><span className="mb-1.5 block text-sm text-text-secondary">ძებნა</span><input ref={search} name="q" defaultValue={data.query} placeholder="ნომერი, მიმღები ან პროდუქტი" className={inputClass} /></label>
-                            <label className="block min-w-0"><span className="mb-1.5 block text-sm text-text-secondary">შეკვეთის სტატუსი</span><select name="status" defaultValue={data.filter} className={inputClass}><option value="all">ყველა</option><option value="processing">მუშავდება</option><option value="shipped">გაგზავნილი</option><option value="completed">დასრულებული</option><option value="canceled">გაუქმებული</option><option value="returned">დაბრუნებული</option></select></label>
-                            <label className="block min-w-0"><span className="mb-1.5 block text-sm text-text-secondary">გადახდის სტატუსი</span><select name="payment" defaultValue={data.payment} className={inputClass}><option value="all">ყველა</option><option value="PAID">გადახდილი</option><option value="UNPAID">გადაუხდელი</option><option value="PARTIALLY_PAID">ნაწილობრივ</option><option value="COURIER_ONLY_PAID">მხოლოდ კურიერი</option></select></label>
-                            <label className="block min-w-0"><span className="mb-1.5 block text-sm text-text-secondary">დალაგება</span><select name="sort" defaultValue={data.sort} className={inputClass}><option value="date-desc">ჯერ ახალი</option><option value="date-asc">ჯერ ძველი</option><option value="number-desc">ნომერი: კლებადობით</option><option value="number-asc">ნომერი: ზრდადობით</option><option value="recipient-asc">მიმღები: ა → ჰ</option><option value="recipient-desc">მიმღები: ჰ → ა</option></select></label>
-                            <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row xl:col-span-4">
-                                <button disabled={pending} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-white"><Icon icon="solar:magnifer-linear" className="h-5 w-5" />ჩვენება</button>
-                                <button type="button" disabled={pending} onClick={() => startTransition(() => navigate("all", "", 1, { payment: "all", sort: "date-desc" }))} className="h-11 rounded-xl border border-border px-4 text-sm text-text-secondary">გასუფთავება</button>
-                            </div>
-                        </form>
-                    </InventoryFiltersDisclosure>
-                </div>
+                {(data.orders.length > 0 ||
+                    Boolean(data.query) ||
+                    data.filter !== "all" ||
+                    data.payment !== "all" ||
+                    data.sort !== "date-desc") && (
+                        <div className="px-3 pb-4 sm:px-4">
+                            <InventoryFiltersDisclosure defaultOpen={false} hasFilters={Boolean(data.query || data.filter !== "all" || data.payment !== "all" || data.sort !== "date-desc")}>
+                                <form key={`${data.query}-${data.filter}-${data.payment}-${data.sort}`} className="grid min-w-0 grid-cols-1 gap-3 border-t border-border p-3 sm:grid-cols-2 xl:grid-cols-4 sm:p-4" onSubmit={event => {
+                                    event.preventDefault();
+                                    const values = new FormData(event.currentTarget);
+                                    startTransition(() => navigate(String(values.get("status")) as OrdersFilter, search.current?.value || "", 1, {
+                                        sort: String(values.get("sort")) as OrdersSort,
+                                        payment: String(values.get("payment")) as OrdersPaymentFilter,
+                                    }));
+                                }}>
+                                    <label className="block min-w-0"><span className="mb-1.5 block text-sm text-text-secondary">ძებნა</span><input ref={search} name="q" defaultValue={data.query} placeholder="ნომერი, მიმღები ან პროდუქტი" className={inputClass} /></label>
+                                    <label className="block min-w-0"><span className="mb-1.5 block text-sm text-text-secondary">შეკვეთის სტატუსი</span><select name="status" defaultValue={data.filter} className={inputClass}><option value="all">ყველა</option><option value="processing">მუშავდება</option><option value="shipped">გაგზავნილი</option><option value="completed">დასრულებული</option><option value="canceled">გაუქმებული</option><option value="returned">დაბრუნებული</option></select></label>
+                                    <label className="block min-w-0"><span className="mb-1.5 block text-sm text-text-secondary">გადახდის სტატუსი</span><select name="payment" defaultValue={data.payment} className={inputClass}><option value="all">ყველა</option><option value="PAID">გადახდილი</option><option value="UNPAID">გადაუხდელი</option><option value="PARTIALLY_PAID">ნაწილობრივ</option><option value="COURIER_ONLY_PAID">მხოლოდ კურიერი</option></select></label>
+                                    <label className="block min-w-0"><span className="mb-1.5 block text-sm text-text-secondary">დალაგება</span><select name="sort" defaultValue={data.sort} className={inputClass}><option value="date-desc">ჯერ ახალი</option><option value="date-asc">ჯერ ძველი</option><option value="number-desc">ნომერი: კლებადობით</option><option value="number-asc">ნომერი: ზრდადობით</option><option value="recipient-asc">მიმღები: ა → ჰ</option><option value="recipient-desc">მიმღები: ჰ → ა</option></select></label>
+                                    <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row xl:col-span-4">
+                                        <button disabled={pending} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-white"><Icon icon="solar:magnifer-linear" className="h-5 w-5" />ჩვენება</button>
+                                        <button type="button" disabled={pending} onClick={() => startTransition(() => navigate("all", "", 1, { payment: "all", sort: "date-desc" }))} className="h-11 rounded-xl border border-border px-4 text-sm text-text-secondary">გასუფთავება</button>
+                                    </div>
+                                </form>
+                            </InventoryFiltersDisclosure>
+                        </div>
+                    )}
                 <div className="border-t border-border px-3 py-3 sm:px-4">
                     <div className="flex flex-wrap items-center gap-2">
-                        <button
-                            type="button"
-                            disabled={pending}
-                            onClick={() => {
-                                setSelectionMode(current => !current);
-                                setCheckedIds([]);
-                                setPrintError("");
-                            }}
-                            className={`inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition disabled:opacity-50 ${selectionMode
-                                ? "border-accent bg-accent/10 text-accent"
-                                : "border-border text-text-primary hover:border-accent"
-                                }`}
-                        >
-                            <Icon
-                                icon={
-                                    selectionMode
-                                        ? "solar:close-circle-linear"
-                                        : "solar:checklist-minimalistic-linear"
-                                }
-                                className="h-5 w-5"
-                            />
-                            {selectionMode
-                                ? "დასრულება"
-                                : "მონიშვნა"}
-                        </button>
+                        {data.orders.length > 0 && (
+                            <button
+                                type="button"
+                                disabled={pending}
+                                onClick={() => {
+                                    setSelectionMode(current => !current);
+                                    setCheckedIds([]);
+                                    setPrintError("");
+                                }}
+                                className={`inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition disabled:opacity-50 ${selectionMode
+                                    ? "border-accent bg-accent/10 text-accent"
+                                    : "border-border text-text-primary hover:border-accent"
+                                    }`}
+                            >
+                                <Icon
+                                    icon={
+                                        selectionMode
+                                            ? "solar:close-circle-linear"
+                                            : "solar:checklist-minimalistic-linear"
+                                    }
+                                    className="h-5 w-5"
+                                />
+                                {selectionMode
+                                    ? "დასრულება"
+                                    : "მონიშვნა"}
+                            </button>
+                        )}
 
                         {!selectionMode && (
                             <>

@@ -3,9 +3,10 @@ import "./globals.css";
 import ModalBackdropDismiss from "@/components/ModalBackdropDismiss";
 
 export const viewport: Viewport = {
-    width: "device-width",
-    initialScale: 1,
-    themeColor: "#0A244B",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0A244B",
 };
 
 export const metadata: Metadata = {
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "Marteo",
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
   },
 };
 

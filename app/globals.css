@@ -394,3 +394,17 @@ dialog:modal {
 .delete-action svg {
   color: inherit;
 }
+
+@media screen and (max-width: 1023px) {
+  .dashboard-safe-header {
+    height: calc(4rem + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  }
+
+  .dashboard-safe-mobile-menu {
+    top: calc(4rem + env(safe-area-inset-top, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}

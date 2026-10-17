@@ -46,7 +46,7 @@ export default function DashboardShell({
                 id="mobile-dashboard-sidebar"
                 inert={!sidebarOpen}
                 className={[
-                    "fixed inset-x-0 bottom-0 top-16 z-40 lg:hidden",
+                    "dashboard-safe-mobile-menu fixed inset-x-0 bottom-0 top-16 z-40 lg:hidden",
                     sidebarOpen
                         ? "pointer-events-auto"
                         : "pointer-events-none",
