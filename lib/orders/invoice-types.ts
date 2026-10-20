@@ -3,7 +3,7 @@ export type OrderInvoiceData = {
     createdAt: string;
     notes: string;
     status: "PROCESSING" | "SHIPPED" | "COMPLETED" | "CANCELED" | "RETURNED";
-    paymentStatus: "UNPAID" | "PAID" | "COURIER_ONLY_PAID" | "PARTIALLY_PAID";
+    paymentStatus: "UNPAID" | "PAID" | "COURIER_ONLY_PAID" | "PARTIALLY_PAID" | "UNKNOWN";
     business: { name: string; logoUrl: string | null; phone: string | null; email: string | null; address: string | null };
     recipient: { name: string; phone: string; address: string };
     items: {

@@ -12,7 +12,7 @@ type ChartSnapshot = {
         count: number;
     }>;
     payments: Array<{
-        method: "CASH" | "CARD" | "BANK_TRANSFER";
+        method: "CASH" | "CARD" | "BANK_TRANSFER" | "UNKNOWN";
         amount: string;
     }>;
 };
@@ -56,6 +56,13 @@ export async function getStatisticsCharts(
                 MIN(f."occurredAt") AS completed_at
             FROM "OrderFinancialEntry" f
             WHERE f."businessId" = ${businessId}
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM "Order" pending
+                    WHERE pending.id = f."orderId"
+                        AND pending."businessId" = f."businessId"
+                        AND pending."analyticsPendingCost" = TRUE
+                )
                 AND f.kind = 'SALE'
             GROUP BY COALESCE(
                 f."orderId",
@@ -95,6 +102,7 @@ export async function getStatisticsCharts(
             FROM "OrderPayment" p
             JOIN "Order" o ON o.id = p."orderId"
             WHERE o."businessId" = ${businessId}
+                AND o."analyticsPendingCost" = FALSE
                 AND p.amount > 0
                 AND p."createdAt" >= ${start}
                 AND p."createdAt" < ${end}
@@ -106,7 +114,8 @@ export async function getStatisticsCharts(
                 VALUES
                     ('CASH', 1),
                     ('CARD', 2),
-                    ('BANK_TRANSFER', 3)
+                    ('BANK_TRANSFER', 3),
+                    ('UNKNOWN', 4)
             ) AS available(method, position)
         )
         SELECT JSONB_BUILD_OBJECT(

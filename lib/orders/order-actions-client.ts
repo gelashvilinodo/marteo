@@ -20,6 +20,7 @@ export async function sendOrderAction(
         | "link"
         | "exchange"
         | "refund"
+        | "resolve-payment"
         | "cancel-deletion",
     payload: Record<string, unknown>,
     signal?: AbortSignal,

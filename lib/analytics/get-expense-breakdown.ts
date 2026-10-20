@@ -34,6 +34,13 @@ export async function getExpenseBreakdown(
                 ) AS complete
             FROM "OrderFinancialEntry" f
             WHERE f."businessId" = ${businessId}
+                            AND NOT EXISTS (
+                    SELECT 1
+                    FROM "Order" pending
+                    WHERE pending.id = f."orderId"
+                        AND pending."businessId" = f."businessId"
+                        AND pending."analyticsPendingCost" = TRUE
+                )
                 AND f."occurredAt" >= ${range.start}
                 AND f."occurredAt" < ${range.end}
 

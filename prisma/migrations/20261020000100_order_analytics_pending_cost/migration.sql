@@ -1,0 +1,2 @@
+ALTER TABLE "Order"
+ADD COLUMN "analyticsPendingCost" BOOLEAN NOT NULL DEFAULT false;

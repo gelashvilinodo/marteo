@@ -43,8 +43,8 @@ export default function LoginForm() {
 
             const data =
                 raw !== null &&
-                typeof raw === "object" &&
-                !Array.isArray(raw)
+                    typeof raw === "object" &&
+                    !Array.isArray(raw)
                     ? (raw as Record<string, unknown>)
                     : null;
 
@@ -78,7 +78,7 @@ export default function LoginForm() {
     };
 
     const inputClass =
-        "w-full rounded-xl border border-border bg-background px-4 py-3.5 text-sm text-text-primary outline-none transition-all placeholder:text-text-secondary/70 focus:border-accent focus:ring-2 focus:ring-accent/10";
+        "w-full rounded-xl border border-border bg-background px-4 py-3.5 text-base md:text-sm text-text-primary outline-none transition-all placeholder:text-text-secondary/70 focus:border-accent focus:ring-2 focus:ring-accent/10";
 
     return (
         <main className="min-h-screen bg-background">
@@ -227,6 +227,15 @@ export default function LoginForm() {
                                     </div>
                                 </div>
                             </fieldset>
+
+                            <div className="mt-2 flex justify-end">
+                                <Link
+                                    href="/forgot-password"
+                                    className="inline-flex min-h-10 items-center text-sm text-accent hover:text-accent-hover"
+                                >
+                                    დამავიწყდა პაროლი
+                                </Link>
+                            </div>
 
                             {error && (
                                 <div

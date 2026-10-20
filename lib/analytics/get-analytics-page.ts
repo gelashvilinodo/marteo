@@ -20,6 +20,7 @@ type CashSummary = {
     incompleteEntries: number;
     unrecordedCompleted: number;
     financialEntryCount: number;
+    pendingCostOrders: number;
 };
 
 export async function getAnalyticsPage(
@@ -57,6 +58,7 @@ export async function getAnalyticsPage(
                 FROM "OrderPayment" p
                 JOIN "Order" o ON o.id = p."orderId"
                 WHERE o."businessId" = ${businessId}
+                    AND o."analyticsPendingCost" = FALSE
                     AND p."createdAt" >= ${range.start}
                     AND p."createdAt" < ${range.end}
             ),
@@ -89,6 +91,13 @@ financial AS (
         COUNT(*)::int AS entry_count
     FROM "OrderFinancialEntry" f
     WHERE f."businessId" = ${businessId}
+        AND NOT EXISTS (
+            SELECT 1
+            FROM "Order" pending
+            WHERE pending.id = f."orderId"
+                AND pending."businessId" = f."businessId"
+                AND pending."analyticsPendingCost" = TRUE
+        )
         AND f."occurredAt" >= ${range.start}
         AND f."occurredAt" < ${range.end}
 ),
@@ -97,6 +106,7 @@ unrecorded AS (
     FROM "Order" o
     WHERE o."businessId" = ${businessId}
         AND o.status = 'COMPLETED'
+        AND o."analyticsPendingCost" = FALSE
         AND NOT EXISTS (
             SELECT 1
             FROM "OrderFinancialEntry" f
@@ -115,7 +125,13 @@ financial.delivery_revenue::text AS "deliveryRevenue",
 financial.cost_of_goods::text AS "costOfGoods",
 financial.incomplete_entries AS "incompleteEntries",
 financial.entry_count AS "financialEntryCount",
-unrecorded.total AS "unrecordedCompleted"
+unrecorded.total AS "unrecordedCompleted",
+(
+    SELECT COUNT(*)::int
+    FROM "Order" pending
+    WHERE pending."businessId" = ${businessId}
+        AND pending."analyticsPendingCost" = TRUE
+) AS "pendingCostOrders"
             FROM payments
 CROSS JOIN expenses
 CROSS JOIN financial
@@ -162,6 +178,7 @@ CROSS JOIN unrecorded
         incompleteEntries: summary.incompleteEntries,
         unrecordedCompleted: summary.unrecordedCompleted,
         financialEntryCount: summary.financialEntryCount,
+        pendingCostOrders: summary.pendingCostOrders,
     };
 }
 

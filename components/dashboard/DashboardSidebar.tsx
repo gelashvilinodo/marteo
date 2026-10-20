@@ -76,7 +76,7 @@ export default function DashboardSidebar({
                 "dashboard-sidebar w-[280px] shrink-0",
                 "overflow-hidden bg-[#081F46] px-4 py-6",
                 mobile
-                    ? "flex h-full min-h-0 flex-col"
+                    ? "flex h-full min-h-0 flex-col pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
                     : "sticky top-0 hidden h-dvh self-start lg:flex lg:flex-col",
             ].join(" ")}
         >

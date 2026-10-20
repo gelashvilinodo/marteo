@@ -1,854 +1,1139 @@
 generator client {
-provider = "prisma-client"
-output = "../generated/prisma"
-runtime = "cloudflare"
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  runtime  = "cloudflare"
 }
 
 datasource db {
-provider = "postgresql"
+  provider = "postgresql"
 }
 
 enum MembershipRole {
-OWNER
-ADMIN
-MEMBER
+  OWNER
+  ADMIN
+  MEMBER
 }
 
 enum SubscriptionStatus {
-ACTIVE
-TRIALING
-CANCELED
-EXPIRED
-PAST_DUE
+  ACTIVE
+  TRIALING
+  CANCELED
+  EXPIRED
+  PAST_DUE
 }
 
 enum SubscriptionPlan {
-FREE
-START
-BUSINESS
-PRO
+  FREE
+  START
+  BUSINESS
+  PRO
 }
 
 enum UserStatus {
-PENDING_VERIFICATION
-ACTIVE
-SUSPENDED
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
 }
 
 enum VerificationType {
-EMAIL
-PHONE
+  EMAIL
+  PHONE
 }
 
 enum OrderStatus {
-PROCESSING
-SHIPPED
-COMPLETED
-CANCELED
-RETURNED
+  PROCESSING
+  SHIPPED
+  COMPLETED
+  CANCELED
+  RETURNED
 }
 
 enum PaymentStatus {
-UNPAID
-PAID
-COURIER_ONLY_PAID
-PARTIALLY_PAID
+  UNPAID
+  PAID
+  COURIER_ONLY_PAID
+  PARTIALLY_PAID
+  UNKNOWN
 }
 
 enum PaymentMethod {
-CASH
-BANK_TRANSFER
-CARD
+  CASH
+  BANK_TRANSFER
+  CARD
+  UNKNOWN
 }
 
 enum OrderItemSource {
-MANUAL
-INVENTORY
+  MANUAL
+  INVENTORY
 }
 
 enum PricingMethod {
-FIXED_PROFIT
-MARKUP_PERCENT
-MARGIN_PERCENT
-MANUAL
+  FIXED_PROFIT
+  MARKUP_PERCENT
+  MARGIN_PERCENT
+  MANUAL
 }
 
 enum InventoryMovementType {
-PURCHASE_IN
-SALE_OUT
-CUSTOMER_RETURN_IN
-SUPPLIER_RETURN_OUT
-ADJUSTMENT_IN
-ADJUSTMENT_OUT
+  PURCHASE_IN
+  SALE_OUT
+  CUSTOMER_RETURN_IN
+  SUPPLIER_RETURN_OUT
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
 }
 
 enum ExpenseCategory {
-ADVERTISING
-RENT
-SALARY
-TAX
-UTILITIES
-SOFTWARE
-PACKAGING
-TRANSPORT
-COMMISSION
-OTHER
+  ADVERTISING
+  RENT
+  SALARY
+  TAX
+  UTILITIES
+  SOFTWARE
+  PACKAGING
+  TRANSPORT
+  COMMISSION
+  OTHER
 }
 
 enum ContentType {
-POST
-REEL
-STORY
-VIDEO
-ARTICLE
-OTHER
+  POST
+  REEL
+  STORY
+  VIDEO
+  ARTICLE
+  OTHER
 }
 
 enum ContentStatus {
-IDEA
-DRAFT
-SCHEDULED
-PUBLISHED
-CANCELED
+  IDEA
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  CANCELED
 }
 
 enum ContentPlatform {
-INSTAGRAM
-FACEBOOK
-TIKTOK
-YOUTUBE
-LINKEDIN
-WEBSITE
-OTHER
+  INSTAGRAM
+  FACEBOOK
+  TIKTOK
+  YOUTUBE
+  LINKEDIN
+  WEBSITE
+  OTHER
 }
 
 model User {
-id String @id @default(cuid())
-email String @unique
-password String
-firstName String?
-lastName String?
-phone String @unique
-status UserStatus @default(PENDING_VERIFICATION)
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  firstName String?
+  lastName  String?
+  avatarUrl String?
+  phone     String     @unique
+  status    UserStatus @default(PENDING_VERIFICATION)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
-emailVerifiedAt DateTime?
-phoneVerifiedAt DateTime?
+  emailVerifiedAt DateTime?
+  phoneVerifiedAt DateTime?
 
-memberships BusinessMembership[]
-verifications VerificationToken[]
-sessions Session[]
+  memberships            BusinessMembership[]
+  verifications          VerificationToken[]
+  sessions               Session[]
+  emailChangeRequests    EmailChangeRequest[]
+  phoneChangeRequests    PhoneChangeRequest[]
+  passwordChangeRequests PasswordChangeRequest[]
+  passwordResetRequests  PasswordResetRequest[]
 }
 
 model Session {
-id String @id @default(cuid())
-userId String
-tokenHash String @unique
-expiresAt DateTime
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-@@index([userId])
+  @@index([userId])
 }
 
 model Business {
-id String @id @default(cuid())
-nextOrderNumber Int @default(0)
-name String
-category String @default("OTHER")
-logoUrl String?
+  id              String  @id @default(cuid())
+  nextOrderNumber Int     @default(0)
+  name            String
+  category        String  @default("OTHER")
+  logoUrl         String?
 
-phone String?
-email String?
-address String?
-website String?
-description String?
+  phone       String?
+  email       String?
+  address     String?
+  website     String?
+  description String?
 
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-memberships BusinessMembership[]
-subscription Subscription?
-customers Customer[]
-orders Order[]
-products Product[]
-productAttributes ProductAttribute[]
-inventoryItems InventoryItem[]
-purchases Purchase[]
-expenses Expense[]
-financialEntries OrderFinancialEntry[]
-contentItems ContentItem[]
-contentCampaigns ContentCampaign[]
-inventoryWriteOffs InventoryWriteOff[]
+  memberships              BusinessMembership[]
+  subscription             Subscription?
+  customers                Customer[]
+  orders                   Order[]
+  products                 Product[]
+  productAttributes        ProductAttribute[]
+  inventoryItems           InventoryItem[]
+  purchases                Purchase[]
+  expenses                 Expense[]
+  financialEntries         OrderFinancialEntry[]
+  contentItems             ContentItem[]
+  contentCampaigns         ContentCampaign[]
+  inventoryWriteOffs       InventoryWriteOff[]
+  importJobs               ImportJob[]
+  courierReminderStartDate DateTime?             @db.Date
+  courierSettlements       CourierSettlement[]
 }
 
 model BusinessMembership {
-id String @id @default(cuid())
-userId String
-businessId String
-role MembershipRole @default(MEMBER)
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  id         String         @id @default(cuid())
+  userId     String
+  businessId String
+  role       MembershipRole @default(MEMBER)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
 
-user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-@@unique([userId, businessId])
-@@index([businessId])
-@@index([userId])
+  @@unique([userId, businessId])
+  @@index([businessId])
+  @@index([userId])
 }
 
 model Subscription {
-id String @id @default(cuid())
-businessId String @unique
-plan SubscriptionPlan @default(FREE)
-status SubscriptionStatus @default(ACTIVE)
-startedAt DateTime @default(now())
-expiresAt DateTime?
-canceledAt DateTime?
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  id         String             @id @default(cuid())
+  businessId String             @unique
+  plan       SubscriptionPlan   @default(FREE)
+  status     SubscriptionStatus @default(ACTIVE)
+  startedAt  DateTime           @default(now())
+  expiresAt  DateTime?
+  canceledAt DateTime?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
 
-business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
-id String @id @default(cuid())
-userId String
-type VerificationType
-token String
-expiresAt DateTime
-createdAt DateTime @default(now())
-usedAt DateTime?
-attempts Int @default(0)
+  id        String           @id @default(cuid())
+  userId    String
+  type      VerificationType
+  token     String
+  expiresAt DateTime
+  createdAt DateTime         @default(now())
+  usedAt    DateTime?
+  attempts  Int              @default(0)
 
-user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-@@index([userId])
-@@index([token])
+  @@index([userId])
+  @@index([token])
 }
 
 model Customer {
-id String @id @default(cuid())
-businessId String
+  id         String @id @default(cuid())
+  businessId String
 
-phone String
-firstName String?
-lastName String?
-address String?
-deletedAt DateTime?
+  phone     String
+  firstName String?
+  lastName  String?
+  address   String?
+  deletedAt DateTime?
 
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-orders Order[]
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  orders   Order[]
 
-@@unique([businessId, phone])
-@@index([businessId])
-@@index([phone])
-@@index([businessId, deletedAt, createdAt])
+  @@unique([businessId, phone])
+  @@index([businessId])
+  @@index([phone])
+  @@index([businessId, deletedAt, createdAt])
 }
 
 model Order {
-id String @id @default(cuid())
-number Int?
-clientRequestId String?
-notes String?
-stockReturnedAt DateTime?
-deletedAt DateTime?
-publicAccessToken String? @unique
+  id                   String    @id @default(cuid())
+  number               Int?
+  clientRequestId      String?
+  notes                String?
+  stockReturnedAt      DateTime?
+  deletedAt            DateTime?
+  publicAccessToken    String?   @unique
+  analyticsPendingCost Boolean   @default(false)
 
-mutations OrderMutation[]
+  mutations OrderMutation[]
 
-returns OrderReturn[]
-exchanges OrderExchange[]
-fulfillmentCycle Int @default(0)
-deleteRequestedAt DateTime?
+  returns           OrderReturn[]
+  exchanges         OrderExchange[]
+  fulfillmentCycle  Int             @default(0)
+  deleteRequestedAt DateTime?
 
-invoiceVersion Int @default(1)
-lastPrintedInvoiceVersion Int?
-invoicePrintedAt DateTime?
-businessId String
-customerId String
-recipientPhone String
-recipientFirstName String?
-recipientLastName String?
-shippingAddress String?
+  invoiceVersion            Int       @default(1)
+  lastPrintedInvoiceVersion Int?
+  invoicePrintedAt          DateTime?
+  businessId                String
+  customerId                String?
+  recipientPhone            String
+  recipientFirstName        String?
+  recipientLastName         String?
+  shippingAddress           String?
 
-status OrderStatus @default(PROCESSING)
-paymentStatus PaymentStatus @default(UNPAID)
+  status        OrderStatus   @default(PROCESSING)
+  paymentStatus PaymentStatus @default(UNPAID)
 
-courierFee Decimal @default(0) @db.Decimal(12, 2)
+  courierFee Decimal @default(0) @db.Decimal(12, 2)
 
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
-items OrderItem[]
-payments OrderPayment[]
-financialEntries OrderFinancialEntry[]
+  business         Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer         Customer?             @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items            OrderItem[]
+  payments         OrderPayment[]
+  financialEntries OrderFinancialEntry[]
 
-@@index([businessId])
-@@index([customerId])
-@@index([status])
-@@index([paymentStatus])
-@@index([createdAt])
-
-@@unique([businessId, number])
-@@unique([businessId, clientRequestId])
-@@index([businessId, deletedAt, createdAt])
+  @@unique([businessId, number])
+  @@unique([businessId, clientRequestId])
+  @@index([businessId])
+  @@index([customerId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@index([businessId, deletedAt, createdAt])
 }
 
 model OrderItem {
-id String @id @default(cuid())
-orderId String
-fulfillmentCycle Int @default(0)
-isActive Boolean @default(true)
-isCarriedOver Boolean @default(false)
-financialSourceItemId String?
-stockRestoredAt DateTime?
+  id                    String    @id @default(cuid())
+  orderId               String
+  fulfillmentCycle      Int       @default(0)
+  isActive              Boolean   @default(true)
+  isCarriedOver         Boolean   @default(false)
+  financialSourceItemId String?
+  stockRestoredAt       DateTime?
 
-inventoryItemId String?
-source OrderItemSource @default(MANUAL)
-condition InventoryCondition @default(GOOD)
+  inventoryItemId String?
+  source          OrderItemSource    @default(MANUAL)
+  condition       InventoryCondition @default(GOOD)
 
-name String
-quantity Int @default(1)
-description String?
-imageUrl String?
-color String?
-size String?
+  name        String
+  quantity    Int     @default(1)
+  description String?
+  imageUrl    String?
+  color       String?
+  size        String?
 
-unitPrice Decimal @db.Decimal(12, 2)
-unitCost Decimal @db.Decimal(12, 2)
+  unitPrice Decimal @db.Decimal(12, 2)
+  unitCost  Decimal @db.Decimal(12, 2)
 
-totalCost Decimal? @db.Decimal(18, 2)
+  totalCost Decimal? @db.Decimal(18, 2)
 
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-inventoryItem InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
-allocations OrderItemAllocation[]
-inventoryMovements InventoryMovement[]
+  order              Order                 @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  inventoryItem      InventoryItem?        @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  allocations        OrderItemAllocation[]
+  inventoryMovements InventoryMovement[]
 
-@@index([orderId])
-@@index([inventoryItemId])
+  @@index([orderId])
+  @@index([inventoryItemId])
 }
 
 model OrderPayment {
-id String @id @default(cuid())
-orderId String
+  id      String @id @default(cuid())
+  orderId String
 
-amount Decimal @db.Decimal(12, 2)
+  amount Decimal @db.Decimal(12, 2)
 
-method PaymentMethod
-bankName String?
+  method   PaymentMethod
+  bankName String?
 
-createdAt DateTime @default(now())
+  createdAt DateTime @default(now())
 
-order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-@@index([orderId])
-@@index([createdAt])
+  @@index([orderId])
+  @@index([createdAt])
 }
 
 model Product {
-id String @id @default(cuid())
-businessId String
+  id         String @id @default(cuid())
+  businessId String
 
-name String
-brand String?
-description String?
-category String?
+  name        String
+  brand       String?
+  description String?
+  category    String?
 
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-variants InventoryItem[]
+  business Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  variants InventoryItem[]
 
-@@index([businessId])
-@@index([name])
+  @@index([businessId])
+  @@index([name])
 }
 
 model InventoryItem {
-id String @id @default(cuid())
-businessId String
-productId String
+  id         String @id @default(cuid())
+  businessId String
+  productId  String
 
-sku String
-color String?
-size String?
-imageUrl String?
+  sku      String
+  color    String?
+  size     String?
+  imageUrl String?
 
-salePrice Decimal? @db.Decimal(12, 2)
-pricingMethod PricingMethod?
-pricingValue Decimal? @db.Decimal(12, 2)
+  salePrice     Decimal?       @db.Decimal(12, 2)
+  pricingMethod PricingMethod?
+  pricingValue  Decimal?       @db.Decimal(12, 2)
 
-currentStock Int @default(0)
-isActive Boolean @default(true)
+  currentStock Int     @default(0)
+  isActive     Boolean @default(true)
 
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-orderItems OrderItem[]
-purchaseItems PurchaseItem[]
-stockLots InventoryStockLot[]
-writeOffs InventoryWriteOff[]
-movements InventoryMovement[]
+  orderItems    OrderItem[]
+  purchaseItems PurchaseItem[]
+  stockLots     InventoryStockLot[]
+  writeOffs     InventoryWriteOff[]
+  movements     InventoryMovement[]
 
-@@unique([businessId, sku])
-@@index([businessId])
-@@index([productId])
-@@index([isActive])
+  @@unique([businessId, sku])
+  @@index([businessId])
+  @@index([productId])
+  @@index([isActive])
 }
 
 model Purchase {
-id String @id @default(cuid())
-businessId String
+  id         String @id @default(cuid())
+  businessId String
 
-number Int
+  number Int
 
-name String?
-supplierName String?
-note String?
+  name         String?
+  supplierName String?
+  note         String?
 
-purchaseDate DateTime @default(now())
-receiptStatus PurchaseReceiptStatus @default(RECEIVED)
-receivedAt DateTime?
-archivedAt DateTime?
+  purchaseDate  DateTime              @default(now())
+  receiptStatus PurchaseReceiptStatus @default(RECEIVED)
+  receivedAt    DateTime?
+  archivedAt    DateTime?
 
-shippingCost Decimal @default(0) @db.Decimal(12, 2)
-customsCost Decimal @default(0) @db.Decimal(12, 2)
-otherCost Decimal @default(0) @db.Decimal(12, 2)
+  shippingCost Decimal @default(0) @db.Decimal(12, 2)
+  customsCost  Decimal @default(0) @db.Decimal(12, 2)
+  otherCost    Decimal @default(0) @db.Decimal(12, 2)
 
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-items PurchaseItem[]
+  business Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  items    PurchaseItem[]
 
-@@unique([businessId, number])
-@@index([businessId])
-@@index([purchaseDate])
+  @@unique([businessId, number])
+  @@index([businessId])
+  @@index([purchaseDate])
 }
 
 model PurchaseItem {
-id String @id @default(cuid())
-purchaseId String
-inventoryItemId String
+  id              String @id @default(cuid())
+  purchaseId      String
+  inventoryItemId String
 
-quantity Int
-remainingQuantity Int
+  quantity          Int
+  remainingQuantity Int
 
-defectiveQuantity Int @default(0)
-remainingDefectiveQuantity Int @default(0)
-defectNote String?
+  defectiveQuantity          Int     @default(0)
+  remainingDefectiveQuantity Int     @default(0)
+  defectNote                 String?
 
-unitPurchasePrice Decimal @db.Decimal(12, 2)
+  unitPurchasePrice Decimal @db.Decimal(12, 2)
 
-allocatedExtraCostTotal Decimal @default(0) @db.Decimal(12, 2)
-finalUnitCost Decimal @db.Decimal(12, 2)
+  allocatedExtraCostTotal Decimal @default(0) @db.Decimal(12, 2)
+  finalUnitCost           Decimal @db.Decimal(12, 2)
 
-remainingCost Decimal? @db.Decimal(18, 2)
+  remainingCost Decimal? @db.Decimal(18, 2)
 
-plannedPricingMethod PricingMethod?
-plannedPricingValue Decimal? @db.Decimal(12, 2)
+  plannedPricingMethod PricingMethod?
+  plannedPricingValue  Decimal?       @db.Decimal(12, 2)
 
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-orderAllocations OrderItemAllocation[]
-stockLots InventoryStockLot[] @relation("PurchaseStockLots")
-historicalStockLots InventoryStockLot[] @relation("PurchaseHistoricalStockLots")
-inventoryMovements InventoryMovement[]
+  purchase            Purchase              @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  inventoryItem       InventoryItem         @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  orderAllocations    OrderItemAllocation[]
+  stockLots           InventoryStockLot[]   @relation("PurchaseStockLots")
+  historicalStockLots InventoryStockLot[]   @relation("PurchaseHistoricalStockLots")
+  inventoryMovements  InventoryMovement[]
 
-@@index([purchaseId])
-@@index([inventoryItemId])
+  @@index([purchaseId])
+  @@index([inventoryItemId])
 }
 
 model InventoryMovement {
-id String @id @default(cuid())
-inventoryItemId String
-purchaseItemId String?
-orderItemId String?
+  id              String  @id @default(cuid())
+  inventoryItemId String
+  purchaseItemId  String?
+  orderItemId     String?
 
-type InventoryMovementType
-quantity Int
-condition InventoryCondition @default(GOOD)
+  type      InventoryMovementType
+  quantity  Int
+  condition InventoryCondition    @default(GOOD)
 
-note String?
+  note String?
 
-createdAt DateTime @default(now())
+  createdAt DateTime @default(now())
 
-inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
-purchaseItem PurchaseItem? @relation(fields: [purchaseItemId], references: [id], onDelete: SetNull)
-orderItem OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  purchaseItem  PurchaseItem? @relation(fields: [purchaseItemId], references: [id], onDelete: SetNull)
+  orderItem     OrderItem?    @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
 
-@@index([inventoryItemId])
-@@index([purchaseItemId])
-@@index([orderItemId])
-@@index([type])
-@@index([createdAt])
+  @@index([inventoryItemId])
+  @@index([purchaseItemId])
+  @@index([orderItemId])
+  @@index([type])
+  @@index([createdAt])
 }
 
 model Expense {
-id String @id @default(cuid())
-businessId String
+  id         String @id @default(cuid())
+  businessId String
 
-category ExpenseCategory
-amount Decimal @db.Decimal(12, 2)
+  category ExpenseCategory
+  amount   Decimal         @db.Decimal(12, 2)
 
-title String?
-note String?
+  title String?
+  note  String?
 
-expenseDate DateTime @default(now())
+  expenseDate DateTime @default(now())
 
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-@@index([businessId])
-@@index([category])
-@@index([expenseDate])
+  @@index([businessId])
+  @@index([category])
+  @@index([expenseDate])
 }
 
 model ContentCampaign {
-id String @id @default(cuid())
-businessId String
+  id         String @id @default(cuid())
+  businessId String
 
-name String
-description String?
+  name        String
+  description String?
 
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-items ContentItem[]
+  business Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  items    ContentItem[]
 
-@@index([businessId])
+  @@index([businessId])
 }
 
 model ContentItem {
-id String @id @default(cuid())
-businessId String
-campaignId String?
+  id         String  @id @default(cuid())
+  businessId String
+  campaignId String?
 
-title String
-description String?
-materialUrl String?
+  title       String
+  description String?
+  materialUrl String?
 
-type ContentType
-customType String?
-status ContentStatus @default(IDEA)
+  type       ContentType
+  customType String?
+  status     ContentStatus @default(IDEA)
 
-scheduledAt DateTime?
+  scheduledAt DateTime?
 
-cta String?
-hashtags String?
-goal String?
-budget Decimal? @db.Decimal(12, 2)
+  cta      String?
+  hashtags String?
+  goal     String?
+  budget   Decimal? @db.Decimal(12, 2)
 
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-campaign ContentCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-channels ContentChannel[]
+  business Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaign ContentCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  channels ContentChannel[]
 
-@@index([businessId])
-@@index([campaignId])
-@@index([status])
-@@index([scheduledAt])
+  @@index([businessId])
+  @@index([campaignId])
+  @@index([status])
+  @@index([scheduledAt])
 }
 
 model ContentChannel {
-id String @id @default(cuid())
-contentItemId String
+  id            String @id @default(cuid())
+  contentItemId String
 
-platform ContentPlatform
-customPlatform String?
-completedAt DateTime?
+  platform       ContentPlatform
+  customPlatform String?
+  completedAt    DateTime?
 
-createdAt DateTime @default(now())
+  createdAt DateTime @default(now())
 
-contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
 
-@@unique([contentItemId, platform])
-@@index([contentItemId])
-@@index([platform])
+  @@unique([contentItemId, platform])
+  @@index([contentItemId])
+  @@index([platform])
 }
 
 model OrderItemAllocation {
-id String @id @default(cuid())
-orderItemId String
-purchaseItemId String?
-stockLotId String?
+  id             String  @id @default(cuid())
+  orderItemId    String
+  purchaseItemId String?
+  stockLotId     String?
 
-quantity Int
-condition InventoryCondition @default(GOOD)
+  quantity  Int
+  condition InventoryCondition @default(GOOD)
 
-unitCost Decimal @db.Decimal(12, 2)
+  unitCost Decimal @db.Decimal(12, 2)
 
-totalCost Decimal? @db.Decimal(18, 2)
-returnedCost Decimal @default(0) @db.Decimal(18, 2)
-transferredQuantity Int @default(0)
-transferredCost Decimal? @default(0) @db.Decimal(18, 2)
+  totalCost           Decimal? @db.Decimal(18, 2)
+  returnedCost        Decimal  @default(0) @db.Decimal(18, 2)
+  transferredQuantity Int      @default(0)
+  transferredCost     Decimal? @default(0) @db.Decimal(18, 2)
 
-createdAt DateTime @default(now())
+  createdAt DateTime @default(now())
 
-orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
-purchaseItem PurchaseItem? @relation(fields: [purchaseItemId], references: [id], onDelete: SetNull)
-stockLot InventoryStockLot? @relation(fields: [stockLotId], references: [id], onDelete: Restrict)
+  orderItem    OrderItem          @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  purchaseItem PurchaseItem?      @relation(fields: [purchaseItemId], references: [id], onDelete: SetNull)
+  stockLot     InventoryStockLot? @relation(fields: [stockLotId], references: [id], onDelete: Restrict)
 
-@@unique([orderItemId, stockLotId, condition])
-@@index([orderItemId])
-@@index([purchaseItemId])
-@@index([stockLotId])
+  returnedQuantity Int @default(0)
 
-returnedQuantity Int @default(0)
+  @@unique([orderItemId, stockLotId, condition])
+  @@index([orderItemId])
+  @@index([purchaseItemId])
+  @@index([stockLotId])
 }
 
 enum ProductAttributeType {
-CATEGORY
-COLOR
-BRAND
-SIZE
+  CATEGORY
+  COLOR
+  BRAND
+  SIZE
 }
 
 model ProductAttribute {
-id String @id @default(cuid())
-businessId String
-type ProductAttributeType
-name String
-normalizedName String
+  id             String               @id @default(cuid())
+  businessId     String
+  type           ProductAttributeType
+  name           String
+  normalizedName String
 
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-@@unique([businessId, type, normalizedName])
+  @@unique([businessId, type, normalizedName])
 }
 
 enum PurchaseReceiptStatus {
-IN_TRANSIT
-RECEIVED
+  IN_TRANSIT
+  RECEIVED
 }
 
 enum InventoryCondition {
-GOOD
-DEFECTIVE
+  GOOD
+  DEFECTIVE
 }
 
 model OrderMutation {
-id String @id @default(cuid())
-orderId String
-requestId String
-fingerprint String
-result Json
-createdAt DateTime @default(now())
-order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-@@unique([orderId, requestId])
-@@index([orderId])
+  id          String   @id @default(cuid())
+  orderId     String
+  requestId   String
+  fingerprint String
+  result      Json
+  createdAt   DateTime @default(now())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, requestId])
+  @@index([orderId])
 }
 
 enum OrderReturnStatus {
-PENDING
-RECEIVED
-CANCELED
+  PENDING
+  RECEIVED
+  CANCELED
 }
 
 enum OrderReturnReason {
-DEFECT
-EXCHANGE
-OTHER
+  DEFECT
+  EXCHANGE
+  OTHER
 }
 
 model OrderReturn {
-fulfillmentCycle Int @default(0)
-id String @id @default(cuid())
-orderId String
-exchangeId String?
-status OrderReturnStatus @default(PENDING)
-receivedAt DateTime?
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  fulfillmentCycle Int               @default(0)
+  id               String            @id @default(cuid())
+  orderId          String
+  exchangeId       String?
+  status           OrderReturnStatus @default(PENDING)
+  receivedAt       DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
-order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-items OrderReturnItem[]
-exchange OrderExchange? @relation(fields: [exchangeId], references: [id], onDelete: Restrict)
+  order    Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  items    OrderReturnItem[]
+  exchange OrderExchange?    @relation(fields: [exchangeId], references: [id], onDelete: Restrict)
 
-@@index([orderId, status])
-@@index([exchangeId])
+  @@index([orderId, status])
+  @@index([exchangeId])
 }
 
 model OrderReturnItem {
-id String @id @default(cuid())
-returnId String
-orderItemId String
-quantity Int
-reason OrderReturnReason
-condition InventoryCondition
-note String?
+  id          String             @id @default(cuid())
+  returnId    String
+  orderItemId String
+  quantity    Int
+  reason      OrderReturnReason
+  condition   InventoryCondition
+  note        String?
 
-// ვინარჩუნებთ ნივთის ინფორმაციას გადაცვლის შემდეგაც.
-name String
-imageUrl String?
-color String?
-size String?
-unitPrice Decimal @db.Decimal(12, 2)
+  // ვინარჩუნებთ ნივთის ინფორმაციას გადაცვლის შემდეგაც.
+  name      String
+  imageUrl  String?
+  color     String?
+  size      String?
+  unitPrice Decimal @db.Decimal(12, 2)
 
-createdAt DateTime @default(now())
+  createdAt DateTime @default(now())
 
-orderReturn OrderReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  orderReturn OrderReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
 
-@@index([returnId])
-@@index([orderItemId])
+  @@index([returnId])
+  @@index([orderItemId])
 }
 
 model OrderExchange {
-id String @id @default(cuid())
-orderId String
-previousCycle Int
-nextCycle Int
-previousSnapshot Json
-previousTotal Decimal @db.Decimal(12, 2)
-newTotal Decimal @db.Decimal(12, 2)
-createdAt DateTime @default(now())
+  id               String   @id @default(cuid())
+  orderId          String
+  previousCycle    Int
+  nextCycle        Int
+  previousSnapshot Json
+  previousTotal    Decimal  @db.Decimal(12, 2)
+  newTotal         Decimal  @db.Decimal(12, 2)
+  createdAt        DateTime @default(now())
 
-order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-returns OrderReturn[]
+  order   Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  returns OrderReturn[]
 
-@@unique([orderId, nextCycle])
-@@index([orderId, createdAt])
+  @@unique([orderId, nextCycle])
+  @@index([orderId, createdAt])
 }
 
 enum OrderFinancialEntryKind {
-SALE
-RETURN
-EXCHANGE_ADJUSTMENT
-COST_ADJUSTMENT
+  SALE
+  RETURN
+  EXCHANGE_ADJUSTMENT
+  COST_ADJUSTMENT
 }
 
 model OrderFinancialEntry {
-id String @id @default(cuid())
-businessId String
+  id         String @id @default(cuid())
+  businessId String
 
-// კავშირი შეიძლება მოიხსნას ; ფინანსური ჩანაწერი რჩება.
-orderId String?
-orderNumber Int?
-fulfillmentCycle Int
+  // კავშირი შეიძლება მოიხსნას ; ფინანსური ჩანაწერი რჩება.
+  orderId          String?
+  orderNumber      Int?
+  fulfillmentCycle Int
 
-// განმეორებითი მოქმედება ახალ ჩანაწერს ვერ შექმნის.
-eventKey String
-kind OrderFinancialEntryKind
+  // განმეორებითი მოქმედება ახალ ჩანაწერს ვერ შექმნის.
+  eventKey String
+  kind     OrderFinancialEntryKind
 
-// გაყიდვა დადებითია, მისი შემცირება — უარყოფითი.
-productRevenueDelta Decimal @db.Decimal(18, 2)
-deliveryRevenueDelta Decimal @default(0) @db.Decimal(18, 2)
-costOfGoodsDelta Decimal @db.Decimal(18, 2)
+  // გაყიდვა დადებითია, მისი შემცირება — უარყოფითი.
+  productRevenueDelta  Decimal @db.Decimal(18, 2)
+  deliveryRevenueDelta Decimal @default(0) @db.Decimal(18, 2)
+  costOfGoodsDelta     Decimal @db.Decimal(18, 2)
 
-// დაუდასტურებელი თვითღირებულება მოგებად არ ჩაითვალოს.
-costComplete Boolean @default(false)
+  // დაუდასტურებელი თვითღირებულება მოგებად არ ჩაითვალოს.
+  costComplete Boolean @default(false)
 
-occurredAt DateTime
-createdAt DateTime @default(now())
+  occurredAt DateTime
+  createdAt  DateTime @default(now())
 
-business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
-items OrderFinancialEntryItem[]
+  items OrderFinancialEntryItem[]
 
-@@unique([businessId, eventKey])
-@@index([businessId, occurredAt])
-@@index([orderId, fulfillmentCycle])
+  @@unique([businessId, eventKey])
+  @@index([businessId, occurredAt])
+  @@index([orderId, fulfillmentCycle])
 }
 
 model OrderFinancialEntryItem {
-id String @id @default(cuid())
-entryId String
+  id      String @id @default(cuid())
+  entryId String
 
-// ისტორიული მნიშვნელობა ; პროდუქტის ცვლილებაზე არ გადაიწერება.
-sourceOrderItemId String
-name String
-quantityDelta Int
-revenueDelta Decimal @db.Decimal(18, 2)
-costDelta Decimal @db.Decimal(18, 2)
-costComplete Boolean @default(false)
+  // ისტორიული მნიშვნელობა ; პროდუქტის ცვლილებაზე არ გადაიწერება.
+  sourceOrderItemId String
+  name              String
+  quantityDelta     Int
+  revenueDelta      Decimal @db.Decimal(18, 2)
+  costDelta         Decimal @db.Decimal(18, 2)
+  costComplete      Boolean @default(false)
 
-entry OrderFinancialEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  entry OrderFinancialEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
 
-@@index([entryId])
-@@index([sourceOrderItemId])
+  @@index([entryId])
+  @@index([sourceOrderItemId])
 }
 
 model InventoryStockLot {
-id String @id @default(cuid())
+  id String @id @default(cuid())
 
-inventoryItemId String
-purchaseItemId String?
-sourcePurchaseItemId String?
+  inventoryItemId      String
+  purchaseItemId       String?
+  sourcePurchaseItemId String?
 
-quantity Int
-remainingQuantity Int
+  quantity          Int
+  remainingQuantity Int
 
-defectiveQuantity Int @default(0)
-remainingDefectiveQuantity Int @default(0)
-writtenOffQuantity Int @default(0)
-writtenOffDefectiveQuantity Int @default(0)
+  defectiveQuantity           Int @default(0)
+  remainingDefectiveQuantity  Int @default(0)
+  writtenOffQuantity          Int @default(0)
+  writtenOffDefectiveQuantity Int @default(0)
 
-unitCost Decimal @db.Decimal(12, 2)
-remainingCost Decimal? @db.Decimal(18, 2)
+  unitCost      Decimal? @db.Decimal(12, 2)
+  remainingCost Decimal? @db.Decimal(18, 2)
 
-availableAt DateTime
-createdAt DateTime @default(now())
-updatedAt DateTime @updatedAt
+  availableAt DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-purchaseItem PurchaseItem? @relation("PurchaseStockLots", fields: [purchaseItemId], references: [id], onDelete: SetNull)
-sourcePurchaseItem PurchaseItem? @relation("PurchaseHistoricalStockLots", fields: [sourcePurchaseItemId], references: [id], onDelete: SetNull)
+  inventoryItem      InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  purchaseItem       PurchaseItem? @relation("PurchaseStockLots", fields: [purchaseItemId], references: [id], onDelete: SetNull)
+  sourcePurchaseItem PurchaseItem? @relation("PurchaseHistoricalStockLots", fields: [sourcePurchaseItemId], references: [id], onDelete: SetNull)
 
-orderAllocations OrderItemAllocation[]
+  orderAllocations OrderItemAllocation[]
 
-@@index([inventoryItemId, availableAt, id])
-@@index([purchaseItemId])
-@@index([sourcePurchaseItemId])
+  @@index([inventoryItemId, availableAt, id])
+  @@index([purchaseItemId])
+  @@index([sourcePurchaseItemId])
 }
 
 model InventoryWriteOff {
-id String @id @default(cuid())
-businessId String
-inventoryItemId String
-requestId String
+  id              String @id @default(cuid())
+  businessId      String
+  inventoryItemId String
+  requestId       String
 
-name String
-color String?
-size String?
+  name  String
+  color String?
+  size  String?
 
-quantity Int
-defectiveQuantity Int @default(0)
-totalCost Decimal @db.Decimal(18, 2)
+  quantity          Int
+  defectiveQuantity Int     @default(0)
+  totalCost         Decimal @db.Decimal(18, 2)
 
-createdAt DateTime @default(now())
+  createdAt DateTime @default(now())
 
-business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
 
-@@unique([businessId, requestId])
-@@index([businessId, createdAt])
-@@index([inventoryItemId])
+  @@unique([businessId, requestId])
+  @@index([businessId, createdAt])
+  @@index([inventoryItemId])
+}
+
+enum ImportJobStatus {
+  DRAFT
+  REVIEW
+  READY
+  RUNNING
+  PARTIAL
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+enum ImportRecordType {
+  CUSTOMER
+  PRODUCT
+  INVENTORY
+  PURCHASE
+  ORDER
+  PAYMENT
+  RETURN
+  FINANCIAL_SUMMARY
+  UNCLASSIFIED
+}
+
+enum ImportRecordStatus {
+  PENDING
+  NEEDS_REVIEW
+  INVALID
+  READY
+  SKIPPED
+  IMPORTED
+  FAILED
+}
+
+model ImportJob {
+  id         String @id @default(cuid())
+  businessId String
+
+  // შემქმნელის იდენტობა აუდიტისთვის.
+  createdByUserId String
+
+  // იგივე მოთხოვნით სამუშაო სესია მეორედ არ შეიქმნება.
+  clientRequestId String
+
+  status ImportJobStatus @default(DRAFT)
+
+  // სამუშაო მონაცემების ფორმატის ვერსია.
+  schemaVersion Int @default(1)
+
+  // დადასტურების შემდეგ ცვლილებების აღმოჩენისთვის.
+  revision          Int  @default(1)
+  confirmedRevision Int?
+
+  // თარიღის, მარაგის რეჟიმისა და სხვა დამტკიცებული წესები.
+  settings Json?
+
+  // წინასწარი და საბოლოო შეჯერების შედეგები.
+  previewSummary Json?
+  resultSummary  Json?
+
+  startedAt  DateTime?
+  finishedAt DateTime?
+  expiresAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  files   ImportFile[]
+  records ImportRecord[]
+
+  @@unique([businessId, clientRequestId])
+  @@index([businessId, status, createdAt])
+  @@index([expiresAt])
+}
+
+model ImportFile {
+  id    String @id @default(cuid())
+  jobId String
+
+  originalName String
+  format       String
+  byteSize     Int
+
+  // ფაილის შიგთავსის ჰეში განმეორებების აღმოსაჩენად.
+  sha256 String
+
+  // მხოლოდ დახურული საცავის მისამართი, არა საჯარო URL.
+  storagePath String?
+
+  // აღმოჩენილი Sheet-ები, ცხრილები და მათი საზღვრები.
+  structure Json?
+
+  // მომხმარებლის მიერ დამტკიცებული სვეტების შესაბამისობები.
+  mapping Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  job ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  photos ImportPhoto[]
+
+  @@unique([jobId, sha256])
+  @@index([jobId])
+}
+
+model ImportRecord {
+  id    String @id @default(cuid())
+  jobId String
+
+  // ამ სამუშაო სესიის ფარგლებში სტაბილური იდენტობა.
+  recordKey String
+
+  type   ImportRecordType   @default(UNCLASSIFIED)
+  status ImportRecordStatus @default(PENDING)
+
+  // წყაროს ფაილები, Sheet-ები და რიგების ნომრები.
+  // ერთი შეკვეთა შეიძლება რამდენიმე რიგიდან შეიკრას.
+  provenance Json
+
+  // თავდაპირველი მონაცემები ; შესწორებისას არ გადაიწერება.
+  rawData Json
+
+  // ნორმალიზებული და მომხმარებლის მიერ შესწორებული მონაცემები.
+  normalizedData Json?
+
+  // დაკავშირება სხვა სამუშაო ჩანაწერებთან ან არსებულ მონაცემებთან.
+  proposedLinks Json?
+
+  // შეცდომები, გაფრთხილებები და ამოცნობის განმარტებები.
+  issues Json?
+
+  // მხოლოდ წარმატებული შესრულების შემდეგ მიღებული შედეგი.
+  result Json?
+
+  revision Int @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  job ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, recordKey])
+  @@index([jobId, status, type])
+}
+
+model ImportPhoto {
+  id     String @id @default(cuid())
+  fileId String
+
+  // წყაროს მდებარეობის სტაბილური SHA-256 კოდი.
+  sourceKey String
+
+  sheetName    String
+  rowNumber    Int
+  columnNumber Int
+
+  // ფოტოს მდებარეობა Excel/Numbers არქივში.
+  sourcePath   String
+  originalName String
+
+  // შემცირებული ფოტოს ჰეში და ზომა.
+  sha256   String
+  byteSize Int
+
+  // მხოლოდ სერვერის მიერ მიღებული საცავის მისამართები.
+  storagePath String @unique
+  imageUrl    String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  file ImportFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([fileId, sourceKey])
+  @@index([fileId, sheetName, rowNumber])
+}
+
+model CourierSettlement {
+  id              String @id @default(cuid())
+  businessId      String
+  clientRequestId String
+
+  // დადებითი: გამყიდველმა გადაურიცხა საკურიეროს.
+  // უარყოფითი: გამყიდველმა მიიღო თანხა საკურიეროსგან.
+  amount Decimal @db.Decimal(14, 2)
+
+  createdAt DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, clientRequestId])
+  @@index([businessId, createdAt])
+}
+
+model EmailChangeRequest {
+  id                  String    @id @default(cuid())
+  userId              String
+  sessionTokenHash    String
+  authorizationHash   String    @unique
+  passwordFingerprint String
+  previousEmail       String
+  newEmail            String?
+  codeHash            String?
+  attempts            Int       @default(0)
+  logoutOtherSessions Boolean   @default(false)
+  lastSentAt          DateTime?
+  expiresAt           DateTime
+  usedAt              DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+model PhoneChangeRequest {
+  id                  String    @id @default(cuid())
+  userId              String
+  sessionTokenHash    String
+  authorizationHash   String    @unique
+  passwordFingerprint String
+  previousPhone       String
+  newPhone            String?
+  codeHash            String?
+  attempts            Int       @default(0)
+  lastSentAt          DateTime?
+  expiresAt           DateTime
+  usedAt              DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+model PasswordChangeRequest {
+  id                  String    @id @default(cuid())
+  userId              String
+  clientRequestId     String
+  sessionTokenHash    String
+  passwordFingerprint String
+  newPasswordHash     String?
+  logoutOtherSessions Boolean
+  completedAt         DateTime?
+  createdAt           DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientRequestId])
+  @@index([userId, createdAt])
+}
+
+model PasswordResetRequest {
+  id                  String    @id @default(cuid())
+  userId              String
+  email               String
+  tokenHash           String    @unique
+  passwordFingerprint String
+  expiresAt           DateTime
+  usedAt              DateTime?
+  createdAt           DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
 }

@@ -26,7 +26,8 @@ const statuses = {
     },
 };
 const paymentLabels = {
-    PAID: "გადახდილი", UNPAID: "გადაუხდელი",
+    UNKNOWN: "გადახდა დაუზუსტებელია",
+    PAID: "გადახდილი", UNPAID: "გადასახდელი",
     PARTIALLY_PAID: "ნაწილობრივ გადახდილი", COURIER_ONLY_PAID: "გადახდილია მხოლოდ კურიერის საფასური",
 };
 
@@ -142,18 +143,37 @@ export default async function PublicOrderPage({ params }: { params: Promise<{ to
                     <div className="flex justify-between gap-3"><dt className="text-text-secondary">პროდუქტები</dt><dd className="tabular-nums">{money(productsTotal)}</dd></div>
                     <div className="flex justify-between gap-3"><dt className="text-text-secondary">მიწოდება</dt><dd className="tabular-nums">{money(order.courierFee)}</dd></div>
                     <div className="flex justify-between gap-3 border-t border-border pt-3 text-lg font-semibold"><dt>სულ</dt><dd className="tabular-nums">{money(total)}</dd></div>
-                    <div className="flex justify-between gap-3"><dt className="text-text-secondary">გადახდილი</dt><dd className="tabular-nums text-success">{money(paid)}</dd></div>
-                    <div className="flex justify-between gap-3"><dt className="text-text-secondary">დარჩენილი თანხა</dt><dd className="font-semibold tabular-nums">{money(remaining)}</dd></div>
-                    {refundDue.greaterThan(0) && (
-                        <div className="flex justify-between gap-3">
-                            <dt className="text-text-secondary">
-                                დასაბრუნებელი თანხა
-                            </dt>
-                            <dd className="font-semibold tabular-nums text-warning">
-                                {money(refundDue)}
-                            </dd>
-                        </div>
+                    {order.paymentStatus !== "UNKNOWN" && (
+                        <>
+                            <div className="flex justify-between gap-3">
+                                <dt className="text-text-secondary">
+                                    გადახდილი
+                                </dt>
+                                <dd className="tabular-nums text-success">
+                                    {money(paid)}
+                                </dd>
+                            </div>
+                            <div className="flex justify-between gap-3">
+                                <dt className="text-text-secondary">
+                                    დარჩენილი თანხა
+                                </dt>
+                                <dd className="font-semibold tabular-nums">
+                                    {money(remaining)}
+                                </dd>
+                            </div>
+                        </>
                     )}
+                    {order.paymentStatus !== "UNKNOWN" &&
+                        refundDue.greaterThan(0) && (
+                            <div className="flex justify-between gap-3">
+                                <dt className="text-text-secondary">
+                                    დასაბრუნებელი თანხა
+                                </dt>
+                                <dd className="font-semibold tabular-nums text-warning">
+                                    {money(refundDue)}
+                                </dd>
+                            </div>
+                        )}
                 </dl>
                 <p className="mt-4 rounded-xl bg-background px-3 py-2 text-sm text-text-secondary">{paymentLabels[order.paymentStatus]}</p>
             </section>

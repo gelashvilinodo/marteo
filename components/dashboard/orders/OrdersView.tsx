@@ -18,6 +18,9 @@ import InventoryFiltersDisclosure from "@/components/dashboard/inventory/Invento
 import OrderInvoiceButton from "./OrderInvoiceButton";
 import OrderBulkDeleteButton from "./OrderBulkDeleteButton";
 import OrdersListSkeleton from "./OrdersListSkeleton";
+import CourierReminder, {
+    COURIER_REMINDER_CHANGED,
+} from "./CourierReminder";
 import PeriodFilter, {
     standardPeriodOptions,
 } from "@/components/dashboard/shared/PeriodFilter";
@@ -27,6 +30,10 @@ import PeriodFilter, {
 const OrderReturnButton = dynamic(() => import("./OrderReturnButton"), { ssr: false });
 const OrderDeleteButton = dynamic(() => import("./OrderDeleteButton"), { ssr: false });
 const OrderRefundButton = dynamic(() => import("./OrderRefundButton"), { ssr: false });
+const OrderPaymentResolution = dynamic(
+    () => import("./OrderPaymentResolution"),
+    { ssr: false },
+);
 import { moneyCents } from "@/lib/orders/order-form";
 
 import {
@@ -64,12 +71,18 @@ const statuses = {
     },
 };
 const payments = {
+    UNKNOWN: "გადახდა დაუზუსტებელია",
     PAID: "გადახდილი",
-    UNPAID: "გადაუხდელი",
+    UNPAID: "გადასახდელი",
     PARTIALLY_PAID: "ნაწილობრივ",
     COURIER_ONLY_PAID: "მხოლოდ კურიერი",
 };
-const methods = { CASH: "ნაღდი", BANK_TRANSFER: "გადარიცხვა", CARD: "ბარათი" };
+const methods = {
+    CASH: "ნაღდი",
+    BANK_TRANSFER: "გადარიცხვა",
+    CARD: "ბარათი",
+    UNKNOWN: "მეთოდი უცნობია",
+};
 
 function number(value: OrderEntry) {
     return value.number !== null ? `#${String(value.number).padStart(4, "0")}` : `#${value.id.slice(-6)}`;
@@ -743,6 +756,9 @@ export default function OrdersView({
     }
 
     async function refreshOrder(orderId: string) {
+        window.dispatchEvent(
+            new Event(COURIER_REMINDER_CHANGED),
+        );
         if (mutationLoading) {
             window.dispatchEvent(new Event(ORDERS_CHANGED, { cancelable: true }));
             return;
@@ -1010,6 +1026,7 @@ export default function OrdersView({
                     </button>
                 ))}
             </div>
+            <CourierReminder />
             <section id="orders-list" aria-busy={pending} className="mt-6 min-w-0 scroll-mt-20 rounded-2xl border border-border bg-surface">
                 <div className="flex items-center gap-2 p-4">
                     <Icon icon="solar:clipboard-list-linear" className="h-5 w-5 text-accent" />
@@ -1034,7 +1051,23 @@ export default function OrdersView({
                                 }}>
                                     <label className="block min-w-0"><span className="mb-1.5 block text-sm text-text-secondary">ძებნა</span><input ref={search} name="q" defaultValue={data.query} placeholder="ნომერი, მიმღები ან პროდუქტი" className={inputClass} /></label>
                                     <label className="block min-w-0"><span className="mb-1.5 block text-sm text-text-secondary">შეკვეთის სტატუსი</span><select name="status" defaultValue={data.filter} className={inputClass}><option value="all">ყველა</option><option value="processing">მუშავდება</option><option value="shipped">გაგზავნილი</option><option value="completed">დასრულებული</option><option value="canceled">გაუქმებული</option><option value="returned">დაბრუნებული</option></select></label>
-                                    <label className="block min-w-0"><span className="mb-1.5 block text-sm text-text-secondary">გადახდის სტატუსი</span><select name="payment" defaultValue={data.payment} className={inputClass}><option value="all">ყველა</option><option value="PAID">გადახდილი</option><option value="UNPAID">გადაუხდელი</option><option value="PARTIALLY_PAID">ნაწილობრივ</option><option value="COURIER_ONLY_PAID">მხოლოდ კურიერი</option></select></label>
+                                    <label className="block min-w-0">
+                                        <span className="mb-1.5 block text-sm text-text-secondary">
+                                            გადახდის სტატუსი
+                                        </span>
+                                        <select
+                                            name="payment"
+                                            defaultValue={data.payment}
+                                            className={inputClass}
+                                        >
+                                            <option value="all">ყველა</option>
+                                            <option value="PAID">გადახდილი</option>
+                                            <option value="UNPAID">გადასახდელი</option>
+                                            <option value="PARTIALLY_PAID">ნაწილობრივ</option>
+                                            <option value="COURIER_ONLY_PAID">მხოლოდ კურიერი</option>
+                                            <option value="UNKNOWN">დაუზუსტებელი</option>
+                                        </select>
+                                    </label>
                                     <label className="block min-w-0"><span className="mb-1.5 block text-sm text-text-secondary">დალაგება</span><select name="sort" defaultValue={data.sort} className={inputClass}><option value="date-desc">ჯერ ახალი</option><option value="date-asc">ჯერ ძველი</option><option value="number-desc">ნომერი: კლებადობით</option><option value="number-asc">ნომერი: ზრდადობით</option><option value="recipient-asc">მიმღები: ა → ჰ</option><option value="recipient-desc">მიმღები: ჰ → ა</option></select></label>
                                     <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row xl:col-span-4">
                                         <button disabled={pending} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-white"><Icon icon="solar:magnifer-linear" className="h-5 w-5" />ჩვენება</button>
@@ -1304,12 +1337,17 @@ export default function OrdersView({
                                             </div>
                                         </td>
 
-                                        <td className="hidden px-3 py-2 align-middle sm:table-cell">
+                                        <td className="hidden min-w-0 overflow-hidden px-3 py-2 align-middle sm:table-cell">
                                             <p className="truncate text-sm font-medium text-text-primary">
                                                 {recipient(order)}
                                             </p>
-                                            <p className="mt-1 truncate text-xs text-text-secondary">
-                                                {order.recipientPhone}
+                                            <p
+                                                title={order.shippingAddress || undefined}
+                                                className="mt-1 block w-full min-w-0 max-w-full truncate text-xs text-text-secondary"
+                                            >
+                                                {order.shippingAddress
+                                                    ?.trim()
+                                                    .replace(/\s+/g, " ") || "—"}
                                             </p>
                                         </td>
 
@@ -1439,6 +1477,24 @@ export default function OrdersView({
                     order={selected}
                     onReturn={openOrderReturn}
                 /><span className="text-sm text-text-secondary">{payments[selected.paymentStatus]}</span></div>
+                {selected.paymentStatus === "UNKNOWN" &&
+                    (
+                        selected.status === "PROCESSING" ||
+                        selected.status === "SHIPPED"
+                    ) &&
+                    !selected.hasReturnHistory &&
+                    !selected.hasPastReturns &&
+                    !selected.stockReturnedAt &&
+                    !selected.deleteRequestedAt && (
+                        <OrderPaymentResolution
+                            key={`${selected.id}:${selected.invoiceVersion}`}
+                            orderId={selected.id}
+                            expectedVersion={selected.invoiceVersion}
+                            onResolved={async () => {
+                                await refreshOrder(selected.id);
+                            }}
+                        />
+                    )}
                 <section
                     aria-label="შეკვეთის დამატებითი ინფორმაცია"
                     className="mt-4 space-y-2"
@@ -1597,8 +1653,12 @@ export default function OrdersView({
                         ["პროდუქტები", selected.productsTotal],
                         ["კურიერის საფასური", selected.courierFee],
                         ["სულ", selected.total],
-                        ["გადახდილი", selected.paidAmount],
-                        ["დარჩენილი გადასახდელი", selected.remainingAmount],
+                        ...(selected.paymentStatus === "UNKNOWN"
+                            ? []
+                            : [
+                                ["გადახდილი", selected.paidAmount],
+                                ["დარჩენილი გადასახდელი", selected.remainingAmount],
+                            ]),
                     ].map(([label, value]) => (
                         <div
                             key={label}
@@ -1614,41 +1674,42 @@ export default function OrdersView({
                     ))}
                 </dl>
 
-                {selected.refundDue !== "0.00" && (
-                    <section className="mt-4 rounded-xl border border-warning/30 bg-warning/5 p-4">
-                        <div className="flex items-start gap-3">
-                            <Icon
-                                icon="solar:wallet-money-linear"
-                                className="mt-0.5 h-5 w-5 shrink-0 text-warning"
-                            />
+                {selected.paymentStatus !== "UNKNOWN" &&
+                    selected.refundDue !== "0.00" && (
+                        <section className="mt-4 rounded-xl border border-warning/30 bg-warning/5 p-4">
+                            <div className="flex items-start gap-3">
+                                <Icon
+                                    icon="solar:wallet-money-linear"
+                                    className="mt-0.5 h-5 w-5 shrink-0 text-warning"
+                                />
 
-                            <div className="min-w-0">
-                                <h3 className="text-sm font-semibold text-warning">
-                                    მომხმარებლისთვის დასაბრუნებელია {selected.refundDue} ₾
-                                </h3>
+                                <div className="min-w-0">
+                                    <h3 className="text-sm font-semibold text-warning">
+                                        მომხმარებლისთვის დასაბრუნებელია {selected.refundDue} ₾
+                                    </h3>
 
-                                <p className="mt-2 text-xs text-text-secondary">
-                                    გადახდილი თანხა შეკვეთის მიმდინარე ჯამს
-                                    აღემატება. თანხის დაბრუნება ჯერ არ არის
-                                    აღრიცხული.
-                                </p>
+                                    <p className="mt-2 text-xs text-text-secondary">
+                                        გადახდილი თანხა შეკვეთის მიმდინარე ჯამს
+                                        აღემატება. თანხის დაბრუნება ჯერ არ არის
+                                        აღრიცხული.
+                                    </p>
 
-                                <p className="mt-2 text-xs text-text-secondary">
-                                    ჯერ დაუბრუნე თანხა მომხმარებელს, შემდეგ
-                                    დაადასტურე.
-                                </p>
+                                    <p className="mt-2 text-xs text-text-secondary">
+                                        ჯერ დაუბრუნე თანხა მომხმარებელს, შემდეგ
+                                        დაადასტურე.
+                                    </p>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="mt-3">
-                            <OrderRefundButton
-                                orderId={selected.id}
-                                onChanged={() => { void refreshOrder(selected.id); }}
-                                onUpdated={close}
-                            />
-                        </div>
-                    </section>
-                )}
+                            <div className="mt-3">
+                                <OrderRefundButton
+                                    orderId={selected.id}
+                                    onChanged={() => { void refreshOrder(selected.id); }}
+                                    onUpdated={close}
+                                />
+                            </div>
+                        </section>
+                    )}
             </div>}
         </dialog>
 

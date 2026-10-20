@@ -51,6 +51,7 @@ export function serializeOrderRecord(order: OrderRecord, details: boolean) {
     const { items: rawItems, payments: _payments, returns: _returns, notes, shippingAddress, ...header } = order;
     const summary = {
         ...header,
+        shippingAddress,
         hasNotes: Boolean(notes),
 
         missingManualCosts: order.items

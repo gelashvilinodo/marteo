@@ -80,7 +80,14 @@ function getCategorySegments(
     >();
 
     for (const category of data.categories) {
-        const value = BigInt(mode === "value" ? category.valueCents : category.quantity);
+        const rawValue =
+            mode === "value"
+                ? category.valueCents
+                : category.quantity;
+
+        if (rawValue === null) continue;
+
+        const value = BigInt(rawValue);
         if (value <= ZERO) continue;
         categories.set(category.key, { label: category.label, value });
     }
@@ -130,8 +137,13 @@ export default function InventoryChart({
     const [mode, setMode] = useState<Mode>("categories");
     const selectId = useId();
 
-    const segments =
-        mode === "status"
+    const valueUnknown =
+        mode === "value" &&
+        data.categories.some(category => category.valueCents === null);
+
+    const segments: Segment[] = valueUnknown
+        ? []
+        : mode === "status"
             ? getStatusSegments(data)
             : getCategorySegments(data, mode);
 
@@ -268,9 +280,11 @@ export default function InventoryChart({
                                         : "text-2xl",
                                 ].join(" ")}
                             >
-                                {mode === "value"
-                                    ? formatMoney(total)
-                                    : formatQuantity(total)}
+                                {valueUnknown
+                                    ? "უცნობია"
+                                    : mode === "value"
+                                        ? formatMoney(total)
+                                        : formatQuantity(total)}
                             </p>
 
                             <p className="mt-1 text-xs text-text-secondary">
@@ -282,7 +296,9 @@ export default function InventoryChart({
 
                 {total === ZERO ? (
                     <p className="mt-4 text-center text-sm text-text-secondary">
-                        {emptyMessage}
+                        {valueUnknown
+                            ? "მარაგის ნაწილს თვითღირებულება მითითებული არ აქვს. სრულ ღირებულებას მისი შევსების შემდეგ გაჩვენებთ. რაოდენობები ჩვეულებრივ ითვლება."
+                            : emptyMessage}
                     </p>
                 ) : (
                     <ul className="mt-5 space-y-3">

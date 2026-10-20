@@ -28,7 +28,7 @@ export type ValidatedOrder = {
     status: "PROCESSING" | "SHIPPED" | "COMPLETED" | "CANCELED";
     courierFee: Prisma.Decimal;
     paidAmount: Prisma.Decimal;
-    paymentMethod: "CASH" | "BANK_TRANSFER" | "CARD";
+    paymentMethod: "CASH" | "BANK_TRANSFER" | "CARD" | "UNKNOWN";
     bankName: string;
     items: OrderProduct[];
 };
@@ -139,7 +139,8 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
     if (
         data.paymentMethod !== "CASH" &&
         data.paymentMethod !== "BANK_TRANSFER" &&
-        data.paymentMethod !== "CARD"
+        data.paymentMethod !== "CARD" &&
+        !(mode === "edit" && data.paymentMethod === "UNKNOWN")
     ) {
         fail("გადახდის მეთოდი არასწორია.");
     }
@@ -212,23 +213,20 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
                     item.unitPrice,
                     `${label}, გასაყიდი ფასი`,
                 ),
-                // მარაგის თვითღირებულებას სერვერი პარტიებიდან აიღებს.
+                // შენახული ღირებულება პრიორიტეტულია.
+                // შეყვანილი თანხა მხოლოდ უცნობი ნაწილისთვის გამოიყენება.
                 unitCost:
-                    item.source === "MANUAL"
-                        ? (
-                            item.unitCost === undefined ||
-                            item.unitCost === null ||
-                            (
-                                typeof item.unitCost === "string" &&
-                                item.unitCost.trim() === ""
-                            )
+                    item.unitCost === undefined ||
+                        item.unitCost === null ||
+                        (
+                            typeof item.unitCost === "string" &&
+                            item.unitCost.trim() === ""
                         )
-                            ? null
-                            : money(
-                                item.unitCost,
-                                `${label}, თვითღირებულება`,
-                            )
-                        : null,
+                        ? null
+                        : money(
+                            item.unitCost,
+                            `${label}, თვითღირებულება`,
+                        ),
             };
         },
     );

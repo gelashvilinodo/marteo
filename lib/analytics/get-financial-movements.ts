@@ -85,6 +85,13 @@ COALESCE(
 ) AS order_key
             FROM "OrderFinancialEntry" f
             WHERE f."businessId" = ${businessId}
+                            AND NOT EXISTS (
+                    SELECT 1
+                    FROM "Order" pending
+                    WHERE pending.id = f."orderId"
+                        AND pending."businessId" = f."businessId"
+                        AND pending."analyticsPendingCost" = TRUE
+                )
                 AND f."occurredAt" >= ${range.start}
                 AND f."occurredAt" < ${range.end}
 
@@ -108,6 +115,7 @@ o.number,
             FROM "OrderPayment" p
             JOIN "Order" o ON o.id = p."orderId"
             WHERE o."businessId" = ${businessId}
+                AND o."analyticsPendingCost" = FALSE
                 AND p."createdAt" >= ${range.start}
                 AND p."createdAt" < ${range.end}
 

@@ -28,7 +28,7 @@ export async function getOrdersPgPage(
     const allowedFilters: OrdersFilter[] = ["all", "processing", "shipped", "completed", "canceled", "returned"];
     const filter: OrdersFilter = allowedFilters.includes(text("status") as OrdersFilter) ? text("status") as OrdersFilter : "all";
     const sort: OrdersSort = Object.hasOwn(ordering, text("sort")) ? text("sort") as OrdersSort : "date-desc";
-    const allowedPayments: OrdersPaymentFilter[] = ["all", "PAID", "UNPAID", "PARTIALLY_PAID", "COURIER_ONLY_PAID"];
+    const allowedPayments: OrdersPaymentFilter[] = ["all", "PAID", "UNPAID", "PARTIALLY_PAID", "COURIER_ONLY_PAID", "UNKNOWN"];
     const payment: OrdersPaymentFilter = allowedPayments.includes(text("payment") as OrdersPaymentFilter) ? text("payment") as OrdersPaymentFilter : "all";
     const range = resolveOrdersPeriod(text("period"), text("from"), text("to"));
     const query = text("q"), rawPage = Number(text("page"));

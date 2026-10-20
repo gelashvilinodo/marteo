@@ -203,6 +203,7 @@ export async function createOrderItems(
                     name: item.name,
                     quantity: item.quantity,
                     condition: item.condition,
+                    unitCost: item.unitCost,
                 }),
             );
 

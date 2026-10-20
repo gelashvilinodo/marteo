@@ -303,7 +303,7 @@ export default function RegisterPage() {
     const inputClass = (field: Field) => {
         const invalid = touched[field] && validateField(field, form);
 
-        return `w-full rounded-xl border bg-background px-4 py-3.5 text-sm text-text-primary outline-none transition-all placeholder:text-text-secondary/70 ${
+        return `w-full rounded-xl border bg-background px-4 py-3.5 text-base md:text-sm text-text-primary outline-none transition-all placeholder:text-text-secondary/70 ${
             invalid
                 ? "border-red-500 focus:border-red-500"
                 : "border-border focus:border-accent focus:ring-2 focus:ring-accent/10"
@@ -966,7 +966,7 @@ export default function RegisterPage() {
                                                         : undefined
                                                 }
                                                 placeholder="555 123 456"
-                                                className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-text-primary outline-none placeholder:text-text-secondary/70"
+                                                className="min-w-0 flex-1 bg-transparent px-4 py-3 text-base md:text-sm text-text-primary outline-none placeholder:text-text-secondary/70"
                                             />
                                         </div>
 

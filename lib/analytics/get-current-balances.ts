@@ -29,6 +29,8 @@ export async function getCurrentBalances(
                     o."fulfillmentCycle"
                 FROM "Order" o
                 WHERE o."businessId" = ${businessId}
+                    AND o."paymentStatus" <> 'UNKNOWN'
+                                        AND o."analyticsPendingCost" = FALSE
             ),
             received AS (
                 SELECT

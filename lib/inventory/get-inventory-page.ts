@@ -9,7 +9,7 @@ export type InventoryControls = {
 };
 export type InventoryChartData = {
     statuses: { good: number; low: number; exhausted: number; defective: number };
-    categories: { key: string; label: string; quantity: string; valueCents: string }[];
+    categories: { key: string; label: string; quantity: string; valueCents: string | null }[];
 };
 export type InventoryPageData = {
     products: InventoryProduct[];
@@ -72,24 +72,50 @@ export async function getInventoryPage(
                 lot."inventoryItemId" AS id,
                 SUM(lot."remainingQuantity") AS total,
                 SUM(lot."remainingDefectiveQuantity") AS defective,
-                ROUND(
-    SUM(
-        COALESCE(
-            lot."remainingCost",
-            lot."unitCost" * lot."remainingQuantity"
-        )
-    ) / NULLIF(SUM(lot."remainingQuantity"), 0),
-    2
-) AS "averageUnitCost",
-                ROUND(
-                    SUM(
-                        lot."unitCost" *
-                        (
-                            lot."remainingQuantity" -
+                CASE
+                    WHEN BOOL_OR(
+                        lot."remainingQuantity" > 0
+                        AND lot."remainingCost" IS NULL
+                        AND lot."unitCost" IS NULL
+                    ) THEN NULL
+                    ELSE ROUND(
+                        SUM(
+                            CASE
+                                WHEN lot."remainingQuantity" = 0 THEN 0
+                                ELSE COALESCE(
+                                    lot."remainingCost",
+                                    lot."unitCost" * lot."remainingQuantity"
+                                )
+                            END
+                        ) / NULLIF(SUM(lot."remainingQuantity"), 0),
+                        2
+                    )
+                END AS "averageUnitCost",
+                CASE
+                    WHEN BOOL_OR(
+                        lot."remainingQuantity" >
                             lot."remainingDefectiveQuantity"
-                        )
-                    ) * 100
-                ) AS cents
+                        AND lot."remainingCost" IS NULL
+                        AND lot."unitCost" IS NULL
+                    ) THEN NULL
+                    ELSE ROUND(
+                        SUM(
+                            CASE
+                                WHEN lot."remainingQuantity" =
+                                    lot."remainingDefectiveQuantity"
+                                THEN 0
+                                ELSE COALESCE(
+                                    lot."unitCost",
+                                    lot."remainingCost" /
+                                        NULLIF(lot."remainingQuantity", 0)
+                                ) * (
+                                    lot."remainingQuantity" -
+                                    lot."remainingDefectiveQuantity"
+                                )
+                            END
+                        ) * 100
+                    )
+                END AS cents
             FROM "InventoryStockLot" lot
             JOIN "InventoryItem" i
                 ON i.id = lot."inventoryItemId"
@@ -131,7 +157,12 @@ export async function getInventoryPage(
         ), categories AS (
             SELECT lower(normalize(coalesce(nullif(trim(category), ''), 'კატეგორიის გარეშე'), NFKC)) COLLATE "C" AS key,
                 min(coalesce(nullif(trim(category), ''), 'კატეგორიის გარეშე')) AS label,
-                sum("goodStock")::text AS quantity, sum("goodStockValueCents")::text AS "valueCents"
+                sum("goodStock")::text AS quantity,
+                CASE
+                    WHEN BOOL_OR("goodStockValueCents" IS NULL)
+                    THEN NULL
+                    ELSE sum("goodStockValueCents")
+                END::text AS "valueCents"
             FROM base WHERE "goodStock" > 0 GROUP BY 1
         )
         SELECT jsonb_build_object(

@@ -16,7 +16,7 @@ const greetings = {
         tone: "text-warning bg-warning/10",
     },
     night: {
-        text: "ღამე მშვიდობისა",
+        text: "მოგესალმები",
         tone: "text-accent bg-accent/10",
     },
 };

@@ -108,7 +108,7 @@ export default function PeriodFilter<T extends string>({
                     </div>
                 )}
                 {action && (
-                    <div className="order-1 w-full min-w-0 @min-[32rem]:order-2 @min-[32rem]:w-auto [&_button]:w-full">
+                    <div className="order-1 w-full min-w-0 @min-[32rem]:order-2 @min-[32rem]:w-auto [&>button]:w-full">
                         {action}
                     </div>
                 )}

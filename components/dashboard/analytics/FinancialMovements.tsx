@@ -35,6 +35,7 @@ const kinds: Record<string, string> = {
 };
 
 const methods: Record<string, string> = {
+    UNKNOWN: "მეთოდი უცნობია",
     CASH: "ნაღდი",
     BANK_TRANSFER: "გადარიცხვა",
     CARD: "ბარათი",

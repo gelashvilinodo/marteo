@@ -26,7 +26,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ka" className="h-full antialiased">
+    <html
+      lang="ka"
+      className="h-full antialiased"
+      suppressHydrationWarning
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+          try {
+            var theme = localStorage.getItem("marteo-theme");
+            if (theme === "light" || theme === "dark") {
+              document.documentElement.setAttribute("data-theme", theme);
+            } else {
+              document.documentElement.removeAttribute("data-theme");
+            }
+          } catch {}
+        `,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <ModalBackdropDismiss />
         {children}

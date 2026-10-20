@@ -117,6 +117,18 @@ body {
   font-family: "FiraGO", Arial, sans-serif;
 }
 
+/* დეშბორდის ზედა სისტემური ზოლის ფონის წყარო.
+   ორივე რეჟიმში ჰედერის ლურჯი ფერი რჩება. */
+html:has(.dashboard-safe-header),
+body:has(.dashboard-safe-header) {
+  background-color: #0a244b;
+}
+
+/* ჰედერის გრადიენტის ქვეშ ერთიანი საბაზო ფერი. */
+.dashboard-safe-header {
+  background-color: #0a244b;
+}
+
 @keyframes successPop {
   0% {
     transform: scale(0.4);
@@ -405,6 +417,87 @@ dialog:modal {
 
   .dashboard-safe-mobile-menu {
     top: calc(4rem + env(safe-area-inset-top, 0px));
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    bottom: 0;
   }
+}
+
+/* სისტემის რეჟიმი — სანამ მომხმარებელი სხვას აირჩევს. */
+:root {
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+  }
+}
+
+/* მომხმარებლის მიერ არჩეული დღის რეჟიმი. */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --marteo-primary: #0f1c2e;
+  --marteo-primary-hover: #16263c;
+
+  --marteo-accent: #5a8dee;
+  --marteo-accent-hover: #4a7fe4;
+
+  --marteo-background: #f8fafc;
+  --marteo-surface: #ffffff;
+  --marteo-border: #d7dee8;
+
+  --marteo-text-primary: #0f1c2e;
+  --marteo-text-secondary: #667085;
+
+  --marteo-overlay: rgb(15 28 46 / 0.18);
+  --marteo-warning: #c98200;
+  --marteo-danger: #e5484d;
+
+  --content-tint-opacity: 0.09;
+}
+
+/* მომხმარებლის მიერ არჩეული ღამის რეჟიმი. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --marteo-primary: #16263c;
+  --marteo-primary-hover: #243b59;
+
+  --marteo-accent: #5a8dee;
+  --marteo-accent-hover: #6d9af2;
+
+  --marteo-background: #08111e;
+  --marteo-surface: #0f1c2e;
+  --marteo-border: #243447;
+
+  --marteo-text-primary: #f8fafc;
+  --marteo-text-secondary: #98a2b3;
+
+  --marteo-overlay: rgb(8 17 30 / 0.18);
+  --marteo-warning: #f6c453;
+  --marteo-danger: #ff7378;
+
+  --content-tint-opacity: 0.22;
+}
+
+/* სქროლის ფერიც არჩეულ რეჟიმს მიჰყვება. */
+:root[data-theme="light"],
+:root[data-theme="light"] * {
+  scrollbar-color: var(--marteo-primary) transparent;
+}
+
+:root[data-theme="dark"],
+:root[data-theme="dark"] * {
+  scrollbar-color: var(--marteo-warning) transparent;
+}
+
+/* მონიშნული ტექსტის ფერი. */
+:root[data-theme="light"] ::selection {
+  background-color: var(--marteo-accent);
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] ::selection {
+  background-color: var(--marteo-warning);
+  color: var(--marteo-background);
 }

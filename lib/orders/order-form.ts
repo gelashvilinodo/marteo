@@ -15,7 +15,7 @@ export type OrderFormItem = {
 };
 export type OrderFormDraft = {
     recipientPhone: string; recipientFirstName: string; recipientLastName: string; shippingAddress: string; notes: string;
-    courierFee: string; paidAmount: string; paymentMethod: "CASH" | "BANK_TRANSFER" | "CARD";
+    courierFee: string; paidAmount: string; paymentMethod: "CASH" | "BANK_TRANSFER" | "CARD" | "UNKNOWN";
     bankName: string; status: "PROCESSING" | "COMPLETED"; items: OrderFormItem[];
 };
 export type PaidMode = "none" | "full" | "courier" | "custom";
@@ -76,7 +76,6 @@ export function orderCreatePayload(
         if (!/^\d+$/.test(item.quantity) || !Number.isSafeInteger(Number(item.quantity)) || Number(item.quantity) < 1) throw new Error(`${label}: რაოდენობა უნდა იყოს დადებითი მთელი რიცხვი.`);
         if (moneyCents(item.unitPrice) === null) throw new Error(`${label}: მიუთითე გასაყიდი ფასი. უფასოდ გაცემისთვის ჩაწერე 0.`);
         if (
-            item.source === "MANUAL" &&
             item.unitCost.trim() !== "" &&
             moneyCents(item.unitCost) === null
         ) {

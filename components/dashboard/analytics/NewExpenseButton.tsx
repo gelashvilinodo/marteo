@@ -252,7 +252,7 @@ export default function NewExpenseButton({
     }
 
     const fieldClass =
-        "w-full rounded-xl border border-border bg-background px-3 py-3 text-base text-text-primary outline-none focus:border-accent";
+        "box-border w-full min-w-0 max-w-full rounded-xl border border-border bg-background px-3 py-3 text-base text-text-primary outline-none focus:border-accent";
 
     return (
         <>
@@ -291,7 +291,7 @@ export default function NewExpenseButton({
                             onClick={close}
                             disabled={busy}
                             aria-label="დახურვა"
-                            className="rounded-xl border border-border p-2 disabled:opacity-50"
+                            className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-border disabled:opacity-50"
                         >
                             <Icon
                                 icon="solar:close-circle-linear"
@@ -333,7 +333,7 @@ export default function NewExpenseButton({
                             </select>
                         </label>
 
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
                             <label className="block space-y-2">
                                 <span className="text-sm">
                                     თანხა · ₾ *
@@ -351,7 +351,7 @@ export default function NewExpenseButton({
                                 />
                             </label>
 
-                            <label className="block space-y-2">
+                            <label className="block min-w-0 space-y-2">
                                 <span className="text-sm">
                                     ხარჯის თარიღი *
                                 </span>
@@ -366,7 +366,7 @@ export default function NewExpenseButton({
                                             event.target.value,
                                         )
                                     }
-                                    className={fieldClass}
+                                    className={`${fieldClass} native-date-time-field appearance-none [min-inline-size:0] [max-inline-size:100%]`}
                                 />
                             </label>
                         </div>

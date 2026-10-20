@@ -23,7 +23,17 @@ export async function recordSaleSnapshot(
     snapshot: Snapshot,
     eventKey: string,
     kind: "SALE" | "RETURN" | "EXCHANGE_ADJUSTMENT" = "SALE",
+    occurredAt: Date = new Date(),
 ) {
+    if (
+        !(occurredAt instanceof Date) ||
+        !Number.isFinite(occurredAt.getTime())
+    ) {
+        throw new OrderValidationError(
+            "გაყიდვის აღრიცხვის თარიღი არასწორია.",
+            422,
+        );
+    }
     const previousLines = await tx.$queryRaw<PreviousLine[]>`
         SELECT
             i."sourceOrderItemId",
@@ -162,7 +172,7 @@ export async function recordSaleSnapshot(
             costComplete:
                 (kind !== "SALE" || snapshot.costComplete) &&
                 items.every(item => item.costComplete),
-            occurredAt: new Date(),
+            occurredAt: new Date(occurredAt.getTime()),
             ...(items.length > 0
                 ? {
                     items: {

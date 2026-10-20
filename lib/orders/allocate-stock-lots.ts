@@ -18,6 +18,7 @@ type AllocationInput = {
     name: string;
     quantity: number;
     condition: "GOOD" | "DEFECTIVE";
+    unitCost?: Prisma.Decimal | null;
 };
 
 export async function allocateStockLots(
@@ -107,6 +108,40 @@ export async function allocateStockLots(
                 [quantity, lot.remainingQuantity - quantity],
             );
 
+        const unitCost = lot.unitCost ?? (
+            split
+                ? split[0].div(quantity).toDecimalPlaces(
+                    2,
+                    Prisma.Decimal.ROUND_HALF_UP,
+                )
+                : input.unitCost ?? null
+        );
+
+        if (unitCost === null) {
+            throw new OrderValidationError(
+                `${input.name}: მარაგის თვითღირებულება უცნობია. ამ პროდუქტის ველში მიუთითე ერთი ერთეულის თვითღირებულება და ხელახლა შეინახე შეკვეთა.`,
+                422,
+            );
+        }
+
+        if (
+            !unitCost.isFinite() ||
+            unitCost.isNegative() ||
+            unitCost.gt("9999999999.99") ||
+            !unitCost.mul(100).isInteger()
+        ) {
+            throw new OrderValidationError(
+                `${input.name}: თვითღირებულება მიუთითე არაუარყოფითი თანხით, თეთრების სიზუსტით.`,
+                422,
+            );
+        }
+
+        const allocationCost = split
+            ? split[0]
+            : lot.unitCost === null
+                ? unitCost.mul(quantity)
+                : null;
+
         await tx.inventoryStockLot.update({
             where: { id: lot.id },
             data: {
@@ -163,8 +198,8 @@ export async function allocateStockLots(
             stockLotId: lot.id,
             purchaseItemId: lot.purchaseItemId,
             quantity,
-            unitCost: lot.unitCost,
-            totalCost: split ? split[0] : null,
+            unitCost,
+            totalCost: allocationCost,
         });
 
         needed -= quantity;

@@ -540,13 +540,22 @@ export async function createInvoicePdf(
         RETURNED: "დაბრუნებული",
     };
     const payments = {
-        UNPAID: "გადაუხდელი",
+        UNKNOWN: "გადახდა დაუზუსტებელია",
+        UNPAID: "გადასახდელი",
         PAID: "გადახდილი",
         COURIER_ONLY_PAID: "მხოლოდ კურიერის საფასურია გადახდილი",
         PARTIALLY_PAID: "ნაწილობრივ გადახდილი",
     };
 
-    text(`${statuses[invoice.status]} · ${payments[invoice.paymentStatus]}`);
+    const fullyPaid =
+        invoice.paymentStatus === "PAID" &&
+        Number(invoice.remainingAmount) === 0;
+
+    text(statuses[invoice.status]);
+    text(
+        payments[invoice.paymentStatus],
+        fullyPaid,
+    );
 
     if (invoice.notes) {
         rule();
@@ -696,11 +705,17 @@ export async function createInvoicePdf(
         ["პროდუქტები", invoice.productsTotal],
         ["მიწოდება", invoice.courierFee],
         ["სულ", invoice.total],
-        ["გადახდილი", invoice.paidAmount],
-        ["დარჩენილი", invoice.remainingAmount],
-        ...(Number(invoice.refundDue) > 0
-            ? [["დასაბრუნებელი", invoice.refundDue]]
-            : []),
+        ...(invoice.paymentStatus === "UNKNOWN"
+            ? []
+            : [
+                ["გადახდილი", invoice.paidAmount],
+                ...(Number(invoice.remainingAmount) > 0
+                    ? [["დარჩენილი", invoice.remainingAmount]]
+                    : []),
+                ...(Number(invoice.refundDue) > 0
+                    ? [["დასაბრუნებელი", invoice.refundDue]]
+                    : []),
+            ]),
     ];
 
     if (paper === "a4") {
@@ -714,7 +729,8 @@ export async function createInvoicePdf(
         const qrCaption = "შეკვეთის დეტალების ნახვა";
 
         const totalRows = totals.map(([label, value]) => {
-            const strong = label === "სულ";
+            const strong =
+                label === "გადახდილი" && fullyPaid;
             const font = strong ? bold : regular;
             const fontSize = strong ? 11.25 : 9;
             const valueText = `${value} ₾`;
@@ -838,7 +854,10 @@ export async function createInvoicePdf(
         });
     } else {
         for (const [label, value] of totals) {
-            text(`${label}: ${value} ₾`, label === "სულ");
+            text(
+                `${label}: ${value} ₾`,
+                label === "გადახდილი" && fullyPaid,
+            );
         }
 
         if (invoice.qrDataUrl) {

@@ -183,6 +183,26 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
                     />
                 </div>
 
+                {data.pendingCostOrders > 0 && (
+                    <section className="space-y-2 rounded-2xl border border-warning/30 bg-warning/5 p-4">
+                        <h2 className="text-sm font-semibold">
+                            შეკვეთები თვითღირებულების მოლოდინში
+                        </h2>
+                        <p className="text-sm text-text-secondary">
+                            ბიზნესში {data.pendingCostOrders} იმპორტირებული
+                            შეკვეთა დროებით გამორიცხულია ანალიტიკიდან,
+                            რადგან პროდუქტების სრული თვითღირებულება
+                            მითითებული არ არის.
+                        </p>
+                        <p className="text-sm text-text-secondary">
+                            შეკვეთები შენარჩუნებულია. თვითღირებულების
+                            შევსების შემდეგ მათ ანგარიშში ჩართვას შევძლებთ.
+                            ეს რაოდენობა მთელ ბიზნესს ეხება და მხოლოდ
+                            არჩეული პერიოდით არ შემოიფარგლება.
+                        </p>
+                    </section>
+                )}
+
                 {!data.profitReady && (
                     <section className="rounded-2xl border border-warning/30 bg-warning/5 p-4">
                         <h2 className="flex items-center gap-2 text-sm font-semibold text-warning">

@@ -19,6 +19,9 @@ import {
 import { buildSaleSnapshot } from "@/lib/analytics/build-sale-snapshot";
 import { recordSaleSnapshot } from "@/lib/analytics/record-sale-snapshot";
 import { recordFinancialAdjustment } from "@/lib/analytics/record-financial-adjustment";
+import {
+    resolveHistoricalOrderPayment,
+} from "./resolve-historical-order-payment";
 
 export type MutationKind =
     | "edit"
@@ -28,6 +31,7 @@ export type MutationKind =
     | "link"
     | "exchange"
     | "refund"
+    | "resolve-payment"
     | "cancel-deletion";
 function fail(message: string, status = 400): never { throw new OrderValidationError(message, status); }
 function object(value: unknown): Record<string, unknown> {
@@ -103,7 +107,15 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
             let exchangeSummary:
                 | Awaited<ReturnType<typeof exchangeOrderProducts>>
                 | undefined;
-            if (kind === "edit") {
+            if (kind === "resolve-payment") {
+                await resolveHistoricalOrderPayment(tx, {
+                    businessId,
+                    orderId,
+                    payment: body,
+                });
+
+                changed = true;
+            } else if (kind === "edit") {
                 if (order.status === "COMPLETED" || order.status === "RETURNED") {
                     fail("ამ შეკვეთაზე გამოიყენე გადაცვლის შესაბამისი მოქმედება.", 409);
                 }
@@ -261,6 +273,20 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                 }
 
                 if (delta.greaterThan(0)) {
+                    if (order.paymentStatus === "UNKNOWN") {
+                        fail(
+                            "ამ შეკვეთაზე წინა გადახდა დაუზუსტებელია. ახალი თანხის დამატებამდე ჯერ უკვე მიღებული თანხა დააზუსტე.",
+                            422,
+                        );
+                    }
+
+                    if (data.paymentMethod === "UNKNOWN") {
+                        fail(
+                            "ახალი თანხის მიღებისთვის აირჩიე გადახდის მეთოდი.",
+                            422,
+                        );
+                    }
+
                     await tx.orderPayment.create({
                         data: {
                             orderId,
@@ -277,7 +303,15 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                         shippingAddress: data.shippingAddress || null,
                         notes: data.notes || null,
                         courierFee: data.courierFee,
-                        paymentStatus: paymentState(total, data.paidAmount, data.courierFee), invoiceVersion: { increment: 1 },
+                        paymentStatus:
+                            order.paymentStatus === "UNKNOWN"
+                                ? "UNKNOWN"
+                                : paymentState(
+                                    total,
+                                    data.paidAmount,
+                                    data.courierFee,
+                                ),
+                        invoiceVersion: { increment: 1 },
                     }
                 });
                 changed = true;
@@ -291,6 +325,13 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                         ReturnType<typeof buildSaleSnapshot> | null = null;
 
                     if (next === "COMPLETED") {
+                        if (order.paymentStatus === "UNKNOWN") {
+                            fail(
+                                "ამ შეკვეთაზე გადახდა დაუზუსტებელია. დასრულებამდე მიუთითე რეალურად გადახდილი თანხა.",
+                                422,
+                            );
+                        }
+
                         if (hasReturnHistory > 0) {
                             const returnedItems = await tx.orderReturnItem.groupBy({
                                 by: ["orderItemId"],

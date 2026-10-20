@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import type { StatisticsCharts as ChartsData } from "@/lib/statistics/get-statistics-charts";
 
 const methods = {
+    UNKNOWN: { label: "მეთოდი უცნობია", color: "#94a3b8" },
     CASH: { label: "ნაღდი", color: "#16c45b" },
     CARD: { label: "ბარათი", color: "#598bed" },
     BANK_TRANSFER: { label: "გადარიცხვა", color: "#a78bfa" },
@@ -137,9 +138,8 @@ export default function StatisticsCharts({
                                         style={{
                                             top: `${(1 - tick / axisMax) * 100}%`,
                                         }}
-                                        className={`absolute inset-x-0 border-t border-border ${
-                                            tick === 0 ? "" : "border-dashed"
-                                        }`}
+                                        className={`absolute inset-x-0 border-t border-border ${tick === 0 ? "" : "border-dashed"
+                                            }`}
                                     />
                                 ))}
                             </div>
@@ -161,19 +161,17 @@ export default function StatisticsCharts({
                                         aria-pressed={
                                             selected?.from === point.from
                                         }
-                                        aria-label={`${date(point.from)}${
-                                            point.from !== point.to
+                                        aria-label={`${date(point.from)}${point.from !== point.to
                                                 ? ` — ${date(point.to)}`
                                                 : ""
-                                        }: ${point.count} შეკვეთა`}
+                                            }: ${point.count} შეკვეთა`}
                                         onClick={() =>
                                             setSelectedDate(point.from)
                                         }
-                                        className={`relative min-w-0 rounded-xl px-1 pb-2 text-center transition-colors ${
-                                            selected?.from === point.from
+                                        className={`relative min-w-0 rounded-xl px-1 pb-2 text-center transition-colors ${selected?.from === point.from
                                                 ? "bg-accent/10"
                                                 : "hover:bg-background"
-                                        }`}
+                                            }`}
                                     >
                                         <div className="relative h-48">
                                             <div
@@ -182,8 +180,8 @@ export default function StatisticsCharts({
                                                         point.count === 0
                                                             ? "3px"
                                                             : `${(point.count /
-                                                                  axisMax) *
-                                                                  100}%`,
+                                                                axisMax) *
+                                                            100}%`,
                                                 }}
                                                 className={`absolute bottom-0 left-1/2 w-2 -translate-x-1/2 rounded-full sm:w-3 ${color}`}
                                             />
@@ -264,9 +262,8 @@ export default function StatisticsCharts({
                                         fill="none"
                                         stroke={methods[segment.method].color}
                                         strokeWidth="12"
-                                        strokeDasharray={`${segment.share} ${
-                                            100 - segment.share
-                                        }`}
+                                        strokeDasharray={`${segment.share} ${100 - segment.share
+                                            }`}
                                         strokeDashoffset={-segment.offset}
                                     />
                                 ))}
@@ -301,11 +298,10 @@ export default function StatisticsCharts({
                                             : segment.method,
                                     )
                                 }
-                                className={`flex w-full items-start gap-2 rounded-xl p-2 text-left transition-colors ${
-                                    selectedMethod === segment.method
+                                className={`flex w-full items-start gap-2 rounded-xl p-2 text-left transition-colors ${selectedMethod === segment.method
                                         ? "bg-background"
                                         : "hover:bg-background"
-                                }`}
+                                    }`}
                             >
                                 <span
                                     style={{

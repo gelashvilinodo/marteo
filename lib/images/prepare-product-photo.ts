@@ -8,6 +8,11 @@ export type PreparedProductPhoto = {
     thumbnail: File | null;
 };
 
+type PreparePhotoOptions = {
+    preserveTransparency?: boolean;
+    createThumbnail?: boolean;
+};
+
 const MAX_SIDE = 1000;
 const TARGET_BYTES = 200 * 1024;
 
@@ -61,6 +66,7 @@ async function decode(blob: Blob): Promise<{
 
 async function prepare(
     original: File,
+    options: PreparePhotoOptions,
 ): Promise<PreparedProductPhoto> {
     const isDng =
         /\.dng$/i.test(original.name) ||
@@ -163,8 +169,12 @@ async function prepare(
 
             // გამჭვირვალე PNG-ს JPEG-ზე გადასვლის შემთხვევაშიც
             // შავი ფონი არ უნდა გაუჩნდეს.
-            context.fillStyle = "#ffffff";
-            context.fillRect(0, 0, canvas.width, canvas.height);
+            if (options.preserveTransparency) {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+            } else {
+                context.fillStyle = "#ffffff";
+                context.fillRect(0, 0, canvas.width, canvas.height);
+            }
             context.drawImage(
                 image,
                 0,
@@ -225,7 +235,9 @@ async function prepare(
             );
         }
 
-        const thumbnail = await createProductThumbnail(file);
+        const thumbnail = options.createThumbnail === false
+            ? null
+            : await createProductThumbnail(file);
 
         return { file, thumbnail };
     } finally {
@@ -237,8 +249,9 @@ async function prepare(
 
 export function prepareProductPhoto(
     original: File,
+    options: PreparePhotoOptions = {},
 ): Promise<PreparedProductPhoto> {
-    const task = queue.then(() => prepare(original));
+    const task = queue.then(() => prepare(original, options));
 
     queue = task.then(
         () => undefined,

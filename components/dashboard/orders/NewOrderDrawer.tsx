@@ -620,8 +620,8 @@ export default function NewOrderDrawer() {
                             <div
                                 ref={productList}
                                 className={`min-w-0 space-y-3 p-3 sm:p-4 lg:flex-1 ${draft.items.length === 0
-                                        ? "lg:flex lg:items-center lg:justify-center"
-                                        : ""
+                                    ? "lg:flex lg:items-center lg:justify-center"
+                                    : ""
                                     }`}
                             >
                                 {draft.items.length ? (
@@ -691,7 +691,7 @@ export default function NewOrderDrawer() {
                                         ? "მიღებული თანხის მითითება"
                                         : "ნაწილობრივ"}
                                 </option></select></Field></div>
-                                {paidMode !== "none" && <><Field label="გადახდილი თანხა · ₾"><input inputMode="decimal" readOnly={paidMode !== "custom"} value={paidMode === "custom" ? draft.paidAmount : moneyText(totals.paid)} onChange={event => patch({ paidAmount: event.target.value })} className={input} /></Field><Field label="გადახდის მეთოდი"><select value={draft.paymentMethod} onChange={event => patch({ paymentMethod: event.target.value as OrderFormDraft["paymentMethod"] })} className={input}><option value="CASH">ნაღდი</option><option value="BANK_TRANSFER">გადარიცხვა</option><option value="CARD">ბარათი</option></select></Field>{draft.paymentMethod === "BANK_TRANSFER" && <Field label="ბანკი"><input value={draft.bankName} onChange={event => patch({ bankName: event.target.value })} className={input} /></Field>}</>}
+                                {paidMode !== "none" && <><Field label="გადახდილი თანხა · ₾"><input inputMode="decimal" readOnly={paidMode !== "custom"} value={paidMode === "custom" ? draft.paidAmount : moneyText(totals.paid)} onChange={event => patch({ paidAmount: event.target.value })} className={input} /></Field><Field label="გადახდის მეთოდი"><select value={draft.paymentMethod} onChange={event => patch({ paymentMethod: event.target.value as OrderFormDraft["paymentMethod"] })} className={input}><option value="CASH">ნაღდი</option><option value="BANK_TRANSFER">გადარიცხვა</option><option value="CARD">ბარათი</option>{draft.paymentMethod === "UNKNOWN" && <option value="UNKNOWN">მეთოდი უცნობია</option>}</select></Field>{draft.paymentMethod === "BANK_TRANSFER" && <Field label="ბანკი"><input value={draft.bankName} onChange={event => patch({ bankName: event.target.value })} className={input} /></Field>}</>}
                             </div>
                             <div className="mt-4 rounded-xl bg-background p-3"><h4 className="mb-2 flex items-center gap-2 text-xs font-semibold text-text-secondary"><Icon icon="solar:document-text-linear" className="h-4 w-4" />შეჯამება</h4><dl className="space-y-2 text-xs lg:text-sm">{[["პროდუქტები", totals.products], ["კურიერი", totals.courier], ["გადახდილი", totals.paid], [
                                 totals.remaining < 0n

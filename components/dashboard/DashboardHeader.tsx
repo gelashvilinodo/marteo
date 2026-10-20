@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 
@@ -22,6 +23,7 @@ export default function DashboardHeader({
     userEmail,
 }: DashboardHeaderProps) {
     const [accountOpen, setAccountOpen] = useState(false);
+    const router = useRouter();
     const accountRef = useRef<HTMLDivElement>(null);
     const accountButtonRef = useRef<HTMLButtonElement>(null);
     const accountPanelId = useId();
@@ -58,10 +60,12 @@ export default function DashboardHeader({
         {
             label: "ჩემი პროფილი",
             icon: "solar:user-circle-bold-duotone",
+            href: "/dashboard/profile",
         },
         {
             label: "ბიზნესის პარამეტრები",
             icon: "solar:settings-bold-duotone",
+            href: "/dashboard/business-settings",
         },
         {
             label: "პაკეტი და გადახდები",
@@ -176,7 +180,12 @@ export default function DashboardHeader({
                                     type="button"
                                     onClick={() => {
                                         setAccountOpen(false);
-                                        accountButtonRef.current?.focus();
+
+                                        if (item.href) {
+                                            router.push(item.href);
+                                        } else {
+                                            accountButtonRef.current?.focus();
+                                        }
                                     }}
                                     className={[
                                         "relative flex h-12 w-full items-center justify-start gap-3",

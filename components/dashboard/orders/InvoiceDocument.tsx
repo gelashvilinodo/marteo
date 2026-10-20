@@ -17,7 +17,13 @@ export function isInvoicePaper(value: unknown): value is InvoicePaper {
     );
 }
 const statuses = { PROCESSING: "მუშავდება", SHIPPED: "გაგზავნილი", COMPLETED: "დასრულებული", RETURNED: "დაბრუნებული", CANCELED: "გაუქმებული" };
-const payments = { PAID: "გადახდილი", UNPAID: "გადაუხდელი", PARTIALLY_PAID: "ნაწილობრივ გადახდილი", COURIER_ONLY_PAID: "მხოლოდ კურიერის საფასურია გადახდილი" };
+const payments = {
+    PAID: "გადახდილი",
+    UNPAID: "გადასახდელი",
+    PARTIALLY_PAID: "ნაწილობრივ გადახდილი",
+    COURIER_ONLY_PAID: "მხოლოდ კურიერის საფასურია გადახდილი",
+    UNKNOWN: "გადახდა დაუზუსტებელია",
+};
 function date(value: string) {
     const d = new Date(new Date(value).getTime() + 4 * 60 * 60 * 1000);
     return `${String(d.getUTCDate()).padStart(2, "0")}.${String(d.getUTCMonth() + 1).padStart(2, "0")}.${d.getUTCFullYear()}`;
@@ -25,6 +31,9 @@ function date(value: string) {
 
 export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: OrderInvoiceData; paper?: InvoicePaper }) {
     const thermal = paper === "58mm" || paper === "80mm";
+    const fullyPaid =
+        invoice.paymentStatus === "PAID" &&
+        Number(invoice.remainingAmount) === 0;
     return <article className="invoice-document" data-paper={paper}>
         <style>{`
             .invoice-document { color:#111; background:#fff; font-family:FiraGO,Arial,sans-serif; width:100%; font-size:12px; line-height:1.5; }
@@ -57,7 +66,9 @@ export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: Or
             .invoice-document .invoice-bottom { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; margin-top:18px; }
             .invoice-document .invoice-totals { width:100%; max-width:260px; margin-left:auto; }
             .invoice-document .invoice-totals div { display:flex; justify-content:space-between; gap:12px; margin:5px 0; }
-            .invoice-document .invoice-grand-total { border-top:1px solid #bbb; padding-top:7px; font-size:15px; font-weight:600; }
+            .invoice-document .invoice-grand-total { border-top:1px solid #bbb; padding-top:7px; font-weight:400; }
+            .invoice-document .invoice-paid-status { font-weight:700; color:#000; }
+            .invoice-document .invoice-totals .invoice-paid-total { font-size:15px; font-weight:700; color:#000; }
             .invoice-document .invoice-qr { text-align:center; flex-shrink:0; }
             .invoice-document .invoice-qr img { width:32mm; height:32mm; }
             .invoice-document .invoice-qr p { font-size:10px; }
@@ -144,6 +155,10 @@ export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: Or
 }
 
 .invoice-document[data-paper="100x150"] .invoice-grand-total {
+    font-size:inherit;
+}
+
+.invoice-document[data-paper="100x150"] .invoice-paid-total {
     font-size:13px;
 }
 
@@ -197,7 +212,28 @@ export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: Or
             </div>
             <div className="invoice-heading"><h3>ინვოისი{invoice.number !== null ? ` #${String(invoice.number).padStart(4, "0")}` : ""}</h3><p>{date(invoice.createdAt)}</p></div>
         </header>
-        <div className="invoice-recipient"><p><strong>მიმღები:</strong> {invoice.recipient.name || "—"}</p><p>{invoice.recipient.phone}</p>{invoice.recipient.address && <p>{invoice.recipient.address}</p>}<p>{statuses[invoice.status]} · {payments[invoice.paymentStatus]}</p></div>
+        <div className="invoice-recipient">
+            <p>
+                <strong>მიმღები:</strong>{" "}
+                {invoice.recipient.name || "—"}
+            </p>
+            <p>{invoice.recipient.phone}</p>
+
+            {invoice.recipient.address && (
+                <p>{invoice.recipient.address}</p>
+            )}
+
+            <p>
+                {statuses[invoice.status]} ·{" "}
+                <span
+                    className={
+                        fullyPaid ? "invoice-paid-status" : undefined
+                    }
+                >
+                    {payments[invoice.paymentStatus]}
+                </span>
+            </p>
+        </div>
         {invoice.notes && (
             <section className="invoice-notes">
                 <strong>კომენტარი</strong>
@@ -306,18 +342,26 @@ export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: Or
                     ["პროდუქტები", invoice.productsTotal],
                     ["მიწოდება", invoice.courierFee],
                     ["სულ", invoice.total],
-                    ["გადახდილი", invoice.paidAmount],
-                    ["დარჩენილი", invoice.remainingAmount],
-                    ...(Number(invoice.refundDue) > 0
-                        ? [["დასაბრუნებელი", invoice.refundDue]]
-                        : []),
+                    ...(invoice.paymentStatus === "UNKNOWN"
+                        ? []
+                        : [
+                            ["გადახდილი", invoice.paidAmount],
+                            ...(Number(invoice.remainingAmount) > 0
+                                ? [["დარჩენილი", invoice.remainingAmount]]
+                                : []),
+                            ...(Number(invoice.refundDue) > 0
+                                ? [["დასაბრუნებელი", invoice.refundDue]]
+                                : []),
+                        ]),
                 ].map(([label, value]) => (
                     <div
                         key={label}
                         className={
-                            label === "სულ"
-                                ? "invoice-grand-total"
-                                : ""
+                            label === "გადახდილი" && fullyPaid
+                                ? "invoice-paid-total"
+                                : label === "სულ"
+                                    ? "invoice-grand-total"
+                                    : ""
                         }
                     >
                         <dt>{label}</dt>

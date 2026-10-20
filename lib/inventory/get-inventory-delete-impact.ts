@@ -87,8 +87,18 @@ export async function getInventoryDeleteImpact(
             );
         }
 
-        const remainingCost = lot.remainingCost ??
-            lot.unitCost.mul(lot.remainingQuantity);
+        const remainingCost = lot.remainingCost ?? (
+            lot.remainingQuantity === 0
+                ? new Prisma.Decimal(0)
+                : lot.unitCost?.mul(lot.remainingQuantity) ?? null
+        );
+
+        if (remainingCost === null) {
+            throw new InventoryEditError(
+                "დარჩენილი მარაგის თვითღირებულება უცნობია. ფინანსური ჩამოწერის დასადასტურებლად ჯერ მისი ღირებულებაა შესავსები.",
+                409,
+            );
+        }
 
         if (
             !remainingCost.isFinite() ||
@@ -146,7 +156,7 @@ export async function getInventoryDeleteImpact(
                 writtenOffQuantity: lot.writtenOffQuantity,
                 writtenOffDefectiveQuantity: lot.writtenOffDefectiveQuantity,
                 remainingCost: lot.remainingCost?.toFixed(2) ?? null,
-                unitCost: lot.unitCost.toFixed(2),
+                unitCost: lot.unitCost?.toFixed(2) ?? null,
                 receiptStatus:
                     lot.purchaseItem?.purchase.receiptStatus ?? null,
             })),

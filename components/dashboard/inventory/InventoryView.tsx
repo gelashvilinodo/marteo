@@ -31,7 +31,7 @@ export type InventoryProduct = {
     totalStock: number;
     goodStock: number;
     defectiveStock: number;
-    goodStockValueCents: string;
+    goodStockValueCents: string | null;
 };
 
 const DEFAULT_CONTROLS: Controls = {

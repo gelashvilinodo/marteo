@@ -17,13 +17,13 @@ type RecordRow = {
     recipientFirstName: string | null; recipientLastName: string | null;
     shippingAddress: string | null; notes: string | null;
     status: "PROCESSING" | "SHIPPED" | "COMPLETED" | "CANCELED" | "RETURNED";
-    paymentStatus: "PAID" | "UNPAID" | "PARTIALLY_PAID" | "COURIER_ONLY_PAID";
+    paymentStatus: "PAID" | "UNPAID" | "PARTIALLY_PAID" | "COURIER_ONLY_PAID" | "UNKNOWN";
     courierFee: string; stockReturnedAt: Date | null; deleteRequestedAt: Date | null;
     fulfillmentCycle: number; createdAt: Date; updatedAt: Date;
     invoiceVersion: number; lastPrintedInvoiceVersion: number | null; invoicePrintedAt: Date | null;
     items: ItemRow[];
     returns: Array<{ status: "PENDING" | "RECEIVED"; fulfillmentCycle: number; items: Array<{ orderItemId: string; quantity: number }> }>;
-    payments: Array<{ id: string; amount: string; method: "CASH" | "BANK_TRANSFER" | "CARD"; bankName: string | null; createdAt: string }>;
+    payments: Array<{ id: string; amount: string; method: "CASH" | "BANK_TRANSFER" | "CARD" | "UNKNOWN"; bankName: string | null; createdAt: string }>;
     paidAmount: string;
 };
 

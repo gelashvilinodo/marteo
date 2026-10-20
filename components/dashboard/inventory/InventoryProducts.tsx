@@ -127,7 +127,13 @@ export default function InventoryProducts({
             ["სულ დარჩენილი", `${formatQuantity(selected.totalStock)} პროდუქტი`],
             ["რეალიზებადი", `${formatQuantity(selected.goodStock)} პროდუქტი`],
             ["წუნდებული", `${formatQuantity(selected.defectiveStock)} პროდუქტი`],
-            ["საშუალო თვითღირებულება", formatMoney(selected.averageUnitCost)],
+            [
+                "საშუალო თვითღირებულება",
+                selected.totalStock > 0 &&
+                selected.averageUnitCost === null
+                    ? "უცნობია"
+                    : formatMoney(selected.averageUnitCost),
+            ],
             ["გასაყიდი ფასი", formatMoney(selected.salePrice)],
             ["დამატების თარიღი", formatDate(selected.createdAt)],
         ]

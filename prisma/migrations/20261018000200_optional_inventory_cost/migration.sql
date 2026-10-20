@@ -1,0 +1,2 @@
+ALTER TABLE "InventoryStockLot"
+ALTER COLUMN "unitCost" DROP NOT NULL;
