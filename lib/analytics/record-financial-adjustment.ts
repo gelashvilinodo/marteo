@@ -1,3 +1,4 @@
+import { numericQuantities } from "@/lib/orders/quantity";
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
@@ -31,7 +32,7 @@ export async function recordFinancialAdjustment(
             businessId,
         },
         include: orderWithStock,
-    });
+    }).then(numericQuantities);
 
     if (!order) {
         throw new OrderValidationError(
@@ -55,7 +56,7 @@ export async function recordFinancialAdjustment(
     const receivedQuantities = new Map(
         returnedItems.map(item => [
             item.orderItemId,
-            item._sum.quantity ?? 0,
+            Number(item._sum.quantity ?? 0),
         ]),
     );
 

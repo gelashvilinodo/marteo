@@ -1,3 +1,4 @@
+import { numericQuantities } from "@/lib/orders/quantity";
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -56,7 +57,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
         const businessId = membership.businessId;
         return await prisma.$transaction(async tx => {
             await tx.$queryRaw`SELECT "id" FROM "Business" WHERE "id"=${businessId} FOR UPDATE`;
-            const order = await tx.order.findFirst({ where: { id: orderId, businessId }, include: orderWithStock });
+            const order = await tx.order.findFirst({ where: { id: orderId, businessId }, include: orderWithStock }).then(numericQuantities);
             if (!order) fail("შეკვეთა ვერ მოიძებნა.", 404);
             const previous = await tx.orderMutation.findUnique({ where: { orderId_requestId: { orderId, requestId } } });
             if (previous) {
@@ -124,7 +125,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                     // გაგზავნილ/გაუქმებულ შეკვეთაზე იცვლება მომხმარებლის ინფორმაცია და გადახდა.
                     const same = data.items.length === order.items.length && data.items.every((item, index) => {
                         const old = order.items[index];
-                        return item.source === old.source && item.inventoryItemId === old.inventoryItemId && item.condition === old.condition && item.name === old.name &&
+                        return item.source === old.source && item.inventoryItemId === old.inventoryItemId && item.materialId === old.materialId && item.unit === old.unit && item.condition === old.condition && item.name === old.name &&
                             (item.source !== "MANUAL" || item.imageUrl === old.imageUrl) &&
                             item.quantity === old.quantity && item.description === (old.description ?? "") && item.color === (old.color ?? "") && item.size === (old.size ?? "") && item.unitPrice.eq(old.unitPrice) && (
                                 item.source !== "MANUAL" ||
@@ -158,7 +159,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                             matches.length === 1 &&
                             item &&
                             item.source === old.source &&
-                            item.inventoryItemId === old.inventoryItemId &&
+                            item.inventoryItemId === old.inventoryItemId && item.materialId === old.materialId && item.unit === old.unit &&
                             item.condition === old.condition &&
                             item.name === old.name &&
                             item.quantity === old.quantity &&
@@ -252,7 +253,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                     data,
                     false,
                 );
-                const total = data.items.reduce((sum, item) => sum.plus(item.unitPrice.mul(item.quantity)), data.courierFee);
+                const total = data.items.reduce((sum, item) => sum.plus(item.unitPrice.mul(item.quantity).toDecimalPlaces(2)), data.courierFee);
                 const paidBefore = order.payments.reduce((sum, payment) => sum.plus(payment.amount), new Prisma.Decimal(0));
                 const delta = data.paidAmount.minus(paidBefore);
                 if (delta.isNegative()) {
@@ -350,7 +351,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                             for (const item of returnedItems) {
                                 receivedQuantities.set(
                                     item.orderItemId,
-                                    item._sum.quantity ?? 0,
+                                    Number(item._sum.quantity ?? 0),
                                 );
                             }
                         }
@@ -658,7 +659,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                             const received = await tx.orderReturn.findMany({
                                 where: { orderId, status: "RECEIVED" },
                                 select: { items: { select: { orderItemId: true, quantity: true } } },
-                            });
+                            }).then(numericQuantities);
                             const fullyReceived = order.items.every(item =>
                                 received.reduce((sum, entry) => sum + entry.items.reduce(
                                     (count, returned) => count + (returned.orderItemId === item.id ? returned.quantity : 0), 0,
@@ -763,7 +764,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                     await tx.order.findUniqueOrThrow({
                         where: { id: orderId },
                         select: { invoiceVersion: true },
-                    })
+                    }).then(numericQuantities)
                 ).invoiceVersion
                 : order.invoiceVersion;
 
@@ -778,7 +779,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                         deleteRequestedAt: true,
                         fulfillmentCycle: true,
                     },
-                });
+                }).then(numericQuantities);
 
                 if (latestOrder.deleteRequestedAt) {
                     const pendingReturns = await tx.orderReturn.count({

@@ -43,7 +43,7 @@ export async function confirmOrderRefund(
     for (const item of receivedItems) {
         receivedQuantities.set(
             item.orderItemId,
-            item._sum.quantity ?? 0,
+            Number(item._sum.quantity ?? 0),
         );
     }
 

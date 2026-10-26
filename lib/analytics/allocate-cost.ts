@@ -18,13 +18,13 @@ export function allocateCost(
         quantities.length === 0 ||
         quantities.some(
             quantity =>
-                !Number.isSafeInteger(quantity) || quantity < 0,
+                !Number.isFinite(quantity) || quantity < 0 || !new Prisma.Decimal(quantity).mul(1000000).isInteger(),
         )
     ) {
         throw new Error("გასანაწილებელი რაოდენობები არასწორია.");
     }
 
-    const weights = quantities.map(quantity => BigInt(quantity));
+    const weights = quantities.map(quantity => BigInt(new Prisma.Decimal(quantity).mul(1000000).toFixed(0)));
     const totalWeight = weights.reduce(
         (sum, quantity) => sum + quantity,
         0n,

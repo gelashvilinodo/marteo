@@ -1,4 +1,5 @@
 "use client";
+import useTransientNotice from '@/components/shared/useTransientNotice';
 
 import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
@@ -57,6 +58,7 @@ export default function EmailChangeDialog({
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
+    useTransientNotice(notice, setNotice);
     const [retryUntil, setRetryUntil] = useState(0);
     const [now, setNow] = useState(0);
 

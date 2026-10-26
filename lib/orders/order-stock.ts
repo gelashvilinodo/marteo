@@ -1,7 +1,9 @@
+import { qvalue } from "@/lib/orders/quantity";
+import { numericQuantities, type NumericQuantities } from "@/lib/orders/quantity";
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { OrderValidationError, type ValidatedOrder } from "./validate-order";
-import { allocateCost } from "@/lib/analytics/allocate-cost";
+import { consumeOrderMaterial, restoreMaterialAllocations } from "./material-stock";
 import { allocateStockLots } from "./allocate-stock-lots";
 import { restoreStockLot } from "./restore-stock-lot";
 
@@ -239,6 +241,8 @@ export async function createOrderItems(
             });
         }
 
+        const materialSale=item.source === "MATERIAL" ? await consumeOrderMaterial(tx,businessId,item.materialId!,item.quantity) : null;
+        if(materialSale){imageUrl=materialSale.material.imageUrl;exactTotalCost=materialSale.totalCost;unitCost=exactTotalCost.div(item.quantity).toDecimalPlaces(2);}
         const orderItem = await tx.orderItem.create({
             data: {
                 orderId: orderId,
@@ -247,8 +251,10 @@ export async function createOrderItems(
                 inventoryItemId:
                     item.inventoryItemId,
                 source: item.source,
+                materialId: materialSale?.material.id ?? null,
+                unit: materialSale?.material.unit ?? "PCS",
                 condition: item.condition,
-                name: item.name,
+                name: materialSale?.material.name ?? item.name,
                 description:
                     item.description || null,
                 color: item.color || null,
@@ -262,6 +268,7 @@ export async function createOrderItems(
             select: { id: true },
         });
 
+        if(materialSale)await tx.materialOrderAllocation.createMany({data:materialSale.allocations.map(a=>({...a,orderItemId:orderItem.id}))});
         if (allocations.length > 0) {
             await tx.orderItemAllocation.createMany({
                 data: allocations.map(
@@ -295,10 +302,10 @@ export async function createOrderItems(
 }
 
 export const orderWithStock = {
-    items: { where: { isActive: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], include: { allocations: { include: { purchaseItem: { include: { purchase: true } } } } } },
+    items: { where: { isActive: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], include: { materialAllocations: true, allocations: { include: { purchaseItem: { include: { purchase: true } } } } } },
     payments: true,
 } satisfies Prisma.OrderInclude;
-export type StockOrder = Prisma.OrderGetPayload<{ include: typeof orderWithStock }>;
+export type StockOrder = NumericQuantities<Prisma.OrderGetPayload<{ include: typeof orderWithStock }>>;
 
 export async function restoreOrderStock(
     tx: Prisma.TransactionClient,
@@ -315,14 +322,14 @@ export async function restoreOrderStock(
             status: { in: ["PENDING", "RECEIVED"] },
         },
         include: { items: true },
-    });
+    }).then(numericQuantities);
     if (returns.some(entry => entry.status === "PENDING")) {
         fail("ჯერ დაადასტურე მიმდინარე დაბრუნების ფიზიკური მიღება.", 409);
     }
     const received = new Map<string, number>();
     for (const entry of returns) {
         for (const item of entry.items) {
-            received.set(item.orderItemId, (received.get(item.orderItemId) ?? 0) + item.quantity);
+            received.set(item.orderItemId, qvalue((received.get(item.orderItemId) ?? 0) + item.quantity));
         }
     }
     const alreadyRestored = (item: StockOrder["items"][number]) =>
@@ -341,16 +348,20 @@ export async function restoreOrderStock(
         await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "InventoryItem" WHERE "businessId"=${order.businessId} AND "id" IN (${Prisma.join(ids)}) ORDER BY "id" FOR UPDATE`);
     }
     for (const item of items) {
+        if(item.source === "MATERIAL"){
+            if(!item.materialId)fail("მასალის მონაცემები აკლია.",409);
+            await restoreMaterialAllocations(tx,order.businessId,item.materialId,item.materialAllocations,item.quantity,item.condition);
+        }
         if (item.source === "INVENTORY") {
-            if (!item.inventoryItemId || item.allocations.reduce((sum, value) => sum + value.quantity, 0) !== item.quantity) {
+            if (!item.inventoryItemId || item.allocations.reduce((sum, value) => qvalue(sum + value.quantity), 0) !== item.quantity) {
                 fail("ნივთის მარაგის განაწილების მონაცემები აკლია.", 409);
             }
             const restorableQuantity = item.allocations.reduce(
                 (sum, allocation) =>
-                    sum +
+                    qvalue(sum +
                     allocation.quantity -
                     allocation.returnedQuantity -
-                    allocation.transferredQuantity,
+                    allocation.transferredQuantity),
                 0,
             );
 
@@ -363,9 +374,9 @@ export async function restoreOrderStock(
 
             for (const allocation of item.allocations) {
                 const quantity =
-                    allocation.quantity -
+                    qvalue(allocation.quantity -
                     allocation.returnedQuantity -
-                    allocation.transferredQuantity;
+                    allocation.transferredQuantity);
 
                 if (quantity < 0) {
                     fail("მარაგის განაწილება არასწორია.", 409);

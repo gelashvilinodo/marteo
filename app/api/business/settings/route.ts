@@ -1,3 +1,4 @@
+import type { BusinessMode } from "@/lib/business/business-mode";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { createPrismaClient } from "@/lib/prisma";
@@ -12,6 +13,7 @@ import {
 const businessSelect = {
     id: true,
     name: true,
+    mode: true,
     logoUrl: true,
     phone: true,
     updatedAt: true,
@@ -47,6 +49,7 @@ function failure(cause: unknown) {
 
 function serialize(value: {
     id: string;
+    mode: BusinessMode;
     name: string;
     logoUrl: string | null;
     phone: string | null;
@@ -54,6 +57,7 @@ function serialize(value: {
 }): BusinessSettingsData {
     return {
         id: value.id,
+        mode: value.mode,
         name: value.name,
         logoUrl: value.logoUrl,
         phone: value.phone,
@@ -271,7 +275,8 @@ export async function PATCH(request: Request) {
 
                     const unchanged =
                         current.name === input.name &&
-                        current.phone === input.phone;
+                        current.phone === input.phone &&
+                        current.mode === input.mode;
 
                     // დაკარგული პასუხის შემდეგ იმავე მონაცემებით
                     // გამეორება დამატებით ცვლილებას არ შექმნის.
@@ -293,6 +298,7 @@ export async function PATCH(request: Request) {
                         },
                         data: {
                             name: input.name,
+                            mode: input.mode,
                             phone: input.phone,
                         },
                         select: businessSelect,

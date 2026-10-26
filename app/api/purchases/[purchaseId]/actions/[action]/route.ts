@@ -1,3 +1,4 @@
+import { businessFeatureDenied } from '@/lib/business/feature-access';
 import { NextResponse } from "next/server";
 
 import {
@@ -33,6 +34,8 @@ export async function POST(
         }>;
     },
 ) {
+    const denied=await businessFeatureDenied('imports');if(denied)return denied;
+
     try {
         if (
             request.headers.get("origin") !==
@@ -144,6 +147,8 @@ export async function GET(
         }>;
     },
 ) {
+    const denied=await businessFeatureDenied('imports');if(denied)return denied;
+
     let prisma: ReturnType<typeof createPrismaClient> | undefined;
 
     try {

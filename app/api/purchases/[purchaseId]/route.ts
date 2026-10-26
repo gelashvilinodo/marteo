@@ -1,3 +1,4 @@
+import { businessFeatureDenied } from '@/lib/business/feature-access';
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth/session";
@@ -46,6 +47,8 @@ export async function GET(
         params: Promise<{ purchaseId: string }>;
     },
 ) {
+    const denied=await businessFeatureDenied('imports');if(denied)return denied;
+
     let prisma: ReturnType<typeof createPrismaClient> | undefined;
 
     try {
@@ -159,6 +162,7 @@ export async function GET(
                     updatedAt: purchase.updatedAt.toISOString(),
 
                     name: purchase.name ?? "",
+                    country: purchase.country ?? "",
                     note: purchase.note ?? "",
                     receiptStatus: purchase.receiptStatus,
                     purchaseDate: formatPurchaseDate(
@@ -232,6 +236,8 @@ export async function PATCH(
         params: Promise<{ purchaseId: string }>;
     },
 ) {
+    const denied=await businessFeatureDenied('imports');if(denied)return denied;
+
     try {
         if (
             request.headers.get("origin") !==

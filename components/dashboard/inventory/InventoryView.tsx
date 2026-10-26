@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { InventoryPageData, InventoryFilter as Filter, InventoryControls as Controls, InventorySort as Sort } from "@/lib/inventory/get-inventory-page";
 import { Icon } from "@iconify/react";
@@ -13,6 +13,7 @@ import InventoryPagination from "@/components/dashboard/inventory/InventoryPagin
 import LatestInventoryMovements, {
     type InventoryMovementEntry,
 } from "@/components/dashboard/inventory/LatestInventoryMovements";
+import StocktakeButton from "./stocktake/StocktakeButton";
 import InventoryProductsSkeleton from "./InventoryProductsSkeleton";
 
 export type InventoryProduct = {
@@ -92,6 +93,29 @@ export default function InventoryView({
 }) {
     const router = useRouter();
     const [pending, startTransition] = useTransition();
+    const productionChanged = useRef(false);
+    useEffect(() => {
+        const refresh = () => {
+            if (productionChanged.current && document.visibilityState === "visible") {
+                productionChanged.current = false;
+                startTransition(() => router.refresh());
+            }
+        };
+        const storage = (event: StorageEvent) => {
+            if (event.key === "production-updated") {
+                productionChanged.current = true;
+                refresh();
+            }
+        };
+        window.addEventListener("storage", storage);
+        window.addEventListener("focus", refresh);
+        document.addEventListener("visibilitychange", refresh);
+        return () => {
+            window.removeEventListener("storage", storage);
+            window.removeEventListener("focus", refresh);
+            document.removeEventListener("visibilitychange", refresh);
+        };
+    }, [router]);
     const { filter, currentPage, totalPages, totalProducts, products: pageProducts } = data;
     const appliedControls = data.controls;
     const [controls, setControls] = useState<Controls>(appliedControls);
@@ -139,9 +163,7 @@ export default function InventoryView({
     return (
         <main className="min-w-0 p-4 sm:p-6 lg:p-8">
             <div className="mx-auto min-w-0 max-w-7xl">
-                <h1 className="text-2xl font-semibold text-text-primary">
-                    მარაგები
-                </h1>
+                <div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-2xl font-semibold text-text-primary">მარაგები</h1><StocktakeButton kind="products"/></div>
 
                 <div
                     aria-label="მარაგის ფილტრები"

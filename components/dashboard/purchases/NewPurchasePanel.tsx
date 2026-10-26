@@ -1,4 +1,5 @@
 "use client";
+import useTransientNotice from '@/components/shared/useTransientNotice';
 import { refreshPurchasesAfterMutation } from "@/lib/purchases/refresh-purchases-client";
 
 import { prepareProductPhoto } from "@/lib/images/prepare-product-photo";
@@ -63,6 +64,7 @@ type ProductDraft = {
 };
 
 type EditablePurchase = {
+    country: string;
     id: string;
     number: number;
     updatedAt: string;
@@ -348,6 +350,7 @@ function AnimatedProductCard({
 
 export default function NewPurchasePanel({
     inventoryOptions,
+    countryOptions = [],
     attributeOptions,
     editPurchaseId,
     autoOpen = false,
@@ -355,6 +358,7 @@ export default function NewPurchasePanel({
     autoOpen?: boolean;
     editPurchaseId?: string;
     inventoryOptions: InventoryOption[];
+    countryOptions?: string[];
     attributeOptions: {
         name: string[];
         category: string[];
@@ -375,6 +379,7 @@ export default function NewPurchasePanel({
     const [saving, setSaving] = useState(false);
     const [retryPending, setRetryPending] = useState(false);
     const [success, setSuccess] = useState("");
+    useTransientNotice(success, setSuccess, mounted);
     const [loadingEdit, setLoadingEdit] = useState(false);
 
     const [editingPurchase, setEditingPurchase] = useState<{
@@ -391,6 +396,7 @@ export default function NewPurchasePanel({
     const pendingSubmission = useRef<FormData | null>(null);
 
     const [name, setName] = useState("");
+    const [country, setCountry] = useState("");
     const [date, setDate] = useState(today);
     const [receiptStatus, setReceiptStatus] = useState<
         "IN_TRANSIT" | "RECEIVED"
@@ -784,6 +790,7 @@ export default function NewPurchasePanel({
             });
 
             setName(purchase.name);
+            setCountry(purchase.country ?? "");
             setDate(purchase.purchaseDate);
             setReceiptStatus(purchase.receiptStatus);
             setNote(purchase.note);
@@ -820,6 +827,7 @@ export default function NewPurchasePanel({
         if (closeTimer.current) clearTimeout(closeTimer.current);
 
         setName("");
+        setCountry("");
         setDate(today());
         setReceiptStatus("RECEIVED");
         setNote("");
@@ -1062,6 +1070,7 @@ export default function NewPurchasePanel({
 
             const purchase = {
                 name,
+                country,
                 note,
                 receiptStatus,
                 purchaseDate: date,
@@ -1558,7 +1567,7 @@ export default function NewPurchasePanel({
                     >
                         {/* პარტიის ძირითადი ინფორმაცია */}
                         {/* პარტიის ძირითადი ინფორმაცია */}
-                        <div className="mb-3 grid shrink-0 grid-cols-2 items-end gap-2 rounded-xl border border-border bg-surface p-2.5 sm:grid-cols-[minmax(0,1fr)_150px_190px]">
+                        <div className="mb-3 grid shrink-0 grid-cols-2 items-end gap-2 rounded-xl border border-border bg-surface p-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_150px_190px]">
                             <div className="col-span-2 min-w-0 sm:col-span-1">
                                 <Field label="პარტიის სახელი">
                                     <input
@@ -1570,6 +1579,12 @@ export default function NewPurchasePanel({
                                 </Field>
                             </div>
 
+                            <div className="col-span-2 min-w-0 sm:col-span-1">
+                                <Field label="იმპორტის ქვეყანა">
+                                    <input value={country} onChange={event => setCountry(event.target.value)} list={`${panelId}-countries`} maxLength={100} placeholder="ჩაწერე ან აირჩიე" className={inputClass}/>
+                                    <datalist id={`${panelId}-countries`}>{countryOptions.map(value => <option key={value} value={value}/>)}</datalist>
+                                </Field>
+                            </div>
                             <Field label="თარიღი">
                                 <input
                                     type="date"

@@ -21,6 +21,8 @@ type CashSummary = {
     unrecordedCompleted: number;
     financialEntryCount: number;
     pendingCostOrders: number;
+    knownResult: string;
+    pendingPeriodOrders: number;
 };
 
 export async function getAnalyticsPage(
@@ -88,7 +90,9 @@ financial AS (
         COUNT(*) FILTER (
             WHERE f."costComplete" = FALSE
         )::int AS incomplete_entries,
-        COUNT(*)::int AS entry_count
+        COUNT(*)::int AS entry_count,
+        COALESCE(SUM(f."productRevenueDelta" - f."costOfGoodsDelta")
+            FILTER (WHERE f."costComplete"), 0) AS known_result
     FROM "OrderFinancialEntry" f
     WHERE f."businessId" = ${businessId}
         AND NOT EXISTS (
@@ -121,6 +125,13 @@ SELECT
                 payments.net_received::text AS "netReceived",
                 expenses.total::text AS "recordedExpenses",
 financial.product_revenue::text AS "productRevenue",
+financial.known_result::text AS "knownResult",
+(SELECT COUNT(*)::int FROM "Order" pending
+ WHERE pending."businessId" = ${businessId}
+ AND pending."analyticsPendingCost" = TRUE
+ AND pending."createdAt" >= ${range.start}
+ AND pending."createdAt" < ${range.end}
+ AND pending.status IN ('COMPLETED', 'RETURNED')) AS "pendingPeriodOrders",
 financial.delivery_revenue::text AS "deliveryRevenue",
 financial.cost_of_goods::text AS "costOfGoods",
 financial.incomplete_entries AS "incompleteEntries",
@@ -146,12 +157,13 @@ CROSS JOIN unrecorded
     const amount = (value: string) =>
         new Prisma.Decimal(value).toFixed(2);
 
-    const sales = new Prisma.Decimal(summary.productRevenue)
-        .plus(summary.deliveryRevenue);
+    // Courier collections are pass-through funds, not product revenue.
+    const sales = new Prisma.Decimal(summary.productRevenue);
 
     const profitReady =
         summary.incompleteEntries === 0 &&
-        summary.unrecordedCompleted === 0;
+        summary.unrecordedCompleted === 0 &&
+        summary.pendingPeriodOrders === 0;
 
     const profit = profitReady
         ? sales
@@ -173,7 +185,9 @@ CROSS JOIN unrecorded
         deliveryRevenue: amount(summary.deliveryRevenue),
         sales: sales.toFixed(2),
         costOfGoods: amount(summary.costOfGoods),
+        grossProfit: profitReady ? sales.minus(summary.costOfGoods).toFixed(2) : null,
         profit,
+        partialProfit: new Prisma.Decimal(summary.knownResult).minus(summary.recordedExpenses).toFixed(2),
         profitReady,
         incompleteEntries: summary.incompleteEntries,
         unrecordedCompleted: summary.unrecordedCompleted,

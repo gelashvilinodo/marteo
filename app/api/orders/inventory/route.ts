@@ -1,3 +1,5 @@
+import { businessFeatureDenied } from "@/lib/business/feature-access";
+import { getMaterialPicker } from "@/lib/orders/get-material-picker";
 import { Prisma } from "@/generated/prisma/client";
 
 import { getCurrentUser } from "@/lib/auth/session";
@@ -65,6 +67,12 @@ export async function GET(request: Request) {
         }
 
         const businessId = membership.businessId;
+        if(url.searchParams.get('kind')==='materials'){
+            const denied=await businessFeatureDenied('manufacturing');if(denied)return denied;
+            const result=await prisma.$transaction(tx=>getMaterialPicker(tx,businessId,query,Math.min(requestedPage,1000000)),{isolationLevel:'RepeatableRead',maxWait:10000,timeout:20000});
+            return json({success:true,...result});
+        }
+
 
         const searchConditions:
             Prisma.InventoryItemWhereInput[] = query

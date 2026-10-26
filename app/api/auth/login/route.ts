@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 
 import { createPrismaClient } from "@/lib/prisma";
 
+import { reserveLimits, requestIp, rateLimitResponse } from "@/lib/security/rate-limit";
+
 const SESSION_DURATION_DAYS = 30;
 
 function hashSessionToken(token: string) {
@@ -15,8 +17,9 @@ function normalizeEmail(email: string) {
 }
 
 export async function POST(request: Request) {
+  let prisma: ReturnType<typeof createPrismaClient> | undefined;
   try {
-    const prisma = createPrismaClient();
+    prisma = createPrismaClient();
     const body = (await request.json()) as {
       email?: unknown;
       password?: unknown;
@@ -36,6 +39,12 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    await reserveLimits(prisma, [
+      { scope: "login-ip", identity: requestIp(request), maximum: 60, seconds: 600 },
+      { scope: "login-account", identity: email, maximum: 20, seconds: 600 },
+      { scope: "login-pair", identity: `${requestIp(request)}:${email}`, maximum: 5, seconds: 60 },
+    ]);
 
     const user = await prisma.user.findUnique({
       where: {
@@ -120,6 +129,8 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
+    const limited = rateLimitResponse(error);
+    if (limited) return limited;
     console.error("Login error:", error);
 
     return NextResponse.json(
@@ -128,5 +139,7 @@ export async function POST(request: Request) {
       },
       { status: 500 }
     );
+  } finally {
+      await prisma?.$disconnect();
   }
 }

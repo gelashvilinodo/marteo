@@ -104,6 +104,7 @@ export async function GET(request: Request) {
             if (finance) {
                 patch.summary.sales = summary.sales;
                 patch.summary.profit = summary.profit;
+                patch.summary.partialProfit = summary.partialProfit;
             }
 
             if (orders) {

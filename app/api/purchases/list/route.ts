@@ -1,8 +1,11 @@
+import { businessFeatureDenied } from '@/lib/business/feature-access';
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { getPurchasesSnapshot } from "@/lib/purchases/get-purchases-snapshot";
 import { orderJson } from "@/lib/orders/order-http";
 export async function GET(request: Request) {
+    const denied=await businessFeatureDenied('imports');if(denied)return denied;
+
     try {
         if (!(await getCurrentUser())) return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
         const membership = await getCurrentBusiness();

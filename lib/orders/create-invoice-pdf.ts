@@ -1,3 +1,4 @@
+import { quantityLabel } from "@/lib/orders/quantity";
 import type { OrderInvoiceData } from "./invoice-types";
 import type {
     PDFFont,
@@ -683,13 +684,13 @@ export async function createInvoicePdf(
             }
 
             text(
-                `${item.quantity} × ${item.unitPrice} ₾ = ${item.total} ₾`,
+                `${item.unit&&item.unit!=="PCS"?quantityLabel(item.quantity,item.unit):item.quantity} × ${item.unitPrice} ₾ = ${item.total} ₾`,
             );
         } else {
             row(
                 [
                     [item.name, variant].filter(Boolean).join("\n"),
-                    String(item.quantity),
+                    item.unit&&item.unit!=="PCS"?quantityLabel(item.quantity,item.unit):String(item.quantity),
                     item.unitPrice,
                     item.total,
                 ],

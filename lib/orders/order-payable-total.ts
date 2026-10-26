@@ -1,3 +1,4 @@
+import { qvalue, validQuantity } from "@/lib/orders/quantity";
 import { Decimal } from "@prisma/client-runtime-utils";
 
 type PayableOrder = {
@@ -18,7 +19,7 @@ export function orderPayableTotal(
         const received = receivedQuantities.get(item.id) ?? 0;
 
         if (
-            !Number.isSafeInteger(received) ||
+            !validQuantity(received) ||
             received < 0 ||
             received > item.quantity
         ) {
@@ -29,8 +30,8 @@ export function orderPayableTotal(
 
         const quantity = order.stockReturnedAt
             ? 0
-            : item.quantity - received;
+            : qvalue(item.quantity - received);
 
-        return sum.plus(item.unitPrice.mul(quantity));
+        return sum.plus(item.unitPrice.mul(quantity).toDecimalPlaces(2));
     }, order.courierFee);
 }

@@ -45,6 +45,13 @@ export async function getCourierReminder(
             FROM "Business" b
             WHERE b.id = ${businessId}
         ),
+        settlement_boundary AS (
+            SELECT MAX(s."createdAt") AS settled_at
+            FROM "CourierSettlement" s
+            JOIN business_scope b ON b.id = s."businessId"
+            WHERE b.start_at IS NOT NULL
+                AND s."createdAt" >= b.start_at
+        ),
         candidate_orders AS (
             SELECT
                 o.id,
@@ -53,25 +60,46 @@ export async function getCourierReminder(
             FROM "Order" o
             JOIN business_scope b
                 ON b.id = o."businessId"
+            CROSS JOIN settlement_boundary boundary
+            LEFT JOIN LATERAL (
+                SELECT MIN(CASE
+                    WHEN e."eventKey" LIKE 'cost-resolution:%'
+                    THEN e."occurredAt"
+                    ELSE e."createdAt"
+                END) AS completed_at
+                FROM "OrderFinancialEntry" e
+                WHERE e."businessId" = b.id
+                    AND e."orderId" = o.id
+                    AND e.kind = 'SALE'
+            ) completion ON TRUE
             WHERE b.start_at IS NOT NULL
                 AND o."createdAt" >= b.start_at
                 AND o."deletedAt" IS NULL
-                AND o.status = 'COMPLETED'
+                AND o.status IN ('COMPLETED', 'RETURNED')
                 AND o."courierFee" > 0
+                -- A settlement closes the preceding orders. Customer returns
+                -- must never reopen that already-settled courier balance.
+                AND (
+                    boundary.settled_at IS NULL
+                    OR COALESCE(completion.completed_at, o."createdAt")
+                        > boundary.settled_at
+                )
         ),
         order_payments AS (
             SELECT
                 p."orderId",
                 COALESCE(
+                    -- Negative payments are refunds to the customer,
+                    -- not money returned by the courier.
                     SUM(p.amount)
-                        FILTER (WHERE p.method = 'CASH'),
+                        FILTER (WHERE p.method = 'CASH' AND p.amount > 0),
                     0
                 ) AS cash_received,
                 BOOL_OR(
                     p.method = 'UNKNOWN'
-                    AND p.amount <> 0
+                    AND p.amount > 0
                 ) AS unknown_method,
-                COUNT(*) AS payment_count
+                COUNT(*) FILTER (WHERE p.amount > 0) AS payment_count
             FROM "OrderPayment" p
             JOIN candidate_orders o
                 ON o.id = p."orderId"
@@ -112,23 +140,6 @@ export async function getCourierReminder(
                     0
                 ) AS cash_received
             FROM classified_orders
-        ),
-        settlement_totals AS (
-            SELECT
-                COALESCE(
-                    SUM(s.amount) FILTER (WHERE s.amount > 0),
-                    0
-                ) AS paid_to_courier,
-
-                COALESCE(
-                    SUM(s.amount) FILTER (WHERE s.amount < 0),
-                    0
-                ) AS received_from_courier_signed
-            FROM "CourierSettlement" s
-            JOIN business_scope b
-                ON b.id = s."businessId"
-            WHERE b.start_at IS NOT NULL
-                AND s."createdAt" >= b.start_at
         )
         SELECT
             b.start_date AS "startDate",
@@ -136,12 +147,10 @@ export async function getCourierReminder(
             o.unresolved_count AS "unresolvedOrderCount",
             o.courier_fees::text AS "courierFees",
             o.cash_received::text AS "cashReceived",
-            s.paid_to_courier::text AS "paidToCourier",
-            s.received_from_courier_signed::text
-                AS "receivedFromCourierSigned"
+            '0'::text AS "paidToCourier",
+            '0'::text AS "receivedFromCourierSigned"
         FROM business_scope b
         CROSS JOIN order_totals o
-        CROSS JOIN settlement_totals s
     `;
 
     if (!row) {

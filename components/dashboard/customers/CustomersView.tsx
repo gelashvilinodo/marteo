@@ -159,7 +159,7 @@ export default function CustomersView({
 
         const timer = window.setTimeout(() => {
             setNotice(null);
-        }, 5000);
+        }, 2000);
 
         return () => window.clearTimeout(timer);
     }, [notice]);

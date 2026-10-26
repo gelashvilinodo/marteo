@@ -1,3 +1,5 @@
+import { quantityLabel, qvalue } from "@/lib/orders/quantity";
+import { numericQuantities } from "@/lib/orders/quantity";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -34,31 +36,35 @@ const paymentLabels = {
 async function getPublicOrder(token: string) {
     const prisma = createPrismaClient();
     try {
-        return await prisma.order.findFirst({
+        const result=await prisma.order.findFirst({
             where: { publicAccessToken: token, deletedAt: null },
             select: {
                 number: true,
                 createdAt: true,
                 status: true,
                 paymentStatus: true,
-                courierFee: true,
+                courierFee: true,stockReturnedAt:true,fulfillmentCycle:true,
+                returns:{where:{status:"RECEIVED"},select:{fulfillmentCycle:true,items:{select:{orderItemId:true,quantity:true}}}},
                 business: { select: { name: true, logoUrl: true, phone: true, email: true } },
                 items: {
                     where: { isActive: true },
                     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
                     select: {
-                        name: true,
+                        id:true,stockRestoredAt:true, name: true,
                         color: true,
                         size: true,
                         imageUrl: true,
-                        quantity: true,
+                        quantity: true, unit:true,
                         unitPrice: true,
                         condition: true,
                     },
                 },
                 payments: { select: { amount: true } },
             },
-        });
+        }).then(numericQuantities);
+        if(!result)return null;
+        const returned=new Map<string,number>();for(const entry of result.returns){if(entry.fulfillmentCycle!==result.fulfillmentCycle)continue;for(const item of entry.items)returned.set(item.orderItemId,qvalue((returned.get(item.orderItemId)??0)+item.quantity));}
+        return {...result,items:result.items.map(i=>({...i,quantity:result.stockReturnedAt||i.stockRestoredAt?0:qvalue(i.quantity-(returned.get(i.id)??0))})).filter(i=>i.quantity>0)};
     } finally {
         await prisma.$disconnect();
     }
@@ -78,7 +84,7 @@ export default async function PublicOrderPage({ params }: { params: Promise<{ to
     if (!order) notFound();
 
     const status = statuses[order.status];
-    const productsTotal = order.items.reduce((sum, item) => sum.plus(item.unitPrice.mul(item.quantity)), new Prisma.Decimal(0));
+    const productsTotal = order.items.reduce((sum, item) => sum.plus(item.unitPrice.mul(item.quantity).toDecimalPlaces(2)), new Prisma.Decimal(0));
     const total = productsTotal.plus(order.courierFee);
     const paid = order.payments.reduce((sum, payment) => sum.plus(payment.amount), new Prisma.Decimal(0));
     const remaining = Prisma.Decimal.max(
@@ -131,7 +137,7 @@ export default async function PublicOrderPage({ params }: { params: Promise<{ to
                             <h3 className="break-words text-sm font-medium">{item.name}</h3>
                             {item.condition === "DEFECTIVE" && <span className="mt-1 inline-block rounded-md bg-warning/10 px-2 py-1 text-xs text-warning">წუნდებული</span>}
                             {(item.color || item.size) && <p className="mt-1 break-words text-xs text-text-secondary">{[item.color, item.size].filter(Boolean).join(" · ")}</p>}
-                            <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm tabular-nums"><span className="text-text-secondary">{item.quantity} × {money(item.unitPrice)}</span><span className="font-semibold">{money(item.unitPrice.mul(item.quantity))}</span></div>
+                            <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm tabular-nums"><span className="text-text-secondary">{item.unit!=="PCS"?quantityLabel(item.quantity,item.unit):item.quantity} × {money(item.unitPrice)}</span><span className="font-semibold">{money(item.unitPrice.mul(item.quantity).toDecimalPlaces(2))}</span></div>
                         </div>
                     </li>)}
                 </ul>

@@ -1,3 +1,4 @@
+import { businessFeatureDenied } from '@/lib/business/feature-access';
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth/session";
@@ -87,6 +88,8 @@ export async function POST(
         params: Promise<{ purchaseId: string }>;
     },
 ) {
+    const denied=await businessFeatureDenied('imports');if(denied)return denied;
+
     try {
         const origin = request.headers.get("origin");
 

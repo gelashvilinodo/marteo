@@ -45,6 +45,7 @@ export default async function BusinessSettingsPage() {
             select: {
                 id: true,
                 name: true,
+                mode: true,
                 logoUrl: true,
                 phone: true,
                 updatedAt: true,

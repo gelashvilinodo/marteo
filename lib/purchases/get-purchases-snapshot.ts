@@ -196,16 +196,16 @@ export async function getPurchasesSnapshot(businessId: string, params: Purchases
         },
       });
 
-      const { inventoryOptions, attributeOptions } =
+      const { inventoryOptions, attributeOptions, countryOptions } =
         await getPurchaseFormOptions(tx, businessId);
 
       return {
         view: view as "active" | "archive", isArchive, query, from, to, filterError, hasFilters,
-        totalPurchases, currentPage, requestedPage, totalPages, pageSize, paginationItems, inventoryOptions, attributeOptions,
+        totalPurchases, currentPage, requestedPage, totalPages, pageSize, paginationItems, inventoryOptions, attributeOptions, countryOptions,
         purchases: purchases.map(purchase => {
           const productsCost = purchase.items.reduce((sum, item) => sum.plus(item.unitPurchasePrice.mul(item.quantity)), new Prisma.Decimal(0));
           return {
-            id: purchase.id, number: purchase.number, name: purchase.name, note: purchase.note,
+            id: purchase.id, number: purchase.number, name: purchase.name, country: purchase.country, note: purchase.note,
             receiptStatus: purchase.receiptStatus, archivedAt: purchase.archivedAt?.toISOString() ?? null,
             purchaseDate: purchase.purchaseDate.toISOString(),
             dateLabel: new Intl.DateTimeFormat("ka-GE", {

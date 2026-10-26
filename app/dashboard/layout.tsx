@@ -26,6 +26,7 @@ export default async function DashboardLayout({
 
     return (
         <DashboardShell
+            businessMode={membership.business.mode}
             businessName={membership.business.name}
             businessLogoUrl={membership.business.logoUrl}
             userName={user.firstName || ""}

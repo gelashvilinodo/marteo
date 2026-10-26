@@ -6,7 +6,7 @@ import type NewPurchasePanel from "@/components/dashboard/purchases/NewPurchaseP
 
 type FormOptions = Pick<
     ComponentProps<typeof NewPurchasePanel>,
-    "inventoryOptions" | "attributeOptions"
+    "inventoryOptions" | "attributeOptions" | "countryOptions"
 >;
 
 type QueryReader = {
@@ -128,6 +128,7 @@ export async function getPurchaseFormOptions(
             WHERE "businessId" = ${businessId}
         )
         SELECT JSONB_BUILD_OBJECT(
+            'countryOptions', COALESCE((SELECT JSONB_AGG(c.country ORDER BY c.country) FROM (SELECT DISTINCT ON (LOWER(country)) country FROM "Purchase" WHERE "businessId" = ${businessId} AND country IS NOT NULL AND country <> '' ORDER BY LOWER(country), country) c), '[]'::jsonb),
             'inventoryOptions',
             COALESCE(
                 (

@@ -7,7 +7,7 @@ export type OrderRecordQueryClient = {
 
 type ItemRow = {
     id: string; name: string; quantity: number; imageUrl: string | null;
-    source: "MANUAL" | "INVENTORY"; unitPrice: string; totalCost: string | null;
+    source: "MANUAL" | "INVENTORY" | "MATERIAL";materialId:string|null;unit:string; unitPrice: string; totalCost: string | null;
     stockRestoredAt: string | null; inventoryItemId: string | null;
     condition: "GOOD" | "DEFECTIVE"; description: string | null;
     color: string | null; size: string | null; unitCost: string;
@@ -58,7 +58,7 @@ export async function getOrderRecords(
             o."invoiceVersion", o."lastPrintedInvoiceVersion", o."invoicePrintedAt",
             COALESCE((SELECT jsonb_agg(
                 jsonb_build_object('id', i.id, 'name', i.name, 'quantity', i.quantity,
-                    'imageUrl', i."imageUrl", 'source', i.source, 'unitPrice', i."unitPrice"::text,
+                    'imageUrl', i."imageUrl", 'source', i.source, 'materialId',i."materialId",'unit',i.unit, 'unitPrice', i."unitPrice"::text,
                     'totalCost', i."totalCost"::text, 'stockRestoredAt', i."stockRestoredAt")
                 || CASE WHEN ${details} THEN jsonb_build_object(
                     'inventoryItemId', i."inventoryItemId", 'condition', i.condition,

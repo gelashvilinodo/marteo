@@ -1,3 +1,4 @@
+import { numericQuantities } from "@/lib/orders/quantity";
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
@@ -48,7 +49,7 @@ export async function resolveHistoricalOrderPayment(
                 select: { id: true },
             },
         },
-    });
+    }).then(numericQuantities);
 
     if (!order) {
         fail("შეკვეთა ამ ბიზნესში ვერ მოიძებნა.", 404);

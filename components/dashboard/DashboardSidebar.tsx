@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { hasBusinessFeature, type BusinessMode } from "@/lib/business/business-mode";
+import { useId, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Icon } from "@iconify/react";
 import Image from "next/image";
@@ -24,6 +26,18 @@ const navigationItems = [
         label: "შესყიდვები",
         href: "/dashboard/purchases",
         icon: "solar:cart-large-2-bold-duotone",
+        locked: false,
+    },
+    {
+        label: "შესყიდვები — მასალები",
+        href: "/dashboard/material-purchases",
+        icon: "",
+        locked: false,
+    },
+    {
+        label: "წარმოება",
+        href: "/dashboard/production",
+        icon: "solar:structure-bold-duotone",
         locked: false,
     },
     {
@@ -60,11 +74,39 @@ const navigationItems = [
 ];
 
 type DashboardSidebarProps = {
+    mode: BusinessMode;
     mobile?: boolean;
     onSelect?: () => void;
 };
 
+type SidebarGroupLink = {label:string;href:string;icon:string};
+const inventoryLinks:SidebarGroupLink[]=[
+    {label:'პროდუქტები',href:'/dashboard/inventory',icon:'solar:box-bold-duotone'},
+    {label:'მასალები',href:'/dashboard/material-inventory',icon:'solar:layers-bold-duotone'},
+];
+const purchaseLinks:SidebarGroupLink[]=[
+    {label:'პროდუქტები',href:'/dashboard/purchases',icon:'solar:box-bold-duotone'},
+    {label:'მასალები',href:'/dashboard/material-purchases',icon:'solar:layers-bold-duotone'},
+];
+function SidebarGroup({label,icon,links,pathname,onSelect}:{label:string;icon:string;links:SidebarGroupLink[];pathname:string;onSelect?:()=>void}) {
+    const active=links.some(link=>pathname===link.href||pathname.startsWith(link.href+'/'));
+    const [open,setOpen]=useState(active);
+    const linksId=useId();
+    return <div className="min-w-0">
+        <button type="button" aria-expanded={open} aria-controls={linksId} onClick={()=>setOpen(value=>!value)} className={`sidebar-navigation-link relative flex h-[52px] w-[calc(100%-1rem)] items-center gap-3 rounded-2xl px-4 text-sm font-medium transition-colors ${active?'text-accent':'text-slate-300 hover:bg-white/10 hover:text-white'}`}>
+            <Icon icon={icon} className="h-5 w-5 shrink-0"/><span>{label}</span><Icon icon="solar:alt-arrow-down-linear" className={`ml-auto h-4 w-4 transition-transform duration-200 motion-reduce:transition-none ${open?'rotate-180':''}`}/>
+        </button>
+        <div id={linksId} role="region" aria-label={label} inert={!open} className={`grid transition-[grid-template-rows,opacity] duration-200 motion-reduce:transition-none ${open?'grid-rows-[1fr] opacity-100':'grid-rows-[0fr] opacity-0'}`}>
+            <div className="min-h-0 overflow-hidden"><div className="ml-6 mr-4 my-1 space-y-1 border-l border-white/15 pl-3">{links.map(link=>{
+                const selected=pathname===link.href||pathname.startsWith(link.href+'/');
+                return <Link key={link.href} href={link.href} prefetch={false} onClick={onSelect} aria-current={selected?'page':undefined} className={`flex min-h-10 min-w-0 items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors ${selected?'bg-white/10 font-medium text-accent':'text-slate-300 hover:bg-white/5 hover:text-white'}`}><span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${selected?'bg-accent/15':'bg-white/5'}`}><Icon icon={link.icon} className="h-4 w-4"/></span><span className="min-w-0 truncate">{link.label}</span></Link>;
+            })}</div></div>
+        </div>
+    </div>;
+}
+
 export default function DashboardSidebar({
+    mode,
     mobile = false,
     onSelect,
 }: DashboardSidebarProps) {
@@ -155,6 +197,16 @@ export default function DashboardSidebar({
                                 ? pathname === "/dashboard"
                                 : pathname.startsWith(item.href);
 
+                        if(item.href === "/dashboard/purchases" && mode==='HYBRID') {
+                            return <SidebarGroup key={pathname+item.href} label="შესყიდვები" icon="solar:cart-large-2-bold-duotone" links={purchaseLinks} pathname={pathname} onSelect={onSelect}/>;
+                        }
+                        if(item.href === "/dashboard/material-purchases" && mode==='HYBRID') return null;
+                        if(item.href === "/dashboard/purchases" && !hasBusinessFeature(mode,"imports")) return null;
+                        if(["/dashboard/material-purchases","/dashboard/production"].includes(item.href) && !hasBusinessFeature(mode,"manufacturing")) return null;
+                        if (item.href === "/dashboard/inventory" && hasBusinessFeature(mode,"manufacturing")) {
+                            return <SidebarGroup key={pathname + item.href} label="მარაგები" icon="solar:box-bold-duotone" links={inventoryLinks} pathname={pathname} onSelect={onSelect}/>;
+                        }
+
                         if (item.locked) {
                             return (
                                 <div
@@ -167,7 +219,7 @@ export default function DashboardSidebar({
                                     />
 
                                     <span className="text-sm font-medium">
-                                        {item.label}
+                                        {item.href==="/dashboard/material-purchases"&&mode==="MANUFACTURING"?"შესყიდვები":item.label}
                                     </span>
 
                                     <div className="ml-auto flex items-center gap-1 rounded-full bg-white/10 px-2 py-1">
@@ -197,12 +249,9 @@ export default function DashboardSidebar({
                                         : "mr-4 rounded-2xl text-slate-300 hover:bg-white/10 hover:text-white",
                                 ].join(" ")}
                             >
-                                <Icon
-                                    icon={item.icon}
-                                    className="h-5 w-5 shrink-0"
-                                />
+                                {item.href==="/dashboard/material-purchases"&&mode==="MANUFACTURING" ? <Icon icon="solar:cart-large-2-bold-duotone" className="h-5 w-5 shrink-0"/> : item.icon ? <Icon icon={item.icon} className="h-5 w-5 shrink-0" /> : <span aria-hidden="true" className="h-5 w-5 shrink-0" />}
 
-                                <span>{item.label}</span>
+                                <span>{item.href==="/dashboard/material-purchases"&&mode==="MANUFACTURING"?"შესყიდვები":item.label}</span>
                             </Link>
                         );
                     })}

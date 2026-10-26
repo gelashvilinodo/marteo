@@ -1,3 +1,4 @@
+import { validQuantity } from "./quantity";
 import { Prisma } from "@/generated/prisma/client";
 
 import { OrderValidationError } from "./order-validation-error";
@@ -5,7 +6,9 @@ export { OrderValidationError } from "./order-validation-error";
 
 export type OrderProduct = {
     orderItemId?: string;
-    source: "INVENTORY" | "MANUAL";
+    source: "INVENTORY" | "MANUAL" | "MATERIAL";
+    materialId: string | null;
+    unit: string;
     inventoryItemId: string | null;
     condition: "GOOD" | "DEFECTIVE";
     name: string;
@@ -156,7 +159,8 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
 
             if (
                 item.source !== "INVENTORY" &&
-                item.source !== "MANUAL"
+                item.source !== "MANUAL" &&
+                item.source !== "MATERIAL"
             ) {
                 fail(`${label}: პროდუქტის წყარო არასწორია.`);
             }
@@ -170,13 +174,15 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
 
             if (
                 typeof item.quantity !== "number" ||
-                !Number.isInteger(item.quantity) ||
-                item.quantity < 1 ||
+                !validQuantity(item.quantity) ||
+                (item.source !== "MATERIAL" && !Number.isInteger(item.quantity)) ||
+                item.quantity <= 0 ||
                 item.quantity > 2147483647
             ) {
                 fail(`${label}: რაოდენობა უნდა იყოს დადებითი მთელი რიცხვი.`);
             }
 
+            if(item.source === "MATERIAL" && item.condition!=="GOOD")fail("მასალის გაყიდვისას აირჩიე დაუზიანებელი ნაშთი.");
             const name = text(item.name, `${label}, სახელი`);
 
             if (!name) {
@@ -197,6 +203,8 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
                     mode === "edit"
                         ? text(item.orderItemId, `${label}, ჩანაწერის კოდი`) || undefined
                         : undefined,
+                materialId: item.source === "MATERIAL" ? text(item.materialId,label) || fail(`${label}: აირჩიე მასალა მარაგიდან.`) : null,
+                unit: item.source === "MATERIAL" ? text(item.unit,label) : "PCS",
                 source: item.source,
                 inventoryItemId,
                 condition: item.condition,
@@ -243,7 +251,7 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
 
     const total = items.reduce(
         (sum, item) =>
-            sum.plus(item.unitPrice.mul(item.quantity)),
+            sum.plus(item.unitPrice.mul(item.quantity).toDecimalPlaces(2)),
         courierFee,
     );
 

@@ -1,3 +1,4 @@
+import { qvalue } from "@/lib/orders/quantity";
 import { Prisma } from "@/generated/prisma/client";
 import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
 import { orderPayableTotal } from "@/lib/orders/order-payable-total";
@@ -125,8 +126,8 @@ export async function GET(
             for (const item of entry.items) {
                 receivedQuantities.set(
                     item.orderItemId,
-                    (receivedQuantities.get(item.orderItemId) ?? 0) +
-                    item.quantity,
+                    qvalue((receivedQuantities.get(item.orderItemId) ?? 0) +
+                    item.quantity),
                 );
             }
         }
@@ -143,8 +144,8 @@ export async function GET(
                 ...item,
                 quantity: order.stockReturnedAt
                     ? 0
-                    : item.quantity -
-                    (receivedQuantities.get(item.id) ?? 0),
+                    : qvalue(item.quantity -
+                    (receivedQuantities.get(item.id) ?? 0)),
             }))
             .filter(item => item.quantity > 0);
         const paidAmount = order.paidAmount;
@@ -166,7 +167,7 @@ export async function GET(
                 color: item.color,
                 size: item.size,
                 condition: item.condition,
-                quantity: item.quantity,
+                quantity: item.quantity, unit:item.unit,
                 unitPrice: item.unitPrice.toFixed(2),
                 total: item.unitPrice.mul(item.quantity).toFixed(2),
             })),

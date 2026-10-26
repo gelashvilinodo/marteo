@@ -43,3 +43,8 @@ next-env.d.ts
 
 # Prisma generated client
 /generated/
+# Generated build files
+.next/
+.open-next/
+.wrangler/
+node_modules/

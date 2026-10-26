@@ -247,6 +247,7 @@ export async function savePurchase(
                         businessId,
                         number: (previous._max.number ?? 0) + 1,
                         name: input.name || null,
+                        country: input.country || null,
                         note: input.note || null,
                         receiptStatus: input.receiptStatus,
                         receivedAt,

@@ -1,3 +1,4 @@
+import { reserveDelivery } from "@/lib/security/delivery-limit";
 import "server-only";
 
 import { Resend } from "resend";
@@ -24,6 +25,8 @@ export async function sendEmailChangeCode({
         hour12: false,
         timeZone: "Asia/Tbilisi",
     }).format(expiresAt);
+
+    await reserveDelivery("email", to.trim().toLowerCase());
 
     const resend = new Resend(apiKey);
 

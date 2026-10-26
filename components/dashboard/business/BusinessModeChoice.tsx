@@ -1,0 +1,6 @@
+'use client';
+import { Icon } from '@iconify/react';
+import { BUSINESS_MODES, type BusinessMode } from '@/lib/business/business-mode';
+export default function BusinessModeChoice({value,onChange,disabled=false}:{value:BusinessMode|'';onChange:(mode:BusinessMode)=>void;disabled?:boolean}) {
+    return <fieldset disabled={disabled} className="min-w-0 space-y-2"><legend className="mb-2 text-sm font-medium text-text-primary">ბიზნესის მიმართულება</legend><div className="grid min-w-0 grid-cols-3 gap-2">{BUSINESS_MODES.map(mode=><label key={mode.value} className={`relative flex min-w-0 cursor-pointer flex-col items-center gap-2 rounded-xl border px-2 py-3 text-center transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/40 ${value===mode.value?'border-accent bg-accent/10 text-accent':'border-border bg-background text-text-secondary'}`}><input type="radio" name="business-mode" value={mode.value} checked={value===mode.value} onChange={()=>onChange(mode.value)} className="sr-only"/><Icon icon={mode.icon} className="h-5 w-5 shrink-0"/><span className="text-xs font-medium sm:text-sm">{mode.label}</span></label>)}</div><p className="text-xs leading-5 text-text-secondary">{BUSINESS_MODES.find(mode=>mode.value===value)?.description??'აირჩიე ბიზნესის მიმართულება.'}</p></fieldset>;
+}

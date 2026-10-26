@@ -80,7 +80,7 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
     window.addEventListener(PURCHASES_CHANGED, changed);
     return () => { active = false; controller?.abort(); if (timer) clearTimeout(timer); window.removeEventListener(PURCHASES_CHANGED, changed); };
   }, [initialSnapshot]);
-  const { view, isArchive, query, from, to, filterError, hasFilters, totalPurchases, currentPage, totalPages, pageSize, paginationItems, purchases, inventoryOptions, attributeOptions } = snapshot;
+  const { view, isArchive, query, from, to, filterError, hasFilters, totalPurchases, currentPage, totalPages, pageSize, paginationItems, purchases, inventoryOptions, attributeOptions, countryOptions } = snapshot;
   const paginationClass = "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-sm font-medium text-text-primary transition hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
   function pageHref(page: number) {
     const search = new URLSearchParams();
@@ -107,6 +107,7 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
               <NewPurchasePanel
                 inventoryOptions={inventoryOptions}
                 attributeOptions={attributeOptions}
+                countryOptions={countryOptions}
               />
             </div>
           </div>
@@ -266,7 +267,7 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
                 "0",
               );
 
-              const date = purchase.dateLabel;
+              const date = [purchase.dateLabel, purchase.country].filter(Boolean).join(" · ");
 
               const previewVariants = variants.slice(0, 3);
               const remainingVariants =
@@ -344,6 +345,7 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
                           editPurchaseId={purchase.id}
                           inventoryOptions={inventoryOptions}
                           attributeOptions={attributeOptions}
+                countryOptions={countryOptions}
                         />
                       ) : (
                         <button

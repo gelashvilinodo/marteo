@@ -1,4 +1,6 @@
+import { isBusinessMode, type BusinessMode } from "./business-mode";
 export type BusinessSettingsData = {
+    mode: BusinessMode;
     id: string;
     name: string;
     logoUrl: string | null;
@@ -10,7 +12,7 @@ export class BusinessSettingsError extends Error {
     constructor(
         message: string,
         public status = 422,
-        public field: "name" | "phone" | "form" = "form",
+        public field: "name" | "phone" | "mode" | "form" = "form",
     ) {
         super(message);
         this.name = "BusinessSettingsError";
@@ -52,6 +54,7 @@ function readPhone(value: unknown): string | null {
 export function validateBusinessSettings(value: unknown): {
     name: string;
     phone: string | null;
+    mode: BusinessMode;
     expectedUpdatedAt: Date;
 } {
     if (
@@ -102,7 +105,10 @@ export function validateBusinessSettings(value: unknown): {
         );
     }
 
+    if (!isBusinessMode(input.mode)) throw new BusinessSettingsError("აირჩიე ბიზნესის მიმართულება.", 422, "mode");
+
     return {
+        mode: input.mode,
         name,
         phone: readPhone(input.phone),
         expectedUpdatedAt,

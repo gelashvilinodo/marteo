@@ -1,3 +1,5 @@
+import { qvalue } from "@/lib/orders/quantity";
+import { numericQuantities } from "@/lib/orders/quantity";
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -29,7 +31,7 @@ export async function getOrder(orderId: string) {
                     },
                 },
             }
-        });
+        }).then(numericQuantities);
         if (!order) throw new OrderValidationError("შეკვეთა ვერ მოიძებნა.", 404);
         const returnQuantities = new Map<
             string,
@@ -51,9 +53,9 @@ export async function getOrder(orderId: string) {
                 };
 
                 if (entry.status === "PENDING") {
-                    quantity.pending += item.quantity;
+                    quantity.pending = qvalue(quantity.pending + item.quantity);
                 } else {
-                    quantity.received += item.quantity;
+                    quantity.received = qvalue(quantity.received + item.quantity);
                 }
 
                 returnQuantities.set(item.orderItemId, quantity);
@@ -188,8 +190,8 @@ export async function getOrder(orderId: string) {
                     const quantities = returnQuantities.get(item.id);
 
                     return item.quantity >
-                        (quantities?.pending ?? 0) +
-                        (quantities?.received ?? 0);
+                        qvalue((quantities?.pending ?? 0) +
+                        (quantities?.received ?? 0));
                 }),
 
             returns: order.returns.map(entry => ({
@@ -205,6 +207,7 @@ export async function getOrder(orderId: string) {
                     id: item.id,
                     orderItemId: item.orderItemId,
                     quantity: item.quantity,
+                    unit: item.unit,
                     reason: item.reason,
                     condition: item.condition,
                     note: item.note ?? "",
@@ -237,13 +240,13 @@ export async function getOrder(orderId: string) {
                         ? 0
                         : Math.max(
                             0,
-                            item.quantity -
+                            qvalue(item.quantity -
                             (returnQuantities.get(item.id)?.pending ?? 0) -
-                            (returnQuantities.get(item.id)?.received ?? 0),
+                            (returnQuantities.get(item.id)?.received ?? 0)),
                         ),
-                id: item.id, source: item.source, inventoryItemId: item.inventoryItemId,
+                id: item.id, source: item.source, inventoryItemId: item.inventoryItemId, materialId:item.materialId, unit:item.unit,
                 name: item.name, description: item.description ?? "", color: item.color ?? "", size: item.size ?? "", imageUrl: item.imageUrl,
-                condition: item.condition, quantity: item.quantity, unitPrice: item.unitPrice.toFixed(2), unitCost:
+                condition: item.condition, quantity: item.quantity, totalCost:item.totalCost?.toFixed(2)??null, unitPrice: item.unitPrice.toFixed(2), unitCost:
                     item.source === "MANUAL" && item.totalCost === null
                         ? ""
                         : item.unitCost.toFixed(2),

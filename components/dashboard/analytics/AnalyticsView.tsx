@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Icon } from "@iconify/react";
 import type { AnalyticsSnapshot } from "@/lib/analytics/get-analytics-snapshot";
 import type { FinancialTrendPeriod } from "@/lib/analytics/get-financial-trend";
@@ -8,6 +9,7 @@ import AnalyticsPeriodForm from "./AnalyticsPeriodForm";
 import FinancialMovements from "./FinancialMovements";
 import FinancialTrend from "./FinancialTrend";
 import ExpenseBreakdown from "./ExpenseBreakdown";
+import MissingCostsButton from "@/components/dashboard/costs/MissingCostsButton";
 import NewExpenseButton from "./NewExpenseButton";
 
 function displayDate(value: string) { return value.split("-").reverse().join("."); }
@@ -78,7 +80,7 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
             value: data.sales,
             icon: "solar:cart-large-2-linear",
             tone: "bg-accent/10 text-accent",
-            description: "აღრიცხული გაყიდვები და მიწოდების საფასური, შესწორებების გათვალისწინებით",
+            description: "პროდუქტების გაყიდვები, დაბრუნებებისა და შესწორებების გათვალისწინებით",
         },
         {
             title: "თვითღირებულება",
@@ -90,6 +92,13 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
                 : "გაყიდულ ნივთებზე აღრიცხული თვითღირებულება",
         },
         {
+            title: "მთლიანი მოგება",
+            value: data.grossProfit,
+            icon: "solar:chart-square-linear",
+            tone: "bg-accent/10 text-accent",
+            description: data.profitReady ? "გაყიდვები − გაყიდულის თვითღირებულება" : "სრული თვითღირებულება დასაზუსტებელია",
+        },
+        {
             title: "სხვა ხარჯები",
             value: data.recordedExpenses,
             icon: "solar:bill-list-linear",
@@ -97,13 +106,13 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
             description: "ცალკე აღრიცხული ხარჯები",
         },
         {
-            title: "მოგება",
-            value: data.profit,
+            title: data.profitReady ? "სუფთა მოგება" : "დათვლილი ნაწილის შედეგი",
+            value: data.profit ?? data.partialProfit,
             icon: "solar:chart-2-linear",
             tone: "bg-success/10 text-success",
             description: data.profitReady
                 ? "აღრიცხული გაყიდვები − თვითღირებულება − სხვა ხარჯები"
-                : "მონაცემების დაზუსტებამდე არ გამოითვლება",
+                : "სრული მოგება უცნობია — ნაჩვენებია დათვლილი ნაწილის შედეგი, სხვა ხარჯების გამოკლებით",
         },
     ];
 
@@ -117,7 +126,7 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
                         from={data.from}
                         to={data.to}
                         action={
-                            <NewExpenseButton businessId={businessId} />
+                            <div className="flex flex-wrap gap-2"><Link href={`/print/accountant?from=${data.from}&to=${data.to}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-surface px-3 text-sm"><Icon icon="solar:document-text-linear" className="h-5 w-5 text-accent"/>ბიზნესის ანგარიში</Link><NewExpenseButton businessId={businessId} /></div>
                         }
                     />
 
@@ -135,7 +144,7 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
 
                 {refreshing && <p role="status" className="text-sm text-text-secondary">ანალიტიკა ახლდება…</p>}
                 {error && <p role="alert" className="text-sm text-danger">{error} <button type="button" className="underline" onClick={() => window.dispatchEvent(new Event(ANALYTICS_CHANGED, { cancelable: true }))}>ხელახლა განახლება</button></p>}
-                <div aria-busy={refreshing} className="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-4">
+                <div aria-busy={refreshing} className="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-5">
                     {cards.map(card => (
                         <section
                             key={card.title}
@@ -183,6 +192,7 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
                     />
                 </div>
 
+                <MissingCostsButton />
                 {data.pendingCostOrders > 0 && (
                     <section className="space-y-2 rounded-2xl border border-warning/30 bg-warning/5 p-4">
                         <h2 className="text-sm font-semibold">
@@ -196,7 +206,7 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
                         </p>
                         <p className="text-sm text-text-secondary">
                             შეკვეთები შენარჩუნებულია. თვითღირებულების
-                            შევსების შემდეგ მათ ანგარიშში ჩართვას შევძლებთ.
+                            შევსების შემდეგ ისინი ანგარიშში ჩაირთვება.
                             ეს რაოდენობა მთელ ბიზნესს ეხება და მხოლოდ
                             არჩეული პერიოდით არ შემოიფარგლება.
                         </p>

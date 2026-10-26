@@ -74,8 +74,7 @@ export async function getFinancialTrend(
                     (
                         f."occurredAt" + INTERVAL '4 hours'
                     )::date AS day,
-                    f."productRevenueDelta" +
-                        f."deliveryRevenueDelta" AS sales,
+                    f."productRevenueDelta" AS sales,
                     f."costOfGoodsDelta" AS cost_of_goods,
                     0::numeric AS expenses,
                     f."costComplete" AS cost_complete

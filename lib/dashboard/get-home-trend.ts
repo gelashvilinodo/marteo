@@ -57,8 +57,7 @@ export async function getHomeTrend(
                     (
                         f."occurredAt" + INTERVAL '4 hours'
                     )::date AS day,
-                    f."productRevenueDelta" +
-                        f."deliveryRevenueDelta" AS sales,
+                    f."productRevenueDelta" AS sales,
                     f."costOfGoodsDelta" AS costs,
                     0::numeric AS expenses,
                     f."costComplete" AS complete

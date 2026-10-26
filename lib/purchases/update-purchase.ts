@@ -633,6 +633,7 @@ export async function updatePurchase(
                         where: { id: purchase.id },
                         data: {
                             name: input.name || null,
+                        country: input.country || null,
                             note: input.note || null,
                             purchaseDate: new Date(
                                 `${input.purchaseDate}T00:00:00+04:00`,

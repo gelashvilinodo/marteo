@@ -1,4 +1,7 @@
+import { Decimal } from "@prisma/client-runtime-utils";
+import { validQuantity } from "./quantity";
 export type InventoryOrderProduct = {
+    source?: "INVENTORY" | "MATERIAL"; unit?: string; unitCost?: string; materialLots?: Array<{remainingQuantity:string;defectiveQuantity:string;remainingCost:string}>;
     id: string; sku: string; name: string; brand: string; category: string; description: string;
     color: string; size: string; imageUrl: string | null; salePrice: string | null;
     totalStock: number; goodStock: number; defectiveStock: number;
@@ -7,10 +10,11 @@ export type OrderFormItem = {
     displayNumber?: number;
     orderItemId?: string;
     isCarriedOver?: boolean;
-    key: string; source: "MANUAL" | "INVENTORY"; inventoryItemId: string | null;
+    key: string; source: "MANUAL" | "INVENTORY" | "MATERIAL"; inventoryItemId: string | null; materialId?:string|null; unit?:string; materialLots?:InventoryOrderProduct["materialLots"];
     name: string; description: string; color: string; size: string; imageUrl: string | null;
     condition: "GOOD" | "DEFECTIVE"; quantity: string; unitPrice: string; unitCost: string;
     goodStock?: number; defectiveStock?: number;
+    materialCostSnapshot?:{quantity:string;totalCost:string};
     uploadPending?: boolean;
 };
 export type OrderFormDraft = {
@@ -27,7 +31,7 @@ export function manualOrderItem(): OrderFormItem {
 }
 export function inventoryOrderItem(product: InventoryOrderProduct, condition: "GOOD" | "DEFECTIVE"): OrderFormItem {
     return {
-        ...manualOrderItem(), source: "INVENTORY", inventoryItemId: product.id, name: product.name, description: product.description,
+        ...manualOrderItem(), source: product.source === "MATERIAL" ? "MATERIAL" : "INVENTORY", inventoryItemId: product.source === "MATERIAL" ? null : product.id, materialId:product.source === "MATERIAL"?product.id:null, unit:product.unit??"PCS",materialLots:product.materialLots,quantity:String(Math.min(1,product.goodStock)), name: product.name, description: product.description,
         color: product.color, size: product.size, imageUrl: product.imageUrl, condition, unitPrice: product.salePrice ?? "", goodStock: product.goodStock, defectiveStock: product.defectiveStock
     };
 }
@@ -41,10 +45,14 @@ export function moneyText(cents: bigint): string {
     const negative = cents < 0n; const amount = negative ? -cents : cents;
     return `${negative ? "-" : ""}${amount / 100n}.${String(amount % 100n).padStart(2, "0")}`;
 }
+export function orderLineCents(item:Pick<OrderFormItem,'unitPrice'|'quantity'>):bigint|null{
+    const price=moneyCents(item.unitPrice),q=item.quantity.trim().replace(',','.');
+    if(price===null||!/^\d+(?:\.\d{1,6})?$/.test(q))return null;
+    return BigInt(new Decimal(price.toString()).mul(q).toDecimalPlaces(0,Decimal.ROUND_HALF_UP).toFixed(0));
+}
 export function orderFormTotals(draft: OrderFormDraft, paidMode: PaidMode) {
     const products = draft.items.reduce((total, item) => {
-        const price = moneyCents(item.unitPrice);
-        return price !== null && /^\d+$/.test(item.quantity) ? total + price * BigInt(item.quantity) : total;
+        return total+(orderLineCents(item)??0n);
     }, 0n);
     const courier = moneyCents(draft.courierFee) ?? 0n;
     const total = products + courier;
@@ -73,10 +81,10 @@ export function orderCreatePayload(
     const items = draft.items.map((item, index) => {
         const label = `პროდუქტი ${index + 1}`;
         if (!item.name.trim()) throw new Error(`${label}: მიუთითე სახელი.`);
-        if (!/^\d+$/.test(item.quantity) || !Number.isSafeInteger(Number(item.quantity)) || Number(item.quantity) < 1) throw new Error(`${label}: რაოდენობა უნდა იყოს დადებითი მთელი რიცხვი.`);
+        if (!/^\d+(?:[.,]\d{1,6})?$/.test(item.quantity) || !validQuantity(Number(item.quantity.replace(",","."))) || Number(item.quantity.replace(",",".")) <= 0 || ((item.source!=="MATERIAL"||item.unit==="PCS")&&!Number.isSafeInteger(Number(item.quantity)))) throw new Error(item.source==="MATERIAL"&&item.unit!=="PCS"?`${label}: მიუთითე დადებითი რაოდენობა, მაქსიმუმ 6 ათწილადით.`:`${label}: რაოდენობა უნდა იყოს დადებითი მთელი რიცხვი.`);
         if (moneyCents(item.unitPrice) === null) throw new Error(`${label}: მიუთითე გასაყიდი ფასი. უფასოდ გაცემისთვის ჩაწერე 0.`);
         if (
-            item.unitCost.trim() !== "" &&
+            item.source !== "MATERIAL" && item.unitCost.trim() !== "" &&
             moneyCents(item.unitCost) === null
         ) {
             throw new Error(
@@ -86,7 +94,7 @@ export function orderCreatePayload(
         return {
             orderItemId: item.orderItemId,
             source: item.source,
-            inventoryItemId: item.inventoryItemId,
+            inventoryItemId: item.inventoryItemId, materialId:item.materialId??null,unit:item.unit??"PCS",
             condition: item.condition,
             name: item.name,
             imageUrl:
@@ -96,7 +104,7 @@ export function orderCreatePayload(
             description: item.description,
             color: item.color,
             size: item.size,
-            quantity: Number(item.quantity), unitPrice: item.unitPrice.trim().replace(",", "."), unitCost: item.unitCost.trim().replace(",", ".")
+            quantity: Number(item.quantity.replace(",",".")), unitPrice: item.unitPrice.trim().replace(",", "."), unitCost: item.source==="MATERIAL"?"":item.unitCost.trim().replace(",", ".")
         };
     });
     if (moneyCents(draft.courierFee) === null) throw new Error("მიუთითე კურიერის საფასური.");
@@ -113,3 +121,9 @@ export function orderCreatePayload(
     };
 }
 export type OrderCreatePayload = ReturnType<typeof orderCreatePayload>;
+
+export function matchesStockItem(item:OrderFormItem,product:InventoryOrderProduct){return product.source==='MATERIAL'?item.source==='MATERIAL'&&item.materialId===product.id:item.inventoryItemId===product.id;}
+export function incrementStockQuantity(item:OrderFormItem,product:InventoryOrderProduct,condition:'GOOD'|'DEFECTIVE'){
+    const current=new Decimal(item.quantity.replace(',','.')||0),stock=new Decimal(condition==='GOOD'?product.goodStock:product.defectiveStock);
+    return current.plus(Decimal.min(1,Decimal.max(stock.minus(current),0))).toString();
+}

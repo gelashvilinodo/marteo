@@ -1,0 +1,48 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Isolated real DB fixtures are rolled back. */
+const fs=require('node:fs'),path=require('node:path'),Module=require('node:module'),assert=require('node:assert/strict'),ts=require('typescript');
+const root=path.resolve(__dirname,'..');require('dotenv').config({path:path.join(root,'.env.local'),quiet:true});require('dotenv').config({path:path.join(root,'.env'),quiet:true});
+require.extensions['.ts']=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,f);
+const load=Module._load;Module._load=function(id,parent,...args){if(id==='server-only')return {};if(id.endsWith('.wasm?module'))return {default:new WebAssembly.Module(fs.readFileSync(path.resolve(path.dirname(parent.filename),id.replace('?module',''))))};return load.call(this,id.startsWith('@/')?path.join(root,id.slice(2)):id,parent,...args)};
+const {PrismaClient}=require('../generated/prisma/client.ts'),{PrismaPg}=require('@prisma/adapter-pg'),{randomUUID}=require('node:crypto');
+const {readPurchase}=require('../lib/material-purchases/input.ts');const {saveMaterialPurchase}=require('../lib/material-purchases/store.ts');
+const db=new PrismaClient({adapter:new PrismaPg({connectionString:process.env.DIRECT_URL||process.env.DATABASE_URL,max:1})});
+const {readProduction}=require('../lib/production/input.ts');
+const {saveProduction}=require('../lib/production/store.ts');
+const {allocateStockLots}=require('../lib/orders/allocate-stock-lots.ts');
+const {validateOrder}=require('../lib/orders/validate-order.ts');
+const {createOrderItems,orderWithStock}=require('../lib/orders/order-stock.ts');
+const {numericQuantities}=require('../lib/orders/quantity.ts');
+const {buildSaleSnapshot}=require('../lib/analytics/build-sale-snapshot.ts');
+const {recordSaleSnapshot}=require('../lib/analytics/record-sale-snapshot.ts');
+const {recordFinancialAdjustment}=require('../lib/analytics/record-financial-adjustment.ts');
+const {requestOrderReturn,receiveOrderReturn}=require('../lib/orders/order-returns.ts');
+const {getAnalyticsPage}=require('../lib/analytics/get-analytics-page.ts');
+const {getInventoryPage}=require('../lib/inventory/get-inventory-page.ts');
+let passed=0;const pass=s=>{passed++;console.log('PASS',s)};const rollback=new Error('ROLLBACK');
+const include={inputs:{include:{allocations:true}},outputs:{where:{active:true},include:{stockLot:true}}};
+(async()=>{try{await db.$transaction(async tx=>{
+const user=await tx.user.create({data:{email:`qa-lifecycle-${randomUUID()}@example.invalid`,phone:randomUUID(),password:'unused',status:'ACTIVE'}}),business=await tx.business.create({data:{name:'QA isolated lifecycle',mode:'HYBRID'}}),bid=business.id;
+await tx.businessMembership.create({data:{userId:user.id,businessId:bid,role:'OWNER'}});
+const purchase=await saveMaterialPurchase(tx,bid,user.id,readPurchase({requestId:randomUUID(),name:'10 metres',country:'საქართველო',note:'',purchaseDate:'2026-10-26',receiptStatus:'RECEIVED',shippingCost:'0',customsCost:'0',otherCost:'0',items:[{name:'Lifecycle fabric',category:'Fabric',brand:'',description:'',color:'Blue',size:'',characteristics:'',unit:'M',quantity:'10',defectiveQuantity:'0',unitPurchasePrice:'5'}]}),new Map());
+const material=await tx.materialPurchaseItem.findFirst({where:{purchaseId:purchase.id}}),mid=material.materialId;
+const balance=async()=>{const m=await tx.material.findUnique({where:{id:mid}});const l=await tx.materialPurchaseItem.findUnique({where:{id:material.id}});return [m.currentStock.toString(),l.remainingQuantity.toString(),l.remainingCost.toFixed(2)]};
+assert.deepEqual(await balance(),['10','10','50.00']);pass('purchase: 10 m at 5 GEL = 50 GEL');
+const output={rowKey:randomUUID(),inventoryItemId:null,name:'Lifecycle product',category:'QA',brand:'',description:'',color:'Blue',size:'',quantity:'2',costShare:'100',salePrice:'40'};
+const input={requestId:randomUUID(),name:'Lifecycle production',productionDate:'2026-10-26',status:'COMPLETED',overheadCost:'10',additionalCosts:[],note:'',materials:[{materialId:mid,quantity:'4'}],outputs:[output]};
+const saved=await saveProduction(tx,bid,user.id,readProduction(input));let production=await tx.production.findUnique({where:{id:saved.id},include});let product=production.outputs[0];
+assert.deepEqual(await balance(),['6','6','30.00']);assert.equal(product.stockLot.remainingCost.toFixed(2),'30.00');assert.equal(product.stockLot.unitCost.toFixed(2),'15.00');pass('production: 6 m remain, 2 outputs total 30 GEL / 15 GEL each');
+const payload={clientRequestId:randomUUID(),recipientPhone:'+995500000001',recipientFirstName:'QA',recipientLastName:'',shippingAddress:'QA',notes:'',status:'PROCESSING',courierFee:'0',paidAmount:'0',paymentMethod:'CASH',bankName:'',items:[{source:'INVENTORY',inventoryItemId:product.inventoryItemId,condition:'GOOD',name:'Lifecycle product',description:'',color:'Blue',size:'',quantity:1,unitPrice:'40',unitCost:''}]};
+const valid=validateOrder(payload);const order=await tx.order.create({data:{businessId:bid,number:1,recipientPhone:valid.recipientPhone,status:'COMPLETED',createdAt:new Date('2026-10-26T12:00:00Z')}});await createOrderItems(tx,bid,order.id,valid.items);
+const readOrder=()=>tx.order.findUnique({where:{id:order.id},include:orderWithStock}).then(numericQuantities);let current=await readOrder();await recordSaleSnapshot(tx,bid,current,buildSaleSnapshot(current,new Map()),'qa:lifecycle:sale','SALE');
+let analytics=await getAnalyticsPage(tx,bid,{period:'custom',from:'2026-10-26',to:'2026-10-26'});assert.equal(analytics.sales,'40.00');assert.equal(analytics.costOfGoods,'15.00');assert.equal(analytics.grossProfit,'25.00');pass('sale: 40 GEL revenue, 15 GEL historical cost, 25 GEL gross profit');
+const edit=()=>({...input,requestId:randomUUID(),id:production.id,version:production.updatedAt.toISOString(),materials:[{materialId:mid,quantity:'6'}],outputs:[{...output,inventoryItemId:product.inventoryItemId}]});
+await saveProduction(tx,bid,user.id,readProduction(edit()));production=await tx.production.findUnique({where:{id:production.id},include});product=production.outputs[0];
+assert.deepEqual(await balance(),['4','4','20.00']);assert.equal(production.totalCost.toFixed(2),'40.00');assert.equal(product.stockLot.remainingQuantity,1);assert.equal(product.stockLot.remainingCost.toFixed(2),'25.00');assert.equal(product.stockLot.unitCost.toFixed(2),'25.00');current=await readOrder();assert.equal(current.items[0].totalCost.toFixed(2),'15.00');analytics=await getAnalyticsPage(tx,bid,{period:'custom',from:'2026-10-26',to:'2026-10-26'});assert.equal(analytics.grossProfit,'25.00');pass('current policy: edit keeps sold cost 15 / profit 25; remaining unit absorbs 25 GEL, total costs conserved');
+// Reserve the second output, then verify reducing output quantity below two fails atomically.
+await tx.$executeRawUnsafe('SAVEPOINT quantity_guard');let rejected=false;try{await allocateStockLots(tx,{businessId:bid,inventoryItemId:product.inventoryItemId,name:'Lifecycle product',quantity:1,condition:'GOOD'});await tx.inventoryItem.update({where:{id:product.inventoryItemId},data:{currentStock:{decrement:1}}});await saveProduction(tx,bid,user.id,readProduction({...edit(),outputs:[{...output,inventoryItemId:product.inventoryItemId,quantity:'1'}]}));}catch(e){assert.match(e.message,/რაოდენობას|ღირებულებას/);rejected=true;}finally{await tx.$executeRawUnsafe('ROLLBACK TO SAVEPOINT quantity_guard');await tx.$executeRawUnsafe('RELEASE SAVEPOINT quantity_guard');}assert.equal(rejected,true);assert.deepEqual(await balance(),['4','4','20.00']);pass('cannot shrink below sold/allocated quantities; rejected transaction preserves balances');
+const returned=await requestOrderReturn(tx,bid,order.id,[{orderItemId:current.items[0].id,quantity:1,reason:'OTHER',condition:'GOOD'}]);await receiveOrderReturn(tx,bid,order.id,returned.id);await recordFinancialAdjustment(tx,bid,order.id,'qa-return','RETURN');await receiveOrderReturn(tx,bid,order.id,returned.id);
+production=await tx.production.findUnique({where:{id:production.id},include});product=production.outputs[0];assert.deepEqual(await balance(),['4','4','20.00']);assert.equal(product.stockLot.remainingQuantity,2);assert.equal(product.stockLot.remainingCost.toFixed(2),'40.00');assert.equal((await tx.inventoryItem.findUnique({where:{id:product.inventoryItemId}})).currentStock,2);analytics=await getAnalyticsPage(tx,bid,{period:'custom',from:'2026-10-26',to:'2026-10-26'});assert.equal(analytics.sales,'0.00');assert.equal(analytics.costOfGoods,'0.00');assert.equal(analytics.grossProfit,'0.00');pass('return restores 2 products / 40 GEL stock once; revenue and cost reverse to zero, material stays 4 m');
+const inventoryView=await getInventoryPage(tx,bid,{});const visibleProduct=inventoryView.products.find(p=>p.id===product.inventoryItemId);assert.equal(visibleProduct.averageUnitCost,'20.00');assert.equal(visibleProduct.goodStockValueCents,'4000');assert.equal(inventoryView.chart.categories[0].valueCents,'4000');pass('inventory list and chart agree: 2 units at 20 GEL = 40 GEL after return');
+const resale=await allocateStockLots(tx,{businessId:bid,inventoryItemId:product.inventoryItemId,name:'Lifecycle product',quantity:1,condition:'GOOD'});assert.equal(resale[0].totalCost.toFixed(2),'20.00');pass('after full return, next FIFO sale uses 20 GEL average remaining lot cost');
+throw rollback;
+},{timeout:120000,maxWait:30000});}catch(e){if(e!==rollback)throw e;}finally{await db.$disconnect();}console.log(passed+' checks passed; fixtures rolled back.');})().catch(e=>{console.error(e.name,e.message,e.stack?.split('\n')[1]);process.exitCode=1;});

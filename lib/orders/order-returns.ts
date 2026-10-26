@@ -1,4 +1,8 @@
+import { qvalue } from "@/lib/orders/quantity";
+import { numericQuantities } from "@/lib/orders/quantity";
 import "server-only";
+import { validQuantity } from "./quantity";
+import { restoreMaterialAllocations, materialAllocations } from "./material-stock";
 import { Prisma } from "@/generated/prisma/client";
 import { OrderValidationError } from "./validate-order";
 import { allocateCost } from "@/lib/analytics/allocate-cost";
@@ -42,7 +46,7 @@ export async function requestOrderReturn(
                 },
             },
         },
-    });
+    }).then(numericQuantities);
     if (!order) fail("შეკვეთა ვერ მოიძებნა.", 404);
     if (
         !["PROCESSING", "SHIPPED", "COMPLETED", "CANCELED"].includes(
@@ -71,14 +75,14 @@ export async function requestOrderReturn(
                 409,
             );
         }
-        if (!Number.isSafeInteger(selection.quantity) || selection.quantity <= 0) fail("მიუთითე დასაბრუნებელი რაოდენობა.");
+        if (!validQuantity(selection.quantity) || selection.quantity <= 0 || ((item.source!=="MATERIAL"||item.unit==="PCS")&&!Number.isInteger(selection.quantity))) fail("მიუთითე დასაბრუნებელი რაოდენობა.");
         const reserved = order.returns
             .filter(entry =>
                 entry.fulfillmentCycle === order.fulfillmentCycle
             )
             .reduce(
                 (sum, entry) =>
-                    sum + entry.items.reduce(
+                    qvalue(sum + entry.items.reduce(
                         (subtotal, value) =>
                             subtotal + (
                                 value.orderItemId === item.id
@@ -86,17 +90,17 @@ export async function requestOrderReturn(
                                     : 0
                             ),
                         0,
-                    ),
+                    )),
                 0,
             );
-        if (selection.quantity > item.quantity - reserved) fail(`${item.name}: დასაბრუნებელი რაოდენობა დარჩენილს აღემატება.`);
+        if (selection.quantity > qvalue(item.quantity - reserved)) fail(`${item.name}: დასაბრუნებელი რაოდენობა დარჩენილს აღემატება.`);
         if (!["DEFECT", "EXCHANGE", "OTHER"].includes(selection.reason)) fail("აირჩიე დაბრუნების მიზეზი.");
         if (selection.condition !== "GOOD" && selection.condition !== "DEFECTIVE") fail("მიუთითე ნივთის მდგომარეობა.");
         if (selection.note !== undefined && typeof selection.note !== "string") fail("დაბრუნების განმარტება არასწორია.");
         return {
             orderItemId: item.id, quantity: selection.quantity,
             reason: selection.reason, condition: selection.condition, note: selection.note?.trim() || null,
-            name: item.name, imageUrl: item.imageUrl, color: item.color, size: item.size, unitPrice: item.unitPrice,
+            unit:item.unit, name: item.name, imageUrl: item.imageUrl, color: item.color, size: item.size, unitPrice: item.unitPrice,
         };
     });
     const entry = await tx.orderReturn.create({
@@ -147,7 +151,7 @@ export async function receiveOrderReturn(
                 }
             }
         },
-    });
+    }).then(numericQuantities);
     if (!entry) fail("დაბრუნების მოთხოვნა ვერ მოიძებნა.", 404);
     if (entry.status === "RECEIVED") return { id: entry.id, alreadyReceived: true };
     if (entry.status !== "PENDING") fail("დაბრუნების მოთხოვნა გაუქმებულია.", 409);
@@ -187,12 +191,17 @@ export async function receiveOrderReturn(
                 409,
             );
         }
-        if (!Number.isSafeInteger(returned.quantity) || returned.quantity <= 0 || returned.quantity > item.quantity) {
+        if (!validQuantity(returned.quantity) || returned.quantity <= 0 || returned.quantity > item.quantity) {
             fail("დასაბრუნებელი რაოდენობა არასწორია.", 409);
+        }
+        if(item.source === "MATERIAL"){
+            if(!item.materialId)fail("მასალის განაწილების მონაცემები აკლია.",409);
+            await restoreMaterialAllocations(tx,businessId,item.materialId,await materialAllocations(tx,item.id),returned.quantity,returned.condition);
+            continue;
         }
         // Manual products have no original inventory or purchase allocation to restore.
         if (item.source === "MANUAL") continue;
-        if (!item.inventoryItemId || item.allocations.reduce((sum, allocation) => sum + allocation.quantity, 0) !== item.quantity) {
+        if (!item.inventoryItemId || item.allocations.reduce((sum, allocation) => qvalue(sum + allocation.quantity), 0) !== item.quantity) {
             fail("პროდუქტის მარაგის განაწილების მონაცემები აკლია.", 409);
         }
         let remaining = returned.quantity;
@@ -204,9 +213,9 @@ export async function receiveOrderReturn(
                 );
             }
             const availableQuantity =
-                allocation.quantity -
+                qvalue(allocation.quantity -
                 allocation.returnedQuantity -
-                allocation.transferredQuantity;
+                allocation.transferredQuantity);
 
             if (availableQuantity < 0) {
                 fail("დაბრუნების რაოდენობის განაწილება არასწორია.", 409);
@@ -224,7 +233,7 @@ export async function receiveOrderReturn(
                         allocation.totalCost
                             .minus(allocation.returnedCost)
                             .minus(allocation.transferredCost),
-                        [quantity, availableQuantity - quantity],
+                        [quantity, qvalue(availableQuantity - quantity)],
                     );
 
             const restoredCost = costSplit?.[0] ?? null;
@@ -255,7 +264,7 @@ export async function receiveOrderReturn(
                     note: `დაბრუნება ${entry.id}; მიზეზი ${returned.reason}${returned.note ? `; ${returned.note}` : ""}`,
                 }
             });
-            remaining -= quantity;
+            remaining = qvalue(remaining - quantity);
             if (remaining === 0) break;
         }
         if (remaining !== 0) fail(`${item.name}: ეს რაოდენობა უკვე დაბრუნებულია ან განაწილება არასწორია.`, 409);
@@ -273,7 +282,7 @@ export async function receiveOrderReturn(
                 select: { orderItemId: true, quantity: true },
             },
         },
-    });
+    }).then(numericQuantities);
 
     const activeItems = entry.order.items.filter(
         item => item.isActive,
@@ -285,8 +294,8 @@ export async function receiveOrderReturn(
         for (const item of receivedReturn.items) {
             receivedQuantities.set(
                 item.orderItemId,
-                (receivedQuantities.get(item.orderItemId) ?? 0) +
-                item.quantity,
+                qvalue((receivedQuantities.get(item.orderItemId) ?? 0) +
+                item.quantity),
             );
         }
     }
@@ -312,7 +321,7 @@ export async function receiveOrderReturn(
 
             const receivedQuantity = receivedReturns.reduce(
                 (sum, entry) =>
-                    sum + entry.items.reduce(
+                    qvalue(sum + entry.items.reduce(
                         (count, returned) =>
                             count + (
                                 returned.orderItemId === item.id
@@ -320,7 +329,7 @@ export async function receiveOrderReturn(
                                     : 0
                             ),
                         0,
-                    ),
+                    )),
                 0,
             );
 

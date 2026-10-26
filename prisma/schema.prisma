@@ -66,6 +66,7 @@ enum PaymentMethod {
 enum OrderItemSource {
   MANUAL
   INVENTORY
+  MATERIAL
 }
 
 enum PricingMethod {
@@ -161,11 +162,18 @@ model Session {
   @@index([userId])
 }
 
+enum BusinessMode {
+  IMPORT
+  MANUFACTURING
+  HYBRID
+}
+
 model Business {
-  id              String  @id @default(cuid())
-  nextOrderNumber Int     @default(0)
+  id              String       @id @default(cuid())
+  mode            BusinessMode @default(IMPORT)
+  nextOrderNumber Int          @default(0)
   name            String
-  category        String  @default("OTHER")
+  category        String       @default("OTHER")
   logoUrl         String?
 
   phone       String?
@@ -193,6 +201,10 @@ model Business {
   importJobs               ImportJob[]
   courierReminderStartDate DateTime?             @db.Date
   courierSettlements       CourierSettlement[]
+  materials                Material[]
+  materialPurchases        MaterialPurchase[]
+  productions              Production[]
+  productionRequests       ProductionRequest[]
 }
 
 model BusinessMembership {
@@ -323,12 +335,16 @@ model OrderItem {
   financialSourceItemId String?
   stockRestoredAt       DateTime?
 
-  inventoryItemId String?
-  source          OrderItemSource    @default(MANUAL)
-  condition       InventoryCondition @default(GOOD)
+  materialId          String?
+  unit                String                    @default("PCS")
+  material            Material?                 @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  materialAllocations MaterialOrderAllocation[]
+  inventoryItemId     String?
+  source              OrderItemSource           @default(MANUAL)
+  condition           InventoryCondition        @default(GOOD)
 
   name        String
-  quantity    Int     @default(1)
+  quantity    Decimal @default(1) @db.Decimal(18, 6)
   description String?
   imageUrl    String?
   color       String?
@@ -410,11 +426,12 @@ model InventoryItem {
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  orderItems    OrderItem[]
-  purchaseItems PurchaseItem[]
-  stockLots     InventoryStockLot[]
-  writeOffs     InventoryWriteOff[]
-  movements     InventoryMovement[]
+  orderItems        OrderItem[]
+  purchaseItems     PurchaseItem[]
+  productionOutputs ProductionOutput[]
+  stockLots         InventoryStockLot[]
+  writeOffs         InventoryWriteOff[]
+  movements         InventoryMovement[]
 
   @@unique([businessId, sku])
   @@index([businessId])
@@ -430,6 +447,7 @@ model Purchase {
 
   name         String?
   supplierName String?
+  country      String?
   note         String?
 
   purchaseDate  DateTime              @default(now())
@@ -709,8 +727,9 @@ model OrderReturn {
 model OrderReturnItem {
   id          String             @id @default(cuid())
   returnId    String
+  unit        String             @default("PCS")
   orderItemId String
-  quantity    Int
+  quantity    Decimal            @db.Decimal(18, 6)
   reason      OrderReturnReason
   condition   InventoryCondition
   note        String?
@@ -796,7 +815,7 @@ model OrderFinancialEntryItem {
   // ისტორიული მნიშვნელობა ; პროდუქტის ცვლილებაზე არ გადაიწერება.
   sourceOrderItemId String
   name              String
-  quantityDelta     Int
+  quantityDelta     Decimal @db.Decimal(18, 6)
   revenueDelta      Decimal @db.Decimal(18, 2)
   costDelta         Decimal @db.Decimal(18, 2)
   costComplete      Boolean @default(false)
@@ -834,6 +853,7 @@ model InventoryStockLot {
   sourcePurchaseItem PurchaseItem? @relation("PurchaseHistoricalStockLots", fields: [sourcePurchaseItemId], references: [id], onDelete: SetNull)
 
   orderAllocations OrderItemAllocation[]
+  productionOutput ProductionOutput?
 
   @@index([inventoryItemId, availableAt, id])
   @@index([purchaseItemId])
@@ -1136,4 +1156,205 @@ model PasswordResetRequest {
 
   @@index([userId, createdAt])
   @@index([expiresAt])
+}
+
+// Shared limits across Worker instances. Identifiers are hashed before storage.
+model SecurityRateBucket {
+  key       String   @id
+  count     Int
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
+// Manufacturer purchases are isolated from the existing integer-quantity retail flow.
+model Material {
+  id               String                    @id @default(cuid())
+  businessId       String
+  name             String
+  brand            String?
+  category         String?
+  description      String?
+  color            String?
+  size             String?
+  characteristics  String?
+  unit             String
+  imageUrl         String?
+  currentStock     Decimal                   @default(0) @db.Decimal(18, 6)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  business         Business                  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  orderItems       OrderItem[]
+  orderAllocations MaterialOrderAllocation[]
+  purchaseItems    MaterialPurchaseItem[]
+  productionInputs ProductionInput[]
+
+  @@index([businessId, name])
+}
+
+model MaterialPurchase {
+  id            String                 @id @default(cuid())
+  businessId    String
+  number        Int
+  lastRequestId String?
+  requestId     String
+  name          String?
+  country       String?
+  purchaseDate  DateTime
+  receiptStatus PurchaseReceiptStatus  @default(RECEIVED)
+  shippingCost  Decimal                @db.Decimal(18, 2)
+  customsCost   Decimal                @db.Decimal(18, 2)
+  otherCost     Decimal                @db.Decimal(18, 2)
+  note          String?
+  createdById   String
+  updatedById   String
+  deletedAt     DateTime?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  business      Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  items         MaterialPurchaseItem[]
+
+  @@unique([businessId, number])
+  @@unique([businessId, requestId])
+  @@index([businessId, purchaseDate])
+}
+
+model MaterialPurchaseItem {
+  id                    String                         @id @default(cuid())
+  purchaseId            String
+  materialId            String
+  name                  String
+  snapshot              Json
+  quantity              Decimal                        @db.Decimal(18, 6)
+  defectiveQuantity     Decimal                        @default(0) @db.Decimal(18, 6)
+  remainingQuantity     Decimal                        @db.Decimal(18, 6)
+  unitPurchasePrice     Decimal                        @db.Decimal(18, 6)
+  allocatedCost         Decimal                        @db.Decimal(18, 2)
+  totalCost             Decimal                        @db.Decimal(18, 2)
+  remainingCost         Decimal                        @db.Decimal(18, 2)
+  finalUnitCost         Decimal                        @db.Decimal(18, 6)
+  purchase              MaterialPurchase               @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  material              Material                       @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  orderAllocations      MaterialOrderAllocation[]
+  productionAllocations ProductionMaterialAllocation[]
+
+  @@index([materialId])
+  @@index([purchaseId])
+}
+
+enum ProductionStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Production {
+  id              String              @id @default(cuid())
+  businessId      String
+  number          Int
+  name            String?
+  productionDate  DateTime
+  status          ProductionStatus    @default(IN_PROGRESS)
+  note            String?
+  overheadCost    Decimal             @default(0) @db.Decimal(18, 2)
+  additionalCosts Json
+  materialsCost   Decimal             @db.Decimal(18, 2)
+  totalCost       Decimal             @db.Decimal(18, 2)
+  completedAt     DateTime?
+  createdById     String
+  updatedById     String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  business        Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  inputs          ProductionInput[]
+  outputs         ProductionOutput[]
+  requests        ProductionRequest[]
+
+  @@unique([businessId, number])
+  @@index([businessId, productionDate])
+}
+
+model ProductionInput {
+  id           String                         @id @default(cuid())
+  productionId String
+  materialId   String
+  name         String
+  unit         String
+  quantity     Decimal                        @db.Decimal(18, 6)
+  totalCost    Decimal                        @db.Decimal(18, 2)
+  production   Production                     @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  material     Material                       @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  allocations  ProductionMaterialAllocation[]
+
+  @@unique([productionId, materialId])
+}
+
+model ProductionMaterialAllocation {
+  id             String               @id @default(cuid())
+  inputId        String
+  purchaseItemId String
+  quantity       Decimal              @db.Decimal(18, 6)
+  totalCost      Decimal              @db.Decimal(18, 2)
+  input          ProductionInput      @relation(fields: [inputId], references: [id], onDelete: Cascade)
+  purchaseItem   MaterialPurchaseItem @relation(fields: [purchaseItemId], references: [id], onDelete: Restrict)
+
+  @@index([purchaseItemId])
+}
+
+model ProductionOutput {
+  id              String             @id @default(cuid())
+  productionId    String
+  rowKey          String
+  active          Boolean            @default(true)
+  inventoryItemId String?
+  stockLotId      String?            @unique
+  name            String
+  category        String?
+  brand           String?
+  description     String?
+  color           String?
+  size            String?
+  imageUrl        String?
+  quantity        Int                @default(0)
+  costShare       Decimal            @db.Decimal(5, 2)
+  totalCost       Decimal            @db.Decimal(18, 2)
+  salePrice       Decimal?           @db.Decimal(12, 2)
+  production      Production         @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  inventoryItem   InventoryItem?     @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  stockLot        InventoryStockLot? @relation(fields: [stockLotId], references: [id], onDelete: Restrict)
+
+  @@unique([productionId, rowKey])
+  @@index([inventoryItemId])
+}
+
+model ProductionRequest {
+  id           String     @id @default(cuid())
+  businessId   String
+  requestId    String
+  inputHash    String
+  productionId String
+  createdAt    DateTime   @default(now())
+  business     Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Restrict)
+
+  @@unique([businessId, requestId])
+}
+
+model MaterialOrderAllocation {
+  id                  String               @id @default(cuid())
+  orderItemId         String
+  materialId          String
+  purchaseItemId      String
+  quantity            Decimal              @db.Decimal(18, 6)
+  totalCost           Decimal              @db.Decimal(18, 2)
+  returnedQuantity    Decimal              @default(0) @db.Decimal(18, 6)
+  returnedCost        Decimal              @default(0) @db.Decimal(18, 2)
+  transferredQuantity Decimal              @default(0) @db.Decimal(18, 6)
+  transferredCost     Decimal              @default(0) @db.Decimal(18, 2)
+  orderItem           OrderItem            @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  material            Material             @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  purchaseItem        MaterialPurchaseItem @relation(fields: [purchaseItemId], references: [id], onDelete: Restrict)
+
+  @@index([orderItemId])
+  @@index([purchaseItemId])
+  @@index([materialId])
 }

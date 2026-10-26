@@ -1,0 +1,22 @@
+{
+  "marker": "QA-LIFE-20261026-B",
+  "business": {
+    "name": "ბრიალა",
+    "mode": "HYBRID"
+  },
+  "purchase": {
+    "id": "cmvpn6z6e0038psp7noqr57k8",
+    "number": 3,
+    "items": [
+      {
+        "materialId": "cmvpn6z9d0039psp7bk1rvaci",
+        "quantity": "10",
+        "remainingQuantity": "10",
+        "remainingCost": "50",
+        "currentStock": "10"
+      }
+    ]
+  },
+  "production": null,
+  "orders": []
+}

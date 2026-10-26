@@ -13,6 +13,7 @@ export type OrderInvoiceData = {
         size: string | null;
         condition: "GOOD" | "DEFECTIVE";
         quantity: number;
+        unit?:string;
         unitPrice: string;
         total: string;
     }[];

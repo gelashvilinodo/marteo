@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import BusinessModeChoice from "@/components/dashboard/business/BusinessModeChoice";
+import type { BusinessMode } from "@/lib/business/business-mode";
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 
@@ -21,6 +23,7 @@ const businessTypes = [
 ];
 
 export default function BusinessOnboardingPage() {
+    const [mode,setMode]=useState<BusinessMode|''>('');
     const [businessName, setBusinessName] = useState("");
     const [businessType, setBusinessType] = useState("");
     const [otherBusinessType, setOtherBusinessType] = useState("");
@@ -38,7 +41,7 @@ export default function BusinessOnboardingPage() {
         businessName.trim().length > 0 &&
         businessType.length > 0 &&
         (businessType !== "სხვა" || otherBusinessType.trim().length > 0) &&
-        acceptedTerms;
+        acceptedTerms && !!mode;
 
     const handleLogoChange = (
         event: React.ChangeEvent<HTMLInputElement>
@@ -132,6 +135,7 @@ export default function BusinessOnboardingPage() {
                             ? otherBusinessType.trim()
                             : businessType,
                     logoUrl,
+                    mode,
                 }),
             });
 
@@ -322,14 +326,16 @@ export default function BusinessOnboardingPage() {
                                     setBusinessName(e.target.value)
                                 }
                                 placeholder="მაგ. MARTEO"
-                                className="w-full rounded-xl border border-border bg-background px-4 py-3.5 text-sm text-text-primary outline-none transition-all placeholder:text-text-secondary/70 focus:border-accent focus:ring-2 focus:ring-accent/10"
+                                className="w-full rounded-xl border border-border bg-background px-4 py-3.5 text-[16px] sm:text-sm text-text-primary outline-none transition-all placeholder:text-text-secondary/70 focus:border-accent focus:ring-2 focus:ring-accent/10"
                             />
                         </div>
+
+                        <div className="mb-5"><BusinessModeChoice value={mode} onChange={setMode} disabled={loading}/></div>
 
                         {/* Business type */}
                         <div className="mb-4">
                             <label className="mb-2 block pl-3 text-sm font-medium text-text-primary">
-                                ბიზნესის ტიპი
+                                საქმიანობის სფერო
                             </label>
 
                             <div className="relative">
@@ -338,10 +344,10 @@ export default function BusinessOnboardingPage() {
                                     onChange={(e) =>
                                         setBusinessType(e.target.value)
                                     }
-                                    className="w-full appearance-none rounded-xl border border-border bg-background py-3.5 pl-4 pr-12 text-sm text-text-primary outline-none transition-all focus:border-accent focus:ring-2 focus:ring-accent/10"
+                                    className="w-full appearance-none rounded-xl border border-border bg-background py-3.5 pl-4 pr-12 text-[16px] sm:text-sm text-text-primary outline-none transition-all focus:border-accent focus:ring-2 focus:ring-accent/10"
                                 >
                                     <option value="">
-                                        აირჩიეთ ბიზნესის ტიპი
+                                        აირჩიეთ საქმიანობის სფერო
                                     </option>
 
                                     {businessTypes.map((type) => (
@@ -362,7 +368,7 @@ export default function BusinessOnboardingPage() {
                         {businessType === "სხვა" && (
                             <div className="mb-4">
                                 <label className="mb-2 block pl-3 text-sm font-medium text-text-primary">
-                                    მიუთითეთ ბიზნესის ტიპი
+                                    მიუთითეთ საქმიანობის სფერო
                                 </label>
 
                                 <input
@@ -372,7 +378,7 @@ export default function BusinessOnboardingPage() {
                                         setOtherBusinessType(e.target.value)
                                     }
                                     placeholder="მაგ. ივენთების ორგანიზება"
-                                    className="w-full rounded-xl border border-border bg-background px-4 py-3.5 text-sm text-text-primary outline-none transition-all placeholder:text-text-secondary/70 focus:border-accent focus:ring-2 focus:ring-accent/10"
+                                    className="w-full rounded-xl border border-border bg-background px-4 py-3.5 text-[16px] sm:text-sm text-text-primary outline-none transition-all placeholder:text-text-secondary/70 focus:border-accent focus:ring-2 focus:ring-accent/10"
                                 />
                             </div>
                         )}

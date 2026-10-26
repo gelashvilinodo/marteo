@@ -7,6 +7,8 @@ import {
     type ComponentProps,
 } from "react";
 
+import Link from "next/link";
+import { useBusinessMode } from "@/components/dashboard/business/BusinessModeContext";
 import type NewPurchasePanel from "@/components/dashboard/purchases/NewPurchasePanel";
 
 type PanelComponent = typeof NewPurchasePanel;
@@ -14,7 +16,7 @@ type PanelProps = ComponentProps<PanelComponent>;
 
 type FormOptions = Pick<
     PanelProps,
-    "inventoryOptions" | "attributeOptions"
+    "inventoryOptions" | "attributeOptions" | "countryOptions"
 >;
 
 type LoadedPanel = {
@@ -23,6 +25,7 @@ type LoadedPanel = {
 };
 
 export default function DeferredHomePurchaseButton() {
+    const mode=useBusinessMode();
     const [loaded, setLoaded] = useState<LoadedPanel | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -115,6 +118,8 @@ export default function DeferredHomePurchaseButton() {
         }
     }
 
+    if(mode==='MANUFACTURING') return <Link href="/dashboard/material-purchases" prefetch={false} className="inline-flex h-11 items-center justify-center rounded-xl bg-success px-4 text-sm font-semibold text-white">მასალების შესყიდვა</Link>;
+
     if (loaded) {
         const { Component, options } = loaded;
 
@@ -122,6 +127,7 @@ export default function DeferredHomePurchaseButton() {
             <Component
                 inventoryOptions={options.inventoryOptions}
                 attributeOptions={options.attributeOptions}
+                countryOptions={options.countryOptions}
                 autoOpen
             />
         );

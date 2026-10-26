@@ -3,6 +3,8 @@ import { createHash, randomInt } from "crypto";
 import bcrypt from "bcryptjs";
 
 import { createPrismaClient } from "@/lib/prisma";
+import { normalizePhone, isAllowedSmsPhone } from "@/lib/security/phone";
+import { reserveLimits, requestIp, rateLimitResponse } from "@/lib/security/rate-limit";
 import { sendVerificationEmail } from "@/lib/email";
 
 function hashVerificationToken(token: string) {
@@ -13,13 +15,10 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-function normalizePhone(phone: string) {
-  return phone.trim().replace(/\s+/g, "");
-}
-
 export async function POST(request: Request) {
+  let prisma: ReturnType<typeof createPrismaClient> | undefined;
   try {
-    const prisma = createPrismaClient();
+    prisma = createPrismaClient();
 
     const body = (await request.json()) as {
       firstName?: unknown;
@@ -81,6 +80,13 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    if (!isAllowedSmsPhone(phone)) {
+      return NextResponse.json({ error: "მიუთითეთ მხარდაჭერილი მობილური ნომერი, მაგალითად +995599123456." }, { status: 422 });
+    }
+    await reserveLimits(prisma, [
+      { scope: "register-ip", identity: requestIp(request), maximum: 10, seconds: 3600 },
+    ]);
 
     const existingUser = await prisma.user.findFirst({
       where: {
@@ -163,6 +169,8 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
+    const limited = rateLimitResponse(error);
+    if (limited) return limited;
     console.error("Registration error:", {
       name: error instanceof Error ? error.name : "UnknownError",
       message: error instanceof Error ? error.message : String(error),
@@ -175,5 +183,7 @@ export async function POST(request: Request) {
       },
       { status: 500 }
     );
+  } finally {
+      await prisma?.$disconnect();
   }
 }

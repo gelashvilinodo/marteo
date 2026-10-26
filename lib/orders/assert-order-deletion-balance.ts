@@ -1,3 +1,4 @@
+import { numericQuantities } from "@/lib/orders/quantity";
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
@@ -24,7 +25,7 @@ export async function assertOrderDeletionBalance(
             stockRestoredAt: true,
             isCarriedOver: true,
         },
-    });
+    }).then(numericQuantities);
 
     const returnedItems = await tx.orderReturnItem.groupBy({
         by: ["orderItemId"],
@@ -45,7 +46,7 @@ export async function assertOrderDeletionBalance(
     for (const item of returnedItems) {
         receivedQuantities.set(
             item.orderItemId,
-            item._sum.quantity ?? 0,
+            Number(item._sum.quantity ?? 0),
         );
     }
 

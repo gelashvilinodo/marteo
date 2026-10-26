@@ -1,4 +1,7 @@
 "use client";
+import useTransientNotice from '@/components/shared/useTransientNotice';
+import { validQuantity, quantityLabel } from "@/lib/orders/quantity";
+
 
 import { refreshOrdersAfterMutation } from "@/lib/orders/refresh-orders-client";
 
@@ -59,6 +62,7 @@ export default function OrderReturnButton({
         useState<"return" | "exchange">("return");
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
+    useTransientNotice(notice, setNotice);
     const [pending, setPending] = useState<Record<string, unknown> | null>(null);
     const [offerDeletion, setOfferDeletion] = useState(false);
 
@@ -214,8 +218,8 @@ export default function OrderReturnButton({
         if (!selected.length) { setError("მონიშნე დასაბრუნებელი პროდუქტი."); return; }
         for (const choice of selected) {
             const item = order.items.find(value => value.id === choice.orderItemId);
-            const quantity = Number(choice.quantityText);
-            if (!/^\d+$/.test(choice.quantityText) || !Number.isSafeInteger(quantity) || quantity < 1 || !item || quantity > item.returnableQuantity) {
+            const quantity = Number(choice.quantityText.replace(",","."));
+            if (!/^\d+(?:[.,]\d{1,6})?$/.test(choice.quantityText) || !validQuantity(quantity) || quantity <= 0 || !item || ((item.source!=="MATERIAL"||item.unit==="PCS")&&!Number.isInteger(quantity)) || quantity > item.returnableQuantity) {
                 const available = item?.returnableQuantity ?? 0;
 
 setError(
@@ -230,7 +234,7 @@ return;
         }
         void send({
             requestId: crypto.randomUUID(), action: "request", expectedVersion: order.expectedVersion,
-            items: selected.map(item => ({ orderItemId: item.orderItemId, quantity: Number(item.quantityText), reason: item.reason, condition: item.condition, note: item.note ?? "" })),
+            items: selected.map(item => ({ orderItemId: item.orderItemId, quantity: Number(item.quantityText.replace(",",".")), reason: item.reason, condition: item.condition, note: item.note ?? "" })),
         });
     }
     function receive(entry: Order["returns"][number]) {
@@ -388,7 +392,7 @@ return;
 
                                                 <div className="min-w-0">
                                                     <p className="break-words text-sm">
-                                                        {item.name} · {item.quantity}
+                                                        {item.name} · {quantityLabel(item.quantity,item.unit)}
                                                     </p>
 
                                                     <p className="text-xs text-text-secondary">
@@ -434,7 +438,7 @@ return;
                         )}
                         {order.canRequestReturn && !exchangeEditing && <fieldset disabled={blocked} className="min-w-0 space-y-3 disabled:opacity-60"><legend className="mb-3 text-sm font-semibold">ახალი დაბრუნების მოთხოვნა</legend>{order.items.length > 1 && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={allSelected} onChange={event => { setChoices(current => current.map(item => ({ ...item, selected: event.target.checked }))); setDirty(true); }} className="h-4 w-4 accent-[var(--marteo-accent)]" />ყველას მონიშვნა</label>}{choices.map(choice => {
                             const item = order.items.find(value => value.id === choice.orderItemId)!;
-                            return <article key={item.id} className={`min-w-0 rounded-xl border bg-surface p-3 ${choice.selected ? "border-accent" : "border-border"}`}><div className="flex items-center gap-3">{order.items.length > 1 && <input type="checkbox" checked={choice.selected} onChange={event => patch(item.id, { selected: event.target.checked })} aria-label={`${item.name} — მონიშვნა`} className="h-4 w-4 shrink-0 accent-[var(--marteo-accent)]" />}{item.imageUrl ? <Image src={item.imageUrl} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-xl object-cover" /> : <Icon icon="solar:box-linear" className="h-12 w-12 shrink-0 rounded-xl bg-background p-3 text-text-secondary" />}<div className="min-w-0"><p className="break-words text-sm font-medium">{item.name}</p><p className="text-xs text-text-secondary">{[item.color, item.size].filter(Boolean).join(" · ")}</p><p className="text-xs text-text-secondary">დასაბრუნებელი: {item.returnableQuantity}</p></div></div>{choice.selected && <div className="mt-3 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3"><label className="min-w-0"><span className="mb-1 block text-xs text-text-secondary">რაოდენობა</span><input aria-label={`${item.name} — რაოდენობა`} inputMode="numeric" value={choice.quantityText} onChange={event => patch(item.id, { quantityText: event.target.value })} className={field} /></label><label className="min-w-0"><span className="mb-1 block text-xs text-text-secondary">მიზეზი</span><select aria-label={`${item.name} — მიზეზი`} value={choice.reason} onChange={event => patch(item.id, { reason: event.target.value as Choice["reason"] })} className={field}><option value="OTHER">სხვა</option><option value="DEFECT">წუნი</option><option value="EXCHANGE">გადაცვლა</option></select></label><label className="min-w-0"><span className="mb-1 block text-xs text-text-secondary">მდგომარეობა</span><select aria-label={`${item.name} — მდგომარეობა`} value={choice.condition} onChange={event => patch(item.id, { condition: event.target.value as Choice["condition"] })} className={field}><option value="GOOD">დაუზიანებელი</option><option value="DEFECTIVE">წუნდებული</option></select></label><label className="min-w-0 sm:col-span-3"><span className="mb-1 block text-xs text-text-secondary">განმარტება</span><textarea aria-label={`${item.name} — განმარტება`} value={choice.note ?? ""} onChange={event => patch(item.id, { note: event.target.value })} className="min-h-20 w-full min-w-0 rounded-xl border border-border bg-background p-3 text-[16px] outline-none focus:border-accent" /></label></div>}</article>;
+                            return <article key={item.id} className={`min-w-0 rounded-xl border bg-surface p-3 ${choice.selected ? "border-accent" : "border-border"}`}><div className="flex items-center gap-3">{order.items.length > 1 && <input type="checkbox" checked={choice.selected} onChange={event => patch(item.id, { selected: event.target.checked })} aria-label={`${item.name} — მონიშვნა`} className="h-4 w-4 shrink-0 accent-[var(--marteo-accent)]" />}{item.imageUrl ? <Image src={item.imageUrl} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-xl object-cover" /> : <Icon icon="solar:box-linear" className="h-12 w-12 shrink-0 rounded-xl bg-background p-3 text-text-secondary" />}<div className="min-w-0"><p className="break-words text-sm font-medium">{item.name}</p><p className="text-xs text-text-secondary">{[item.color, item.size].filter(Boolean).join(" · ")}</p><p className="text-xs text-text-secondary">დასაბრუნებელი: {quantityLabel(item.returnableQuantity,item.unit)}</p></div></div>{choice.selected && <div className="mt-3 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3"><label className="min-w-0"><span className="mb-1 block text-xs text-text-secondary">რაოდენობა</span><input aria-label={`${item.name} — რაოდენობა`} inputMode={item.source==="MATERIAL"?"decimal":"numeric"} value={choice.quantityText} onChange={event => patch(item.id, { quantityText: event.target.value })} className={field} /></label><label className="min-w-0"><span className="mb-1 block text-xs text-text-secondary">მიზეზი</span><select aria-label={`${item.name} — მიზეზი`} value={choice.reason} onChange={event => patch(item.id, { reason: event.target.value as Choice["reason"] })} className={field}><option value="OTHER">სხვა</option><option value="DEFECT">წუნი</option><option value="EXCHANGE">გადაცვლა</option></select></label><label className="min-w-0"><span className="mb-1 block text-xs text-text-secondary">მდგომარეობა</span><select aria-label={`${item.name} — მდგომარეობა`} value={choice.condition} onChange={event => patch(item.id, { condition: event.target.value as Choice["condition"] })} className={field}><option value="GOOD">დაუზიანებელი</option><option value="DEFECTIVE">წუნდებული</option></select></label><label className="min-w-0 sm:col-span-3"><span className="mb-1 block text-xs text-text-secondary">განმარტება</span><textarea aria-label={`${item.name} — განმარტება`} value={choice.note ?? ""} onChange={event => patch(item.id, { note: event.target.value })} className="min-h-20 w-full min-w-0 rounded-xl border border-border bg-background p-3 text-[16px] outline-none focus:border-accent" /></label></div>}</article>;
                         })}<p className="text-xs text-text-secondary">მოთხოვნის შექმნა მარაგს არ ცვლის. მდგომარეობა მიუთითე იმის მიხედვით, თუ როგორ უნდა დაბრუნდეს ნივთი მარაგში.</p></fieldset>}
                         {!order.canRequestReturn && !order.canExchange && !order.returns.some(entry => entry.status === "PENDING") && <p className="text-sm text-text-secondary">ამ შეკვეთაზე ახალი დაბრუნების მოთხოვნა ხელმისაწვდომი არ არის.</p>}
                     </>}

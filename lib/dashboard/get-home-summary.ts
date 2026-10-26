@@ -11,6 +11,7 @@ export type HomeSearchParams = Record<
 type SummaryRow = {
     sales: string;
     profit: string | null;
+    partialProfit: string;
     orders: string;
     stock: string;
     isNewBusiness: boolean;
@@ -48,18 +49,20 @@ export async function getHomeSummary(
             WITH financial AS (
                 SELECT
                     COALESCE(SUM(
-                        f."productRevenueDelta" +
-                        f."deliveryRevenueDelta"
+                        f."productRevenueDelta"
                     ), 0) AS sales,
                     COALESCE(SUM(
                         f."costOfGoodsDelta"
                     ), 0) AS costs,
                     COUNT(*) FILTER (
                         WHERE f."costComplete" = FALSE
-                    ) AS incomplete
+                    ) AS incomplete,
+                    COALESCE(SUM(f."productRevenueDelta" - f."costOfGoodsDelta")
+                        FILTER (WHERE f."costComplete"), 0) AS known_result
                 FROM "OrderFinancialEntry" f
                 WHERE ${includeFinance}::boolean
     AND f."businessId" = ${businessId}
+    AND NOT EXISTS (SELECT 1 FROM "Order" pending WHERE pending.id=f."orderId" AND pending."businessId"=f."businessId" AND pending."analyticsPendingCost"=TRUE)
     AND f."occurredAt" >= ${range.start}
                     AND f."occurredAt" < ${range.end}
             ),
@@ -141,6 +144,7 @@ export async function getHomeSummary(
                         2
                     )::text
                 END AS profit,
+                ROUND(financial.known_result - expenses.total, 2)::text AS "partialProfit",
                 orders.total::text AS orders,
                 stock.total::text AS stock,
                 CASE WHEN ${includeBusinessState}::boolean THEN NOT (

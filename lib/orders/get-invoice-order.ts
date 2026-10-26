@@ -28,6 +28,7 @@ type InvoiceOrderRow = {
         size: string | null;
         condition: OrderInvoiceData["items"][number]["condition"];
         quantity: number;
+        unit:string;
         unitPrice: string;
     }>;
     returns: Array<{
@@ -60,7 +61,7 @@ export async function getInvoiceOrder(
                     'id', i."id", 'name', i."name",
                     'imageUrl', i."imageUrl", 'color', i."color",
                     'size', i."size", 'condition', i."condition",
-                    'quantity', i."quantity", 'unitPrice', i."unitPrice"::text
+                    'quantity', i."quantity", 'unit',i.unit, 'unitPrice', i."unitPrice"::text
                 ) ORDER BY i."createdAt", i."id")
                 FROM "OrderItem" i
                 WHERE i."orderId" = o."id" AND i."isActive" = true

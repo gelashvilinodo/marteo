@@ -1,6 +1,9 @@
 "use client";
+import useTransientNotice from '@/components/shared/useTransientNotice';
 
 import Image from "next/image";
+import BusinessModeChoice from "./BusinessModeChoice";
+import type { BusinessMode } from "@/lib/business/business-mode";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
@@ -17,7 +20,7 @@ type ApiResponse = {
     success?: boolean;
     business?: BusinessSettingsData;
     message?: string;
-    field?: "name" | "phone" | "form";
+    field?: "name" | "phone" | "mode" | "form";
 };
 
 export default function BusinessSettingsForm({
@@ -27,6 +30,7 @@ export default function BusinessSettingsForm({
 }) {
     const router = useRouter();
 
+    const [mode,setMode]=useState<BusinessMode>(initialBusiness.mode);
     const [saved, setSaved] = useState(initialBusiness);
     const [name, setName] = useState(initialBusiness.name);
     const [phone, setPhone] = useState(
@@ -36,9 +40,10 @@ export default function BusinessSettingsForm({
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
     const [errorField, setErrorField] = useState<
-        "name" | "phone" | "form"
+        "name" | "phone" | "mode" | "form"
     >("form");
     const [notice, setNotice] = useState("");
+    useTransientNotice(notice, setNotice);
 
     const running = useRef(false);
     const mounted = useRef(false);
@@ -57,7 +62,7 @@ export default function BusinessSettingsForm({
 
     const dirty =
         name !== saved.name ||
-        phone !== (saved.phone ?? "");
+        phone !== (saved.phone ?? "") || mode !== saved.mode;
 
     function fieldClass(field: "name" | "phone") {
         return [
@@ -78,6 +83,7 @@ export default function BusinessSettingsForm({
         try {
             input = validateBusinessSettings({
                 name,
+                mode,
                 phone,
                 expectedUpdatedAt: saved.updatedAt,
             });
@@ -116,6 +122,7 @@ export default function BusinessSettingsForm({
                     },
                     body: JSON.stringify({
                         name: input.name,
+                        mode: input.mode,
                         phone: input.phone ?? "",
                         expectedUpdatedAt: saved.updatedAt,
                     }),
@@ -144,6 +151,7 @@ export default function BusinessSettingsForm({
             if (!mounted.current) return;
 
             setSaved(body.business);
+            setMode(body.business.mode);
             setName(body.business.name);
             setPhone(body.business.phone ?? "");
             setNotice("ცვლილებები შენახულია.");
@@ -231,6 +239,7 @@ export default function BusinessSettingsForm({
             const latest = body.business;
 
             // Preserve any unsaved name or phone edits.
+            setMode(value => value === saved.mode ? latest.mode : value);
             setName(value =>
                 value === saved.name ? latest.name : value,
             );
@@ -303,6 +312,7 @@ export default function BusinessSettingsForm({
 
             // მომხმარებლის შეცვლილი ველები რჩება.
             // შეუცვლელი ველები ბაზის ახალ მნიშვნელობებს იღებს.
+            setMode(value => value === saved.mode ? latest.mode : value);
             setName(value =>
                 value === saved.name ? latest.name : value,
             );
@@ -477,6 +487,7 @@ export default function BusinessSettingsForm({
                         </span>
                     </label>
                 </div>
+                <div className="mt-5"><BusinessModeChoice value={mode} onChange={value=>{setMode(value);setNotice('');}}/><p className="mt-2 text-xs leading-5 text-text-secondary">მიმართულების შეცვლა მონაცემებს არ შლის. შესაბამისი გვერდები არჩეული მიმართულებით გამოჩნდება.</p></div>
             </fieldset>
 
             <div

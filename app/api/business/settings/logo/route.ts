@@ -11,6 +11,7 @@ import {
 const businessSelect = {
     id: true,
     name: true,
+    mode: true,
     logoUrl: true,
     phone: true,
     updatedAt: true,

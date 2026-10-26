@@ -90,7 +90,7 @@ export default function CalendarView({
 
     useEffect(() => {
         if (!notice) return;
-        const timer = window.setTimeout(() => setNotice(""), 5000);
+        const timer = window.setTimeout(() => setNotice(""), 2000);
         return () => window.clearTimeout(timer);
     }, [notice]);
 

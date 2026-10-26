@@ -1,5 +1,6 @@
 "use client";
 
+import MissingCostsButton from "@/components/dashboard/costs/MissingCostsButton";
 import { useEffect, useId, useRef, useState } from "react";
 import {
     validateInventoryEdit,
@@ -265,6 +266,7 @@ export default function InventoryEditDialog({
                 </p>
             ) : draft ? (
                 <form onSubmit={save} className="min-w-0 space-y-4 p-4">
+                    <MissingCostsButton inventoryItemId={inventoryItemId} />
                     <fieldset
                         disabled={saving}
                         className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2"

@@ -105,7 +105,7 @@ export async function getOrderMovementDetail(
                 zero(),
             );
 
-            const sales = productRevenue.plus(deliveryRevenue);
+            const sales = productRevenue;
 
             const cost = periodEntries.reduce(
                 (sum, entry) => sum.plus(entry.costOfGoodsDelta),
@@ -140,9 +140,7 @@ export async function getOrderMovementDetail(
                     kind: entry.kind,
                     occurredAt: entry.occurredAt.toISOString(),
                     inPeriod: inPeriod(entry.occurredAt),
-                    amount: entry.productRevenueDelta
-                        .plus(entry.deliveryRevenueDelta)
-                        .toFixed(2),
+                    amount: entry.productRevenueDelta.toFixed(2),
                     cost: entry.costOfGoodsDelta.toFixed(2),
                     costComplete: entry.costComplete,
                     method: null,

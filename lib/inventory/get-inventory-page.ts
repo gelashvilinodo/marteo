@@ -1,5 +1,4 @@
 import { Prisma } from "@/generated/prisma/client";
-import type { createPrismaClient } from "@/lib/prisma";
 import type { InventoryProduct } from "@/components/dashboard/inventory/InventoryView";
 
 export type InventoryFilter = "all" | "low" | "exhausted" | "defective";
@@ -26,9 +25,10 @@ export type InventorySearchParams = Record<string, string | string[] | undefined
 const PAGE_SIZE = 20;
 
 export async function getInventoryPage(
-    prisma: ReturnType<typeof createPrismaClient>,
+    prisma: Pick<Prisma.TransactionClient, "$queryRaw">,
     businessId: string,
     params: InventorySearchParams,
+    pageSize = PAGE_SIZE,
 ): Promise<InventoryPageData> {
     const text = (key: string) => typeof params[key] === "string" ? params[key].trim() : "";
     const filters: InventoryFilter[] = ["all", "low", "exhausted", "defective"];
@@ -105,9 +105,9 @@ export async function getInventoryPage(
                                     lot."remainingDefectiveQuantity"
                                 THEN 0
                                 ELSE COALESCE(
-                                    lot."unitCost",
                                     lot."remainingCost" /
-                                        NULLIF(lot."remainingQuantity", 0)
+                                        NULLIF(lot."remainingQuantity", 0),
+                                    lot."unitCost"
                                 ) * (
                                     lot."remainingQuantity" -
                                     lot."remainingDefectiveQuantity"
@@ -148,12 +148,12 @@ export async function getInventoryPage(
         ), filtered AS (
             SELECT b.* FROM base b WHERE ${where}
         ), totals AS (
-            SELECT count(*)::int AS total, greatest(1, ceil(count(*)::numeric / ${PAGE_SIZE}))::int AS pages FROM filtered
+            SELECT count(*)::int AS total, greatest(1, ceil(count(*)::numeric / ${pageSize}))::int AS pages FROM filtered
         ), paging AS (
             SELECT total, pages, least(${requestedPage}, pages)::int AS page FROM totals
         ), page_rows AS (
             SELECT b.* FROM filtered b ORDER BY ${order}
-            LIMIT ${PAGE_SIZE} OFFSET (SELECT (page - 1)::bigint * ${PAGE_SIZE} FROM paging)
+            LIMIT ${pageSize} OFFSET (SELECT (page - 1)::bigint * ${pageSize} FROM paging)
         ), categories AS (
             SELECT lower(normalize(coalesce(nullif(trim(category), ''), 'კატეგორიის გარეშე'), NFKC)) COLLATE "C" AS key,
                 min(coalesce(nullif(trim(category), ''), 'კატეგორიის გარეშე')) AS label,

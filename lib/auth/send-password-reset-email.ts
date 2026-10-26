@@ -1,3 +1,4 @@
+import { reserveDelivery } from "@/lib/security/delivery-limit";
 import "server-only";
 
 import { getCloudflareContext } from "@opennextjs/cloudflare";
@@ -80,6 +81,8 @@ export async function sendPasswordResetEmail({
     url.hash = new URLSearchParams({ token }).toString();
 
     const resetLink = url.toString();
+    await reserveDelivery("email", to.trim().toLowerCase());
+
     const resend = new Resend(apiKey);
 
     const { error } = await resend.emails.send({

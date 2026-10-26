@@ -1,4 +1,6 @@
 "use client";
+import { qvalue, quantityLabel } from "@/lib/orders/quantity";
+
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -6,7 +8,7 @@ import { Icon } from "@iconify/react";
 import type { getOrder } from "@/lib/orders/get-order";
 import {
     emptyOrderDraft,
-    inventoryOrderItem,
+    inventoryOrderItem, matchesStockItem, incrementStockQuantity, orderLineCents,
     manualOrderItem,
     moneyCents,
     moneyText,
@@ -48,13 +50,13 @@ export default function OrderExchangeEditor({
     const returnQuantity = (
         item: Order["items"][number],
     ) =>
-        item.receivedReturnQuantity +
-        item.pendingReturnQuantity;
+        qvalue(item.receivedReturnQuantity +
+        item.pendingReturnQuantity);
 
     const kept = order.items
         .map(item => ({
             ...item,
-            quantity: item.quantity - returnQuantity(item),
+            quantity: qvalue(item.quantity - returnQuantity(item)),
         }))
         .filter(item => item.quantity > 0);
 
@@ -62,22 +64,9 @@ export default function OrderExchangeEditor({
         item => returnQuantity(item) > 0,
     );
 
-    const oldReturnedTotal = returned.reduce(
-        (sum, item) =>
-            sum +
-            (moneyCents(item.unitPrice) ?? 0n) *
-            BigInt(returnQuantity(item)),
-        0n,
-    );
-    const keptTotal = kept.reduce(
-        (sum, item) => sum + (moneyCents(item.unitPrice) ?? 0n) * BigInt(item.quantity), 0n,
-    );
-    const newTotal = items.reduce((sum, item) => {
-        const price = moneyCents(item.unitPrice);
-        return price !== null && /^\d+$/.test(item.quantity)
-            ? sum + price * BigInt(item.quantity)
-            : sum;
-    }, 0n);
+    const oldReturnedTotal=returned.reduce((sum,item)=>sum+(orderLineCents({unitPrice:item.unitPrice,quantity:String(item.quantity)})??0n)-(orderLineCents({unitPrice:item.unitPrice,quantity:String(qvalue(item.quantity-returnQuantity(item)))})??0n),0n);
+    const keptTotal=kept.reduce((sum,item)=>sum+(orderLineCents({unitPrice:item.unitPrice,quantity:String(item.quantity)})??0n),0n);
+    const newTotal=items.reduce((sum,item)=>sum+(orderLineCents(item)??0n),0n);
     const total = keptTotal + newTotal + (moneyCents(order.courierFee) ?? 0n);
     const paid = moneyCents(order.paidAmount) ?? 0n;
     const balance = total - paid;
@@ -89,9 +78,9 @@ export default function OrderExchangeEditor({
     }
     function choose(product: InventoryOrderProduct, condition: "GOOD" | "DEFECTIVE") {
         setItems(current => {
-            const existing = current.find(item => item.inventoryItemId === product.id && item.condition === condition);
+            const existing = current.find(item => matchesStockItem(item,product) && item.condition === condition);
             return existing
-                ? current.map(item => item.key === existing.key ? { ...item, quantity: String((Number(item.quantity) || 0) + 1) } : item)
+                ? current.map(item => item.key === existing.key ? { ...item, quantity: incrementStockQuantity(item,product,condition) } : item)
                 : [...current, inventoryOrderItem(product, condition)];
         });
         onDirty();
@@ -116,7 +105,7 @@ export default function OrderExchangeEditor({
                 {item.imageUrl ? <Image src={item.imageUrl} alt={item.name} width={44} height={44} unoptimized className="h-full w-full object-cover" /> : <Icon icon="solar:box-linear" className="h-5 w-5 text-accent" />}
             </div>
             <div className="min-w-0 flex-1"><p className="break-words text-sm font-medium">{item.name}</p><p className="text-xs text-text-secondary">{[item.color, item.size].filter(Boolean).join(" · ")}</p></div>
-            <span className="shrink-0 text-sm tabular-nums">{quantity} × {item.unitPrice} ₾</span>
+            <span className="shrink-0 text-sm tabular-nums">{item.source==="MATERIAL"?quantityLabel(quantity,item.unit):quantity} × {item.unitPrice} ₾</span>
         </div>;
     }
     if (!open) return <section className="rounded-2xl border border-success/30 bg-success/5 p-4">

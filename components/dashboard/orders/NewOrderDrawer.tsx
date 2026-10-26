@@ -20,7 +20,7 @@ import {
     sendOrderAction,
 } from "@/lib/orders/order-actions-client";
 import {
-    emptyOrderDraft, inventoryOrderItem, lookupPhone, manualOrderItem, moneyCents, moneyText, orderCreatePayload, orderFormTotals,
+    emptyOrderDraft, inventoryOrderItem, matchesStockItem, incrementStockQuantity, lookupPhone, manualOrderItem, moneyCents, moneyText, orderCreatePayload, orderFormTotals,
     type InventoryOrderProduct, type OrderCreatePayload, type OrderFormDraft, type OrderFormItem, type PaidMode
 } from "@/lib/orders/order-form";
 
@@ -64,6 +64,11 @@ export default function NewOrderDrawer() {
     const [customerBusy, setCustomerBusy] = useState(false);
     const [lookupRevision, setLookupRevision] = useState(0);
     const [saved, setSaved] = useState<{ id: string; number: number | null } | null>(null);
+    useEffect(() => {
+        if (!saved || isOpen) return;
+        const timer = window.setTimeout(() => setSaved(null), 2000);
+        return () => window.clearTimeout(timer);
+    }, [saved, isOpen]);
     const dialog = useRef<HTMLDialogElement>(null);
     const productList = useRef<HTMLDivElement>(null);
     const productNumber = useRef(0);
@@ -264,7 +269,7 @@ export default function NewOrderDrawer() {
         const alreadyExists = draft.items.some(
             item =>
                 !item.isCarriedOver &&
-                item.inventoryItemId === product.id &&
+                matchesStockItem(item,product) &&
                 item.condition === condition,
         );
 
@@ -279,7 +284,7 @@ export default function NewOrderDrawer() {
             const existing = current.items.find(
                 item =>
                     !item.isCarriedOver &&
-                    item.inventoryItemId === product.id &&
+                    matchesStockItem(item,product) &&
                     item.condition === condition,
             );
 
@@ -292,9 +297,7 @@ export default function NewOrderDrawer() {
 
             const updated = {
                 ...existing,
-                quantity: String(
-                    (Number(existing.quantity) || 0) + 1,
-                ),
+                quantity: incrementStockQuantity(existing,product,condition),
             };
 
             return {

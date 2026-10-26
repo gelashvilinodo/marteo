@@ -1,3 +1,4 @@
+import { qvalue } from "@/lib/orders/quantity";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { orderPayableTotal } from "./order-payable-total";
 import type { OrderRecord } from "./get-order-records";
@@ -16,8 +17,8 @@ export function serializeOrderRecord(order: OrderRecord, details: boolean) {
         for (const item of entry.items) {
             receivedQuantities.set(
                 item.orderItemId,
-                (receivedQuantities.get(item.orderItemId) ?? 0) +
-                item.quantity,
+                qvalue((receivedQuantities.get(item.orderItemId) ?? 0) +
+                item.quantity),
             );
         }
     }
@@ -27,7 +28,7 @@ export function serializeOrderRecord(order: OrderRecord, details: boolean) {
             ? 0
             : Math.max(
                 0,
-                item.quantity - (receivedQuantities.get(item.id) ?? 0),
+                qvalue(item.quantity - (receivedQuantities.get(item.id) ?? 0)),
             );
 
     const currentItems = order.items.filter(
@@ -83,10 +84,10 @@ export function serializeOrderRecord(order: OrderRecord, details: boolean) {
             .filter(entry => entry.status === "PENDING")
             .reduce(
                 (sum, entry) =>
-                    sum + entry.items.reduce(
+                    qvalue(sum + entry.items.reduce(
                         (count, item) => count + item.quantity,
                         0,
-                    ),
+                    )),
                 0,
             ),
 
@@ -94,10 +95,10 @@ export function serializeOrderRecord(order: OrderRecord, details: boolean) {
             .filter(entry => entry.status === "RECEIVED")
             .reduce(
                 (sum, entry) =>
-                    sum + entry.items.reduce(
+                    qvalue(sum + entry.items.reduce(
                         (count, item) => count + item.quantity,
                         0,
-                    ),
+                    )),
                 0,
             ),
         createdAt:
@@ -125,7 +126,7 @@ export function serializeOrderRecord(order: OrderRecord, details: boolean) {
             0,
         ).toFixed(2),
         productQuantity: currentItems.reduce(
-            (sum, item) => sum + currentQuantity(item),
+            (sum, item) => qvalue(sum + (item.source==="MATERIAL"?1:currentQuantity(item))),
             0,
         ),
     };

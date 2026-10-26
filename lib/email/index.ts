@@ -1,3 +1,5 @@
+import { escapeHtml } from "@/lib/security/html";
+import { reserveDelivery } from "@/lib/security/delivery-limit";
 import { Resend } from "resend";
 
 type SendVerificationEmailParams = {
@@ -22,6 +24,8 @@ export async function sendVerificationEmail({
     throw new Error("RESEND_FROM_EMAIL is not configured");
   }
 
+  await reserveDelivery("email", to.trim().toLowerCase());
+
   const resend = new Resend(apiKey);
 
   const { data, error } = await resend.emails.send({
@@ -30,7 +34,7 @@ export async function sendVerificationEmail({
     subject: "MARTEO — ელფოსტის დადასტურება",
     html: `
   <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <h2>მოგესალმებით MARTEO-ში, ${firstName}!</h2>
+    <h2>მოგესალმებით MARTEO-ში, ${escapeHtml(firstName)}!</h2>
 
     <p>
       თქვენი ელფოსტის დასადასტურებელი კოდია:
@@ -49,7 +53,7 @@ export async function sendVerificationEmail({
         border-radius: 10px;
       "
     >
-      ${token}
+      ${escapeHtml(token)}
     </div>
 
     <p>

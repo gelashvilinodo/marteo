@@ -501,3 +501,23 @@ dialog:modal {
   background-color: var(--marteo-warning);
   color: var(--marteo-background);
 }
+/* A soft sweep distinguishes active production without moving its contents. */
+.production-in-progress::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 42%, color-mix(in srgb, var(--marteo-warning) 9%, transparent) 50%, transparent 58%);
+  transform: translateX(-110%);
+  animation: production-light-sweep 7s ease-in-out infinite;
+}
+@keyframes production-light-sweep {
+  0%, 15% { transform: translateX(-110%); opacity: 0; }
+  20% { opacity: 1; }
+  55% { transform: translateX(110%); opacity: 1; }
+  60%, 100% { transform: translateX(110%); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .production-in-progress::before { animation: none; display: none; }
+}

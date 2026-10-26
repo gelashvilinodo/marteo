@@ -1,3 +1,4 @@
+import { quantityLabel } from "@/lib/orders/quantity";
 import Image from "next/image";
 import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
 import { productThumbnailUrl } from "@/lib/images/product-thumbnail-url";
@@ -273,7 +274,7 @@ export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: Or
 
                         <div className="invoice-thermal-line">
                             <span>
-                                {item.quantity} × {item.unitPrice} ₾
+                                {item.unit&&item.unit!=="PCS"?quantityLabel(item.quantity,item.unit):item.quantity} × {item.unitPrice} ₾
                             </span>
                             <strong>{item.total} ₾</strong>
                         </div>
@@ -327,7 +328,7 @@ export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: Or
                                 </div>
                             </td>
 
-                            <td>{item.quantity}</td>
+                            <td>{item.unit&&item.unit!=="PCS"?quantityLabel(item.quantity,item.unit):item.quantity}</td>
                             <td className="invoice-right">{item.unitPrice}</td>
                             <td className="invoice-right">{item.total}</td>
                         </tr>

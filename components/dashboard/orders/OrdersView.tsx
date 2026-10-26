@@ -1,6 +1,10 @@
 "use client";
+import { quantityLabel } from "@/lib/orders/quantity";
+
 
 import { ORDERS_CHANGED } from "@/lib/orders/refresh-orders-client";
+
+import MissingCostsButton from "@/components/dashboard/costs/MissingCostsButton";
 
 import ProductThumbnail from "@/components/shared/ProductThumbnail";
 
@@ -1472,6 +1476,7 @@ export default function OrdersView({
                         </button>
                     </div>
                 </div>
+                <div className="mt-4"><MissingCostsButton orderId={selected.id} /></div>
                 <div className="mt-4 flex items-center justify-between gap-2"><Status
                     onChanged={refreshOrder}
                     order={selected}
@@ -1630,7 +1635,7 @@ export default function OrdersView({
 
                                     <div className="mt-2 flex flex-wrap justify-between gap-2 text-sm">
                                         <span>
-                                            {item.currentQuantity} × {item.unitPrice} ₾
+                                            {item.source==="MATERIAL"?quantityLabel(item.currentQuantity,item.unit):item.currentQuantity} × {item.unitPrice} ₾
                                         </span>
                                         <span className="font-semibold">
                                             {item.total} ₾

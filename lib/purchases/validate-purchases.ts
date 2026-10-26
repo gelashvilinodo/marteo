@@ -278,6 +278,7 @@ export function validatePurchase(value: unknown) {
     const result = {
         receiptStatus,
         name: text(input.name, "პარტიის სახელი", 200),
+        country: text(input.country, "იმპორტის ქვეყანა", 100).replace(/\s+/g, " "),
         note: text(input.note, "შენიშვნა", 2000),
         purchaseDate: purchaseDate(input.purchaseDate),
         shippingCost: money(input.shippingCost, "ტრანსპორტირება"),

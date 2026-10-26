@@ -1,91 +1,30 @@
 import { NextResponse } from "next/server";
-import { createHash } from "crypto";
-
 import { createPrismaClient } from "@/lib/prisma";
-
-function hashVerificationToken(token: string) {
-    return createHash("sha256").update(token).digest("hex");
-}
+import { consumeRegistrationOtp, readOtpRequest, RegistrationError, registrationErrorResponse } from "@/lib/auth/registration-otp";
 
 export async function POST(request: Request) {
+    const input = await readOtpRequest(request);
+    if (!input) return NextResponse.json({ error: "დადასტურების მონაცემები არასწორია." }, { status: 400 });
+    let prisma: ReturnType<typeof createPrismaClient> | undefined;
     try {
-        const prisma = createPrismaClient();
-
-        const body = (await request.json()) as {
-            userId?: string;
-            code?: string;
-        };
-
-        const userId =
-            typeof body.userId === "string" ? body.userId : "";
-
-        const code =
-            typeof body.code === "string" ? body.code : "";
-
-        if (!userId || !/^\d{6}$/.test(code)) {
-            return NextResponse.json(
-                {
-                    error: "კოდი არასწორია.",
-                },
-                { status: 400 }
-            );
-        }
-
-        const tokenHash = hashVerificationToken(code);
-
-        const verification =
-            await prisma.verificationToken.findFirst({
-                where: {
-                    userId,
-                    type: "EMAIL",
-                    token: tokenHash,
-                    usedAt: null,
-                    expiresAt: {
-                        gt: new Date(),
-                    },
-                },
+        prisma = createPrismaClient();
+        const result = await prisma.$transaction(async (tx) => {
+            const verified = await consumeRegistrationOtp(tx, input.userId, "EMAIL", input.code);
+            // Returning a failure commits the failed-attempt counter.
+            if (!verified.ok) return verified;
+            const updated = await tx.user.updateMany({
+                where: { id: input.userId, status: "PENDING_VERIFICATION", emailVerifiedAt: null },
+                data: { emailVerifiedAt: new Date() },
             });
-
-        if (!verification) {
-            return NextResponse.json(
-                {
-                    error: "კოდი არასწორია ან ვადა გაუვიდა.",
-                },
-                { status: 400 }
-            );
-        }
-
-        await prisma.$transaction(async (tx) => {
-            await tx.verificationToken.update({
-                where: {
-                    id: verification.id,
-                },
-                data: {
-                    usedAt: new Date(),
-                },
-            });
-
-            await tx.user.update({
-                where: {
-                    id: userId,
-                },
-                data: {
-                    emailVerifiedAt: new Date(),
-                },
-            });
-        });
-
-        return NextResponse.json({
-            status: "success",
-        });
+            if (updated.count !== 1) throw new RegistrationError("ანგარიშის მდგომარეობა შეიცვალა. სცადეთ ხელახლა.", 409);
+            await tx.verificationToken.deleteMany({ where: { userId: input.userId, type: "EMAIL", usedAt: null } });
+            return { ok: true as const };
+        }, { isolationLevel: "Serializable" });
+        if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+        return NextResponse.json({ status: "success" });
     } catch (error) {
-        console.error(error);
-
-        return NextResponse.json(
-            {
-                error: "ტექნიკური შეცდომა.",
-            },
-            { status: 500 }
-        );
+        return registrationErrorResponse(error);
+    } finally {
+        await prisma?.$disconnect();
     }
 }

@@ -1,3 +1,4 @@
+import { qvalue, validQuantity } from "@/lib/orders/quantity";
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
@@ -18,10 +19,10 @@ export function buildSaleSnapshot(
 
         const quantity = item.stockRestoredAt
             ? 0
-            : item.quantity - received;
+            : qvalue(item.quantity - received);
 
         if (
-            !Number.isSafeInteger(quantity) ||
+            !validQuantity(quantity) ||
             quantity < 0 ||
             quantity > item.quantity
         ) {
@@ -33,21 +34,21 @@ export function buildSaleSnapshot(
         let cost = new Prisma.Decimal(0);
         let costComplete = false;
 
-        if (item.source === "INVENTORY") {
+        if (item.source === "INVENTORY" || item.source === "MATERIAL") {
             let allocatedQuantity = 0;
             costComplete = true;
 
-            for (const allocation of item.allocations) {
+            for (const allocation of (item.source === "MATERIAL" ? item.materialAllocations : item.allocations)) {
                 const remainingQuantity =
-                    allocation.quantity -
+                    qvalue(allocation.quantity -
                     allocation.returnedQuantity -
-                    allocation.transferredQuantity;
+                    allocation.transferredQuantity);
 
                 if (remainingQuantity < 0) {
                     fail("გაყიდვის მარაგის განაწილება არასწორია.");
                 }
 
-                allocatedQuantity += remainingQuantity;
+                allocatedQuantity = qvalue(allocatedQuantity + remainingQuantity);
 
                 if (remainingQuantity === 0) continue;
 
@@ -78,7 +79,7 @@ export function buildSaleSnapshot(
                 item.totalCost,
                 [
                     quantity,
-                    item.quantity - quantity,
+                    qvalue(item.quantity - quantity),
                 ],
             );
 
@@ -86,7 +87,7 @@ export function buildSaleSnapshot(
             costComplete = true;
         }
 
-        const revenue = item.unitPrice.mul(quantity);
+        const revenue = item.unitPrice.mul(quantity).toDecimalPlaces(2);
 
         if (
             revenue.lt(0) ||

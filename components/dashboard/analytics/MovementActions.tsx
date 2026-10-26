@@ -508,7 +508,7 @@ export default function MovementActions({
                                                     value={money(detail.productRevenue)}
                                                 />
                                                 <Field
-                                                    label="მიწოდების საფასური"
+                                                    label="მიწოდების საფასური — მოგებაში არ ითვლება"
                                                     value={money(detail.deliveryRevenue)}
                                                 />
                                                 <Field

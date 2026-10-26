@@ -1,4 +1,5 @@
 "use client";
+import useTransientNotice from '@/components/shared/useTransientNotice';
 
 import {
     useCallback,
@@ -49,6 +50,7 @@ export default function CourierReminder() {
     const [retrying, setRetrying] = useState(false);
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
+    useTransientNotice(notice, setNotice);
 
     const mounted = useRef(false);
     const running = useRef(false);

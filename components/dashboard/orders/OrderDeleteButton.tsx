@@ -1,4 +1,5 @@
 "use client";
+import useTransientNotice from '@/components/shared/useTransientNotice';
 
 import { refreshOrdersAfterMutation } from "@/lib/orders/refresh-orders-client";
 
@@ -38,6 +39,7 @@ export default function OrderDeleteButton({
     const [mode, setMode] = useState<Mode | "">("");
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
+    useTransientNotice(notice, setNotice);
     const [pending, setPending] = useState<Record<string, unknown> | null>(null);
 
     const load = useCallback(async () => {

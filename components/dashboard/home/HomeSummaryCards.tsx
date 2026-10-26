@@ -1,3 +1,4 @@
+import MissingCostsButton from "@/components/dashboard/costs/MissingCostsButton";
 import type { HomeSummary } from "@/lib/dashboard/get-home-summary";
 
 function formatNumber(value: string) {
@@ -36,9 +37,9 @@ export default function HomeSummaryCards({
         },
         {
             key: "profit" as const,
-            title: "სუფთა მოგება",
+            title: data.profit === null ? "დათვლილი ნაწილის შედეგი" : "სუფთა მოგება",
             value: data.profit === null
-                ? "—"
+                ? `${formatNumber(data.partialProfit)} ₾`
                 : `${formatNumber(data.profit)} ₾`,
             iconClass: "bg-success/10 text-success",
         },
@@ -94,6 +95,7 @@ export default function HomeSummaryCards({
                     <p className="mt-4 break-words text-xl font-semibold leading-tight text-text-primary tabular-nums sm:text-2xl">
                         {card.value}
                     </p>
+                    {card.key === "profit" && data.profit === null && <div className="mt-3 space-y-2"><p className="text-xs text-warning">სრული მოგება უცნობია. ნაჩვენებია დათვლილი ნაწილი, სხვა ხარჯების გამოკლებით.</p><MissingCostsButton /></div>}
                 </article>
             ))}
         </section>

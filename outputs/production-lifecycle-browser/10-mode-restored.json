@@ -1,0 +1,146 @@
+{
+  "marker": "QA-LIFE-20261026-B",
+  "business": {
+    "name": "ბრიალა",
+    "mode": "IMPORT"
+  },
+  "purchase": {
+    "id": "cmvpn6z6e0038psp7noqr57k8",
+    "number": 3,
+    "items": [
+      {
+        "materialId": "cmvpn6z9d0039psp7bk1rvaci",
+        "quantity": "10",
+        "remainingQuantity": "4",
+        "remainingCost": "20",
+        "currentStock": "4"
+      }
+    ]
+  },
+  "production": {
+    "id": "cmvpn9vu3003bpsp71rac3vbw",
+    "number": 4,
+    "status": "COMPLETED",
+    "totalCost": "40",
+    "materialsCost": "30",
+    "inputs": [
+      {
+        "id": "cmvpnfud7003vpsp781jjz46x",
+        "productionId": "cmvpn9vu3003bpsp71rac3vbw",
+        "materialId": "cmvpn6z9d0039psp7bk1rvaci",
+        "name": "QA-LIFE-20261026-B ქსოვილი",
+        "unit": "M",
+        "quantity": "6",
+        "totalCost": "30"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "QA-LIFE-20261026-B პროდუქტი",
+        "quantity": 2,
+        "totalCost": "40",
+        "stock": 2,
+        "lot": {
+          "id": "cmvpn9wcf003gpsp7h2h7kiov",
+          "inventoryItemId": "cmvpn9wa4003fpsp7q7pia6s0",
+          "purchaseItemId": null,
+          "sourcePurchaseItemId": null,
+          "quantity": 2,
+          "remainingQuantity": 2,
+          "defectiveQuantity": 0,
+          "remainingDefectiveQuantity": 0,
+          "writtenOffQuantity": 0,
+          "writtenOffDefectiveQuantity": 0,
+          "unitCost": "25",
+          "remainingCost": "40",
+          "availableAt": "2026-10-25T20:00:00.000Z",
+          "createdAt": "2026-10-26T19:23:29.919Z",
+          "updatedAt": "2026-10-26T19:38:50.420Z"
+        }
+      }
+    ]
+  },
+  "orders": [
+    {
+      "id": "cmvpncs61003lpsp74u3qlzg1",
+      "number": 20,
+      "status": "RETURNED",
+      "payments": [
+        {
+          "amount": "40",
+          "method": "CASH"
+        },
+        {
+          "amount": "-40",
+          "method": "CASH"
+        }
+      ],
+      "items": [
+        {
+          "id": "cmvpncsng003mpsp7fii46eg9",
+          "quantity": "1",
+          "totalCost": "15",
+          "allocations": [
+            {
+              "id": "cmvpncsq4003npsp79muuza5x",
+              "orderItemId": "cmvpncsng003mpsp7fii46eg9",
+              "purchaseItemId": null,
+              "stockLotId": "cmvpn9wcf003gpsp7h2h7kiov",
+              "quantity": 1,
+              "condition": "GOOD",
+              "unitCost": "15",
+              "totalCost": "15",
+              "returnedCost": "15",
+              "transferredQuantity": 0,
+              "transferredCost": "0",
+              "createdAt": "2026-10-26T19:25:45.196Z",
+              "returnedQuantity": 1
+            }
+          ]
+        }
+      ],
+      "financialEntries": [
+        {
+          "kind": "SALE",
+          "revenue": "40",
+          "cost": "15"
+        },
+        {
+          "kind": "RETURN",
+          "revenue": "-40",
+          "cost": "-15"
+        }
+      ],
+      "returns": [
+        {
+          "fulfillmentCycle": 0,
+          "id": "cmvpnh0hk003zpsp7fidsifqf",
+          "orderId": "cmvpncs61003lpsp74u3qlzg1",
+          "exchangeId": null,
+          "status": "RECEIVED",
+          "receivedAt": "2026-10-26T19:38:50.806Z",
+          "createdAt": "2026-10-26T19:29:01.880Z",
+          "updatedAt": "2026-10-26T19:38:50.809Z",
+          "items": [
+            {
+              "id": "cmvpnh0k00040psp7xh3xp9va",
+              "returnId": "cmvpnh0hk003zpsp7fidsifqf",
+              "unit": "PCS",
+              "orderItemId": "cmvpncsng003mpsp7fii46eg9",
+              "quantity": "1",
+              "reason": "OTHER",
+              "condition": "GOOD",
+              "note": null,
+              "name": "QA-LIFE-20261026-B პროდუქტი",
+              "imageUrl": null,
+              "color": null,
+              "size": null,
+              "unitPrice": "40",
+              "createdAt": "2026-10-26T19:29:01.880Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

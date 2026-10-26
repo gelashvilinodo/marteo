@@ -1,4 +1,5 @@
 "use client";
+import useTransientNotice from '@/components/shared/useTransientNotice';
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -68,6 +69,7 @@ export default function PasswordSettingsForm() {
     const [errorField, setErrorField] =
         useState<PasswordSettingsField>("form");
     const [notice, setNotice] = useState("");
+    useTransientNotice(notice, setNotice);
     const [retryUntil, setRetryUntil] = useState(0);
     const [now, setNow] = useState(0);
 

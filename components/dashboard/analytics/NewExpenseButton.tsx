@@ -103,7 +103,7 @@ export default function NewExpenseButton({
     useEffect(() => {
         if (!notice) return;
 
-        const timer = window.setTimeout(() => setNotice(""), 4000);
+        const timer = window.setTimeout(() => setNotice(""), 2000);
 
         return () => window.clearTimeout(timer);
     }, [notice]);

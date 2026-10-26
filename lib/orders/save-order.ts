@@ -1,3 +1,4 @@
+import { numericQuantities } from "@/lib/orders/quantity";
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
@@ -71,7 +72,7 @@ export async function saveOrder(raw: unknown) {
                         number: true,
                         deletedAt: true,
                     },
-                });
+                }).then(numericQuantities);
 
                 if (existing) {
                     if (existing.deletedAt) {
@@ -140,7 +141,7 @@ export async function saveOrder(raw: unknown) {
                 const total = data.items.reduce(
                     (sum, item) =>
                         sum.plus(
-                            item.unitPrice.mul(item.quantity),
+                            item.unitPrice.mul(item.quantity).toDecimalPlaces(2),
                         ),
                     data.courierFee,
                 );

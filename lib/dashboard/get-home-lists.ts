@@ -94,10 +94,10 @@ export async function getHomeLists(
                             CASE
                                 WHEN o."stockReturnedAt" IS NOT NULL
                                 THEN 0
-                                ELSE (
+                                ELSE ROUND((
                                     i.quantity -
                                     COALESCE(r.quantity, 0)
-                                ) * i."unitPrice"
+                                ) * i."unitPrice",2)
                             END
                         ),
                         0

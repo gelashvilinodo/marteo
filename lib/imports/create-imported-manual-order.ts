@@ -1,3 +1,4 @@
+import { numericQuantities } from "@/lib/orders/quantity";
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
@@ -152,7 +153,7 @@ export async function createImportedManualOrder(input: {
             },
         },
         select: { id: true },
-    });
+    }).then(numericQuantities);
 
     if (existing) {
         fail(
@@ -237,7 +238,7 @@ export async function createImportedManualOrder(input: {
         const financialOrder = await tx.order.findUniqueOrThrow({
             where: { id: saved.id },
             include: orderWithStock,
-        });
+        }).then(numericQuantities);
 
         await recordSaleSnapshot(
             tx,

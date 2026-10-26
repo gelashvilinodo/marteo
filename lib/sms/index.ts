@@ -1,3 +1,6 @@
+import { normalizePhone, isAllowedSmsPhone } from "@/lib/security/phone";
+import { reserveDelivery } from "@/lib/security/delivery-limit";
+
 type SendSmsParams = {
   phone: string;
   message: string;
@@ -19,6 +22,8 @@ export async function sendSms({
   phone,
   message,
 }: SendSmsParams): Promise<void> {
+  phone = normalizePhone(phone);
+  if (!isAllowedSmsPhone(phone)) throw new Error("Unsupported SMS phone number");
   const apiKey = process.env.SENDSMS_API_KEY;
   const baseUrl =
     process.env.SENDSMS_BASE_URL || "https://sendsms.ge/api";
@@ -39,6 +44,8 @@ export async function sendSms({
     content: message,
     contentType: "1",
   });
+
+  await reserveDelivery("sms", phone);
 
   const response = await fetch(`${baseUrl}/v2/send?${params.toString()}`, {
     method: "POST",

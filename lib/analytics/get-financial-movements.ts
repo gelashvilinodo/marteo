@@ -73,10 +73,7 @@ export async function getFinancialMovements(
                 f."createdAt" AS created_at,
                 f."orderNumber" AS order_number,
                 'შეკვეთის ფინანსური ჩანაწერი'::text AS title,
-                (
-                    f."productRevenueDelta" +
-                    f."deliveryRevenueDelta"
-                ) AS amount,
+                f."productRevenueDelta" AS amount,
                 f."costOfGoodsDelta" AS cost,
                 f."costComplete" AS cost_complete,
 COALESCE(

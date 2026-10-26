@@ -87,7 +87,7 @@ export default function HomeWelcome({
                     <ActionCard
                         step="01"
                         title="დაამატე პირველი პარტია"
-                        description="შეინახე შეძენილი პროდუქტები, რაოდენობები და შესყიდვის ხარჯები."
+                        description="შეინახე შეძენილი მარაგები, რაოდენობები და შესყიდვის ხარჯები."
                     >
                         <DeferredHomePurchaseButton />
                     </ActionCard>

@@ -41,8 +41,8 @@ export default function AnalyticsLoading() {
                     <Placeholder className="h-3 w-52 max-w-full" />
                 </div>
 
-                <div className="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-4">
-                    {Array.from({ length: 4 }, (_, index) => (
+                <div className="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-5">
+                    {Array.from({ length: 5 }, (_, index) => (
                         <div key={index} className={panel}>
                             <div className="flex items-center gap-2">
                                 <Placeholder className="h-9 w-9 shrink-0 rounded-xl" />

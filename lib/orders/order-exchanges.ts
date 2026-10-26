@@ -1,3 +1,5 @@
+import { qvalue } from "@/lib/orders/quantity";
+import { numericQuantities } from "@/lib/orders/quantity";
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { createOrderItems, type StockOrder } from "./order-stock";
@@ -33,7 +35,7 @@ export async function exchangeOrderProducts(
             status: { in: ["PENDING", "RECEIVED"] },
         },
         include: { items: true },
-    });
+    }).then(numericQuantities);
     if (!returns.some(entry =>
         entry.items.some(item => item.reason === "EXCHANGE")
     )) {
@@ -62,15 +64,15 @@ export async function exchangeOrderProducts(
         for (const item of entry.items) {
             returnQuantities.set(
                 item.orderItemId,
-                (returnQuantities.get(item.orderItemId) ?? 0) +
-                item.quantity,
+                qvalue((returnQuantities.get(item.orderItemId) ?? 0) +
+                item.quantity),
             );
 
             if (entry.status === "PENDING") {
                 pendingQuantities.set(
                     item.orderItemId,
-                    (pendingQuantities.get(item.orderItemId) ?? 0) +
-                    item.quantity,
+                    qvalue((pendingQuantities.get(item.orderItemId) ?? 0) +
+                    item.quantity),
                 );
             }
         }
@@ -82,10 +84,11 @@ export async function exchangeOrderProducts(
         quantity: number;
         cost: Prisma.Decimal | null;
     }> = [];
+    const materialTransfers: Array<{id:string;quantity:number;cost:Prisma.Decimal}>=[];
     const carry = order.items.map(item => {
 
         const quantity =
-            item.quantity - (returnQuantities.get(item.id) ?? 0);
+            qvalue(item.quantity - (returnQuantities.get(item.id) ?? 0));
 
         if (quantity < 0) {
             fail("დასაბრუნებელი რაოდენობა შეკვეთის რაოდენობას აღემატება.");
@@ -101,9 +104,9 @@ export async function exchangeOrderProducts(
             )
             .map(allocation => {
                 const available =
-                    allocation.quantity -
+                    qvalue(allocation.quantity -
                     allocation.returnedQuantity -
-                    allocation.transferredQuantity;
+                    allocation.transferredQuantity);
 
                 if (available < 0) {
                     fail("პროდუქტის მარაგის განაწილება არასწორია.");
@@ -116,7 +119,7 @@ export async function exchangeOrderProducts(
 
                 reservedForPendingReturn -= reserved;
 
-                const carriedQuantity = available - reserved;
+                const carriedQuantity = qvalue(available - reserved);
 
                 const costSplit =
                     allocation.totalCost === null ||
@@ -156,15 +159,27 @@ export async function exchangeOrderProducts(
         ) {
             fail("დასაბრუნებელი ნივთის მარაგის განაწილება არ ემთხვევა რაოდენობას.");
         }
-        if (item.source === "INVENTORY" && allocations.reduce((sum, value) => sum + value.quantity, 0) !== quantity) {
+        if (item.source === "INVENTORY" && allocations.reduce((sum, value) => qvalue(sum + value.quantity), 0) !== quantity) {
             fail("დარჩენილი ნივთის მარაგის განაწილება არ ემთხვევა რაოდენობას.");
         }
+        let materialPending=pendingQuantities.get(item.id)??0;
+        const materialAllocations=[...item.materialAllocations].sort((a,b)=>a.id.localeCompare(b.id)).flatMap(a=>{
+            const available=qvalue(a.quantity-a.returnedQuantity-a.transferredQuantity),reserved=Math.min(available,materialPending),carried=qvalue(available-reserved);
+            materialPending=qvalue(materialPending-reserved);
+            if(available<0)fail("მასალის განაწილება არასწორია.");
+            const cost=allocateCost(a.totalCost.minus(a.returnedCost).minus(a.transferredCost),[reserved,carried])[1];
+            if(!carried)return [];
+            materialTransfers.push({id:a.id,quantity:carried,cost});
+            return [{materialId:a.materialId,purchaseItemId:a.purchaseItemId,quantity:carried,totalCost:cost}];
+        });
+        if(item.source==='MATERIAL'&&(materialPending!==0||materialAllocations.reduce((sum,a)=>qvalue(sum+a.quantity),0)!==quantity))fail("მასალის გადაცვლის რაოდენობა განაწილებას არ ემთხვევა.");
         const unitCost = item.source === "INVENTORY" && quantity > 0
             ? allocations.reduce((sum, value) => sum.plus(value.unitCost.mul(value.quantity)), new Prisma.Decimal(0))
                 .div(quantity).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
             : item.unitCost;
-        total = total.plus(item.unitPrice.mul(quantity));
+        total = total.plus(item.unitPrice.mul(quantity).toDecimalPlaces(2));
         const totalCost =
+            item.source === "MATERIAL" ? materialAllocations.reduce((sum,a)=>sum.plus(a.totalCost),new Prisma.Decimal(0)) :
             item.source === "MANUAL"
                 ? item.totalCost === null
                     ? null
@@ -172,7 +187,7 @@ export async function exchangeOrderProducts(
                         item.totalCost,
                         [
                             quantity,
-                            item.quantity - quantity,
+                            qvalue(item.quantity - quantity),
                         ],
                     )[0]
                 : allocations.every(
@@ -185,14 +200,14 @@ export async function exchangeOrderProducts(
                     )
                     : null;
 
-        return { item, quantity, allocations, unitCost, totalCost };
+        return { item, quantity, allocations, materialAllocations, unitCost, totalCost };
     });
     for (const item of validated.items) {
-        total = total.plus(item.unitPrice.mul(item.quantity));
+        total = total.plus(item.unitPrice.mul(item.quantity).toDecimalPlaces(2));
     }
     if (total.gt("9999999999.99")) fail("შეკვეთის ჯამი თანხის ველის დასაშვებ მნიშვნელობას აღემატება.");
     const previousTotal = order.items.reduce(
-        (sum, item) => sum.plus(item.unitPrice.mul(item.quantity)),
+        (sum, item) => sum.plus(item.unitPrice.mul(item.quantity).toDecimalPlaces(2)),
         order.courierFee,
     );
 
@@ -243,11 +258,12 @@ export async function exchangeOrderProducts(
         });
     }
 
+    for(const transfer of materialTransfers)await tx.materialOrderAllocation.update({where:{id:transfer.id},data:{transferredQuantity:{increment:transfer.quantity},transferredCost:{increment:transfer.cost}}});
     await tx.orderItem.updateMany({
         where: { orderId: order.id, isActive: true },
         data: { isActive: false },
     });
-    for (const { item, quantity, allocations, unitCost, totalCost } of carry) {
+    for (const { item, quantity, allocations, materialAllocations, unitCost, totalCost } of carry) {
         if (quantity === 0) continue;
         // These items are already with the customer: do not deduct stock again.
         await tx.orderItem.create({
@@ -257,7 +273,7 @@ export async function exchangeOrderProducts(
                 isActive: true,
                 isCarriedOver: true,
                 financialSourceItemId: item.financialSourceItemId ?? item.id,
-                source: item.source,
+                source: item.source, materialId:item.materialId,unit:item.unit,
                 inventoryItemId: item.inventoryItemId,
                 condition: item.condition,
                 name: item.name,
@@ -269,6 +285,7 @@ export async function exchangeOrderProducts(
                 unitPrice: item.unitPrice,
                 unitCost,
                 totalCost,
+                ...(materialAllocations.length ? {materialAllocations:{create:materialAllocations}} : {}),
                 ...(allocations.length ? { allocations: { create: allocations } } : {}),
             },
         });

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BusinessModeContext } from "./business/BusinessModeContext";
+import type { BusinessMode } from "@/lib/business/business-mode";
 
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -9,6 +11,7 @@ import DeferredNewOrderDrawer from "@/components/dashboard/orders/DeferredNewOrd
 
 type DashboardShellProps = {
     children: React.ReactNode;
+    businessMode: BusinessMode;
     businessName: string;
     businessLogoUrl: string | null;
     userName: string;
@@ -17,6 +20,7 @@ type DashboardShellProps = {
 
 export default function DashboardShell({
     children,
+    businessMode,
     businessName,
     businessLogoUrl,
     userName,
@@ -39,8 +43,8 @@ export default function DashboardShell({
     }, [sidebarOpen]);
 
     return (
-        <div className="min-h-screen bg-background lg:flex">
-            <DashboardSidebar />
+        <BusinessModeContext value={businessMode}><div className="min-h-screen bg-background lg:flex">
+            <DashboardSidebar mode={businessMode} />
 
             <div
                 id="mobile-dashboard-sidebar"
@@ -73,6 +77,7 @@ export default function DashboardShell({
                     ].join(" ")}
                 >
                     <DashboardSidebar
+                        mode={businessMode}
                         mobile
                         onSelect={() => setSidebarOpen(false)}
                     />
@@ -95,6 +100,6 @@ export default function DashboardShell({
                     <DeferredNewOrderDrawer />
                 </NewOrderProvider>
             </div>
-        </div>
+        </div></BusinessModeContext>
     );
 }

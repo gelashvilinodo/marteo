@@ -1,3 +1,4 @@
+import { rateLimitResponse } from "@/lib/security/rate-limit";
 import { NextResponse } from "next/server";
 import { createHash, randomInt } from "crypto";
 
@@ -169,7 +170,9 @@ export async function POST(request: Request) {
                 firstName: delivery.firstName,
                 token: code,
             });
-        } catch {
+        } catch (deliveryError) {
+            const limited = rateLimitResponse(deliveryError);
+            if (limited) return limited;
             // Keep the cooldown even if delivery fails or is uncertain.
             // A provider may have accepted the email before a timeout.
             return errorResponse(

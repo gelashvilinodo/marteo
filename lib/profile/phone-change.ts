@@ -1,3 +1,4 @@
+import { normalizePhone, isAllowedSmsPhone } from "@/lib/security/phone";
 import "server-only";
 
 import {
@@ -36,18 +37,10 @@ export function normalizeProfilePhone(value: unknown): string {
         );
     }
 
-    const compact = value
-        .trim()
-        .replace(/[\s()\-]/g, "")
-        .replace(/^00/, "+");
-
-    const normalized = /^\d{9}$/.test(compact)
-        ? `+995${compact}`
-        : compact;
-
-    if (!/^\+[1-9]\d{7,14}$/.test(normalized)) {
+    const normalized = normalizePhone(value);
+    if (!isAllowedSmsPhone(normalized)) {
         throw new EmailChangeError(
-            "მიუთითე 9-ციფრიანი ქართული ნომერი ან საერთაშორისო ნომერი ქვეყნის კოდით, მაგალითად +995…",
+            "მიუთითე მხარდაჭერილი მობილური ნომერი, მაგალითად +995599123456.",
             422,
         );
     }

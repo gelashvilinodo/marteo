@@ -1,3 +1,4 @@
+import { isBusinessMode } from "@/lib/business/business-mode";
 import { NextResponse } from "next/server";
 
 import { createPrismaClient } from "@/lib/prisma";
@@ -18,10 +19,14 @@ export async function POST(request: Request) {
     }
 
     const body = (await request.json()) as {
+      mode?: unknown;
       name?: unknown;
       category?: unknown;
       logoUrl?: unknown;
     };
+
+    if (!isBusinessMode(body.mode)) return NextResponse.json({error:"აირჩიე ბიზნესის მიმართულება."},{status:422});
+    const mode=body.mode;
 
     const name =
       typeof body.name === "string" ? body.name.trim() : "";
@@ -48,7 +53,7 @@ export async function POST(request: Request) {
     if (!category) {
       return NextResponse.json(
         {
-          error: "ბიზნესის ტიპი აუცილებელია.",
+          error: "საქმიანობის სფერო აუცილებელია.",
         },
         { status: 400 }
       );
@@ -86,6 +91,7 @@ export async function POST(request: Request) {
         data: {
           name,
           category,
+          mode,
           logoUrl: logoUrl || null,
         },
       });

@@ -53,10 +53,10 @@ export async function getCurrentBalances(
                         CASE
                             WHEN o."stockReturnedAt" IS NOT NULL
                             THEN 0
-                            ELSE i."unitPrice" * (
+                            ELSE ROUND(i."unitPrice" * (
                                 i.quantity -
                                 COALESCE(r.quantity, 0)
-                            )
+                            ),2)
                         END
                     ) AS total,
                     COUNT(*) FILTER (

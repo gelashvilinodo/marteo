@@ -1,4 +1,5 @@
 "use client";
+import useTransientNotice from '@/components/shared/useTransientNotice';
 
 import { useEffect, useId, useRef, useState } from "react";
 import InvoiceDocument, { isInvoicePaper, type InvoicePaper } from "./InvoiceDocument";
@@ -17,6 +18,7 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
     const linkOperation = useRef(false);
     const isOpen = Boolean(invoice);
     const [notice, setNotice] = useState("");
+    useTransientNotice(notice, setNotice);
     const dialog = useRef<HTMLDialogElement>(null);
     const request = useRef<AbortController | null>(null);
     const mounted = useRef(false);

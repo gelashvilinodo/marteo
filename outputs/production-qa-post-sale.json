@@ -1,0 +1,252 @@
+{
+  "purchases": [
+    {
+      "id": "cmvpgiibh002bpsp7xknstfxt",
+      "businessId": "cmu6z2ztm0004psp76b90kn2s",
+      "number": 2,
+      "lastRequestId": "6364fd28-bc0b-4253-a34d-97b5f4e9fcb7",
+      "requestId": "cbf45f5e-9ca8-434c-b67b-0167dfc49902",
+      "name": "QA-PROD-20261026-1620",
+      "country": null,
+      "purchaseDate": "2026-10-25T20:00:00.000Z",
+      "receiptStatus": "RECEIVED",
+      "shippingCost": "20",
+      "customsCost": "0",
+      "otherCost": "0",
+      "note": null,
+      "createdById": "cmu6z1kwd0000psp7456g7hcj",
+      "updatedById": "cmu6z1kwd0000psp7456g7hcj",
+      "deletedAt": null,
+      "createdAt": "2026-10-26T16:14:14.333Z",
+      "updatedAt": "2026-10-26T16:14:40.199Z",
+      "items": [
+        {
+          "id": "cmvpgiigt002dpsp7fyzf3ynv",
+          "purchaseId": "cmvpgiibh002bpsp7xknstfxt",
+          "materialId": "cmvpgiie7002cpsp79q5hfatw",
+          "name": "QA-PROD-20261026-1620 ქსოვილი",
+          "snapshot": {
+            "name": "QA-PROD-20261026-1620 ქსოვილი",
+            "size": "",
+            "unit": "M",
+            "brand": "",
+            "color": "ცისფერი",
+            "category": "QA მასალა",
+            "imageUrl": "",
+            "description": "",
+            "characteristics": ""
+          },
+          "quantity": "10",
+          "defectiveQuantity": "0",
+          "remainingQuantity": "7",
+          "unitPurchasePrice": "8",
+          "allocatedCost": "20",
+          "totalCost": "100",
+          "remainingCost": "70",
+          "finalUnitCost": "10"
+        }
+      ]
+    }
+  ],
+  "productions": [
+    {
+      "id": "cmvpgl0s9002epsp7ktspjrj8",
+      "businessId": "cmu6z2ztm0004psp76b90kn2s",
+      "number": 3,
+      "name": "QA-PROD-20261026-1620",
+      "productionDate": "2026-10-25T20:00:00.000Z",
+      "status": "COMPLETED",
+      "note": null,
+      "overheadCost": "15",
+      "additionalCosts": [
+        {
+          "name": "QA შრომა",
+          "amount": "5.00"
+        }
+      ],
+      "materialsCost": "30",
+      "totalCost": "50",
+      "completedAt": "2026-10-26T16:18:17.016Z",
+      "createdById": "cmu6z1kwd0000psp7456g7hcj",
+      "updatedById": "cmu6z1kwd0000psp7456g7hcj",
+      "createdAt": "2026-10-26T16:16:11.578Z",
+      "updatedAt": "2026-10-26T16:24:20.676Z",
+      "inputs": [
+        {
+          "id": "cmvpgviab0034psp7w7gwvkkk",
+          "productionId": "cmvpgl0s9002epsp7ktspjrj8",
+          "materialId": "cmvpgiie7002cpsp79q5hfatw",
+          "name": "QA-PROD-20261026-1620 ქსოვილი",
+          "unit": "M",
+          "quantity": "3",
+          "totalCost": "30"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "cmvpgl14y002hpsp7xikj8eiu",
+          "productionId": "cmvpgl0s9002epsp7ktspjrj8",
+          "rowKey": "343d9834-3b60-42ca-845a-9a1b28f47a0e",
+          "active": true,
+          "inventoryItemId": "cmvpgnq06002qpsp7hp6nb9ni",
+          "stockLotId": "cmvpgnq2j002rpsp7fublmi5g",
+          "name": "QA-PROD-20261026-1620 ჩანთა",
+          "category": "QA პროდუქტი",
+          "brand": null,
+          "description": null,
+          "color": null,
+          "size": null,
+          "imageUrl": null,
+          "quantity": 5,
+          "costShare": "100",
+          "totalCost": "50",
+          "salePrice": "25",
+          "stockLot": {
+            "id": "cmvpgnq2j002rpsp7fublmi5g",
+            "inventoryItemId": "cmvpgnq06002qpsp7hp6nb9ni",
+            "purchaseItemId": null,
+            "sourcePurchaseItemId": null,
+            "quantity": 5,
+            "remainingQuantity": 3,
+            "defectiveQuantity": 0,
+            "remainingDefectiveQuantity": 0,
+            "writtenOffQuantity": 0,
+            "writtenOffDefectiveQuantity": 0,
+            "unitCost": "10.67",
+            "remainingCost": "32",
+            "availableAt": "2026-10-25T20:00:00.000Z",
+            "createdAt": "2026-10-26T16:18:17.659Z",
+            "updatedAt": "2026-10-26T16:24:21.514Z"
+          }
+        }
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "id": "cmvpgiie7002cpsp79q5hfatw",
+      "businessId": "cmu6z2ztm0004psp76b90kn2s",
+      "currentStock": "7",
+      "name": "QA-PROD-20261026-1620 ქსოვილი"
+    }
+  ],
+  "products": [
+    {
+      "id": "cmvpgnq06002qpsp7hp6nb9ni",
+      "businessId": "cmu6z2ztm0004psp76b90kn2s",
+      "currentStock": 3,
+      "productId": "cmvpgnpxp002ppsp72lhfj1x2"
+    }
+  ],
+  "orders": [
+    {
+      "id": "cmvpgqdph002wpsp70t1c1fd8",
+      "number": 19,
+      "clientRequestId": "067dba6b-9f98-4c2d-a9e4-892af9992599",
+      "notes": null,
+      "stockReturnedAt": null,
+      "deletedAt": null,
+      "publicAccessToken": "cfd22e34a0b674d2de53b5e0de387fc35611dea2eccd3f709c1ab67edd6e61f7",
+      "analyticsPendingCost": false,
+      "fulfillmentCycle": 0,
+      "deleteRequestedAt": null,
+      "invoiceVersion": 2,
+      "lastPrintedInvoiceVersion": null,
+      "invoicePrintedAt": null,
+      "businessId": "cmu6z2ztm0004psp76b90kn2s",
+      "customerId": "cmvpgqdix002vpsp7ve9acq1z",
+      "recipientPhone": "+995555000099",
+      "recipientFirstName": "QA-PROD-20261026-1620",
+      "recipientLastName": "QA",
+      "shippingAddress": "QA სატესტო მისამართი",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "courierFee": "0",
+      "createdAt": "2026-10-26T16:20:21.605Z",
+      "updatedAt": "2026-10-26T16:20:54.862Z",
+      "items": [
+        {
+          "id": "cmvpgqeym002xpsp7k8478khm",
+          "orderId": "cmvpgqdph002wpsp70t1c1fd8",
+          "fulfillmentCycle": 0,
+          "isActive": true,
+          "isCarriedOver": false,
+          "financialSourceItemId": null,
+          "stockRestoredAt": null,
+          "materialId": null,
+          "unit": "PCS",
+          "inventoryItemId": "cmvpgnq06002qpsp7hp6nb9ni",
+          "source": "INVENTORY",
+          "condition": "GOOD",
+          "name": "QA-PROD-20261026-1620 ჩანთა",
+          "quantity": "2",
+          "description": null,
+          "imageUrl": null,
+          "color": null,
+          "size": null,
+          "unitPrice": "25",
+          "unitCost": "9",
+          "totalCost": "18",
+          "createdAt": "2026-10-26T16:20:23.230Z",
+          "updatedAt": "2026-10-26T16:20:23.230Z",
+          "allocations": [
+            {
+              "id": "cmvpgqf19002ypsp7hra4pl80",
+              "orderItemId": "cmvpgqeym002xpsp7k8478khm",
+              "purchaseItemId": null,
+              "stockLotId": "cmvpgnq2j002rpsp7fublmi5g",
+              "quantity": 2,
+              "condition": "GOOD",
+              "unitCost": "9",
+              "totalCost": "18",
+              "returnedCost": "0",
+              "transferredQuantity": 0,
+              "transferredCost": "0",
+              "createdAt": "2026-10-26T16:20:23.325Z",
+              "returnedQuantity": 0
+            }
+          ]
+        }
+      ],
+      "financialEntries": [
+        {
+          "id": "cmvpgr3lc0031psp7eahpq4lz",
+          "businessId": "cmu6z2ztm0004psp76b90kn2s",
+          "orderId": "cmvpgqdph002wpsp70t1c1fd8",
+          "orderNumber": 19,
+          "fulfillmentCycle": 0,
+          "eventKey": "sale:cmvpgqdph002wpsp70t1c1fd8:0",
+          "kind": "SALE",
+          "productRevenueDelta": "50",
+          "deliveryRevenueDelta": "0",
+          "costOfGoodsDelta": "18",
+          "costComplete": true,
+          "occurredAt": "2026-10-26T16:20:54.953Z",
+          "createdAt": "2026-10-26T16:20:55.152Z",
+          "items": [
+            {
+              "id": "cmvpgr3np0032psp7fqfuxd31",
+              "entryId": "cmvpgr3lc0031psp7eahpq4lz",
+              "sourceOrderItemId": "cmvpgqeym002xpsp7k8478khm",
+              "name": "QA-PROD-20261026-1620 ჩანთა",
+              "quantityDelta": "2",
+              "revenueDelta": "50",
+              "costDelta": "18",
+              "costComplete": true
+            }
+          ]
+        }
+      ],
+      "payments": [
+        {
+          "id": "cmvpgqf9g0030psp7jqg5i6h8",
+          "orderId": "cmvpgqdph002wpsp70t1c1fd8",
+          "amount": "50",
+          "method": "CASH",
+          "bankName": null,
+          "createdAt": "2026-10-26T16:20:23.620Z"
+        }
+      ]
+    }
+  ]
+}

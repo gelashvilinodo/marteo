@@ -1,4 +1,5 @@
 "use client";
+import useTransientNotice from '@/components/shared/useTransientNotice';
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
@@ -41,6 +42,7 @@ export default function ProfileSettingsForm({
     const [errorField, setErrorField] =
         useState<ProfileSettingsField>("form");
     const [notice, setNotice] = useState("");
+    useTransientNotice(notice, setNotice);
 
     const running = useRef(false);
     const mounted = useRef(false);

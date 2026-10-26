@@ -1,3 +1,4 @@
+import { rateLimitResponse } from "@/lib/security/rate-limit";
 import { randomInt } from "crypto";
 
 import { createPrismaClient } from "@/lib/prisma";
@@ -193,7 +194,9 @@ export async function POST(request: Request) {
                 code,
                 expiresAt: delivery.expiresAt,
             });
-        } catch {
+        } catch (deliveryError) {
+            const limited = rateLimitResponse(deliveryError);
+            if (limited) return limited;
             return emailChangeJson(
                 {
                     success: false,

@@ -1,3 +1,4 @@
+import { rateLimitResponse } from "@/lib/security/rate-limit";
 import { NextResponse } from "next/server";
 import { createHash, randomInt } from "crypto";
 
@@ -164,7 +165,9 @@ export async function POST(request: Request) {
                 message:
                     `MARTEO: თქვენი ტელეფონის დასადასტურებელი კოდია ${code}`,
             });
-        } catch {
+        } catch (deliveryError) {
+            const limited = rateLimitResponse(deliveryError);
+            if (limited) return limited;
             // Keep the cooldown if delivery failed or is uncertain.
             return errorResponse(
                 "SMS-ის გაგზავნა ვერ დადასტურდა. შეამოწმეთ შეტყობინებები ან სცადეთ ხელახლა 60 წამში.",

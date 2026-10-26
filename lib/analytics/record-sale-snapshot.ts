@@ -1,3 +1,4 @@
+import { qvalue, validQuantity } from "@/lib/orders/quantity";
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
@@ -94,7 +95,7 @@ export async function recordSaleSnapshot(
 
         const previousQuantity = Number(before?.quantity ?? "0");
 
-        if (!Number.isSafeInteger(previousQuantity)) {
+        if (!validQuantity(previousQuantity)) {
             throw new OrderValidationError(
                 "ფინანსური ისტორიის რაოდენობა არასწორია.",
                 409,
@@ -102,7 +103,7 @@ export async function recordSaleSnapshot(
         }
 
         const quantityDelta =
-            (after?.quantity ?? 0) - previousQuantity;
+            qvalue((after?.quantity ?? 0) - previousQuantity);
 
         const revenueDelta = (
             after?.revenue ?? new Prisma.Decimal(0)

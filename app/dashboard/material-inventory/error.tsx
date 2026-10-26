@@ -1,0 +1,2 @@
+'use client';
+export default function Error({reset}:{reset:()=>void}){return <main className="min-w-0 p-4 sm:p-6 lg:p-8"><div role="alert" className="mx-auto max-w-7xl rounded-2xl border border-border bg-surface p-6"><h1 className="text-lg font-semibold text-text-primary">მარაგი ვერ ჩაიტვირთა</h1><p className="mt-2 text-sm text-text-secondary">კავშირი დროებით შეფერხდა. სცადე ხელახლა.</p><button type="button" onClick={reset} className="mt-4 min-h-11 rounded-xl bg-accent px-4 text-sm text-white">ხელახლა ცდა</button></div></main>;}

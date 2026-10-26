@@ -1,0 +1,2 @@
+'use client';
+export default function Error({reset}:{reset:()=>void}){return <main className="p-4 sm:p-6 lg:p-8"><div role="alert" className="rounded-2xl border border-border bg-surface p-5"><h1 className="text-lg font-semibold text-text-primary">წარმოება ვერ ჩაიტვირთა</h1><button type="button" onClick={reset} className="mt-4 min-h-11 rounded-xl bg-accent px-4 text-sm text-white">ხელახლა ცდა</button></div></main>;}
