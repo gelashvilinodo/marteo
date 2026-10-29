@@ -1,8 +1,9 @@
+import { guardMutation } from "@/lib/security/mutation-request";
 import { NextResponse } from "next/server";
 import { createPrismaClient } from "@/lib/prisma";
 import { consumeRegistrationOtp, readOtpRequest, RegistrationError, registrationErrorResponse } from "@/lib/auth/registration-otp";
 
-export async function POST(request: Request) {
+async function post(request: Request) {
     const input = await readOtpRequest(request);
     if (!input) return NextResponse.json({ error: "დადასტურების მონაცემები არასწორია." }, { status: 400 });
     let prisma: ReturnType<typeof createPrismaClient> | undefined;
@@ -28,3 +29,5 @@ export async function POST(request: Request) {
         await prisma?.$disconnect();
     }
 }
+
+export const POST = guardMutation(post, "json");

@@ -16,6 +16,7 @@ type DashboardShellProps = {
     businessLogoUrl: string | null;
     userName: string;
     userEmail: string;
+    isPlatformAdmin?: boolean;
 };
 
 export default function DashboardShell({
@@ -25,6 +26,7 @@ export default function DashboardShell({
     businessLogoUrl,
     userName,
     userEmail,
+    isPlatformAdmin = false,
 }: DashboardShellProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -92,6 +94,7 @@ export default function DashboardShell({
                     businessLogoUrl={businessLogoUrl}
                     userName={userName}
                     userEmail={userEmail}
+                    isPlatformAdmin={isPlatformAdmin}
                 />
 
                 <NewOrderProvider>

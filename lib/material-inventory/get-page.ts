@@ -9,7 +9,10 @@ export async function getMaterialInventoryPage(businessId:string,params:Params){
     const db=createPrismaClient();
     try{return await db.$transaction(tx=>readMaterialInventoryPage(tx,businessId,params),{isolationLevel:'RepeatableRead',maxWait:10000,timeout:20000});}finally{await db.$disconnect();}
 }
-export async function readMaterialInventoryPage(tx:Prisma.TransactionClient,businessId:string,params:Params,pageSize=20){
+type MaterialStocktakeData = {count:number;filter:string;items:Array<Pick<MaterialInventoryData['items'][number], 'id'|'name'|'brand'|'category'|'color'|'size'|'characteristics'|'unit'|'currentStock'|'defectiveStock'|'inTransit'>>};
+export function readMaterialInventoryPage(tx:Prisma.TransactionClient,businessId:string,params:Params,pageSize:number,purpose:'stocktake'):Promise<MaterialStocktakeData>;
+export function readMaterialInventoryPage(tx:Prisma.TransactionClient,businessId:string,params:Params,pageSize?:number):Promise<MaterialInventoryData>;
+export async function readMaterialInventoryPage(tx:Prisma.TransactionClient,businessId:string,params:Params,pageSize=20,purpose:'page'|'stocktake'='page'):Promise<MaterialInventoryData|MaterialStocktakeData>{
     const q=value(params,'q').slice(0,150),filter=['available','exhausted','transit','defective'].includes(value(params,'filter'))?value(params,'filter'):'all';
     const sort=value(params,'sort')==='newest'?'newest':'name';
 
@@ -22,22 +25,25 @@ export async function readMaterialInventoryPage(tx:Prisma.TransactionClient,busi
             ...(q?[{OR:['name','brand','category','color','size','characteristics'].map(key=>({[key]:{contains:q,mode:'insensitive'}}))} as Prisma.MaterialWhereInput]:[]),
             ...(filter==='available'?[{currentStock:{gt:0}}]:filter==='exhausted'?[exhaustedWhere]:filter==='transit'?[{purchaseItems:{some:transit}}]:filter==='defective'?[{purchaseItems:{some:defective}}]:[])
         ]};
-        const [count,all,available,exhausted,inTransit,withDefects]=await Promise.all([
+        const [count,all,available,exhausted,inTransit,withDefects]=purpose==='stocktake'? [await tx.material.count({where}),0,0,0,0,0] : await Promise.all([
             tx.material.count({where}),tx.material.count({where:active}),tx.material.count({where:{AND:[active,{currentStock:{gt:0}}]}}),tx.material.count({where:{AND:[active,exhaustedWhere]}}),tx.material.count({where:{AND:[active,{purchaseItems:{some:transit}}]}}),tx.material.count({where:{AND:[active,{purchaseItems:{some:defective}}]}})
         ]);
         const pages=Math.max(1,Math.ceil(count/pageSize)),page=Math.min(pageNumber(value(params,'page')),pages);
-        const materials=await tx.material.findMany({where,orderBy:sort==='newest'?[{createdAt:'desc'},{id:'asc'}]:[{name:'asc'},{id:'asc'}],take:pageSize,skip:(page-1)*pageSize});
+        const materials=await tx.material.findMany({where,orderBy:sort==='newest'?[{createdAt:'desc'},{id:'asc'}]:[{name:'asc'},{id:'asc'}],take:pageSize,skip:(page-1)*pageSize,select:purpose==='stocktake'?{id:true,name:true,brand:true,category:true,color:true,size:true,characteristics:true,unit:true,currentStock:true}:undefined});
+        const valuation=purpose==='stocktake'?Prisma.sql`0::numeric AS good, 0::numeric AS "stockValue", 0::bigint AS "costKinds"`:Prisma.sql`COALESCE(SUM(GREATEST(i."remainingQuantity"-i."defectiveQuantity",0)) FILTER (WHERE p."receiptStatus"='RECEIVED'),0) AS good,
+COALESCE(SUM(CASE WHEN i."remainingQuantity">0 THEN i."remainingCost"/i."remainingQuantity"*GREATEST(i."remainingQuantity"-i."defectiveQuantity",0) ELSE 0 END) FILTER (WHERE p."receiptStatus"='RECEIVED'),0) AS "stockValue",
+COUNT(DISTINCT i."finalUnitCost") FILTER (WHERE p."receiptStatus"='RECEIVED' AND i."remainingQuantity">i."defectiveQuantity") AS "costKinds"`;
         const totals=materials.length?await tx.$queryRaw<Array<{materialId:string;good:Prisma.Decimal;defective:Prisma.Decimal;transit:Prisma.Decimal;stockValue:Prisma.Decimal;costKinds:bigint}>>(Prisma.sql`
             SELECT i."materialId",
-              COALESCE(SUM(GREATEST(i."remainingQuantity"-i."defectiveQuantity",0)) FILTER (WHERE p."receiptStatus"='RECEIVED'),0) AS good,
               COALESCE(SUM(LEAST(i."remainingQuantity",i."defectiveQuantity")) FILTER (WHERE p."receiptStatus"='RECEIVED'),0) AS defective,
               COALESCE(SUM(GREATEST(i."remainingQuantity"-i."defectiveQuantity",0)) FILTER (WHERE p."receiptStatus"='IN_TRANSIT'),0) AS transit,
-              COALESCE(SUM(CASE WHEN i."remainingQuantity">0 THEN i."remainingCost"/i."remainingQuantity"*GREATEST(i."remainingQuantity"-i."defectiveQuantity",0) ELSE 0 END) FILTER (WHERE p."receiptStatus"='RECEIVED'),0) AS "stockValue",
-              COUNT(DISTINCT i."finalUnitCost") FILTER (WHERE p."receiptStatus"='RECEIVED' AND i."remainingQuantity">i."defectiveQuantity") AS "costKinds"
+              ${valuation}
             FROM "MaterialPurchaseItem" i JOIN "MaterialPurchase" p ON p.id=i."purchaseId"
             WHERE p."businessId"=${businessId} AND p."deletedAt" IS NULL AND i."materialId" IN (${Prisma.join(materials.map(m=>m.id))}) GROUP BY i."materialId"
         `):[];
-        const items=materials.map(m=>{const t=totals.find(t=>t.materialId===m.id),good=t?.good??new Prisma.Decimal(0);return {...m,defectiveStock:t?.defective.toString()??'0',inTransit:t?.transit.toString()??'0',stockValue:good.gt(0)?t!.stockValue.toFixed(2):null,unitCost:good.gt(0)?t!.stockValue.div(good).toFixed(6):null,weighted:Number(t?.costKinds??0)>1};});
+        const totalsById=new Map(totals.map(t=>[t.materialId,t]));
+        const items=materials.map(m=>{const t=totalsById.get(m.id);if(purpose==='stocktake')return {...m,defectiveStock:t?.defective.toString()??'0',inTransit:t?.transit.toString()??'0'};const good=t?.good??new Prisma.Decimal(0);return {...m,defectiveStock:t?.defective.toString()??'0',inTransit:t?.transit.toString()??'0',stockValue:good.gt(0)?t!.stockValue.toFixed(2):null,unitCost:good.gt(0)?t!.stockValue.div(good).toFixed(6):null,weighted:Number(t?.costKinds??0)>1};});
+        if(purpose==='stocktake')return JSON.parse(JSON.stringify({count,filter,items})) as MaterialStocktakeData;
         const selected=value(params,'material');
         const material=selected?await tx.material.findFirst({where:{AND:[active,{id:selected}]}}):null;
         const lotWhere:Prisma.MaterialPurchaseItemWhereInput={materialId:material?.id??'',purchase:{businessId,deletedAt:null}};

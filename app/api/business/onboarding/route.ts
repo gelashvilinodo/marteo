@@ -1,10 +1,12 @@
+import { isOwnedStorageImage } from "@/lib/security/storage-image";
+import { guardMutation } from "@/lib/security/mutation-request";
 import { isBusinessMode } from "@/lib/business/business-mode";
 import { NextResponse } from "next/server";
 
 import { createPrismaClient } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
 
-export async function POST(request: Request) {
+async function post(request: Request) {
   try {
     const prisma = createPrismaClient();
     const user = await getCurrentUser();
@@ -40,6 +42,10 @@ export async function POST(request: Request) {
       typeof body.logoUrl === "string"
         ? body.logoUrl.trim()
         : "";
+
+    if (logoUrl && !isOwnedStorageImage(logoUrl, "business-logos", user.id)) {
+      return NextResponse.json({ error: "ლოგოს მისამართი არასწორია. ატვირთეთ ფოტო ხელახლა." }, { status: 422 });
+    }
 
     if (!name) {
       return NextResponse.json(
@@ -139,3 +145,4 @@ export async function POST(request: Request) {
     );
   }
 }
+export const POST = guardMutation(post, "json");

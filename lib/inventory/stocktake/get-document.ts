@@ -16,11 +16,11 @@ export async function getStocktakeDocument(tx:Prisma.TransactionClient,businessI
     const parts:string[]=[];if(filters.q)parts.push('ძებნა: '+filters.q);for(const [key,label]of [['category','კატეგორია'],['color','ფერი'],['size','ზომა']])if(filters[key])parts.push(label+': '+filters[key]);
     let rows:StocktakeDocument['rows'];let count:number;
     if(kind==='products'){
-        const data=await getInventoryPage(tx,businessId,filters,STOCKTAKE_MAX_ROWS+1);count=data.totalProducts;
+        const data=await getInventoryPage(tx,businessId,filters,STOCKTAKE_MAX_ROWS+1,'stocktake');count=data.totalProducts;
         const label={all:'',low:'დაბალი მარაგი',exhausted:'ამოწურული',defective:'წუნდებული'}[data.filter];if(label)parts.push(label);
         rows=data.products.map(p=>({id:p.id,name:p.name,details:[p.sku,p.brand,p.category,p.color,p.size].filter(Boolean).join(' · '),unit:'ცალი',quantity:String(p.totalStock),defective:String(p.defectiveStock)}));
     }else{
-        const data=await readMaterialInventoryPage(tx,businessId,filters,STOCKTAKE_MAX_ROWS+1);count=data.count;
+        const data=await readMaterialInventoryPage(tx,businessId,filters,STOCKTAKE_MAX_ROWS+1,'stocktake');count=data.count;
         const label={all:'',available:'ხელმისაწვდომი',exhausted:'ამოწურული',transit:'გზაში',defective:'დეფექტური'}[data.filter];if(label)parts.push(label);
         rows=data.items.map(m=>({id:m.id,name:m.name,details:[m.brand,m.category,m.color,m.size,m.characteristics,Number(m.inTransit)>0?`გზაში: ${m.inTransit}`:null].filter(Boolean).join(' · '),unit:UNITS.find(([key])=>key===m.unit)?.[1]??m.unit,quantity:new Prisma.Decimal(m.currentStock).plus(m.defectiveStock).toString(),defective:m.defectiveStock}));
     }

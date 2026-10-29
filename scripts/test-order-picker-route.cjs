@@ -1,0 +1,15 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Isolated access and picker regression checks. */
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),ts=require('typescript');
+let context,reads=0,opened=0,closed=0,fail=false,materialCalls=0;
+const reader={async $disconnect(){closed++}};
+const exp={};vm.runInNewContext(ts.transpileModule(fs.readFileSync('app/api/orders/inventory/route.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:exp,Response,URL,console:{error(){}},require(id){if(id==='@/lib/auth/pg-dashboard-context')return {getPgDashboardContext:async()=>{reads++;return context}};if(id==='@/lib/business/business-mode')return {hasBusinessFeature:(m)=>m==='HYBRID'||m==='MANUFACTURING',businessFeatureMessage:()=> 'Mode denied'};if(id==='@/lib/database/pg-reader')return {createPgReader(){opened++;return reader}};if(id==='@/lib/orders/get-product-picker')return {getProductPicker:async(t,b,q,page)=>{assert.equal(t,reader);assert.equal(b,'own');assert.equal(q,'blue cotton');assert.equal(page,999999999);if(fail)throw Error('private SQL');return {currentPage:2,products:[{goodStock:5,defectiveStock:2,salePrice:'15.00'}]}}};if(id==='@/lib/orders/get-material-picker')return {getMaterialPicker:async(t,b,q,page)=>{assert.equal(t,reader);assert.equal(b,'own');assert.equal(q,'blue cotton');assert.equal(page,1000000);materialCalls++;return {products:[],totalProducts:0,totalPages:1,currentPage:1}}};throw Error(id)}});
+const req=kind=>new Request('https://marteo.ge/api/orders/inventory?q=blue%20cotton&page=999999999&businessId=foreign&kind='+kind);
+(async()=>{
+context=null;assert.equal((await exp.GET(req('products'))).status,401);assert.equal(opened,0);
+context={membership:null};assert.equal((await exp.GET(req('products'))).status,403);assert.equal(opened,0);
+context={membership:{businessId:'own',business:{mode:'IMPORT'}}};assert.equal((await exp.GET(req('materials'))).status,403);assert.equal(opened,0);
+let before=reads,r=await exp.GET(req('products'));assert.equal(reads-before,1);assert.equal(r.status,200);assert.equal(r.headers.get('cache-control'),'private, no-store');let body=await r.json();assert.equal(body.currentPage,2);assert.equal(body.products[0].goodStock,5);assert.equal(body.products[0].defectiveStock,2);assert.equal(body.products[0].salePrice,'15.00');assert.equal(opened,closed);
+for(const mode of ['MANUFACTURING','HYBRID']){context.membership.business.mode=mode;before=reads;r=await exp.GET(req('materials'));assert.equal(r.status,200);assert.equal(reads-before,1);assert.equal(opened,closed)}assert.equal(materialCalls,2);
+fail=true;r=await exp.GET(req('products'));assert.equal(r.status,500);assert.ok(!JSON.stringify(await r.json()).includes('private'));assert.equal(opened,closed);
+console.log('PASS: anonymous, missing membership, import denial, single context, tenant isolation, product search/pagination/stock, both manufacturing modes, error cleanup.');
+})().catch(e=>{console.error(e);process.exitCode=1});

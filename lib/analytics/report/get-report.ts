@@ -1,7 +1,7 @@
 import 'server-only';
 import { Prisma } from '@/generated/prisma/client';
 import { getAnalyticsPage } from '../get-analytics-page';
-import { getExpenseBreakdown } from '../get-expense-breakdown';
+import { expenseCategories } from '../expense-categories';
 import { resolveOrdersPeriod } from '@/lib/orders/orders-period';
 import type { AccountantReport, ReportSection } from './types';
 export class ReportError extends Error { constructor(message: string, public status = 422) { super(message); } }
@@ -10,20 +10,31 @@ export async function getAccountantReport(tx: Prisma.TransactionClient, business
     const range = resolveOrdersPeriod('custom', params.get('from') ?? '', params.get('to') ?? '');
     if (range.error) throw new ReportError('მიუთითე სწორი საწყისი და საბოლოო თარიღი.');
     const dates = { gte: range.start, lt: range.end };
-    const business = await tx.business.findUniqueOrThrow({ where: { id: businessId }, select: { name: true } });
+    const businessName = (await tx.business.findUniqueOrThrow({ where: { id: businessId }, select: { name: true } })).name;
     const data = await getAnalyticsPage(tx, businessId, { period: 'custom', from: range.from, to: range.to });
-    const expenses = await getExpenseBreakdown(tx, businessId, range.from, range.to);
     // Never truncate a financial report silently. Each ledger is bounded independently.
-    const entries = await tx.orderFinancialEntry.findMany({ where: { businessId, occurredAt: dates }, orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }], take: MAX + 1, include: { items: true, order: { select: { analyticsPendingCost: true } } } });
-    const purchases = await tx.purchase.findMany({ where: { businessId, purchaseDate: dates }, orderBy: [{ purchaseDate: 'asc' }, { number: 'asc' }], take: MAX + 1, include: { items: true } });
-    const materials = await tx.materialPurchase.findMany({ where: { businessId, deletedAt: null, purchaseDate: dates }, orderBy: [{ purchaseDate: 'asc' }, { number: 'asc' }], take: MAX + 1, include: { items: true } });
-    const productions = await tx.production.findMany({ where: { businessId, productionDate: dates }, orderBy: [{ productionDate: 'asc' }, { number: 'asc' }], take: MAX + 1, include: { outputs: true } });
-    const payments = await tx.orderPayment.findMany({ where: { order: { businessId }, createdAt: dates }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: MAX + 1, include: { order: { select: { number: true, analyticsPendingCost: true } } } });
-    const writeOffs = await tx.inventoryWriteOff.findMany({ where: { businessId, createdAt: dates }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: MAX + 1 });
-    const expenseRows = await tx.expense.findMany({ where: { businessId, expenseDate: dates }, orderBy: [{ expenseDate: 'asc' }, { id: 'asc' }], take: MAX + 1 });
+    const entries = await tx.orderFinancialEntry.findMany({ where: { businessId, occurredAt: dates }, orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }], take: MAX + 1, select: { occurredAt: true, orderNumber: true, kind: true, productRevenueDelta: true, costOfGoodsDelta: true, costComplete: true, items: { select: { name: true, quantityDelta: true } }, order: { select: { analyticsPendingCost: true } } } });
+    const purchaseFields = { purchaseDate: true, number: true, name: true, country: true, shippingCost: true, customsCost: true, otherCost: true, receiptStatus: true, items: { select: { unitPurchasePrice: true, quantity: true } } } as const;
+    const purchases = await tx.purchase.findMany({ where: { businessId, purchaseDate: dates }, orderBy: [{ purchaseDate: 'asc' }, { number: 'asc' }], take: MAX + 1, select: purchaseFields });
+    const materials = await tx.materialPurchase.findMany({ where: { businessId, deletedAt: null, purchaseDate: dates }, orderBy: [{ purchaseDate: 'asc' }, { number: 'asc' }], take: MAX + 1, select: purchaseFields });
+    const productions = await tx.production.findMany({ where: { businessId, productionDate: dates }, orderBy: [{ productionDate: 'asc' }, { number: 'asc' }], take: MAX + 1, select: { productionDate: true, number: true, name: true, status: true, materialsCost: true, overheadCost: true, totalCost: true } });
+    const payments = await tx.orderPayment.findMany({ where: { order: { businessId }, createdAt: dates }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: MAX + 1, select: { createdAt: true, method: true, amount: true, order: { select: { number: true, analyticsPendingCost: true } } } });
+    const writeOffs = await tx.inventoryWriteOff.findMany({ where: { businessId, createdAt: dates }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: MAX + 1, select: { createdAt: true, name: true, color: true, size: true, quantity: true, totalCost: true } });
+    const expenseRows = await tx.expense.findMany({ where: { businessId, expenseDate: dates }, orderBy: [{ expenseDate: 'asc' }, { id: 'asc' }], take: MAX + 1, select: { expenseDate: true, title: true, category: true, note: true, amount: true } });
     if ([entries, purchases, materials, productions, expenseRows, payments, writeOffs].some(rows => rows.length > MAX)) throw new ReportError('ანგარიში ძალიან დიდია. აირჩიე მოკლე პერიოდი (ერთ განყოფილებაში მაქსიმუმ 10 000 ჩანაწერი).');
     const money = (v: string | number | Prisma.Decimal) => new Prisma.Decimal(v).toFixed(2) + ' ₾';
-    const date = (v: Date) => new Intl.DateTimeFormat('ka-GE', { timeZone: 'Asia/Tbilisi', dateStyle: 'short' }).format(v);
+    const formatter = new Intl.DateTimeFormat('ka-GE', { timeZone: 'Asia/Tbilisi', dateStyle: 'short' });
+    const date = (v: Date) => formatter.format(v);
+    // These ledgers are already loaded in the same snapshot: avoid scanning
+    // financial entries/expenses/write-offs again just for category labels.
+    // 10,000 Decimal(18,2) write-offs can exceed the default 20-digit precision.
+    const TotalDecimal = Prisma.Decimal.clone({ precision: 40 });
+    const categoryTotals = new Map<string, Prisma.Decimal>();
+    for (const row of expenseRows) categoryTotals.set(row.category, (categoryTotals.get(row.category) ?? new TotalDecimal(0)).plus(row.amount));
+    categoryTotals.set('INVENTORY_WRITE_OFF', writeOffs.reduce((sum, row) => sum.plus(row.totalCost ?? 0), new TotalDecimal(0)));
+    const expenses = { segments: [...categoryTotals].filter(([, amount]) => !amount.isZero()).map(([id, amount]) => ({
+        id, amount: amount.toFixed(2), label: id === 'INVENTORY_WRITE_OFF' ? 'მარაგის ჩამოწერა' : expenseCategories.find(category => category.value === id)?.label ?? 'სხვა ხარჯი',
+    })) };
     const gross = data.profitReady ? new Prisma.Decimal(data.sales).minus(data.costOfGoods) : null;
     const warnings = [
         'ანგარიში ეფუძნება მართეოში აღრიცხულ მონაცემებს. ეს არ არის საგადასახადო დეკლარაცია. გადასახადები ავტომატურად არ გამოითვლება; ხელით აღრიცხული გადასახადი სხვა ხარჯებში შედის.',
@@ -48,7 +59,7 @@ export async function getAccountantReport(tx: Prisma.TransactionClient, business
         { title: 'წარმოება', columns: ['თარიღი / წარმოება', 'სახელი / სტატუსი', 'მასალების ხარჯი', 'სავარაუდო დანამატი', 'სრული ღირებულება'], rows: productions.map(p => [date(p.productionDate) + ' · #' + p.number, (p.name || 'წარმოება') + ' · ' + (p.status === 'COMPLETED' ? 'დასრულებული' : 'მიმდინარე'), money(p.materialsCost), money(p.overheadCost), money(p.totalCost)]), note: 'წარმოება შერჩეულია წარმოების თარიღით. სავარაუდო დანამატი დაუზუსტებელი საწარმოო ხარჯია. სრული ღირებულება დამატებით პირდაპირ ხარჯებსაც მოიცავს.' },
         { title: 'აღრიცხული ხარჯების დეტალები', columns: ['თარიღი', 'დასახელება', 'შენიშვნა', 'თანხა'], rows: expenseRows.map(e => [date(e.expenseDate), e.title || expenses.segments.find(s => s.id === e.category)?.label || e.category, e.note || '', money(e.amount)]) },
     ];
-    return { businessName: business.name, from: range.from, to: range.to, createdAt: new Date().toISOString(), warnings, highlights: [
+    return { businessName, from: range.from, to: range.to, createdAt: new Date().toISOString(), warnings, highlights: [
         { label: 'გაყიდვები', value: money(data.sales), description: 'დაბრუნებებისა და შესწორებების შემდეგ' },
         { label: 'მთლიანი მოგება', value: gross ? money(gross) : 'დასაზუსტებელია', description: 'გაყიდვები − გაყიდულის თვითღირებულება' },
         { label: 'სუფთა მოგება', value: data.profit === null ? 'დასაზუსტებელია' : money(data.profit), description: 'მთლიანი მოგება − სხვა აღრიცხული ხარჯები' },

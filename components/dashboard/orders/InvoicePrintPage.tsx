@@ -231,9 +231,9 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
         setError("");
 
         try {
-            const { createInvoicePdf } = await import(
+            const { createInvoicePdf } = await (typeof window !== "undefined" ? import(
                 "@/lib/orders/create-invoice-pdf"
-            );
+            ) : Promise.reject(new Error("PDF generation requires a browser")));
 
             const blob = await createInvoicePdf(invoice, paper);
             const url = URL.createObjectURL(blob);

@@ -1,15 +1,8 @@
-import { getCurrentUser } from "@/lib/auth/session";
-import { getCurrentBusiness } from "@/lib/auth/current-business";
-import { createPrismaClient } from "@/lib/prisma";
+import { cookies } from "next/headers";
+import { readCourierReminder } from "@/lib/orders/read-courier-reminder";
 import {
     OrderValidationError,
 } from "@/lib/orders/order-validation-error";
-import {
-    getCourierReminder,
-} from "@/lib/orders/get-courier-reminder";
-import {
-    settleCourierReminder,
-} from "@/lib/orders/settle-courier-reminder";
 
 function json(data: unknown, status = 200) {
     return Response.json(data, {
@@ -38,6 +31,10 @@ function failure(cause: unknown) {
 }
 
 async function getContext() {
+    const [{ getCurrentUser }, { getCurrentBusiness }] = await Promise.all([
+        import("@/lib/auth/session"),
+        import("@/lib/auth/current-business"),
+    ]);
     const user = await getCurrentUser();
 
     if (!user) {
@@ -124,53 +121,8 @@ async function readBody(
 
 export async function GET() {
     try {
-        const context = await getContext();
-        const prisma = createPrismaClient();
-
-        try {
-            const result = await prisma.$transaction(
-                async tx => {
-                    const access =
-                        await tx.businessMembership.findUnique({
-                            where: {
-                                userId_businessId: context,
-                            },
-                            select: {
-                                role: true,
-                            },
-                        });
-
-                    if (!access) {
-                        throw new OrderValidationError(
-                            "ამ ბიზნესზე წვდომა არ გაქვს.",
-                            403,
-                        );
-                    }
-
-                    return {
-                        reminder: await getCourierReminder(
-                            tx,
-                            context.businessId,
-                        ),
-                        canManage: ["OWNER", "ADMIN"].includes(
-                            access.role,
-                        ),
-                    };
-                },
-                {
-                    isolationLevel: "RepeatableRead",
-                    maxWait: 10_000,
-                    timeout: 20_000,
-                },
-            );
-
-            return json({
-                success: true,
-                ...result,
-            });
-        } finally {
-            await prisma.$disconnect();
-        }
+        const token = (await cookies()).get("marteo_session")?.value;
+        return json({ success: true, ...await readCourierReminder(token) });
     } catch (cause: unknown) {
         return failure(cause);
     }
@@ -180,6 +132,11 @@ export async function POST(request: Request) {
     try {
         const context = await getContext();
         const body = await readBody(request);
+        // Settlement is the write path; do not initialize its ORM for GETs.
+        const [{ createPrismaClient }, { settleCourierReminder }] = await Promise.all([
+            import("@/lib/prisma"),
+            import("@/lib/orders/settle-courier-reminder"),
+        ]);
         const prisma = createPrismaClient();
 
         try {

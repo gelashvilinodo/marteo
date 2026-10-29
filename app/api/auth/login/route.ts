@@ -1,3 +1,4 @@
+import { guardMutation } from "@/lib/security/mutation-request";
 import { NextResponse } from "next/server";
 import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
@@ -7,6 +8,8 @@ import { createPrismaClient } from "@/lib/prisma";
 import { reserveLimits, requestIp, rateLimitResponse } from "@/lib/security/rate-limit";
 
 const SESSION_DURATION_DAYS = 30;
+// Match registration's bcrypt cost even when an account does not exist.
+const DUMMY_PASSWORD_HASH = "$2b$12$mcKp3BjwNCDbYmxmx/w/CuwumeMqzXCsU3YgwFrypd92wS98D2AEW";
 
 function hashSessionToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -16,7 +19,7 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-export async function POST(request: Request) {
+async function post(request: Request) {
   let prisma: ReturnType<typeof createPrismaClient> | undefined;
   try {
     prisma = createPrismaClient();
@@ -60,21 +63,12 @@ export async function POST(request: Request) {
       },
     });
 
-    if (!user) {
-      return NextResponse.json(
-        {
-          error: "ელფოსტა ან პაროლი არასწორია.",
-        },
-        { status: 401 }
-      );
-    }
-
     const passwordValid = await bcrypt.compare(
       password,
-      user.password
+      user?.password ?? DUMMY_PASSWORD_HASH
     );
 
-    if (!passwordValid) {
+    if (!user || !passwordValid) {
       return NextResponse.json(
         {
           error: "ელფოსტა ან პაროლი არასწორია.",
@@ -143,3 +137,4 @@ export async function POST(request: Request) {
       await prisma?.$disconnect();
   }
 }
+export const POST = guardMutation(post, "json");

@@ -1,3 +1,4 @@
+import { isOwnedStorageImage } from "@/lib/security/storage-image";
 import { qvalue } from "@/lib/orders/quantity";
 import { numericQuantities, type NumericQuantities } from "@/lib/orders/quantity";
 import "server-only";
@@ -116,25 +117,7 @@ export async function createOrderItems(
                 : null;
 
         if (imageUrl) {
-            const allowedPrefix =
-                "https://uwxmbyweyvnekzzecroz.supabase.co" +
-                "/storage/v1/object/public/product-images/" +
-                `${businessId}/`;
-
-            let valid = false;
-
-            try {
-                const url = new URL(imageUrl);
-                const filename = url.pathname.split("/").at(-1) ?? "";
-
-                valid =
-                    imageUrl.startsWith(allowedPrefix) &&
-                    /^[0-9a-f-]{36}(\.full)?\.(png|jpg|webp)$/.test(filename) &&
-                    !url.search &&
-                    !url.hash;
-            } catch {
-                valid = false;
-            }
+            const valid = isOwnedStorageImage(imageUrl, "product-images", businessId);
 
             if (!valid) {
                 fail(

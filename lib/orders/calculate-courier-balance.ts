@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma/client";
+import { Decimal } from "@prisma/client-runtime-utils";
 
 export type CourierBalanceOrder = {
     courierFee: string;
@@ -19,7 +19,7 @@ function money(
     value: string,
     label: string,
     allowNegative = false,
-): Prisma.Decimal {
+): Decimal {
     if (
         typeof value !== "string" ||
         !/^-?\d+(?:\.\d{1,2})?$/.test(value)
@@ -27,7 +27,7 @@ function money(
         throw new Error(`${label}: თანხის ფორმატი არასწორია.`);
     }
 
-    const result = new Prisma.Decimal(value);
+    const result = new Decimal(value);
 
     if (!allowNegative && result.isNegative()) {
         throw new Error(`${label}: თანხა უარყოფითი ვერ იქნება.`);
@@ -40,10 +40,10 @@ export function calculateCourierBalance(input: {
     orders: readonly CourierBalanceOrder[];
     settlements: readonly string[];
 }): CourierBalance {
-    let courierFees = new Prisma.Decimal(0);
-    let cashReceived = new Prisma.Decimal(0);
-    let paidToCourier = new Prisma.Decimal(0);
-    let receivedFromCourier = new Prisma.Decimal(0);
+    let courierFees = new Decimal(0);
+    let cashReceived = new Decimal(0);
+    let paidToCourier = new Decimal(0);
+    let receivedFromCourier = new Decimal(0);
 
     for (const order of input.orders) {
         const fee = money(

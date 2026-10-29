@@ -1,3 +1,4 @@
+import { guardMutation } from "@/lib/security/mutation-request";
 import { NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { cookies } from "next/headers";
@@ -8,9 +9,10 @@ function hashSessionToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-export async function POST() {
+async function post() {
+  let prisma: ReturnType<typeof createPrismaClient> | undefined;
   try {
-    const prisma = createPrismaClient();
+    prisma = createPrismaClient();
 
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get("marteo_session")?.value;
@@ -46,3 +48,4 @@ export async function POST() {
     );
   }
 }
+export const POST = guardMutation(post, "empty");

@@ -1,0 +1,17 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Isolated route authorization and lifecycle regression; no real DB. */
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),ts=require('typescript');
+let context,contextReads=0,opened=0,closed=0,reportCalls=0,mode='ok';
+class ReportError extends Error{constructor(message,status=422){super(message);this.status=status}}
+const exportsObject={};
+vm.runInNewContext(ts.transpileModule(fs.readFileSync('app/api/analytics/report/route.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:exportsObject,Response,URL,console:{error(){}},require(id){if(id==='@/lib/auth/pg-dashboard-context')return {getPgDashboardContext:async()=>{contextReads++;if(mode==='auth-error')throw Error('private connection details');return context}};if(id==='@/lib/prisma')return {createPrismaClient(){opened++;return {async $transaction(fn,options){assert.equal(options.isolationLevel,'RepeatableRead');assert.equal(options.timeout,30000);return fn({fixture:true})},async $disconnect(){closed++}}}};if(id==='@/lib/analytics/report/get-report')return {ReportError,getAccountantReport:async(tx,businessId,params)=>{reportCalls++;assert.equal(tx.fixture,true);assert.equal(businessId,'own');assert.equal(params.get('from'),'2026-10-01');if(mode==='large')throw new ReportError('ანგარიში ძალიან დიდია.');if(mode==='query-error')throw Error('private SQL details');return {businessName:'Own business',sections:[]}}};throw Error('Unexpected dependency '+id)}});
+const request=()=>new Request('https://marteo.ge/api/analytics/report?from=2026-10-01&to=2026-10-29&businessId=foreign');
+let passed=0;const pass=s=>{passed++;console.log('PASS',s)};
+(async()=>{
+ context=null;let r=await exportsObject.GET(request());assert.equal(r.status,401);assert.equal(opened,0);assert.equal(contextReads,1);pass('one context read; absent session cannot open report DB');
+ context={user:{id:'user'},membership:null};r=await exportsObject.GET(request());assert.equal(r.status,403);assert.equal(opened,0);pass('missing membership rejected before report DB');
+ context={user:{id:'user'},membership:{businessId:'own',business:{name:'Own business'}}};let before=contextReads;r=await exportsObject.GET(request());assert.equal(r.status,200);assert.equal(contextReads-before,1);assert.equal(r.headers.get('cache-control'),'private, no-store');assert.equal((await r.json()).document.businessName,'Own business');assert.equal(opened,closed);pass('single context, own business despite foreign URL, snapshot and response contract');
+ mode='large';r=await exportsObject.GET(request());assert.equal(r.status,422);assert.equal(opened,closed);pass('report limits preserve 422 and close DB');
+ mode='query-error';r=await exportsObject.GET(request());assert.equal(r.status,500);assert.ok(!JSON.stringify(await r.json()).includes('private'));assert.equal(opened,closed);pass('query failure does not expose SQL and closes DB');
+ mode='auth-error';before=opened;r=await exportsObject.GET(request());assert.equal(r.status,500);assert.equal(opened,before);assert.ok(!JSON.stringify(await r.json()).includes('private'));assert.equal(r.headers.get('cache-control'),'private, no-store');pass('context failure is safely handled without opening report DB');
+ assert.equal(reportCalls,3);console.log(passed+' report route checks passed.');
+})().catch(e=>{console.error(e);process.exitCode=1});

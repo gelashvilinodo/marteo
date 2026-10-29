@@ -1,3 +1,4 @@
+import { guardMutation } from "@/lib/security/mutation-request";
 import { NextResponse } from "next/server";
 import { createHash, randomBytes } from "crypto";
 
@@ -14,7 +15,7 @@ function errorResponse(message: string, status: number) {
     return NextResponse.json({ error: message }, { status });
 }
 
-export async function POST(request: Request) {
+async function post(request: Request) {
     const input = await readOtpRequest(request);
     if (!input) return errorResponse("დადასტურების მონაცემები არასწორია.", 400);
     const { userId, code } = input;
@@ -106,3 +107,5 @@ export async function POST(request: Request) {
         await prisma?.$disconnect();
     }
 }
+
+export const POST = guardMutation(post, "json");

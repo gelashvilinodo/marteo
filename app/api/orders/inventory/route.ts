@@ -1,28 +1,26 @@
-import { businessFeatureDenied } from "@/lib/business/feature-access";
+import { hasBusinessFeature, businessFeatureMessage } from "@/lib/business/business-mode";
 import { getMaterialPicker } from "@/lib/orders/get-material-picker";
-import { Prisma } from "@/generated/prisma/client";
+import { getProductPicker } from "@/lib/orders/get-product-picker";
 
-import { getCurrentUser } from "@/lib/auth/session";
-import { createPrismaClient } from "@/lib/prisma";
-
-const PAGE_SIZE = 20;
+import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
+import { createPgReader } from "@/lib/database/pg-reader";
 
 function json(data: unknown, status = 200) {
     return Response.json(data, {
         status,
         headers: {
-            "Cache-Control": "no-store",
+            "Cache-Control": "private, no-store",
         },
     });
 }
 
 export async function GET(request: Request) {
-    let prisma: ReturnType<typeof createPrismaClient> | undefined;
+    let reader: ReturnType<typeof createPgReader> | undefined;
 
     try {
-        const user = await getCurrentUser();
+        const context = await getPgDashboardContext();
 
-        if (!user) {
+        if (!context) {
             return json(
                 {
                     success: false,
@@ -47,14 +45,7 @@ export async function GET(request: Request) {
                 ? rawPage
                 : 1;
 
-        prisma = createPrismaClient();
-
-        const membership =
-            await prisma.businessMembership.findFirst({
-                where: { userId: user.id },
-                orderBy: { createdAt: "asc" },
-                select: { businessId: true },
-            });
+        const membership = context.membership;
 
         if (!membership) {
             return json(
@@ -67,219 +58,16 @@ export async function GET(request: Request) {
         }
 
         const businessId = membership.businessId;
-        if(url.searchParams.get('kind')==='materials'){
-            const denied=await businessFeatureDenied('manufacturing');if(denied)return denied;
-            const result=await prisma.$transaction(tx=>getMaterialPicker(tx,businessId,query,Math.min(requestedPage,1000000)),{isolationLevel:'RepeatableRead',maxWait:10000,timeout:20000});
-            return json({success:true,...result});
+        const materialsRequested = url.searchParams.get("kind") === "materials";
+        if (materialsRequested && !hasBusinessFeature(membership.business.mode, "manufacturing")) {
+            const message = businessFeatureMessage("manufacturing");
+            return json({ success: false, error: message, message }, 403);
         }
 
-
-        const searchConditions:
-            Prisma.InventoryItemWhereInput[] = query
-                .split(/\s+/)
-                .filter(Boolean)
-                .map((word) => ({
-                    OR: [
-                        {
-                            sku: {
-                                contains: word,
-                                mode: "insensitive",
-                            },
-                        },
-                        {
-                            color: {
-                                contains: word,
-                                mode: "insensitive",
-                            },
-                        },
-                        {
-                            size: {
-                                contains: word,
-                                mode: "insensitive",
-                            },
-                        },
-                        {
-                            product: {
-                                name: {
-                                    contains: word,
-                                    mode: "insensitive",
-                                },
-                            },
-                        },
-                        {
-                            product: {
-                                brand: {
-                                    contains: word,
-                                    mode: "insensitive",
-                                },
-                            },
-                        },
-                        {
-                            product: {
-                                category: {
-                                    contains: word,
-                                    mode: "insensitive",
-                                },
-                            },
-                        },
-                    ],
-                }));
-
-        const where: Prisma.InventoryItemWhereInput = {
-            businessId,
-            isActive: true,
-            product: { businessId },
-            stockLots: {
-                some: {
-                    remainingQuantity: { gt: 0 },
-                    OR: [
-                        { purchaseItemId: null },
-                        {
-                            purchaseItem: {
-                                purchase: {
-                                    businessId,
-                                    receiptStatus: "RECEIVED",
-                                },
-                            },
-                        },
-                    ],
-                },
-            },
-            ...(searchConditions.length > 0
-                ? { AND: searchConditions }
-                : {}),
-        };
-
-        const result = await prisma.$transaction(
-            async (tx) => {
-                const totalProducts =
-                    await tx.inventoryItem.count({
-                        where,
-                    });
-
-                const totalPages = Math.max(
-                    1,
-                    Math.ceil(totalProducts / PAGE_SIZE),
-                );
-
-                const currentPage = Math.min(
-                    requestedPage,
-                    totalPages,
-                );
-
-                const products =
-                    await tx.inventoryItem.findMany({
-                        where,
-                        skip:
-                            (currentPage - 1) * PAGE_SIZE,
-                        take: PAGE_SIZE,
-                        orderBy: [
-                            { product: { name: "asc" } },
-                            { productId: "asc" },
-                            { color: "asc" },
-                            { size: "asc" },
-                            { id: "asc" },
-                        ],
-                        select: {
-                            id: true,
-                            sku: true,
-                            color: true,
-                            size: true,
-                            imageUrl: true,
-                            salePrice: true,
-                            currentStock: true,
-                            product: {
-                                select: {
-                                    name: true,
-                                    brand: true,
-                                    category: true,
-                                    description: true,
-                                },
-                            },
-                        },
-                    });
-
-                const defectiveBalances = products.length > 0
-                    ? await tx.inventoryStockLot.groupBy({
-                        by: ["inventoryItemId"],
-                        where: {
-                            inventoryItemId: {
-                                in: products.map(product => product.id),
-                            },
-                            inventoryItem: { businessId },
-                            OR: [
-                                { purchaseItemId: null },
-                                {
-                                    purchaseItem: {
-                                        purchase: {
-                                            businessId,
-                                            receiptStatus: "RECEIVED",
-                                        },
-                                    },
-                                },
-                            ],
-                        },
-                        _sum: {
-                            remainingQuantity: true,
-                            remainingDefectiveQuantity: true,
-                        },
-                    })
-                    : [];
-                const stockById = new Map(
-                    defectiveBalances.map(balance => [
-                        balance.inventoryItemId,
-                        {
-                            totalStock:
-                                balance._sum.remainingQuantity ?? 0,
-                            defectiveStock:
-                                balance._sum.remainingDefectiveQuantity ?? 0,
-                        },
-                    ]),
-                );
-
-                return {
-                    products: products.map((product) => {
-                        const stock = stockById.get(product.id);
-                        const totalStock = stock?.totalStock ?? 0;
-                        const defectiveStock = stock?.defectiveStock ?? 0;
-
-                        return {
-                            id: product.id,
-                            sku: product.sku,
-                            name: product.product.name,
-                            brand:
-                                product.product.brand ?? "",
-                            category:
-                                product.product.category ??
-                                "",
-                            description:
-                                product.product
-                                    .description ?? "",
-                            color: product.color ?? "",
-                            size: product.size ?? "",
-                            imageUrl: product.imageUrl,
-                            salePrice:
-                                product.salePrice
-                                    ?.toFixed(2) ?? null,
-                            totalStock,
-                            goodStock: totalStock - defectiveStock,
-                            defectiveStock,
-                        };
-                    }),
-                    totalProducts,
-                    currentPage,
-                    totalPages,
-                    pageSize: PAGE_SIZE,
-                };
-            },
-            {
-                isolationLevel:
-                    Prisma.TransactionIsolationLevel
-                        .RepeatableRead,
-                maxWait: 10000,
-                timeout: 15000,
-            },
-        );
+        reader = createPgReader();
+        const result = materialsRequested
+            ? await getMaterialPicker(reader, businessId, query, Math.min(requestedPage, 1000000))
+            : await getProductPicker(reader, businessId, query, requestedPage);
 
         return json({
             success: true,
@@ -288,7 +76,7 @@ export async function GET(request: Request) {
     } catch (error: unknown) {
         console.error(
             "Order inventory lookup error",
-            error,
+            error instanceof Error ? error.name : "UnknownError",
         );
 
         return json(
@@ -300,8 +88,8 @@ export async function GET(request: Request) {
             500,
         );
     } finally {
-        if (prisma) {
-            await prisma.$disconnect();
+        if (reader) {
+            await reader.$disconnect();
         }
     }
 }

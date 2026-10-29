@@ -1,3 +1,4 @@
+import { guardMutation } from "@/lib/security/mutation-request";
 import { NextResponse } from "next/server";
 import { createHash, randomInt } from "crypto";
 import bcrypt from "bcryptjs";
@@ -15,7 +16,7 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-export async function POST(request: Request) {
+async function post(request: Request) {
   let prisma: ReturnType<typeof createPrismaClient> | undefined;
   try {
     prisma = createPrismaClient();
@@ -187,3 +188,5 @@ export async function POST(request: Request) {
       await prisma?.$disconnect();
   }
 }
+
+export const POST = guardMutation(post, "json");

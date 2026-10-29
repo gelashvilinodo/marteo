@@ -1,0 +1,16 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Isolated batch access and response regressions. */
+const fs=require('node:fs'),path=require('node:path'),Module=require('node:module'),assert=require('node:assert/strict'),ts=require('typescript');
+const root=path.resolve(__dirname,'..');require.extensions['.ts']=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,f);
+let token='token',opened=0,closed=0,accessReads=0,dataReads=0,missing=false,active=true;
+const load=Module._load;Module._load=function(id,parent,...args){if(id==='server-only')return {};if(id==='@/generated/prisma/client'||id==='@/lib/prisma')throw Error('Batch read loaded ORM');if(id==='next/headers')return {cookies:async()=>({get:()=>token?{value:token}:undefined})};if(id==='@/lib/database/pg-reader')return {createPgReader(){opened++;return {async withReadTransaction(fn){return fn({async $queryRaw(){accessReads++;return [{expiresAt:new Date('2099-01-01'),status:active?'ACTIVE':'SUSPENDED',businessId:'own'}]}})},async $disconnect(){closed++}}}};if(id==='./get-invoice-order')return {getInvoiceOrders:async(tx,bid,ids)=>{dataReads++;assert.equal(bid,'own');return ids.filter(id=>!missing||id!=='b').reverse().map(id=>({id,order:{number:id}}))}};if(id==='@/lib/orders/build-invoice')return {buildInvoice:(order,url)=>{assert.equal(new URL(url).origin,'https://marteo.ge');return {number:order.number}}};return load.call(this,id.startsWith('@/')?path.join(root,id.slice(2)):id,parent,...args)};
+const route=require('../app/api/orders/invoices/batch/route.ts'),{readInvoiceOrders}=require('../lib/orders/read-invoice-order.ts');const request=ids=>new Request('https://marteo.ge/api/orders/invoices/batch?'+new URLSearchParams({ids:JSON.stringify(ids)}));
+(async()=>{
+for(const ids of [null,[],Array(11).fill('a'),[''],['a',null],['a'.repeat(201)]]){const before=opened;assert.equal((await route.GET(request(ids))).status,400);assert.equal(opened,before)}
+assert.equal((await route.GET(new Request('https://marteo.ge/api/orders/invoices/batch?ids=bad'))).status,400);
+token=undefined;assert.equal((await route.GET(request(['a']))).status,401);assert.equal(opened,0);token='token';
+let r=await route.GET(request(['c','a','b','a']));assert.equal(r.status,200);assert.equal(r.headers.get('cache-control'),'private, no-store');assert.deepEqual((await r.json()).entries.map(x=>x.id),['c','a','b']);assert.equal(accessReads,1);assert.equal(dataReads,1);assert.equal(opened,closed);
+const ten=Array.from({length:10},(_,i)=>String(i));r=await route.GET(request(ten));assert.equal((await r.json()).entries.length,10);assert.equal(opened,closed);
+missing=true;r=await route.GET(request(['a','b']));assert.equal(r.status,404);assert.equal((await r.json()).entries,undefined);assert.equal(opened,closed);missing=false;
+active=false;const before=dataReads;await assert.rejects(()=>readInvoiceOrders(token,['a']),e=>e.status===401);assert.equal(dataReads,before);assert.equal(opened,closed);
+console.log('PASS batch 1–10 bounds, input validation, auth denial, unique IDs/request ordering, one access + one data read, all-or-nothing missing order, private no-store and cleanup.');
+})().catch(e=>{console.error(e);process.exitCode=1});

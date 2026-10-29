@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
 import InvoiceDocument, { isInvoicePaper, type InvoicePaper } from "./InvoiceDocument";
+import { loadInvoiceBatches } from "@/lib/orders/load-invoice-batches";
 import { prepareInvoiceQr } from "@/lib/orders/prepare-invoice-qr-client";
 import InvoicePreview from "./InvoicePreview";
 import { waitForInvoiceImage } from "@/lib/orders/wait-for-invoice-image";
@@ -154,14 +155,14 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                         requestedIds.push(...data.ids); snapshot = data.snapshot; cursor = data.cursor ?? null;
                     } while (cursor);
                 }
+                requestedIds = [...new Set(requestedIds)];
                 if (active) setTotal(requestedIds.length);
-                for (const id of requestedIds) {
-                    const response = await fetch(`/api/orders/${encodeURIComponent(id)}/invoice`, { cache: "no-store", signal: controller.signal });
-                    const data = await response.json() as { success?: boolean; message?: string; invoice?: OrderInvoiceData };
-                    if (!response.ok || !data.success || !data.invoice) throw new Error(data.message || "ინვოისი ვერ ჩაიტვირთა.");
-                    const preparedInvoice = await prepareInvoiceQr(data.invoice, controller.signal);
-                    if (!active || controller.signal.aborted) return;
-                    loaded.push({ id, invoice: preparedInvoice });
+                for await (const batch of loadInvoiceBatches(requestedIds, controller.signal)) {
+                    for (const entry of batch) {
+                        const preparedInvoice = await prepareInvoiceQr(entry.invoice, controller.signal);
+                        if (!active || controller.signal.aborted) return;
+                        loaded.push({ id: entry.id, invoice: preparedInvoice });
+                    }
                     setEntries([...loaded]);
                 }
                 if (active) setReady(true);
@@ -204,8 +205,8 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
         try {
             const [{ createInvoicePdf }, { PDFDocument }] =
                 await Promise.all([
-                    import("@/lib/orders/create-invoice-pdf"),
-                    import("pdf-lib"),
+                    (typeof window !== "undefined" ? import("@/lib/orders/create-invoice-pdf") : Promise.reject(new Error("PDF generation requires a browser"))),
+                    (typeof window !== "undefined" ? import("pdf-lib") : Promise.reject(new Error("PDF generation requires a browser"))),
                 ]);
 
             const combined = await PDFDocument.create();

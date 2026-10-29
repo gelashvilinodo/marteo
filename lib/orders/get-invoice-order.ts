@@ -1,8 +1,9 @@
-import { Prisma } from "@/generated/prisma/client";
-import type { createPrismaClient } from "@/lib/prisma";
+import { Decimal } from "@prisma/client-runtime-utils";
+import type { createPgReader } from "@/lib/database/pg-reader";
 import type { OrderInvoiceData } from "./invoice-types";
 
 type InvoiceOrderRow = {
+    id: string;
     number: number | null;
     createdAt: Date;
     status: OrderInvoiceData["status"];
@@ -39,14 +40,14 @@ type InvoiceOrderRow = {
 };
 
 // One database snapshot and round trip. Monetary values remain decimal strings.
-export async function getInvoiceOrder(
-    client: ReturnType<typeof createPrismaClient>,
+export async function getInvoiceOrders(
+    client: Pick<ReturnType<typeof createPgReader>, "$queryRaw">,
     businessId: string,
-    orderId: string,
+    orderIds: string[],
 ) {
-    const [row] = await client.$queryRaw<InvoiceOrderRow[]>`
+    const rows = await client.$queryRaw<InvoiceOrderRow[]>`
         SELECT
-            o."number", o."createdAt", o."status"::text AS "status",
+            o.id, o."number", o."createdAt", o."status"::text AS "status",
             o."paymentStatus"::text AS "paymentStatus",
             o."recipientFirstName", o."recipientLastName", o."recipientPhone",
             o."shippingAddress", o."notes", o."courierFee"::text AS "courierFee",
@@ -86,20 +87,26 @@ export async function getInvoiceOrder(
             ), 0)::text AS "paidAmount"
         FROM "Order" o
         JOIN "Business" b ON b."id" = o."businessId"
-        WHERE o."id" = ${orderId} AND o."businessId" = ${businessId}
+        WHERE o."id" = ANY(${orderIds}::text[]) AND o."businessId" = ${businessId}
             AND o."deletedAt" IS NULL
-        LIMIT 1
     `;
 
-    if (!row) return null;
+    return rows.map(({ id, ...row }) => ({
+        id,
+        order: {
+            ...row,
+            courierFee: new Decimal(row.courierFee),
+            paidAmount: new Decimal(row.paidAmount),
+            items: row.items.map(item => ({ ...item, unitPrice: new Decimal(item.unitPrice) })),
+        },
+    }));
+}
 
-    return {
-        ...row,
-        courierFee: new Prisma.Decimal(row.courierFee),
-        paidAmount: new Prisma.Decimal(row.paidAmount),
-        items: row.items.map(item => ({
-            ...item,
-            unitPrice: new Prisma.Decimal(item.unitPrice),
-        })),
-    };
+export async function getInvoiceOrder(
+    client: Pick<ReturnType<typeof createPgReader>, "$queryRaw">,
+    businessId: string,
+    orderId: string,
+) {
+    const rows = await getInvoiceOrders(client, businessId, [orderId]);
+    return rows[0]?.order ?? null;
 }

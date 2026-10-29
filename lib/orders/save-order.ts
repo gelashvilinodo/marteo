@@ -1,3 +1,4 @@
+import { canManageBusinessData } from "@/lib/security/business-permissions";
 import { numericQuantities } from "@/lib/orders/quantity";
 import "server-only";
 
@@ -34,11 +35,15 @@ export async function saveOrder(raw: unknown) {
             await prisma.businessMembership.findFirst({
                 where: { userId: user.id },
                 orderBy: [{ createdAt: "asc" }, { businessId: "asc" }],
-                select: { businessId: true },
+                select: { businessId: true, role: true },
             });
 
         if (!membership) {
             fail("ბიზნესი ვერ მოიძებნა.", 403);
+        }
+
+        if (!canManageBusinessData(membership.role)) {
+            fail("ამ მოქმედებისთვის მფლობელის ან ადმინისტრატორის უფლებაა საჭირო.", 403);
         }
 
         const businessId = membership.businessId;

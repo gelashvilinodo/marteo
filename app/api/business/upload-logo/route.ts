@@ -1,3 +1,4 @@
+import { guardMutation } from "@/lib/security/mutation-request";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
@@ -86,7 +87,7 @@ function detectImage(bytes: Uint8Array) {
     return null;
 }
 
-export async function POST(request: Request) {
+async function post(request: Request) {
     try {
         const user = await getCurrentUser();
 
@@ -254,3 +255,4 @@ export async function POST(request: Request) {
         );
     }
 }
+export const POST = guardMutation(post, "multipart");

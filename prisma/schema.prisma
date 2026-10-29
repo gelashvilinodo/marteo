@@ -126,6 +126,7 @@ enum ContentPlatform {
 }
 
 model User {
+  isPlatformAdmin Boolean @default(false)
   id        String     @id @default(cuid())
   email     String     @unique
   password  String

@@ -24,12 +24,18 @@ export type InventoryPageData = {
 export type InventorySearchParams = Record<string, string | string[] | undefined>;
 const PAGE_SIZE = 20;
 
+type StocktakePage = Pick<InventoryPageData, "totalProducts" | "filter" | "controls"> & {
+    products: Array<Pick<InventoryProduct, "id" | "sku" | "name" | "brand" | "category" | "color" | "size" | "totalStock" | "defectiveStock">>;
+};
+export function getInventoryPage(prisma: Pick<Prisma.TransactionClient, "$queryRaw">, businessId: string, params: InventorySearchParams, pageSize: number, purpose: "stocktake"): Promise<StocktakePage>;
+export function getInventoryPage(prisma: Pick<Prisma.TransactionClient, "$queryRaw">, businessId: string, params: InventorySearchParams, pageSize?: number): Promise<InventoryPageData>;
 export async function getInventoryPage(
     prisma: Pick<Prisma.TransactionClient, "$queryRaw">,
     businessId: string,
     params: InventorySearchParams,
     pageSize = PAGE_SIZE,
-): Promise<InventoryPageData> {
+    purpose: "page" | "stocktake" = "page",
+): Promise<InventoryPageData | StocktakePage> {
     const text = (key: string) => typeof params[key] === "string" ? params[key].trim() : "";
     const filters: InventoryFilter[] = ["all", "low", "exhausted", "defective"];
     const sorts: InventorySort[] = ["name-asc", "name-desc", "quantity-asc", "quantity-desc", "date-desc", "date-asc"];
@@ -64,15 +70,56 @@ export async function getInventoryPage(
     };
     const order = Prisma.sql`${orders[sort]}, b."productId" ASC, b.color ASC NULLS LAST, b.size ASC NULLS LAST, b.id ASC`;
     type Snapshot = Pick<InventoryPageData, "products" | "totalProducts" | "currentPage" | "totalPages" | "options" | "counts" | "chart">;
+    // Document exports do not need chart totals, filter menus, photos or prices.
+    const snapshot = purpose === "stocktake" ? Prisma.sql`jsonb_build_object(
+        'products', coalesce((SELECT jsonb_agg(jsonb_build_object(
+            'id', b.id, 'sku', b.sku, 'name', b.name, 'brand', p.brand,
+            'category', b.category, 'color', b.color, 'size', b.size,
+            'totalStock', b."totalStock", 'defectiveStock', b."defectiveStock"
+        ) ORDER BY ${order}) FROM page_rows b JOIN "Product" p ON p.id=b."productId"), '[]'::jsonb),
+        'totalProducts', pg.total
+    )` : Prisma.sql`jsonb_build_object(
+            'products', coalesce((SELECT jsonb_agg(jsonb_build_object(
+                'id', b.id, 'createdAt', to_char(b."createdAt", 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+                'sku', b.sku, 'name', b.name, 'brand', p.brand, 'category', b.category,
+                'description', p.description, 'color', b.color, 'size', b.size, 'imageUrl', i."imageUrl",
+                'salePrice', i."salePrice"::text,
+'averageUnitCost', b."averageUnitCost"::text,
+'totalStock', b."totalStock",
+'goodStock', b."goodStock",
+                'defectiveStock', b."defectiveStock", 'goodStockValueCents', b."goodStockValueCents"::text
+            ) ORDER BY ${order}) FROM page_rows b JOIN "InventoryItem" i ON i.id=b.id JOIN "Product" p ON p.id=b."productId"), '[]'::jsonb),
+            'totalProducts', pg.total, 'currentPage', pg.page, 'totalPages', pg.pages,
+            'options', jsonb_build_object(
+                'categories', coalesce((SELECT jsonb_agg(v ORDER BY v COLLATE "C") FROM (SELECT DISTINCT trim(category) AS v FROM base WHERE nullif(trim(category), '') IS NOT NULL) o), '[]'::jsonb),
+                'colors', coalesce((SELECT jsonb_agg(v ORDER BY v COLLATE "C") FROM (SELECT DISTINCT trim(color) AS v FROM base WHERE nullif(trim(color), '') IS NOT NULL) o), '[]'::jsonb),
+                'sizes', coalesce((SELECT jsonb_agg(v ORDER BY v COLLATE "C") FROM (SELECT DISTINCT trim(size) AS v FROM base WHERE nullif(trim(size), '') IS NOT NULL) o), '[]'::jsonb)
+            ),
+            'counts', (SELECT jsonb_build_object(
+                'all', jsonb_build_object('species', count(*), 'quantity', coalesce(sum("totalStock"), 0)),
+                'low', jsonb_build_object('species', count(*) FILTER (WHERE "goodStock" > 0 AND "goodStock" < 5), 'quantity', coalesce(sum("goodStock") FILTER (WHERE "goodStock" > 0 AND "goodStock" < 5), 0)),
+                'exhausted', jsonb_build_object('species', count(*) FILTER (WHERE "goodStock" = 0), 'quantity', 0),
+                'defective', jsonb_build_object('species', count(*) FILTER (WHERE "defectiveStock" > 0), 'quantity', coalesce(sum("defectiveStock"), 0))
+            ) FROM base),
+            'chart', jsonb_build_object(
+                'statuses', (SELECT jsonb_build_object(
+                    'good', count(*) FILTER (WHERE "goodStock" >= 5),
+                    'low', count(*) FILTER (WHERE "goodStock" > 0 AND "goodStock" < 5),
+                    'defective', count(*) FILTER (WHERE "goodStock" = 0 AND "defectiveStock" > 0),
+                    'exhausted', count(*) FILTER (WHERE "goodStock" = 0 AND "defectiveStock" = 0)
+                ) FROM base),
+                'categories', coalesce((SELECT jsonb_agg(to_jsonb(c) ORDER BY c.key) FROM categories c), '[]'::jsonb)
+            )
+        )`;
     // One statement gives counts and the page the same database snapshot.
     // Only the page joins descriptions, photos and sale prices.
-    const [row] = await prisma.$queryRaw<{ snapshot: Snapshot }[]>(Prisma.sql`
+    const [row] = await prisma.$queryRaw<{ snapshot: Snapshot | Omit<StocktakePage, "filter" | "controls"> }[]>(Prisma.sql`
                 WITH balances AS (
             SELECT
                 lot."inventoryItemId" AS id,
                 SUM(lot."remainingQuantity") AS total,
                 SUM(lot."remainingDefectiveQuantity") AS defective,
-                CASE
+                ${purpose === "stocktake" ? Prisma.sql`NULL::numeric AS "averageUnitCost", NULL::numeric AS cents` : Prisma.sql`CASE
                     WHEN BOOL_OR(
                         lot."remainingQuantity" > 0
                         AND lot."remainingCost" IS NULL
@@ -115,7 +162,8 @@ export async function getInventoryPage(
                             END
                         ) * 100
                     )
-                END AS cents
+                END AS cents`}
+
             FROM "InventoryStockLot" lot
             JOIN "InventoryItem" i
                 ON i.id = lot."inventoryItemId"
@@ -154,7 +202,7 @@ export async function getInventoryPage(
         ), page_rows AS (
             SELECT b.* FROM filtered b ORDER BY ${order}
             LIMIT ${pageSize} OFFSET (SELECT (page - 1)::bigint * ${pageSize} FROM paging)
-        ), categories AS (
+        ) ${purpose === "page" ? Prisma.sql`, categories AS (
             SELECT lower(normalize(coalesce(nullif(trim(category), ''), 'კატეგორიის გარეშე'), NFKC)) COLLATE "C" AS key,
                 min(coalesce(nullif(trim(category), ''), 'კატეგორიის გარეშე')) AS label,
                 sum("goodStock")::text AS quantity,
@@ -164,40 +212,8 @@ export async function getInventoryPage(
                     ELSE sum("goodStockValueCents")
                 END::text AS "valueCents"
             FROM base WHERE "goodStock" > 0 GROUP BY 1
-        )
-        SELECT jsonb_build_object(
-            'products', coalesce((SELECT jsonb_agg(jsonb_build_object(
-                'id', b.id, 'createdAt', to_char(b."createdAt", 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-                'sku', b.sku, 'name', b.name, 'brand', p.brand, 'category', b.category,
-                'description', p.description, 'color', b.color, 'size', b.size, 'imageUrl', i."imageUrl",
-                'salePrice', i."salePrice"::text,
-'averageUnitCost', b."averageUnitCost"::text,
-'totalStock', b."totalStock",
-'goodStock', b."goodStock",
-                'defectiveStock', b."defectiveStock", 'goodStockValueCents', b."goodStockValueCents"::text
-            ) ORDER BY ${order}) FROM page_rows b JOIN "InventoryItem" i ON i.id=b.id JOIN "Product" p ON p.id=b."productId"), '[]'::jsonb),
-            'totalProducts', pg.total, 'currentPage', pg.page, 'totalPages', pg.pages,
-            'options', jsonb_build_object(
-                'categories', coalesce((SELECT jsonb_agg(v ORDER BY v COLLATE "C") FROM (SELECT DISTINCT trim(category) AS v FROM base WHERE nullif(trim(category), '') IS NOT NULL) o), '[]'::jsonb),
-                'colors', coalesce((SELECT jsonb_agg(v ORDER BY v COLLATE "C") FROM (SELECT DISTINCT trim(color) AS v FROM base WHERE nullif(trim(color), '') IS NOT NULL) o), '[]'::jsonb),
-                'sizes', coalesce((SELECT jsonb_agg(v ORDER BY v COLLATE "C") FROM (SELECT DISTINCT trim(size) AS v FROM base WHERE nullif(trim(size), '') IS NOT NULL) o), '[]'::jsonb)
-            ),
-            'counts', (SELECT jsonb_build_object(
-                'all', jsonb_build_object('species', count(*), 'quantity', coalesce(sum("totalStock"), 0)),
-                'low', jsonb_build_object('species', count(*) FILTER (WHERE "goodStock" > 0 AND "goodStock" < 5), 'quantity', coalesce(sum("goodStock") FILTER (WHERE "goodStock" > 0 AND "goodStock" < 5), 0)),
-                'exhausted', jsonb_build_object('species', count(*) FILTER (WHERE "goodStock" = 0), 'quantity', 0),
-                'defective', jsonb_build_object('species', count(*) FILTER (WHERE "defectiveStock" > 0), 'quantity', coalesce(sum("defectiveStock"), 0))
-            ) FROM base),
-            'chart', jsonb_build_object(
-                'statuses', (SELECT jsonb_build_object(
-                    'good', count(*) FILTER (WHERE "goodStock" >= 5),
-                    'low', count(*) FILTER (WHERE "goodStock" > 0 AND "goodStock" < 5),
-                    'defective', count(*) FILTER (WHERE "goodStock" = 0 AND "defectiveStock" > 0),
-                    'exhausted', count(*) FILTER (WHERE "goodStock" = 0 AND "defectiveStock" = 0)
-                ) FROM base),
-                'categories', coalesce((SELECT jsonb_agg(to_jsonb(c) ORDER BY c.key) FROM categories c), '[]'::jsonb)
-            )
-        ) AS snapshot FROM paging pg
+        )` : Prisma.empty}
+        SELECT ${snapshot} AS snapshot FROM paging pg
     `);
     if (!row) throw new Error("Inventory snapshot was not returned");
     return { ...row.snapshot, filter, controls };

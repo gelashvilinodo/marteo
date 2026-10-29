@@ -1,3 +1,4 @@
+import { canManageBusinessData } from "@/lib/security/business-permissions";
 import { numericQuantities } from "@/lib/orders/quantity";
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
@@ -52,8 +53,12 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
     const hash = await fingerprint({ kind, body });
     const prisma = createPrismaClient();
     try {
-        const membership = await prisma.businessMembership.findFirst({ where: { userId: user.id }, orderBy: [{ createdAt: "asc" }, { businessId: "asc" }], select: { businessId: true } });
+        const membership = await prisma.businessMembership.findFirst({ where: { userId: user.id }, orderBy: [{ createdAt: "asc" }, { businessId: "asc" }], select: { businessId: true, role: true } });
         if (!membership) fail("ბიზნესი ვერ მოიძებნა.", 403);
+        if (!canManageBusinessData(membership.role)) {
+            fail("ამ მოქმედებისთვის მფლობელის ან ადმინისტრატორის უფლებაა საჭირო.", 403);
+        }
+
         const businessId = membership.businessId;
         return await prisma.$transaction(async tx => {
             await tx.$queryRaw`SELECT "id" FROM "Business" WHERE "id"=${businessId} FOR UPDATE`;

@@ -42,7 +42,7 @@ const limit=(scope,maximum=5)=>({scope,identity:'test@example.invalid',maximum,s
  // Invoke the real login route against the same DB-backed limiter, with isolated user/session doubles.
  const bcrypt=require('bcryptjs');passwordHash=bcrypt.hashSync('correct-password',4);
  const login=require('../app/api/auth/login/route.ts').POST;
- const signIn=password=>login(new Request('http://localhost/api/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:'known@example.invalid',password})}));
+ const signIn=password=>login(new Request('http://localhost/api/auth/login',{method:'POST',headers:{'content-type':'application/json',origin:'http://localhost'},body:JSON.stringify({email:'known@example.invalid',password})}));
  for(let i=0;i<5;i++)assert.equal((await signIn('wrong-password')).status,401);
  check('login throttle blocks even correct password after burst',(await signIn('correct-password')).status===429&&sessions===0);
  await pool.query(`UPDATE "${schema}"."SecurityRateBucket" SET "expiresAt"=CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 second' WHERE "key" LIKE 'login-%'`);

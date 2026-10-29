@@ -12,6 +12,7 @@ type DashboardHeaderProps = {
     businessLogoUrl: string | null;
     userName: string;
     userEmail: string;
+    isPlatformAdmin?: boolean;
 };
 
 export default function DashboardHeader({
@@ -21,6 +22,7 @@ export default function DashboardHeader({
     businessLogoUrl,
     userName,
     userEmail,
+    isPlatformAdmin = false,
 }: DashboardHeaderProps) {
     const [accountOpen, setAccountOpen] = useState(false);
     const router = useRouter();
@@ -71,6 +73,7 @@ export default function DashboardHeader({
             label: "პაკეტი და გადახდები",
             icon: "solar:wallet-bold-duotone",
         },
+        ...(isPlatformAdmin ? [{ label: "ადმინ პანელი", icon: "solar:shield-user-bold-duotone", href: "/admin" }] : []),
     ];
     return (
         <header className="dashboard-safe-header sticky top-0 z-40 flex h-16 items-center justify-between border-b border-white/10 bg-gradient-to-r from-[#0B2A55] via-[#0A244B] to-[#081F46] px-4 sm:px-6 lg:px-8">
@@ -124,7 +127,7 @@ export default function DashboardHeader({
                     <div
                         className={[
                             "absolute right-0 top-0 z-0 overflow-hidden rounded-2xl ring-1 ring-inset ring-white/10",
-                            "[--account-panel-height:216px]",
+                            isPlatformAdmin ? "[--account-panel-height:264px]" : "[--account-panel-height:216px]",
                             "transition-[width,height,background-color,box-shadow]",
                             "duration-[550ms] ease-in-out",
                             "motion-reduce:transition-none",

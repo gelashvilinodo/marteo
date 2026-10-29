@@ -13,7 +13,7 @@ export default function AccountantPrintPage() {
     }, [revision]);
     useEffect(() => { let active = true; void document.fonts.ready.then(() => { if (active) setReady(true); }); return () => { active = false; }; }, []);
     async function download() { if (!data || locked.current) return; locked.current = true; setBusy(true); setError('');
-        try { const { createAccountantPdf } = await import('@/lib/analytics/report/create-pdf'); const url = URL.createObjectURL(await createAccountantPdf(data)), a = document.createElement('a'); a.href = url; a.download = `Marteo-business-report-${data.from}-${data.to}-A4.pdf`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); }
+        try { const { createAccountantPdf } = await (typeof window !== "undefined" ? import('@/lib/analytics/report/create-pdf') : Promise.reject(new Error("PDF generation requires a browser"))); const url = URL.createObjectURL(await createAccountantPdf(data)), a = document.createElement('a'); a.href = url; a.download = `Marteo-business-report-${data.from}-${data.to}-A4.pdf`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); }
         catch (e) { setError(e instanceof Error ? e.message : 'PDF ვერ მომზადდა.'); } finally { locked.current = false; setBusy(false); }
     }
     function print() { const n = navigator as Navigator & { standalone?: boolean }; const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (n.platform === 'MacIntel' && n.maxTouchPoints > 1); if (ios && (n.standalone || window.matchMedia('(display-mode: standalone)').matches)) void download(); else window.print(); }

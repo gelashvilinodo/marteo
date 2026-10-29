@@ -113,7 +113,10 @@ async function prepare(
         }
 
         try {
-            const { heicTo } = await import("heic-to/csp");
+            // Next can remove this browser-only decoder from the server bundle.
+            const { heicTo } = await (typeof window !== "undefined"
+                ? import("heic-to/csp")
+                : Promise.reject(new Error("Photo conversion requires a browser")));
 
             const converted = await heicTo({
                 blob: original,

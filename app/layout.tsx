@@ -1,3 +1,4 @@
+import { THEME_BOOTSTRAP } from "@/lib/security/theme-bootstrap.mjs";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import ModalBackdropDismiss from "@/components/ModalBackdropDismiss";
@@ -34,16 +35,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `
-          try {
-            var theme = localStorage.getItem("marteo-theme");
-            if (theme === "light" || theme === "dark") {
-              document.documentElement.setAttribute("data-theme", theme);
-            } else {
-              document.documentElement.removeAttribute("data-theme");
-            }
-          } catch {}
-        `,
+            __html: THEME_BOOTSTRAP,
           }}
         />
       </head>

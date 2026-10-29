@@ -521,3 +521,315 @@ dialog:modal {
 @media (prefers-reduced-motion: reduce) {
   .production-in-progress::before { animation: none; display: none; }
 }
+
+/* ლენდინგის ჰერო — ფონი ყოველთვის მუქი ლურჯია, თემისგან დამოუკიდებლად. */
+.landing-hero {
+  background:
+    radial-gradient(ellipse 80% 60% at 70% 40%, rgb(37 84 170 / 0.35), transparent 70%),
+    linear-gradient(160deg, #0b2a55 0%, #081f46 45%, #050f24 100%);
+}
+
+.landing-hero-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.landing-hero-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 70%, rgb(5 15 36 / 0.6));
+}
+
+.landing-hero-glow {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(80px);
+  will-change: transform;
+}
+
+.landing-hero-glow-1 {
+  top: -15%;
+  left: -10%;
+  width: 45rem;
+  height: 45rem;
+  background: rgb(90 141 238 / 0.28);
+  animation: landing-glow-drift-1 22s ease-in-out infinite alternate;
+}
+
+.landing-hero-glow-2 {
+  right: -12%;
+  bottom: -25%;
+  width: 50rem;
+  height: 40rem;
+  background: rgb(47 95 191 / 0.32);
+  animation: landing-glow-drift-2 26s ease-in-out infinite alternate;
+}
+
+.landing-hero-glow-3 {
+  top: 30%;
+  left: 40%;
+  width: 28rem;
+  height: 28rem;
+  background: rgb(110 160 255 / 0.16);
+  animation: landing-glow-drift-3 18s ease-in-out infinite alternate;
+}
+
+@keyframes landing-glow-drift-1 {
+  to { transform: translate(12%, 10%) scale(1.1); }
+}
+
+@keyframes landing-glow-drift-2 {
+  to { transform: translate(-10%, -12%) scale(0.92); }
+}
+
+@keyframes landing-glow-drift-3 {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+  100% { transform: translate(-18%, 14%) scale(1.25); opacity: 1; }
+}
+
+.landing-hero-enter {
+  animation: landing-hero-enter 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.landing-hero-enter-delayed {
+  animation-delay: 0.15s;
+}
+
+@keyframes landing-hero-enter {
+  from { opacity: 0; transform: translateY(1.5rem); }
+}
+
+/* პანელის ყველა ზომა em-შია: შრიფტის ზომა კონტეინერის სიგანეს მიჰყვება. */
+.landing-preview {
+  font-size: clamp(10px, 3.4cqi, 14px);
+}
+
+@container (min-width: 36rem) {
+  .landing-preview {
+    font-size: clamp(8px, 1.72cqi, 16px);
+    height: min(46em, calc(100svh - 11rem));
+  }
+}
+
+.landing-preview-scroll {
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+}
+
+@media (min-width: 1024px) {
+  .landing-preview-frame {
+    perspective: 2200px;
+  }
+
+  .landing-preview {
+    transform: rotateY(-12deg) rotateX(3deg);
+    transform-origin: right center;
+  }
+}
+
+.landing-preview-bar {
+  transform-origin: bottom;
+  animation: landing-bar-grow 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes landing-bar-grow {
+  from { transform: scaleY(0); }
+}
+
+.landing-preview-donut {
+  transition: stroke-dasharray 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-glow,
+  .landing-hero-enter,
+  .landing-preview-bar {
+    animation: none;
+  }
+}
+
+/* ლენდინგის ჰედერი ღამის რეჟიმში პანელის საიდბარის ფერს იღებს. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .landing-header-surface {
+    background-color: rgb(8 31 70 / 0.95);
+    border-color: rgb(255 255 255 / 0.08);
+  }
+}
+
+:root[data-theme="dark"] .landing-header-surface {
+  background-color: rgb(8 31 70 / 0.95);
+  border-color: rgb(255 255 255 / 0.08);
+}
+
+/* მობილურზე პანელის პოზიცია, ზომა და შიდა სქროლი Hero-ს სქროლიდან მოდის. */
+@media (max-width: 1023px) {
+  .landing-hero-text {
+    opacity: var(--hero-text-opacity, 1);
+  }
+
+  .landing-hero-panel {
+    transform: translateY(var(--panel-y, 62svh)) scale(var(--panel-scale, 0.84));
+    transform-origin: top center;
+    will-change: transform;
+  }
+
+  .landing-preview {
+    height: auto;
+    max-height: 100%;
+  }
+
+  .landing-preview-content {
+    transform: translateY(var(--panel-inner-y, 0px));
+    will-change: transform;
+  }
+}
+
+/* ერთი შეკვეთის გზა — ტექსტისა და მნიშვნელობების რბილი გამოჩენა. */
+.order-flow-pop,
+.order-flow-caption {
+  animation: order-flow-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes order-flow-pop {
+  from { opacity: 0; transform: translateY(0.35rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .order-flow-pop,
+  .order-flow-caption {
+    animation: none;
+  }
+}
+
+.order-flow-scroll-dot > span {
+  animation: order-flow-scroll-dot 1.6s ease-in-out infinite;
+}
+
+@keyframes order-flow-scroll-dot {
+  0% { transform: translateY(0); opacity: 1; }
+  70% { transform: translateY(0.55rem); opacity: 0; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .order-flow-scroll-dot > span {
+    animation: none;
+  }
+}
+
+/* ღამის რეჟიმში სექციას გრადიენტი არ აქვს — ფონი გვერდის მუქი ფერია. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .order-flow-glow {
+    display: none;
+  }
+}
+
+:root[data-theme="dark"] .order-flow-glow {
+  display: none;
+}
+
+/* ფუნქციების bento — ბიზნესის ტიპის მიხედვით ბარათი ნაზად ემატება/ქრება.
+   ტელეფონსა და პლანშეტზე იცვლება გაზომილი სიმაღლე, lg-დან კი სიგანე (პროცენტებში) —
+   ორივე ყველა ბრაუზერში რბილად ინტერპოლირდება და ბადე არ ხტება. */
+.bento-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: -1rem;
+}
+
+.bento-slot {
+  min-width: 0;
+  height: var(--slot-h, auto);
+  overflow: hidden;
+  padding-bottom: 1rem;
+  transition:
+    height 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.35s ease;
+}
+
+/* ანიმაციის გარეშე ბარათი არ იჭრება — ჰოვერზე ამოწევა და ჩრდილი ჩანს. */
+.bento-slot[data-shown="true"][data-settled="true"] {
+  overflow: visible;
+}
+
+.bento-slot[data-shown="false"] {
+  height: 0;
+  padding-bottom: 0;
+  opacity: 0;
+}
+
+@media (min-width: 1024px) {
+  .bento-row {
+    container-type: inline-size;
+    flex-direction: row;
+    margin-bottom: 0;
+    margin-right: -1rem;
+  }
+
+  .bento-slot {
+    flex: none;
+    width: calc(var(--slot-f) * 100%);
+    height: auto;
+    padding-bottom: 0;
+    padding-right: 1rem;
+  }
+
+  .bento-slot[data-shown="false"] {
+    width: 0;
+    height: auto;
+    padding-right: 0;
+  }
+
+  /* დამალული ბარათი რიგის სიმაღლეს აღარ ზრდის. */
+  .bento-slot[data-shown="false"][data-settled="true"] {
+    height: 0;
+  }
+
+  .bento-slot-inner {
+    height: 100%;
+  }
+
+  /* ბარათს ყოველთვის საბოლოო სიგანე აქვს — ვიწროვდებისას არ გადაეწყობა. */
+  .bento-slot-inner > .bento-card {
+    width: calc(var(--slot-f) * 100cqw - 1rem);
+  }
+}
+
+.bento-card[data-revealed="false"] {
+  opacity: 0;
+  transform: translateY(1.25rem);
+}
+
+.bento-ring {
+  animation: bento-ring 0.9s ease-in-out 2;
+  transform-origin: top center;
+}
+
+@keyframes bento-ring {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(14deg); }
+  40% { transform: rotate(-12deg); }
+  60% { transform: rotate(8deg); }
+  80% { transform: rotate(-4deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bento-slot,
+  .bento-card {
+    transition: none;
+  }
+
+  .bento-card[data-revealed="false"] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .bento-ring {
+    animation: none;
+  }
+}

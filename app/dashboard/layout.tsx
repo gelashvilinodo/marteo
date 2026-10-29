@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
+import { getAdminUser } from "@/lib/admin/authorization";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
 type DashboardLayoutProps = {
@@ -26,6 +27,7 @@ export default async function DashboardLayout({
 
     return (
         <DashboardShell
+            isPlatformAdmin={Boolean(await getAdminUser())}
             businessMode={membership.business.mode}
             businessName={membership.business.name}
             businessLogoUrl={membership.business.logoUrl}

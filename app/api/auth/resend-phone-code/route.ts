@@ -1,3 +1,4 @@
+import { guardMutation } from "@/lib/security/mutation-request";
 import { rateLimitResponse } from "@/lib/security/rate-limit";
 import { NextResponse } from "next/server";
 import { createHash, randomInt } from "crypto";
@@ -36,7 +37,7 @@ function errorResponse(
     );
 }
 
-export async function POST(request: Request) {
+async function post(request: Request) {
     const body: unknown = await request.json().catch(() => null);
 
     if (
@@ -205,3 +206,4 @@ export async function POST(request: Request) {
         return errorResponse("SMS კოდის გაგზავნა ვერ მოხერხდა.", 500);
     }
 }
+export const POST = guardMutation(post, "json");

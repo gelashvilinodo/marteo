@@ -48,3 +48,9 @@ next-env.d.ts
 .open-next/
 .wrangler/
 node_modules/
+
+# Public HTML snapshots generated with matching CSP hashes during build
+/public/_csp-static/
+
+# Local diagnostics, QA and audit artifacts
+/outputs/

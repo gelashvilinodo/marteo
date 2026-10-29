@@ -11,7 +11,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
+      <header className="landing-header-surface sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link
             href="/"
@@ -79,7 +79,7 @@ export default function Header() {
         </div>
 
         {menuOpen && (
-          <div className="border-t border-border bg-background md:hidden">
+          <div className="landing-header-surface border-t border-border bg-background md:hidden">
             <nav className="mx-auto flex max-w-7xl flex-col px-4 py-4 sm:px-6">
               <Link
                 href="/"

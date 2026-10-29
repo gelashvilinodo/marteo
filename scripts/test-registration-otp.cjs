@@ -10,7 +10,7 @@ const email=require('../app/api/auth/verify-email-code/route.ts').POST,phone=req
 const prisma=new PrismaClient({adapter:new PrismaPg({connectionString:process.env.DIRECT_URL||process.env.DATABASE_URL,max:1})});
 const rollback=new Error('ROLLBACK_TEST');let passed=0;
 const hash=s=>createHash('sha256').update(s).digest('hex');
-const request=(fn,userId,code)=>fn(new Request('http://localhost/api/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId,code})}));
+const request=(fn,userId,code)=>fn(new Request('http://localhost/api/test',{method:'POST',headers:{'Content-Type':'application/json',origin:'http://localhost'},body:JSON.stringify({userId,code})}));
 (async()=>{try{await prisma.$transaction(async tx=>{
  current=tx;
  const u=await tx.user.create({data:{email:`otp-${randomUUID()}@example.invalid`,phone:randomUUID(),password:'unused',status:'PENDING_VERIFICATION'}});
@@ -31,6 +31,6 @@ const request=(fn,userId,code)=>fn(new Request('http://localhost/api/test',{meth
  const response=await request(phone,u.id,'333333');
  check('valid phone activates and sets session cookie',response.status===200&&response.headers.get('set-cookie')?.includes('marteo_session=')&&(await tx.user.findUnique({where:{id:u.id}})).status==='ACTIVE'&&await tx.session.count({where:{userId:u.id}})===1);
  check('phone replay cannot create another session',(await request(phone,u.id,'333333')).status===409&&await tx.session.count({where:{userId:u.id}})===1);
- check('malformed input rejected',(await email(new Request('http://localhost/api/test',{method:'POST',body:'{'}))).status===400);
+ check('malformed input rejected',(await email(new Request('http://localhost/api/test',{method:'POST',headers:{'Content-Type':'application/json',origin:'http://localhost'},body:'{'}))).status===400);
  throw rollback;
  },{isolationLevel:'Serializable',timeout:60000});}catch(e){if(e!==rollback)throw e;}finally{await prisma.$disconnect();}console.log(`${passed} checks passed; all fixtures rolled back; no deliveries.`);})().catch(e=>{console.error(e.name,e.message);process.exitCode=1;});
