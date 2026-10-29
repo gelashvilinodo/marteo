@@ -71,7 +71,7 @@ export function resolveImportOrderGroupPayment(input: {
     if (status.kind === "NEEDS_REVIEW") {
         const locations = status.conflicts.map(
             conflict =>
-                `${conflict.value} — რიგები ${conflict.rowNumbers.join(", ")}`,
+                `${conflict.value} - რიგები ${conflict.rowNumbers.join(", ")}`,
         );
 
         return {

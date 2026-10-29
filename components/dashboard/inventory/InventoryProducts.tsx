@@ -31,11 +31,11 @@ function formatQuantity(value: number) {
 }
 
 function formatMoney(value: string | null) {
-    if (value === null) return "—";
+    if (value === null) return "-";
 
     const amount = Number(value);
 
-    if (!Number.isFinite(amount)) return "—";
+    if (!Number.isFinite(amount)) return "-";
 
     return `${amount.toFixed(2)} ₾`;
 }
@@ -119,11 +119,11 @@ export default function InventoryProducts({
 
     const details = selected
         ? [
-            ["ბრენდი", selected.brand || "—"],
-            ["კატეგორია", selected.category || "—"],
+            ["ბრენდი", selected.brand || "-"],
+            ["კატეგორია", selected.category || "-"],
             ["SKU", selected.sku],
-            ["ფერი", selected.color || "—"],
-            ["ზომა", selected.size || "—"],
+            ["ფერი", selected.color || "-"],
+            ["ზომა", selected.size || "-"],
             ["სულ დარჩენილი", `${formatQuantity(selected.totalStock)} პროდუქტი`],
             ["რეალიზებადი", `${formatQuantity(selected.goodStock)} პროდუქტი`],
             ["წუნდებული", `${formatQuantity(selected.defectiveStock)} პროდუქტი`],
@@ -245,7 +245,7 @@ export default function InventoryProducts({
                                 </td>
 
                                 <td className="hidden break-words px-2 py-3 text-xs text-text-secondary md:table-cell">
-                                    {product.category || "—"}
+                                    {product.category || "-"}
                                 </td>
 
                                 <td className="hidden px-2 py-3 text-xs text-text-secondary md:table-cell">
@@ -260,7 +260,7 @@ export default function InventoryProducts({
                                 <td className="hidden break-words px-2 py-3 text-xs text-text-secondary md:table-cell">
                                     {[product.color, product.size]
                                         .filter(Boolean)
-                                        .join(" · ") || "—"}
+                                        .join(" · ") || "-"}
                                 </td>
 
                                 <td className="px-1 py-3 text-center">
@@ -307,7 +307,7 @@ export default function InventoryProducts({
                                 <td className="px-0 py-2">
                                     <button
                                         type="button"
-                                        aria-label={`${product.name} — დეტალების ნახვა`}
+                                        aria-label={`${product.name} - დეტალების ნახვა`}
                                         onClick={() => setSelected(product)}
                                         className="mx-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-text-secondary transition hover:bg-accent/10 hover:text-accent focus-visible:outline-2 focus-visible:outline-accent"
                                     >

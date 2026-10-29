@@ -146,7 +146,7 @@ export default function ImportOrdersSummary({
                 onClick={() => setEditingRowKey(rowKey)}
                 className="min-h-11 rounded-xl border border-border px-3 text-sm"
             >
-                რიგი {row.rowNumber} — ველების შესწორება
+                რიგი {row.rowNumber} - ველების შესწორება
             </button>
         );
     }
@@ -425,7 +425,7 @@ export default function ImportOrdersSummary({
                             >
                                 <p className="break-words text-sm font-semibold">
                                     {row
-                                        ? `${row.fileName} / ${row.sheetName} — რიგი ${row.rowNumber}`
+                                        ? `${row.fileName} / ${row.sheetName} - რიგი ${row.rowNumber}`
                                         : "შეკვეთის დაჯგუფება"}
                                 </p>
                                 <div className="flex flex-wrap gap-2">
@@ -459,7 +459,7 @@ export default function ImportOrdersSummary({
                                 <p className="break-words text-sm font-semibold">
                                     {order.fileName} /{" "}
                                     {order.group.rows[0]?.sheetName}
-                                    {" "}— რიგები{" "}
+                                    {" "}- რიგები{" "}
                                     {order.group.rows.map(
                                         row => row.rowNumber,
                                     ).join(", ")}

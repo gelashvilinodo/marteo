@@ -113,7 +113,7 @@ export default function OrderPaymentResolution({
             } else {
                 uncertain.current = true;
                 setError(
-                    "შენახვის შედეგი დაუდასტურებელია. ხელახლა სცადე იმავე ღილაკით — იგივე მოთხოვნას გადავამოწმებთ.",
+                    "შენახვის შედეგი დაუდასტურებელია. ხელახლა სცადე იმავე ღილაკით - იგივე მოთხოვნას გადავამოწმებთ.",
                 );
             }
         } finally {
@@ -195,7 +195,7 @@ export default function OrderPaymentResolution({
 
                     {method === "BANK_TRANSFER" && (
                         <label className="block space-y-1">
-                            <span className="text-sm">ბანკი — არასავალდებულო</span>
+                            <span className="text-sm">ბანკი - არასავალდებულო</span>
                             <input
                                 value={bankName}
                                 onChange={event => setBankName(event.target.value)}

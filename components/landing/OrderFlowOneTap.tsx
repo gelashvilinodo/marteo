@@ -18,7 +18,7 @@ import { Icon } from "@iconify/react";
 const moments = [
     { from: 0, caption: ["შენ მხოლოდ", "შეკვეთას ამატებ."] },
     { from: 0.3, caption: ["დანარჩენს", "MARTEO აკეთებს."] },
-    { from: 0.72, caption: ["შენ ბიზნესს მართავ.", "ციფრებს — MARTEO."] },
+    { from: 0.72, caption: ["შენ ბიზნესს მართავ.", "ციფრებს - MARTEO."] },
 ];
 
 // მომენტების დრო (t = 0…1 სექციის სქროლზე).
@@ -42,7 +42,7 @@ const resultCards = [
     {
         kind: "invoice",
         label: "ინვოისი მზადაა",
-        caption: "PDF QR კოდით — ერთი დაჭერით დაბეჭდე",
+        caption: "PDF QR კოდით - ერთი დაჭერით დაბეჭდე",
         icon: "solar:document-text-bold-duotone",
         tone: "bg-text-primary/10 text-text-primary",
         ring: "border-text-primary/40",
@@ -289,7 +289,7 @@ export default function OrderFlowOneTap() {
             <div ref={trackRef} className="relative h-[calc(100svh-4rem+300svh)]">
                 <div
                     ref={stickyRef}
-                    className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col overflow-hidden"
+                    className="sticky top-[calc(4rem+env(safe-area-inset-top,0px))] flex h-[calc(100svh-4rem-env(safe-area-inset-top,0px))] flex-col overflow-hidden"
                 >
                     <div className="order-flow-glow pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,color-mix(in_srgb,var(--marteo-accent)_9%,transparent),transparent_65%)]" />
 
@@ -681,7 +681,7 @@ function ResultValue({ item, lit, grow }: { item: ResultItem; lit: boolean; grow
                 className={`inline-flex items-center gap-1.5 ${lit ? "order-flow-pop text-text-primary" : "text-text-secondary"}`}
             >
                 <Icon icon="solar:qr-code-linear" className="h-5 w-5 shrink-0" />
-                {lit ? "#0149 · PDF" : "—"}
+                {lit ? "#0149 · PDF" : "-"}
             </span>
         );
     }

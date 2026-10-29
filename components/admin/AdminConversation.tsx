@@ -48,6 +48,9 @@ function BusinessPanel({ profile }: { profile: BusinessProfile }) {
         <section className="rounded-3xl border border-border bg-surface p-5 text-center">
             <SupportAvatar name={profile.name} imageUrl={profile.logoUrl} size="lg" className="mx-auto" />
             <h2 className="mt-3 break-words text-base font-semibold text-text-primary">{profile.name}</h2>
+            <Link href={`/admin/businesses/${profile.id}`} prefetch={false} className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline">
+                სრული პროფილი <Icon icon="solar:alt-arrow-right-linear" className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
             <p className="mt-1 flex items-center justify-center gap-1.5 text-xs text-text-secondary">
                 {mode && <Icon icon={mode.icon} className="h-3.5 w-3.5" aria-hidden="true" />}{mode?.label ?? profile.mode}
                 <span aria-hidden="true">·</span>
@@ -81,7 +84,7 @@ function BusinessPanel({ profile }: { profile: BusinessProfile }) {
                     <SupportAvatar name={member.name} imageUrl={member.avatarUrl} />
                     <div className="min-w-0 text-sm">
                         <p className="flex items-center gap-1.5 font-medium text-text-primary">
-                            <span className="truncate">{member.name}</span>
+                            <Link href={`/admin/users/${member.id}`} prefetch={false} className="truncate hover:text-accent">{member.name}</Link>
                             <span className="shrink-0 rounded-full bg-background px-1.5 text-[10px] font-normal text-text-secondary">{roles[member.role]}</span>
                         </p>
                         <a href={`mailto:${member.email}`} className="block truncate text-xs text-accent hover:underline">{member.email}</a>

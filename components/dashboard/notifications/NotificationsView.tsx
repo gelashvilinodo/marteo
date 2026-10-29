@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import ProductThumbnail from "@/components/shared/ProductThumbnail";
 import { NOTIFICATIONS_SEEN } from "@/lib/notifications/events";
+import PushCard from "@/components/support/PushCard";
 
 
 type NotificationItem = {
@@ -38,7 +39,7 @@ function Avatar({ item }: { item: NotificationItem }) {
     </div>;
 }
 
-export default function NotificationsView({ notifications: initial }: { notifications: NotificationItem[] }) {
+export default function NotificationsView({ notifications: initial, pushKey }: { notifications: NotificationItem[]; pushKey: string | null }) {
     const [notifications, setNotifications] = useState(initial);
     const [error, setError] = useState("");
     // The server marked these seen while rendering; clear the header dot right away.
@@ -67,6 +68,7 @@ export default function NotificationsView({ notifications: initial }: { notifica
                     <Icon icon="solar:trash-bin-trash-linear" className="h-5 w-5" />ყველას წაშლა
                 </button>}
             </div>
+            <PushCard publicKey={pushKey} description="ჩართე და დახმარების პასუხი ტელეფონზე ან კომპიუტერზე მოგივა, მაშინაც, თუ MARTEO დახურულია." />
             {error && <p role="alert" className="mt-4 text-sm text-danger">{error}</p>}
 
             {notifications.length === 0 ? <section className="mt-6 flex flex-col items-center rounded-2xl border border-dashed border-border bg-surface px-6 py-12 text-center">

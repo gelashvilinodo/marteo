@@ -89,7 +89,7 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
         if (!invoice?.publicUrl) return;
         if (!navigator.share) { await copyLink(); return; }
         try {
-            await navigator.share({ title: `${invoice.business.name} — შეკვეთა`, url: invoice.publicUrl });
+            await navigator.share({ title: `${invoice.business.name} - შეკვეთა`, url: invoice.publicUrl });
         } catch (cause: unknown) {
             if (!(cause instanceof Error && cause.name === "AbortError")) setNotice("გაზიარება ვერ მოხერხდა. შეგიძლია ბმული დააკოპირო.");
         }
@@ -107,14 +107,14 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
                     <button type="button" onClick={close} aria-label="დახურვა" className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-border"><Icon icon="solar:close-circle-linear" className="h-6 w-6" /></button>
                 </div>
                 <div className="p-3 sm:p-5">
-                    <p className="mb-3 text-xs text-text-secondary">{invoice.printState === "NEW" ? "ახალი ინვოისი" : invoice.printState === "UPDATED" ? "ინვოისი განახლებულია — საჭიროა ხელახლა ბეჭდვა" : "მონიშნულია დაბეჭდილად"} · ვერსია {invoice.version}</p>
+                    <p className="mb-3 text-xs text-text-secondary">{invoice.printState === "NEW" ? "ახალი ინვოისი" : invoice.printState === "UPDATED" ? "ინვოისი განახლებულია - საჭიროა ხელახლა ბეჭდვა" : "მონიშნულია დაბეჭდილად"} · ვერსია {invoice.version}</p>
                     <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
                         <select aria-label="ინვოისის ფორმატი" value={paper} onChange={event => {
                             if (!isInvoicePaper(event.target.value)) return;
                             setPaper(event.target.value);
                             try { localStorage.setItem("marteo.invoice-paper", event.target.value); } catch { /* არჩევანი მაინც მუშაობს */ }
                         }} className="h-11 max-w-full rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary lg:text-sm">
-                            <option value="a4">A4</option><option value="100x150">10 × 15 სმ</option><option value="80mm">თერმული — 80 მმ</option><option value="58mm">თერმული — 58 მმ</option>
+                            <option value="a4">A4</option><option value="100x150">10 × 15 სმ</option><option value="80mm">თერმული - 80 მმ</option><option value="58mm">თერმული - 58 მმ</option>
                         </select>
                         <a
                             href={`/print/orders/${encodeURIComponent(orderId)}?format=${paper}`}

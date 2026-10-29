@@ -99,7 +99,7 @@ export function readImportOrderGroupMoney(input: {
 
     const locations = resolved.conflicts.map(
         conflict =>
-            `${conflict.value} — რიგები ${conflict.rowNumbers.join(", ")}`,
+            `${conflict.value} - რიგები ${conflict.rowNumbers.join(", ")}`,
     );
 
     return {

@@ -28,7 +28,7 @@ function dateLabel(
 }
 
 function money(value: string | null) {
-    if (value === null) return "—";
+    if (value === null) return "-";
 
     const [integer, decimal] = value.split(".");
 

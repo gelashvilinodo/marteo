@@ -78,7 +78,7 @@ export function resolveImportOrderGroupDate(input: {
     if (resolved.kind === "NEEDS_REVIEW") {
         const locations = resolved.conflicts.map(
             conflict =>
-                `${conflict.value} — რიგები ${conflict.rowNumbers.join(", ")}`,
+                `${conflict.value} - რიგები ${conflict.rowNumbers.join(", ")}`,
         );
 
         return {

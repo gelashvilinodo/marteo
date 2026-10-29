@@ -150,7 +150,7 @@ export default function ImportDraftProductsCheck({
 
                 const row =
                     typeof problem.rowNumber === "number"
-                        ? ` — რიგი ${problem.rowNumber}`
+                        ? ` - რიგი ${problem.rowNumber}`
                         : "";
 
                 return [(

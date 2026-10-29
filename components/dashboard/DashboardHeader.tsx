@@ -256,7 +256,7 @@ export default function DashboardHeader({
                             "bg-transparent",
                         ].join(" ")}
                     >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/10">
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl ${businessLogoUrl ? "bg-white" : "bg-white/10"}`}>
                             {businessLogoUrl ? (
                                 <Image
                                     src={businessLogoUrl}

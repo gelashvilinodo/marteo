@@ -365,8 +365,8 @@ export default function PasswordSettingsForm() {
                                     }
                                     aria-label={
                                         visible[field]
-                                            ? `${label} — დამალვა`
-                                            : `${label} — გამოჩენა`
+                                            ? `${label} - დამალვა`
+                                            : `${label} - გამოჩენა`
                                     }
                                     aria-pressed={visible[field]}
                                     className="absolute inset-y-0 right-0 inline-flex w-11 items-center justify-center rounded-r-xl text-text-secondary"

@@ -161,8 +161,8 @@ export default function CustomerColumnMapping({
                                     <span className="text-sm">
                                         {item.label}
                                         {item.required
-                                            ? " — აუცილებელი"
-                                            : " — არასავალდებულო"}
+                                            ? " - აუცილებელი"
+                                            : " - არასავალდებულო"}
                                     </span>
 
                                     <select
@@ -194,7 +194,7 @@ export default function CustomerColumnMapping({
                                                 value={header.columnIndex}
                                             >
                                                 {header.letters}
-                                                {" — "}
+                                                {" - "}
                                                 {header.value}
                                             </option>
                                         ))}
@@ -227,7 +227,7 @@ export default function CustomerColumnMapping({
                             დასაკავშირებელია:{" "}
                             {missing.map(item => item.label).join(", ")}.
                             ეს ჯერ არ ნიშნავს, რომ მონაცემები ფაილში
-                            არ არის — გადაამოწმე სათაურების რიგი
+                            არ არის - გადაამოწმე სათაურების რიგი
                             და სვეტები.
                         </p>
                     )}

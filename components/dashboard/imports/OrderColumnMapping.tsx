@@ -148,8 +148,8 @@ export default function OrderColumnMapping({
                         })}
                         className={inputClass}
                     >
-                        <option value=".">წერტილი — 12.50</option>
-                        <option value=",">მძიმე — 12,50</option>
+                        <option value=".">წერტილი - 12.50</option>
+                        <option value=",">მძიმე - 12,50</option>
                     </select>
                 </label>
             </div>
@@ -163,7 +163,7 @@ export default function OrderColumnMapping({
 
             <details className="space-y-4">
                 <summary className="cursor-pointer text-sm">
-                    სვეტების ნახვა და შეცვლა — დაკავშირებულია{" "}
+                    სვეტების ნახვა და შეცვლა - დაკავშირებულია{" "}
                     {selectedCount}
                     {resolved.problems.length > 0
                         ? `; დასაზუსტებელია ${resolved.problems.length}`
@@ -209,7 +209,7 @@ export default function OrderColumnMapping({
                                         key={header.columnIndex}
                                         value={header.columnIndex}
                                     >
-                                        {header.letters} — {header.value}
+                                        {header.letters} - {header.value}
                                     </option>
                                 ))}
                             </select>

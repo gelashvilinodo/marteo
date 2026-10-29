@@ -7,7 +7,7 @@ import FaqAccordion from "@/components/landing/FaqAccordion";
 import { faqGroups } from "@/components/landing/faq-content";
 
 export const metadata = {
-    title: "ხშირად დასმული კითხვები — MARTEO",
+    title: "ხშირად დასმული კითხვები - MARTEO",
     description: "პასუხები ყველაზე ხშირ კითხვებზე მართეოს, ფასების, უსაფრთხოებისა და მუშაობის შესახებ.",
 };
 

@@ -58,7 +58,7 @@ export function validateProductStockDate(
         day > daysInMonth[month - 1]
     ) {
         throw new ImportDraftFileError(
-            "მარაგის თარიღი არასწორია — კალენდარში ასეთი დღე არ არსებობს.",
+            "მარაგის თარიღი არასწორია - კალენდარში ასეთი დღე არ არსებობს.",
         );
     }
 

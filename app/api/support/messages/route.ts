@@ -5,7 +5,7 @@ import { guardMutation } from "@/lib/security/mutation-request";
 import { reserveLimits } from "@/lib/security/rate-limit";
 import { getBusinessThread, postBusinessMessage, readSupportText } from "@/lib/support/support-chat";
 import { supportFailure, supportJson, supportUnauthorized } from "@/lib/support/support-http";
-import { runInBackground, sendPushToUsers } from "@/lib/push/web-push";
+import { notifyPlatformAdmin } from "@/lib/push/web-push";
 
 export const dynamic = "force-dynamic";
 
@@ -35,17 +35,12 @@ async function post(request: Request) {
     try {
         await reserveLimits(prisma, [{ scope: "support-message", identity: member.user.id, maximum: 20, seconds: 60 }]);
         const result = await postBusinessMessage(prisma, member.businessId, member.user.id, text);
-        const admin = await prisma.user.findFirst({ where: { isPlatformAdmin: true, status: "ACTIVE" }, select: { id: true } });
-        // The admin's own business chat must not notify the admin.
-        if (admin && admin.id !== member.user.id) {
-            const pushClient = createPrismaClient();
-            await runInBackground(sendPushToUsers(pushClient, [admin.id], {
-                title: result.businessName,
-                body: text.length > 160 ? `${text.slice(0, 157)}…` : text,
-                url: `/admin/support/${result.conversationId}`,
-                tag: `support-${result.conversationId}`,
-            }).finally(() => pushClient.$disconnect()));
-        }
+        await notifyPlatformAdmin(prisma, {
+            title: result.businessName,
+            body: text.length > 160 ? `${text.slice(0, 157)}…` : text,
+            url: `/admin/support/${result.conversationId}`,
+            tag: `support-${result.conversationId}`,
+        }, member.user.id);
         return supportJson({ success: true, thread: result.thread }, 201);
     } catch (cause) {
         return supportFailure(cause);

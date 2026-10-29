@@ -7,6 +7,7 @@ import { createPrismaClient } from "@/lib/prisma";
 import { normalizePhone, isAllowedSmsPhone } from "@/lib/security/phone";
 import { reserveLimits, requestIp, rateLimitResponse } from "@/lib/security/rate-limit";
 import { sendVerificationEmail } from "@/lib/email";
+import { notifyPlatformAdmin } from "@/lib/push/web-push";
 
 function hashVerificationToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -152,6 +153,13 @@ async function post(request: Request) {
       });
 
       return createdUser;
+    });
+
+    await notifyPlatformAdmin(prisma, {
+      title: "ახალი მომხმარებელი",
+      body: `${[user.firstName, user.lastName].filter(Boolean).join(" ") || "უსახელო"} · ${user.email}`,
+      url: "/admin/users",
+      tag: `new-user-${user.id}`,
     });
 
     await sendVerificationEmail({

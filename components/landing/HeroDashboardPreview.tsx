@@ -443,7 +443,7 @@ function PreviewExpenseChart() {
                 </p>
             </div>
             <p className="mt-[0.3em] text-[0.62em] text-text-secondary tabular-nums">
-                18.10.2026 — 27.10.2026
+                18.10.2026 - 27.10.2026
             </p>
 
             <div className="mt-[1em] flex flex-1 flex-row items-center gap-[1em] @xl:flex-col @xl:justify-center @2xl:flex-row">

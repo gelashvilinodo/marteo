@@ -65,8 +65,8 @@ export default function CustomerRowsReview({
     }[] = [
             { field: "phone", label: "ტელეფონი" },
             { field: "address", label: "მისამართი" },
-            { field: "firstName", label: "სახელი — არასავალდებულო" },
-            { field: "lastName", label: "გვარი — არასავალდებულო" },
+            { field: "firstName", label: "სახელი - არასავალდებულო" },
+            { field: "lastName", label: "გვარი - არასავალდებულო" },
         ];
 
     const requiredConnected = ["phone", "address"].every(
@@ -264,7 +264,7 @@ export default function CustomerRowsReview({
                                     >
                                         <p className="text-sm font-semibold">
                                             {sheet.name}
-                                            {" — "}რიგი {row.rowNumber}
+                                            {" - "}რიგი {row.rowNumber}
                                         </p>
 
                                         <p className="text-sm text-text-secondary">
@@ -350,7 +350,7 @@ export default function CustomerRowsReview({
                                     >
                                         <p className="font-semibold">
                                             {sheet.name}
-                                            {" — "}რიგი {row.rowNumber}
+                                            {" - "}რიგი {row.rowNumber}
                                         </p>
 
                                         {row.messages.map(

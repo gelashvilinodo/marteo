@@ -687,13 +687,13 @@ dialog:modal {
 /* ლენდინგის ჰედერი ღამის რეჟიმში პანელის საიდბარის ფერს იღებს. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .landing-header-surface {
-    background-color: rgb(8 31 70 / 0.95);
+    background-color: rgb(8 31 70);
     border-color: rgb(255 255 255 / 0.08);
   }
 }
 
 :root[data-theme="dark"] .landing-header-surface {
-  background-color: rgb(8 31 70 / 0.95);
+  background-color: rgb(8 31 70);
   border-color: rgb(255 255 255 / 0.08);
 }
 
@@ -909,4 +909,9 @@ dialog:modal {
   .support-new-pill,
   .support-badge-pop { animation: none; }
   .support-typing-dot { animation-duration: 2.4s; }
+}
+
+/* ჩამოწევით განახლების ნიშანი ჰედერის ქვემოდან ჩნდება. */
+.dashboard-pull-indicator {
+  top: calc(4rem + env(safe-area-inset-top, 0px));
 }

@@ -231,8 +231,8 @@ function ExistingCustomersCheckSession({
 
                                         <p className="text-text-secondary">
                                             {customer.deletedAt
-                                                ? "ადრე წაშლილი მომხმარებელი — ავტომატურად არ აღდგება."
-                                                : "არსებული მომხმარებელი — მონაცემები ავტომატურად არ გადაიწერება."}
+                                                ? "ადრე წაშლილი მომხმარებელი - ავტომატურად არ აღდგება."
+                                                : "არსებული მომხმარებელი - მონაცემები ავტომატურად არ გადაიწერება."}
                                         </p>
                                         {!customer.deletedAt && businessId && (
                                             <div className="space-y-2 pt-2">
@@ -263,7 +263,7 @@ function ExistingCustomersCheckSession({
                                                     {links[phone]?.customerId === customer.id &&
                                                         links[phone]?.businessId === businessId &&
                                                         links[phone]?.updatedAt === customer.updatedAt
-                                                        ? "კავშირი არჩეულია — გაუქმება"
+                                                        ? "კავშირი არჩეულია - გაუქმება"
                                                         : "ამ მომხმარებელთან დაკავშირება"}
                                                 </button>
 

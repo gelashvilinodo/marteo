@@ -137,7 +137,7 @@ export default function OrderProductEditor({
     const productLabelNumber = item.displayNumber ?? index + 1;
     const available = item.condition === "DEFECTIVE" ? item.defectiveStock : item.goodStock;
     const cents = orderLineCents(item);
-    const total = cents !== null ? moneyText(cents) : "—";
+    const total = cents !== null ? moneyText(cents) : "-";
     let materialTotal:string|null=null;
     if(item.source==='MATERIAL'&&item.materialLots){try{let needed=new Decimal(item.quantity.replace(',','.')),cost=new Decimal(0);if(needed.lte(0))throw new Error();for(const lot of item.materialLots){const remaining=new Decimal(lot.remainingQuantity),take=Decimal.min(needed,Decimal.max(remaining.minus(lot.defectiveQuantity),0));if(take.gt(0)){cost=cost.plus(materialCost(new Decimal(lot.remainingCost),remaining,take));needed=needed.minus(take);}if(needed.isZero())break;}if(needed.isZero())materialTotal=cost.toFixed(2);}catch{/* Incomplete quantity. */}}
     if(item.source==="MATERIAL"&&!item.materialLots&&item.materialCostSnapshot&&Number(item.quantity.replace(",","."))===Number(item.materialCostSnapshot.quantity))materialTotal=item.materialCostSnapshot.totalCost;
@@ -205,8 +205,8 @@ export default function OrderProductEditor({
             <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-background">
                 {item.imageUrl ? <Image src={item.imageUrl} alt={item.name} width={40} height={40} unoptimized className="h-full w-full object-cover" /> : <Icon icon="solar:box-linear" className="h-5 w-5 text-accent" />}
             </div>
-            <div className="min-w-0 flex-1"><p className="text-xs font-medium text-text-secondary">პროდუქტი {productLabelNumber} · {item.source === "MATERIAL" ? "მასალების მარაგიდან" : item.source === "INVENTORY" ? "მარაგიდან" : "ხელით დამატებული"}</p>{item.source !== "MANUAL" && <p className="mt-1 text-xs text-text-secondary">ხელმისაწვდომია: {available===undefined?"—":item.source==="MATERIAL"?quantityLabel(available,item.unit):available}</p>}</div>
-            <p className="shrink-0 text-sm font-semibold tabular-nums text-text-primary">{total}{total !== "—" ? " ₾" : ""}</p>
+            <div className="min-w-0 flex-1"><p className="text-xs font-medium text-text-secondary">პროდუქტი {productLabelNumber} · {item.source === "MATERIAL" ? "მასალების მარაგიდან" : item.source === "INVENTORY" ? "მარაგიდან" : "ხელით დამატებული"}</p>{item.source !== "MANUAL" && <p className="mt-1 text-xs text-text-secondary">ხელმისაწვდომია: {available===undefined?"-":item.source==="MATERIAL"?quantityLabel(available,item.unit):available}</p>}</div>
+            <p className="shrink-0 text-sm font-semibold tabular-nums text-text-primary">{total}{total !== "-" ? " ₾" : ""}</p>
             <button type="button" onClick={animatedRemove} aria-label={`პროდუქტი ${productLabelNumber} წაშლა`} className="delete-action flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"><Icon icon="solar:trash-bin-trash-linear" className="h-5 w-5" /></button>
         </div>
         {item.source === "MANUAL" && (
@@ -225,7 +225,7 @@ export default function OrderProductEditor({
             <Field label={item.source==="MATERIAL"?`რაოდენობა · ${quantityLabel(0,item.unit).slice(2)} *`:"რაოდენობა *"}><input inputMode={item.source==="MATERIAL"?"decimal":"numeric"} value={item.quantity} onChange={event => update({ quantity: event.target.value })} required className={input} /></Field>
             <Field label={item.source==="MATERIAL"?`ფასი / ${quantityLabel(0,item.unit).slice(2)} · ₾ *`:"გასაყიდი ფასი · ₾ *"}><input inputMode="decimal" value={item.unitPrice} onChange={event => update({ unitPrice: event.target.value })} placeholder="0.00" required className={input} /></Field>
         </div>
-        {item.source === "MATERIAL" ? <div className="mt-3 rounded-xl border border-border p-3 text-xs text-text-secondary">არჩეული რაოდენობის თვითღირებულება: <strong className="text-text-primary">{materialTotal??"—"}{materialTotal?" ₾":""}</strong><p className="mt-1">ითვლება მასალის შესყიდვის პარტიებიდან. ზუსტი თანხა შენახვისას მოწმდება.</p></div> : <div className="mt-3 rounded-xl border border-border p-3">
+        {item.source === "MATERIAL" ? <div className="mt-3 rounded-xl border border-border p-3 text-xs text-text-secondary">არჩეული რაოდენობის თვითღირებულება: <strong className="text-text-primary">{materialTotal??"-"}{materialTotal?" ₾":""}</strong><p className="mt-1">ითვლება მასალის შესყიდვის პარტიებიდან. ზუსტი თანხა შენახვისას მოწმდება.</p></div> : <div className="mt-3 rounded-xl border border-border p-3">
             <Field label="ერთი ერთეულის თვითღირებულება · ₾">
                 <input
                     inputMode="decimal"
@@ -241,7 +241,7 @@ export default function OrderProductEditor({
             <p className="mt-2 text-xs leading-relaxed text-text-secondary">
                 {item.source === "INVENTORY"
                     ? "თუ მარაგში თვითღირებულება უცნობია, მიუთითე ერთი ერთეულის ღირებულება. თანხა მხოლოდ ამ შეკვეთის უცნობი ნაწილისთვის გამოიყენება; მარაგში ცნობილი ღირებულება არ გადაიწერება. თუ ხარჯი ნამდვილად არ გქონია, ჩაწერე 0."
-                    : "მიუთითე, რა დაგიჯდა ერთი ნივთი. თუ ხარჯი არ გქონია, ჩაწერე 0. თუ ჯერ არ იცი, დატოვე ცარიელი — მოგება დასაზუსტებელი იქნება."}
+                    : "მიუთითე, რა დაგიჯდა ერთი ნივთი. თუ ხარჯი არ გქონია, ჩაწერე 0. თუ ჯერ არ იცი, დატოვე ცარიელი - მოგება დასაზუსტებელი იქნება."}
             </p>
         </div>}
         <details className="mt-3">

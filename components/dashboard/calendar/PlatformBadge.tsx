@@ -108,7 +108,7 @@ export default function PlatformBadge({
 
     return (
         <span
-            title={`${label} — ${completed ? "შესრულებულია" : "შესასრულებელია"
+            title={`${label} - ${completed ? "შესრულებულია" : "შესასრულებელია"
                 }`}
             className={className}
         >

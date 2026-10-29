@@ -43,7 +43,7 @@ export async function createImportedProduct({
 
     function fail(message: string): never {
         throw new OrderValidationError(
-            `${record.fileName} / ${record.sheetName} — რიგი ${record.rowNumber}: ${message}`,
+            `${record.fileName} / ${record.sheetName} - რიგი ${record.rowNumber}: ${message}`,
             422,
         );
     }

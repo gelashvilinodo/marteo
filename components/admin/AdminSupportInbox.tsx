@@ -4,7 +4,7 @@ import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import SupportAvatar from "@/components/support/SupportAvatar";
-import PushToggle from "@/components/support/PushToggle";
+import PushBanner from "@/components/support/PushBanner";
 import { playSupportChime, setSupportSound, useSupportSound } from "@/components/support/support-sound";
 import type { AdminConversationRow } from "@/lib/support/support-chat";
 import { formatSupportTime } from "@/lib/support/support-config";
@@ -86,8 +86,11 @@ export default function AdminSupportInbox({ initial, pushKey }: { initial: Data;
                     className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl border border-border bg-surface transition hover:bg-background ${soundOn ? "text-accent" : "text-text-secondary"}`}>
                     <Icon icon={soundOn ? "solar:volume-loud-bold-duotone" : "solar:volume-cross-linear"} className="h-5 w-5" aria-hidden="true" />
                 </button>
-                <div className="min-w-0 flex-1 sm:w-72 sm:flex-none"><PushToggle publicKey={pushKey} tone="light" /></div>
             </div>
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-2xl border border-border empty:hidden">
+            <PushBanner publicKey={pushKey} text="ჩართე შეტყობინებები, რომ ახალი მიწერა და ახალი მომხმარებელი არ გამოგრჩეს." />
         </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">

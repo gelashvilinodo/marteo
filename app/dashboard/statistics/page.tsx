@@ -129,7 +129,7 @@ export default async function StatisticsPage({
                     />
 
                     <p className="text-xs text-text-secondary">
-                        {date(summary.from)} — {date(summary.to)}
+                        {date(summary.from)} - {date(summary.to)}
                     </p>
 
                     {summary.periodError && (

@@ -143,7 +143,7 @@ async function deliverStockAlerts(tx: Tx, businessId: string, now: Date) {
         const label = variant ? `${alert.name} (${variant})` : alert.name;
         const out = alert.level === "OUT";
         const title = out ? "პროდუქტი ამოიწურა" : "მარაგი იწურება";
-        const body = out ? `${label} — მარაგი ამოიწურა. შეავსე, რომ შეკვეთები არ დაკარგო.` : `${label} — დარჩა მხოლოდ ${alert.good} ცალი.`;
+        const body = out ? `${label} - მარაგი ამოიწურა. შეავსე, რომ შეკვეთები არ დაკარგო.` : `${label} - დარჩა მხოლოდ ${alert.good} ცალი.`;
         await tx.$executeRaw`
             INSERT INTO "Notification" (id, "userId", "businessId", kind, title, body, "actionLabel", "actionUrl", "imageUrl", "inventoryItemId", "dedupeKey", "deliverAt", "createdAt")
             SELECT gen_random_uuid()::text, m."userId", ${businessId}, ${alert.level === "OUT" ? "OUT_OF_STOCK" : "LOW_STOCK"}::"NotificationKind",
@@ -164,8 +164,8 @@ export async function notifyPaymentConfirmed(tx: Tx, input: { businessId: string
     const plan = PLAN_LABELS[input.plan] ?? input.plan;
     await tx.$executeRaw`
         INSERT INTO "Notification" (id, "userId", "businessId", kind, title, body, "actionLabel", "actionUrl", "dedupeKey", "deliverAt", "createdAt")
-        SELECT gen_random_uuid()::text, m."userId", ${input.businessId}, 'PAYMENT_CONFIRMED', 'გადახდა დადასტურდა — მადლობა! 🎉',
-            ${`${plan} პაკეტი წარმატებით გააქტიურდა. მადლობა, რომ მართეოს ენდობი — წარმატებებს გისურვებთ!`},
+        SELECT gen_random_uuid()::text, m."userId", ${input.businessId}, 'PAYMENT_CONFIRMED', 'გადახდა დადასტურდა - მადლობა! 🎉',
+            ${`${plan} პაკეტი წარმატებით გააქტიურდა. მადლობა, რომ მართეოს ენდობი - წარმატებებს გისურვებთ!`},
             'მთავარზე გადასვლა', '/dashboard', ${`payment:${input.paymentId}:`} || m."userId", ${now}, ${now}
         FROM "BusinessMembership" m WHERE m."businessId" = ${input.businessId}
         ON CONFLICT ("dedupeKey") DO NOTHING

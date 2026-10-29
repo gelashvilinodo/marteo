@@ -33,11 +33,11 @@ export async function sendEmailChangeCode({
     const { error } = await resend.emails.send({
         from,
         to: [to],
-        subject: "MARTEO — ელფოსტის შეცვლის დადასტურება",
+        subject: "MARTEO - ელფოსტის შეცვლის დადასტურება",
         text: [
             "MARTEO ანგარიშის ელფოსტის შეცვლის კოდი:",
             code,
-            `კოდის მოქმედების ვადა: ${expiry} — თბილისის დროით.`,
+            `კოდის მოქმედების ვადა: ${expiry} - თბილისის დროით.`,
             "თუ ელფოსტის შეცვლა არ მოგითხოვია, უგულებელყავი ეს წერილი.",
         ].join("\n\n"),
         html: `
@@ -47,7 +47,7 @@ export async function sendEmailChangeCode({
                 <div style="margin:24px 0;padding:20px;background:#0f1c2e;color:#fff;font-size:32px;font-weight:700;letter-spacing:8px;text-align:center;border-radius:12px">
                     ${code}
                 </div>
-                <p>კოდის მოქმედების ვადა: ${expiry} — თბილისის დროით.</p>
+                <p>კოდის მოქმედების ვადა: ${expiry} - თბილისის დროით.</p>
                 <p>თუ ელფოსტის შეცვლა არ მოგითხოვია, უგულებელყავი ეს წერილი.</p>
             </div>
         `,

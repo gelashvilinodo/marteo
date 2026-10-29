@@ -122,8 +122,8 @@ export default function ProductColumnMapping({
                             }
                             className={inputClass}
                         >
-                            <option value=".">წერტილი — 12.50</option>
-                            <option value=",">მძიმე — 12,50</option>
+                            <option value=".">წერტილი - 12.50</option>
+                            <option value=",">მძიმე - 12,50</option>
                         </select>
                     </label>
 
@@ -148,7 +148,7 @@ export default function ProductColumnMapping({
                                 <label key={item.field} className="block min-w-0 space-y-1">
                                     <span className="text-sm">
                                         {item.label}
-                                        {required ? " — აუცილებელი" : " — არასავალდებულო"}
+                                        {required ? " - აუცილებელი" : " - არასავალდებულო"}
                                     </span>
 
                                     <select
@@ -173,7 +173,7 @@ export default function ProductColumnMapping({
                                                 key={header.columnIndex}
                                                 value={header.columnIndex}
                                             >
-                                                {header.letters} — {header.value}
+                                                {header.letters} - {header.value}
                                             </option>
                                         ))}
                                     </select>
@@ -199,7 +199,7 @@ export default function ProductColumnMapping({
                     <p className="text-xs text-text-secondary">
                         კოდი და ფოტო აუცილებელი არ არის.
                         უცნობ თვითღირებულებას ნულად არ ჩავთვლით.
-                        ამ ეტაპზე მხოლოდ სვეტებს ვაკავშირებთ —
+                        ამ ეტაპზე მხოლოდ სვეტებს ვაკავშირებთ -
                         პროდუქტები და მარაგი ჯერ არ ინახება.
                     </p>
                 </>

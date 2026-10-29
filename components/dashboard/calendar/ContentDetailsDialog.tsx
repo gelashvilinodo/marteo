@@ -26,10 +26,10 @@ function object(value: unknown): Record<string, unknown> | null {
 }
 
 function date(value: string | null) {
-    if (!value) return "—";
+    if (!value) return "-";
 
     const parsed = new Date(value);
-    if (!Number.isFinite(parsed.getTime())) return "—";
+    if (!Number.isFinite(parsed.getTime())) return "-";
 
     const local = new Date(
         parsed.getTime() + 4 * 60 * 60 * 1000,

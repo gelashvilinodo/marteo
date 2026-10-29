@@ -19,6 +19,24 @@ function isIos() {
     return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
+async function saveSubscription(subscription: PushSubscription) {
+    const response = await fetch("/api/push/subscription", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(subscription.toJSON()),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+}
+
+type Delivery = { devices: number; sent: number; removed: number; failed: number };
+
+function describeDelivery(delivery: Delivery) {
+    if (!delivery.devices) return "ეს მოწყობილობა სერვერზე არ არის დარეგისტრირებული. გამორთე და ხელახლა ჩართე.";
+    if (delivery.failed) return "შეტყობინების სერვისმა უარი თქვა. სავარაუდოდ საიტის push-გასაღები შეიცვალა: გამორთე და ხელახლა ჩართე.";
+    if (!delivery.sent) return "მოწყობილობის გამოწერა ვადაგასულია და წაიშალა. ხელახლა ჩართე.";
+    return `გაიგზავნა (${delivery.sent} მოწყობილობა). თუ არ გამოჩნდა, შეამოწმე სისტემის შეტყობინებების პარამეტრები და „არ შემაწუხო“ რეჟიმი.`;
+}
+
 async function registration() {
     return await navigator.serviceWorker.getRegistration("/") ?? await navigator.serviceWorker.register("/sw.js", { scope: "/" });
 }
@@ -38,6 +56,8 @@ export default function PushToggle({ publicKey, tone = "dark" }: { publicKey: st
             if (Notification.permission === "denied") return "denied" as const;
             const existing = await navigator.serviceWorker.getRegistration("/");
             const subscription = await existing?.pushManager.getSubscription();
+            // Re-register silently: the server may have dropped it, or another account signed in here.
+            if (subscription) void saveSubscription(subscription).catch(() => undefined);
             return subscription ? "on" as const : "off" as const;
         })().then(next => { if (active) setState(next); }).catch(() => { if (active) setState("unsupported"); });
         return () => { active = false; };
@@ -58,12 +78,7 @@ export default function PushToggle({ publicKey, tone = "dark" }: { publicKey: st
             const subscription = await worker.pushManager.getSubscription()
                 ?? await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) });
             step = "save";
-            const response = await fetch("/api/push/subscription", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(subscription.toJSON()),
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            await saveSubscription(subscription);
             setState("on");
         } catch (cause) {
             console.error("Push enable failed at", step, cause);
@@ -77,6 +92,20 @@ export default function PushToggle({ publicKey, tone = "dark" }: { publicKey: st
                     ? "ბრაუზერში ჩაირთო, მაგრამ სერვერზე შენახვა ვერ მოხერხდა. სცადე ხელახლა."
                     : "შეტყობინებების სერვისი ვერ ჩაირთო. განაახლე გვერდი და სცადე ხელახლა.");
         }
+    };
+
+    const [testing, setTesting] = useState(false);
+    const [testMessage, setTestMessage] = useState("");
+    const test = async () => {
+        setTesting(true);
+        setTestMessage("");
+        try {
+            const response = await fetch("/api/push/test", { method: "POST" });
+            const data = await response.json().catch(() => ({})) as { delivery?: Delivery; message?: string };
+            setTestMessage(data.delivery ? describeDelivery(data.delivery) : data.message || "სატესტო შეტყობინება ვერ გაიგზავნა.");
+        } catch {
+            setTestMessage("სატესტო შეტყობინება ვერ გაიგზავნა.");
+        } finally { setTesting(false); }
     };
 
     const disable = async () => {
@@ -119,5 +148,11 @@ export default function PushToggle({ publicKey, tone = "dark" }: { publicKey: st
             </span>
         </button>
         {message && <p className="mt-1 text-[11px] text-danger">{message}</p>}
+        {state === "on" && <button type="button" onClick={test} disabled={testing}
+            className={`mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-1.5 text-[11px] font-medium transition disabled:opacity-60 ${base}`}>
+            <Icon icon="solar:plain-2-linear" className="h-3.5 w-3.5" aria-hidden="true" />
+            {testing ? "იგზავნება…" : "სატესტო შეტყობინების გაგზავნა"}
+        </button>}
+        {testMessage && <p className={`mt-1 text-[11px] leading-4 ${tone === "dark" ? "text-slate-300" : "text-text-secondary"}`}>{testMessage}</p>}
     </div>;
 }

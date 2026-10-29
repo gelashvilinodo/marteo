@@ -39,7 +39,7 @@ export default function ProductStockDateInput({
                 htmlFor={id}
                 className="block text-sm font-semibold"
             >
-                მარაგის თარიღი — აუცილებელია
+                მარაგის თარიღი - აუცილებელია
             </label>
 
             <p className="text-sm text-text-secondary">

@@ -137,6 +137,17 @@ export async function postAdminMessage(prisma: PrismaClient, conversationId: str
     return (await readThread(prisma, { id: conversationId }))!;
 }
 
+// Lets the admin start a conversation a business has not opened yet.
+export async function ensureConversation(prisma: PrismaClient, businessId: unknown) {
+    if (typeof businessId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(businessId)) throw new SupportError("ბიზნესი ვერ მოიძებნა.", 404);
+    const business = await prisma.business.findUnique({ where: { id: businessId }, select: { id: true } });
+    if (!business) throw new SupportError("ბიზნესი ვერ მოიძებნა.", 404);
+    const conversation = await prisma.supportConversation.upsert({
+        where: { businessId }, create: { businessId }, update: {}, select: { id: true },
+    });
+    return conversation.id;
+}
+
 export async function setConversationStatus(prisma: PrismaClient, conversationId: string, status: unknown) {
     if (status !== "OPEN" && status !== "CLOSED") throw new SupportError("სტატუსი არასწორია.");
     const updated = await prisma.supportConversation.updateMany({ where: { id: conversationId }, data: { status } });

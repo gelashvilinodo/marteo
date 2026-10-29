@@ -351,7 +351,7 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
                         <button
                           type="button"
                           disabled
-                          aria-label={`პარტია #${number} — რედაქტირება მიუწვდომელია`}
+                          aria-label={`პარტია #${number} - რედაქტირება მიუწვდომელია`}
                           title="რედაქტირებისთვის ჯერ აღადგინე პარტია არქივიდან"
                           className="inline-flex h-11 w-11 cursor-not-allowed items-center justify-center rounded-xl border border-border text-text-secondary opacity-50"
                         >

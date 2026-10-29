@@ -138,7 +138,7 @@ export default function AnimatedMaterialCard({
                     <button
                         type="button"
                         disabled={removing}
-                        aria-label={`${label} — წაშლა`}
+                        aria-label={`${label} - წაშლა`}
                         onClick={removeCard}
                         className="delete-action flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition disabled:cursor-wait"
                     >

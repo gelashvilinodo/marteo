@@ -72,7 +72,7 @@ export default function OrderCustomerChoices({
                     >
                         <p className="text-sm font-semibold">
                             {candidate.phone}
-                            {" "}— {candidate.orderKeys.length} შეკვეთა
+                            {" "}- {candidate.orderKeys.length} შეკვეთა
                         </p>
 
                         {saved && !decision && (

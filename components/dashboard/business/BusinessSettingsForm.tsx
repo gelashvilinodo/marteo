@@ -323,7 +323,7 @@ export default function BusinessSettingsForm({
             );
             setSaved(latest);
             setNotice(
-                "მონაცემები განახლდა. შენი ცვლილებები შენარჩუნებულია — შენახვამდე გადაამოწმე.",
+                "მონაცემები განახლდა. შენი ცვლილებები შენარჩუნებულია - შენახვამდე გადაამოწმე.",
             );
         } catch (cause: unknown) {
             if (!mounted.current || current.signal.aborted) return;
@@ -482,7 +482,7 @@ export default function BusinessSettingsForm({
                             id="business-phone-help"
                             className="block text-xs leading-relaxed text-text-secondary"
                         >
-                            არასავალდებულო — მიუთითე ბიზნესის
+                            არასავალდებულო - მიუთითე ბიზნესის
                             საკონტაქტო ნომერი.
                         </span>
                     </label>

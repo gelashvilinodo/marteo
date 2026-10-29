@@ -88,7 +88,7 @@ export async function sendPasswordResetEmail({
     const { error } = await resend.emails.send({
         from,
         to: [to],
-        subject: "MARTEO — პაროლის აღდგენა",
+        subject: "MARTEO - პაროლის აღდგენა",
         text: [
             "MARTEO ანგარიშის პაროლის აღსადგენად გახსენი ბმული:",
             resetLink,

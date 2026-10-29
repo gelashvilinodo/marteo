@@ -49,11 +49,11 @@ const filters = [
 ] as const;
 
 function formatDate(value: string | null) {
-    if (!value) return "—";
+    if (!value) return "-";
 
     const timestamp = Date.parse(value);
 
-    if (Number.isNaN(timestamp)) return "—";
+    if (Number.isNaN(timestamp)) return "-";
 
     // თარიღი თბილისის დროით — სერვერსა და ბრაუზერში ერთნაირად.
     const tbilisiDate = new Date(timestamp + 4 * 60 * 60 * 1000);
@@ -204,7 +204,7 @@ export default function CustomersView({
     ];
 
     const periodLabel =
-        `${formatDate(`${data.from}T12:00:00+04:00`)} — ` +
+        `${formatDate(`${data.from}T12:00:00+04:00`)} - ` +
         `${formatDate(`${data.to}T12:00:00+04:00`)}`;
 
     return (
@@ -503,7 +503,7 @@ export default function CustomersView({
                                                         checked={checkedIds.includes(customer.id)}
                                                         disabled={pending}
                                                         aria-label={`${customer.firstName || customer.phone
-                                                            } — მონიშვნა`}
+                                                            } - მონიშვნა`}
                                                         onChange={() => toggleCustomer(customer.id)}
                                                         className="h-4 w-4 cursor-pointer accent-accent"
                                                     />
@@ -541,7 +541,7 @@ export default function CustomersView({
                                                     }
                                                     aria-label={`${customer.firstName ||
                                                         customer.phone
-                                                        } — დეტალები`}
+                                                        } - დეტალები`}
                                                     className={
                                                         "relative inline-flex h-10 w-10 items-center " +
                                                         "justify-center rounded-xl border border-border " +
@@ -632,7 +632,7 @@ export default function CustomersView({
                                         {label}
                                     </dt>
                                     <dd className="mt-1 break-words">
-                                        {value || "—"}
+                                        {value || "-"}
                                     </dd>
                                 </div>
                             ))}

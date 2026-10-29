@@ -93,7 +93,7 @@ export async function checkDraftOrders(input: {
         problems.push(
             (
                 row
-                    ? `${row.fileName} / ${row.sheetName} — რიგი ${row.rowNumber}: `
+                    ? `${row.fileName} / ${row.sheetName} - რიგი ${row.rowNumber}: `
                     : ""
             ) + problem.message,
         );
@@ -109,7 +109,7 @@ export async function checkDraftOrders(input: {
 
         const location =
             `${order.fileName} / ${order.group.rows[0]?.sheetName}` +
-            ` — რიგები ${order.group.rows.map(row => row.rowNumber).join(", ")}`;
+            ` - რიგები ${order.group.rows.map(row => row.rowNumber).join(", ")}`;
 
         if (order.result.kind === "NEEDS_REVIEW") {
             problems.push(

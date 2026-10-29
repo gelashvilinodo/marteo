@@ -241,7 +241,7 @@ export default function OrderDeleteButton({
                 </p>
                 {(!simple || awaiting) && <fieldset disabled={blocked} className="space-y-2 disabled:opacity-50"><legend className="mb-2 text-sm font-medium">პროდუქტების დაბრუნება</legend>{([
                     ["RECEIVED", "ნივთები უკვე დაბრუნდა"],
-                    ["WAIT_FOR_RETURN", "ნივთები უნდა დაბრუნდეს — დაველოდოთ"],
+                    ["WAIT_FOR_RETURN", "ნივთები უნდა დაბრუნდეს - დაველოდოთ"],
                     ["NO_RETURN", "ნივთები აღარ დაბრუნდება"],
                 ] as const).map(([value, label]) => <label key={value} className={`flex items-center gap-3 rounded-xl border p-3 text-sm ${mode === value ? "border-accent bg-accent/5" : "border-border"}`}><input type="radio" disabled={awaiting && value !== "WAIT_FOR_RETURN"} name={`delete-mode-${orderId}`} checked={mode === value} onChange={() => { setMode(value); setError(""); }} className="h-4 w-4 accent-accent" />{label}</label>)}</fieldset>}
                 {(awaiting || mode === "RECEIVED" || mode === "WAIT_FOR_RETURN") && <div className="flex items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning/5 p-3"><p className="text-xs text-text-secondary">{awaiting ? "დაბრუნების მოთხოვნა არსებობს. აქედან დაადასტურე ფიზიკური მიღება." : "აქედან აირჩიე დასაბრუნებელი ნივთები და შეინახე მოთხოვნა. მიღება მხოლოდ ფიზიკური დაბრუნების შემდეგ დაადასტურე."}</p><OrderReturnButton

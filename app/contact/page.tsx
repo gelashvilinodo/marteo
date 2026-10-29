@@ -7,8 +7,8 @@ import CopyEmailButton from "@/components/landing/CopyEmailButton";
 import { MARTEO_CONTACTS } from "@/lib/marteo-contacts";
 
 export const metadata = {
-    title: "კონტაქტი — MARTEO",
-    description: "დაგვიკავშირდი ელფოსტით ან სოციალურ ქსელებში — Facebook, Instagram, TikTok.",
+    title: "კონტაქტი - MARTEO",
+    description: "დაგვიკავშირდი ელფოსტით ან სოციალურ ქსელებში - Facebook, Instagram, TikTok.",
 };
 
 const socials = [

@@ -230,7 +230,7 @@ export default function ReceivePurchaseButton({
                             id={titleId}
                             className="text-base font-semibold"
                         >
-                            პარტია #{String(purchaseNumber).padStart(3, "0")} — მიღება
+                            პარტია #{String(purchaseNumber).padStart(3, "0")} - მიღება
                         </h2>
 
                         <button

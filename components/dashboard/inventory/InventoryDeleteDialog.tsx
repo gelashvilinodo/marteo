@@ -201,7 +201,7 @@ export default function InventoryDeleteDialog({
             setUncertain(requestRef.current !== null);
             setError(
                 controller.signal.aborted
-                    ? "წაშლის შედეგი დაუდასტურებელია. დააჭირე „შედეგის გადამოწმებას“ — იგივე მოქმედება ორჯერ არ შესრულდება."
+                    ? "წაშლის შედეგი დაუდასტურებელია. დააჭირე „შედეგის გადამოწმებას“ - იგივე მოქმედება ორჯერ არ შესრულდება."
                     : cause instanceof Error
                         ? cause.message
                         : "წაშლის შედეგი ვერ დადასტურდა.",

@@ -33,6 +33,7 @@ const columns = [
             { label: "ხშირად დასმული კითხვები", href: "/faq" },
             { label: "კონტაქტი", href: "/contact" },
             { label: "ჩვენ შესახებ", href: "/about" },
+            { label: "პარტნიორები", href: "/partners" },
         ],
     },
     {
@@ -67,7 +68,7 @@ export default function Footer() {
 
                 <div className="grid grid-cols-2 gap-x-6 gap-y-10 py-12 sm:py-16 md:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))] md:gap-10">
                     <div className="col-span-2 md:col-span-1">
-                        <Link href="/" aria-label="MARTEO — მთავარი" className="inline-block">
+                        <Link href="/" aria-label="MARTEO - მთავარი" className="inline-block">
                             <Image
                                 src="/images/marteo-11.svg"
                                 alt=""
@@ -85,7 +86,7 @@ export default function Footer() {
                         </Link>
 
                         <p className="mt-4 max-w-xs text-sm leading-relaxed text-text-secondary">
-                            ბიზნესის მართვის პლატფორმა — შეკვეთები, მარაგი და
+                            ბიზნესის მართვის პლატფორმა - შეკვეთები, მარაგი და
                             ფინანსები ერთ სივრცეში.
                         </p>
 

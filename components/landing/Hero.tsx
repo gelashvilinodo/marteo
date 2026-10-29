@@ -116,7 +116,7 @@ export default function Hero() {
         >
             <div
                 ref={stickyRef}
-                className="relative max-lg:sticky max-lg:top-16 max-lg:h-[calc(100svh-4rem)] max-lg:overflow-hidden lg:min-h-[calc(100svh-4rem)]"
+                className="relative max-lg:sticky max-lg:top-[calc(4rem+env(safe-area-inset-top,0px))] max-lg:h-[calc(100svh-4rem-env(safe-area-inset-top,0px))] max-lg:overflow-hidden lg:min-h-[calc(100svh-4rem)]"
             >
                 <div aria-hidden="true" className="landing-hero-backdrop">
                     <span className="landing-hero-glow landing-hero-glow-1" />
@@ -146,7 +146,7 @@ export default function Hero() {
 
                         <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-slate-300 sm:mt-6 sm:text-lg lg:[@media(max-height:820px)]:mt-4 lg:[@media(max-height:820px)]:text-base">
                             მართე შეკვეთები, მარაგები, ფინანსები, ანალიტიკა და
-                            კონტენტი — ერთ სივრცეში. შენ ბიზნესზე ფიქრობ,
+                            კონტენტი - ერთ სივრცეში. შენ ბიზნესზე ფიქრობ,
                             დანარჩენს MARTEO აკეთებს.
                         </p>
 
@@ -177,8 +177,9 @@ export default function Hero() {
                         </ul>
                     </div>
 
-                    <div className="landing-hero-enter landing-hero-enter-delayed min-w-0 max-lg:absolute max-lg:inset-x-0 max-lg:top-0 max-lg:z-10 max-lg:h-[calc(100%-2rem)]">
-                        <div className="landing-hero-panel max-lg:h-full">
+                    {/* The wrapper spans the whole hero on phones; only the moving panel takes taps, so the buttons under it stay usable. */}
+                    <div className="landing-hero-enter landing-hero-enter-delayed min-w-0 max-lg:pointer-events-none max-lg:absolute max-lg:inset-x-0 max-lg:top-0 max-lg:z-10 max-lg:h-[calc(100%-2rem)]">
+                        <div className="landing-hero-panel max-lg:pointer-events-auto max-lg:h-full">
                             <HeroDashboardPreview />
                         </div>
                     </div>

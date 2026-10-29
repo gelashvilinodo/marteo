@@ -81,14 +81,14 @@ export default function OrderGroupingReview({
                                     <span className="break-words">
                                         {line.data.name}
                                         {" "}× {line.data.quantity}
-                                        {" "}— {line.data.lineTotal} ₾
+                                        {" "}- {line.data.lineTotal} ₾
                                     </span>
                                     <button
                                         type="button"
                                         onClick={() => onEditRow(line.rowKey)}
                                         className="min-h-11 rounded-xl border border-border px-3 text-sm"
                                     >
-                                        რიგი {line.rowNumber} — შესწორება
+                                        რიგი {line.rowNumber} - შესწორება
                                     </button>
                                 </li>
                             ))}

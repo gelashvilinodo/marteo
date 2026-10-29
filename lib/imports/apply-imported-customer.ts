@@ -47,7 +47,7 @@ export async function applyImportedCustomer({
 
     function fail(message: string, status = 422): never {
         throw new OrderValidationError(
-            `${record.fileName} / ${record.sheetName} — რიგი ${record.rowNumber}: ${message}`,
+            `${record.fileName} / ${record.sheetName} - რიგი ${record.rowNumber}: ${message}`,
             status,
         );
     }

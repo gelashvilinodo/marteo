@@ -98,7 +98,7 @@ export default function ExpenseBreakdown({
             </h2>
 
             <p className="mt-2 text-xs text-text-secondary">
-                {displayDate(data.from)} —{" "}
+                {displayDate(data.from)} -{" "}
                 {displayDate(data.to)}
             </p>
 

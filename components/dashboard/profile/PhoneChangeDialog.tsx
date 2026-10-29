@@ -445,7 +445,7 @@ export default function PhoneChangeDialog({
                                         className="min-h-10 text-xs text-accent disabled:text-text-secondary"
                                     >
                                         {waitSeconds > 0
-                                            ? `ხელახლა გაგზავნა — ${waitSeconds} წმ`
+                                            ? `ხელახლა გაგზავნა - ${waitSeconds} წმ`
                                             : "SMS-ის ხელახლა გაგზავნა"}
                                     </button>
 

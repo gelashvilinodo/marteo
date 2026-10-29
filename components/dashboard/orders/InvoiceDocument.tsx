@@ -216,7 +216,7 @@ export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: Or
         <div className="invoice-recipient">
             <p>
                 <strong>მიმღები:</strong>{" "}
-                {invoice.recipient.name || "—"}
+                {invoice.recipient.name || "-"}
             </p>
             <p>{invoice.recipient.phone}</p>
 

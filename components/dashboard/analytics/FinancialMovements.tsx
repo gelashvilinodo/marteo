@@ -497,7 +497,7 @@ export default function FinancialMovements({
                                         {!row.costComplete
                                             ? "დასაზუსტებელია"
                                             : row.cost === null
-                                                ? "—"
+                                                ? "-"
                                                 : `${row.cost} ₾`}
                                     </td>
                                     <td className="px-2 py-4 text-right">

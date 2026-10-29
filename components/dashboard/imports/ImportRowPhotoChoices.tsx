@@ -318,7 +318,7 @@ export default function ImportRowPhotoChoices({
                         >
                             <h3 className="text-sm font-semibold">
                                 {record.data?.name ?? "პროდუქტი"}
-                                {" — "}
+                                {" - "}
                                 {record.sheetName}
                                 {", რიგი "}
                                 {record.rowNumber}
@@ -389,7 +389,7 @@ export default function ImportRowPhotoChoices({
 
                                             <span className="mt-2 block">
                                                 ფოტო {index + 1}
-                                                {selected ? " — არჩეულია" : " — არჩევა"}
+                                                {selected ? " - არჩეულია" : " - არჩევა"}
                                             </span>
                                         </button>
                                     );

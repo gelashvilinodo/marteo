@@ -316,7 +316,7 @@ export default function BusinessOnboardingPage() {
                             </p>
 
                             <p className="mt-1 text-xs text-text-secondary">
-                                PNG, JPG ან WEBP — არასავალდებულო
+                                PNG, JPG ან WEBP - არასავალდებულო
                             </p>
                         </div>
 

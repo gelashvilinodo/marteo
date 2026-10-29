@@ -162,7 +162,7 @@ export default function StatisticsCharts({
                                             selected?.from === point.from
                                         }
                                         aria-label={`${date(point.from)}${point.from !== point.to
-                                                ? ` — ${date(point.to)}`
+                                                ? ` - ${date(point.to)}`
                                                 : ""
                                             }: ${point.count} შეკვეთა`}
                                         onClick={() =>
@@ -203,7 +203,7 @@ export default function StatisticsCharts({
                             <p className="text-sm text-text-primary">
                                 {date(selected.from)}
                                 {selected.from !== selected.to &&
-                                    ` — ${date(selected.to)}`}
+                                    ` - ${date(selected.to)}`}
                             </p>
                             <p className="mt-1 text-xs text-text-secondary">
                                 დასრულებული შეკვეთები
@@ -230,7 +230,7 @@ export default function StatisticsCharts({
                 </h2>
 
                 <p className="mt-3 text-xs text-text-secondary">
-                    {date(from)} — {date(to)}
+                    {date(from)} - {date(to)}
                 </p>
 
                 <div className="my-5 grid min-w-0 flex-1 grid-cols-2 items-center gap-3 sm:gap-5">

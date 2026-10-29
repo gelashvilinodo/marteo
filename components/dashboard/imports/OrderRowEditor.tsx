@@ -120,7 +120,7 @@ export default function OrderRowEditor({
                 <span className="text-sm">
                     {definition.label}
                     {definition.field === "unitCost"
-                        ? " — არასავალდებულო"
+                        ? " - არასავალდებულო"
                         : ""}
                 </span>
                 <input
@@ -158,7 +158,7 @@ export default function OrderRowEditor({
         <div className="space-y-4 rounded-xl border border-border p-3">
             <p className="break-words text-sm font-semibold">
                 {row.fileName} / {row.sheetName}
-                {" "}— რიგი {row.rowNumber}
+                {" "}- რიგი {row.rowNumber}
             </p>
 
             <div className="grid gap-3 sm:grid-cols-2">

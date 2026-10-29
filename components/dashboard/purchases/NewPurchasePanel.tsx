@@ -326,7 +326,7 @@ function AnimatedProductCard({
                     <button
                         type="button"
                         disabled={removing}
-                        aria-label={`${label} — წაშლა`}
+                        aria-label={`${label} - წაშლა`}
                         onClick={removeCard}
                         className="delete-action flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition disabled:cursor-wait"
                     >
@@ -1546,7 +1546,7 @@ export default function NewPurchasePanel({
                         className="sr-only"
                     >
                         {editingPurchase
-                            ? `პარტია #${String(editingPurchase.number).padStart(3, "0")} — რედაქტირება`
+                            ? `პარტია #${String(editingPurchase.number).padStart(3, "0")} - რედაქტირება`
                             : "ახალი პარტია"}
                     </h2>
 
@@ -1717,7 +1717,7 @@ export default function NewPurchasePanel({
                                         return (
                                             <AnimatedProductCard
                                                 key={product.id}
-                                                label={`პროდუქტი ${products.length - index}${product.name.trim() ? ` — ${product.name.trim()}` : ""
+                                                label={`პროდუქტი ${products.length - index}${product.name.trim() ? ` - ${product.name.trim()}` : ""
                                                     }`}
                                                 onRemove={() => {
                                                     setProducts((current) =>
@@ -2180,7 +2180,7 @@ export default function NewPurchasePanel({
                                                         </p>
                                                         <p className="mt-1 text-sm font-semibold">
                                                             {!hasPrice || price === null
-                                                                ? "—"
+                                                                ? "-"
                                                                 : money(price)}
                                                         </p>
                                                     </div>
@@ -2191,7 +2191,7 @@ export default function NewPurchasePanel({
                                                         </p>
                                                         <p className="mt-1 text-sm font-semibold text-accent">
                                                             {!hasPrice || price === null
-                                                                ? "—"
+                                                                ? "-"
                                                                 : money(price - cost)}
                                                         </p>
                                                     </div>
@@ -2338,7 +2338,7 @@ export default function NewPurchasePanel({
                                             </dt>
 
                                             <dd className="text-base font-semibold">
-                                                {expectedProfit === null ? "—" : money(expectedProfit)}
+                                                {expectedProfit === null ? "-" : money(expectedProfit)}
                                             </dd>
                                         </div>
                                     </dl>

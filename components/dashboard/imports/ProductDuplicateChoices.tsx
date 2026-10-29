@@ -80,7 +80,7 @@ export default function ProductDuplicateChoices({
                                             {record.fileName}
                                             {" / "}
                                             {record.sheetName}
-                                            {" — რიგი "}
+                                            {" - რიგი "}
                                             {record.rowNumber}
                                         </p>
 
@@ -129,7 +129,7 @@ export default function ProductDuplicateChoices({
                                             className="min-h-11 rounded-xl border border-border px-3"
                                         >
                                             {selected
-                                                ? "არჩეულია — მხოლოდ ეს ჩანაწერი დარჩება"
+                                                ? "არჩეულია - მხოლოდ ეს ჩანაწერი დარჩება"
                                                 : "მხოლოდ ეს ჩანაწერი დავტოვოთ"}
                                         </button>
                                     </article>
@@ -159,8 +159,8 @@ export default function ProductDuplicateChoices({
                                 className="min-h-11 rounded-xl border border-border px-3 text-sm"
                             >
                                 {decision?.action === "KEEP_SEPARATE"
-                                    ? "არჩეულია — სხვადასხვა პროდუქტებია"
-                                    : "სხვადასხვა პროდუქტებია — ყველა დავტოვოთ"}
+                                    ? "არჩეულია - სხვადასხვა პროდუქტებია"
+                                    : "სხვადასხვა პროდუქტებია - ყველა დავტოვოთ"}
                             </button>
 
                             {decision && (

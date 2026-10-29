@@ -102,7 +102,7 @@ export default async function PublicOrderPage({ params }: { params: Promise<{ to
             <header className="rounded-2xl border border-border bg-surface p-4 sm:p-6">
                 <div className="flex min-w-0 items-center gap-3">
                     {order.business.logoUrl
-                        ? <Image src={order.business.logoUrl} alt={`${order.business.name} — ლოგო`} width={56} height={56} unoptimized className="h-14 w-14 shrink-0 rounded-xl border border-border bg-white object-contain p-1" />
+                        ? <Image src={order.business.logoUrl} alt={`${order.business.name} - ლოგო`} width={56} height={56} unoptimized className="h-14 w-14 shrink-0 rounded-xl border border-border bg-white object-contain p-1" />
                         : <span aria-hidden="true" className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-2xl font-semibold text-accent">{Array.from(order.business.name.trim())[0] || "M"}</span>}
                     <div className="min-w-0">
                         <h1 className="break-words text-xl font-semibold sm:text-2xl">{order.business.name}</h1>

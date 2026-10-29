@@ -4,6 +4,8 @@ import { AdminAccessError } from "@/lib/admin/overview";
 import { listCampaigns } from "@/lib/notifications/admin";
 import { describeAudience } from "@/lib/notifications/audience-options";
 import { CancelCampaignButton } from "@/components/admin/notifications/CampaignForm";
+import PushCard from "@/components/support/PushCard";
+import { getVapidPublicKey } from "@/lib/push/web-push";
 
 const timeFormat = new Intl.DateTimeFormat("ka-GE", { timeZone: "Asia/Tbilisi", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
@@ -24,6 +26,8 @@ export default async function AdminNotificationsPage() {
                 <Link href="/admin/notifications/new" prefetch={false} className="rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent-hover">ახალი შეტყობინება</Link>
             </div>
         </div>
+
+        <PushCard publicKey={getVapidPublicKey()} description="ამ მოწყობილობაზე მოგივა ყოველი ახალი შეტყობინება დახმარების ჩათში და ყოველი ახალი მომხმარებლის რეგისტრაცია, ცალ-ცალკე, მაშინაც, თუ MARTEO დახურულია." />
 
         <section className="mt-6 rounded-2xl border border-border bg-surface p-5 text-sm text-text-secondary">
             <h2 className="font-semibold text-text-primary">ავტომატური შეტყობინებები</h2>

@@ -30,7 +30,7 @@ function formatMoney(value: string) {
     const amount = Number(value);
 
     if (!Number.isFinite(amount)) {
-        return "—";
+        return "-";
     }
 
     const [integer, decimal] = amount.toFixed(2).split(".");

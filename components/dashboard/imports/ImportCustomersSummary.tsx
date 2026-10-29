@@ -170,7 +170,7 @@ export default function ImportCustomersSummary({
                         {record.fileName}
                         {" / "}
                         {record.sheetName}
-                        {" — რიგი "}
+                        {" - რიგი "}
                         {record.rowNumber}
                     </p>
 
@@ -425,7 +425,7 @@ export default function ImportCustomersSummary({
                                 >
                                     <div className="space-y-2 text-sm">
                                         <h3 className="font-semibold text-danger">
-                                            ერთი ტელეფონი —{" "}
+                                            ერთი ტელეფონი -{" "}
                                             {group.length} ჩანაწერი
                                         </h3>
 
@@ -496,14 +496,14 @@ export default function ImportCustomersSummary({
                                             {record.fileName}
                                             {" / "}
                                             {record.sheetName}
-                                            {" — რიგი "}
+                                            {" - რიგი "}
                                             {record.rowNumber}
                                         </p>
 
                                         {record.data && (
                                             <p className="whitespace-pre-wrap break-words text-text-secondary">
                                                 {record.data.phone}
-                                                {" — "}
+                                                {" - "}
                                                 {record.data.address}
                                             </p>
                                         )}
@@ -617,7 +617,7 @@ export default function ImportCustomersSummary({
                                             {item.record.fileName}
                                             {" / "}
                                             {item.record.sheetName}
-                                            {" — რიგი "}
+                                            {" - რიგი "}
                                             {item.record.rowNumber}
                                         </p>
 
@@ -649,7 +649,7 @@ export default function ImportCustomersSummary({
 
                         <p className="text-xs text-text-secondary">
                             გამოტოვებული მომხმარებლები ამ გეგმაში არ შედის.
-                            ეს წინასწარი გეგმაა — ბაზაში შენახვა ჯერ არ ხდება.
+                            ეს წინასწარი გეგმაა - ბაზაში შენახვა ჯერ არ ხდება.
                             საბოლოო შენახვისას არსებული მონაცემები
                             ხელახლა შემოწმდება.
                         </p>

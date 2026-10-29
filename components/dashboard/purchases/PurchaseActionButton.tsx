@@ -229,7 +229,7 @@ export default function PurchaseActionButton({
                 type="button"
                 onClick={openDialog}
                 disabled={pending || loading}
-                aria-label={`პარტია #${number} — ${label}`}
+                aria-label={`პარტია #${number} - ${label}`}
                 title={label}
                 className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border transition disabled:opacity-50 ${
                     isDelete
@@ -258,7 +258,7 @@ export default function PurchaseActionButton({
                 className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl border border-border bg-surface p-5 text-text-primary shadow-xl backdrop:bg-black/45"
             >
                 <h2 id={titleId} className="text-lg font-semibold">
-                    პარტია #{number} — {label}
+                    პარტია #{number} - {label}
                 </h2>
 
                 <p

@@ -18,7 +18,7 @@ export async function createAccountantPdf(data: AccountantReport, suppliedFonts?
         lines.push(line); return lines;
     }
     function draw(text: string, x: number, top: number, size = 8, font = regular) { page.drawText(text, { x, y: H - top - size, font, size, color: rgb(.08, .1, .13) }); }
-    function newPage() { page = pdf.addPage([W, H]); y = M; for (const line of wrap(data.businessName, bold, 11, width)) { draw(line, M, y, 11, bold); y += 15; } y += 5; draw('ბიზნესის ანგარიში · ' + data.from + ' — ' + data.to, M, y, 10, bold); y += 24; }
+    function newPage() { page = pdf.addPage([W, H]); y = M; for (const line of wrap(data.businessName, bold, 11, width)) { draw(line, M, y, 11, bold); y += 15; } y += 5; draw('ბიზნესის ანგარიში · ' + data.from + ' - ' + data.to, M, y, 10, bold); y += 24; }
     function paragraph(value: string, size = 8, font = regular) { for (const line of wrap(value, font, size, width)) { if (y + size + 5 > H - 36) newPage(); draw(line, M, y, size, font); y += size + 5; } y += 5; }
     newPage(); paragraph('მომზადებულია: ' + new Intl.DateTimeFormat('ka-GE', { timeZone: 'Asia/Tbilisi', dateStyle: 'short', timeStyle: 'short' }).format(new Date(data.createdAt)), 7);
     for (const h of data.highlights) { paragraph(h.label + ': ' + h.value, 11, bold); paragraph(h.description, 8); }

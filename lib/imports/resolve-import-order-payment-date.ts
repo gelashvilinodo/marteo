@@ -109,7 +109,7 @@ export function resolveImportOrderPaymentDate(input: {
                 resolved.message + " " +
                 resolved.conflicts.map(
                     conflict =>
-                        `${conflict.value} — რიგები ${conflict.rowNumbers.join(", ")}`,
+                        `${conflict.value} - რიგები ${conflict.rowNumbers.join(", ")}`,
                 ).join("; "),
         };
     }

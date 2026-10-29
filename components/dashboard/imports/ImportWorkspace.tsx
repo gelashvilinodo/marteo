@@ -184,7 +184,7 @@ function FilePreview({
                             <div>
                                 <h3 className="break-words text-sm font-semibold">{sheet.name}</h3>
                                 <p className="mt-1 text-xs text-text-secondary">
-                                    {enabled ? "მონაცემები ამ ფურცლიდანაც გადმოვა" : "დამატებითი წყარო — ამ ეტაპზე გამოტოვებულია"}
+                                    {enabled ? "მონაცემები ამ ფურცლიდანაც გადმოვა" : "დამატებითი წყარო - ამ ეტაპზე გამოტოვებულია"}
                                 </p>
                             </div>
                             <button type="button" onClick={toggle} className="min-h-10 rounded-lg border border-border px-3 text-xs">
@@ -366,7 +366,7 @@ export default function ImportWorkspace() {
                         update(id, {
                             state: "ERROR",
                             error:
-                                "ეს ფაილი უკვე დამატებულია — შიგთავსი იდენტურია.",
+                                "ეს ფაილი უკვე დამატებულია - შიგთავსი იდენტურია.",
                         });
                         continue;
                     }
@@ -612,7 +612,7 @@ export default function ImportWorkspace() {
                 </h1>
 
                 <p className="mt-2 text-sm text-text-secondary">
-                    ატვირთე ფაილები — MARTEO თავად იპოვის შეკვეთებს,
+                    ატვირთე ფაილები - MARTEO თავად იპოვის შეკვეთებს,
                     მომხმარებლებსა და პროდუქტებს. თითოეულ ეტაპს ცალ-ცალკე გაივლი.
                 </p>
             </div>
@@ -691,7 +691,7 @@ export default function ImportWorkspace() {
                         <p className="font-semibold">{IMPORT_CATEGORY_LABELS[category]}</p>
                         <div className="mt-2 space-y-2 text-sm text-text-secondary">{discovery.filter(source => source.category === category).map(source => <p key={JSON.stringify([source.fileId, source.sheetName])} className="break-words">
                             {source.fileName} / {source.sheetName} · {source.rowCount} რიგი
-                            {source.missing.length > 0 ? ` — დასამატებელი ან დასაკავშირებელია: ${source.missing.join(", ")}` : " — ძირითადი სვეტები ამოცნობილია"}
+                            {source.missing.length > 0 ? ` - დასამატებელი ან დასაკავშირებელია: ${source.missing.join(", ")}` : " - ძირითადი სვეტები ამოცნობილია"}
                             {!source.suggested && " · დამატებითი წყარო"}
                         </p>)}</div>
                     </div>)}
@@ -927,7 +927,7 @@ export default function ImportWorkspace() {
                                                             <span className="font-semibold">
                                                                 {issue.sheetName}
                                                                 {issue.rowNumber !== null
-                                                                    ? ` — რიგი ${issue.rowNumber}`
+                                                                    ? ` - რიგი ${issue.rowNumber}`
                                                                     : ""}
                                                                 {": "}
                                                             </span>

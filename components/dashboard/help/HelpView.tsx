@@ -3,7 +3,7 @@
 import { Icon } from "@iconify/react";
 import SupportChat from "@/components/support/SupportChat";
 import { MarteoAvatar } from "@/components/support/SupportAvatar";
-import PushToggle from "@/components/support/PushToggle";
+import PushBanner from "@/components/support/PushBanner";
 import { SUPPORT_CHANNELS, SUPPORT_WELCOME_TEXT } from "@/lib/support/support-config";
 
 type HelpViewProps = {
@@ -43,6 +43,7 @@ export default function HelpView({ business, self, firstName, pushKey }: HelpVie
             <SupportChat
                 viewer="USER"
                 endpoint="/api/support/messages"
+                banner={<PushBanner publicKey={pushKey} text="ჩართე შეტყობინებები, რომ პასუხი არ გამოგრჩეს." />}
                 welcome={welcome}
                 business={business}
                 self={self}
@@ -67,14 +68,6 @@ export default function HelpView({ business, self, firstName, pushKey }: HelpVie
                     {SUPPORT_CHANNELS.map(channel => <ChannelLink key={channel.id} channel={channel} />)}
                 </div>
             </section>
-            {pushKey && <section className="rounded-3xl border border-border bg-surface p-4">
-                <h2 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
-                    <Icon icon="solar:bell-bing-bold-duotone" className="h-4 w-4 text-accent" aria-hidden="true" />
-                    შეგატყობინოთ პასუხი?
-                </h2>
-                <p className="mb-3 mt-1 text-xs leading-5 text-text-secondary">როცა მართეოს გუნდი გიპასუხებს, ტელეფონზე ან კომპიუტერზე შეტყობინება მოგივა — მაშინაც, თუ ეს გვერდი დახურულია.</p>
-                <PushToggle publicKey={pushKey} tone="light" />
-            </section>}
         </aside>
     </main>;
 }

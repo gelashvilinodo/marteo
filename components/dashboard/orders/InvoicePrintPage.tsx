@@ -324,7 +324,7 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
                     setPaper(event.target.value);
                     try { localStorage.setItem("marteo.invoice-paper", event.target.value); } catch { /* არჩევანი მაინც მუშაობს */ }
                 }} className="h-11 rounded-xl border border-border bg-background px-3 text-[16px]">
-                    <option value="a4">A4</option><option value="100x150">10 × 15 სმ</option><option value="80mm">თერმული — 80 მმ</option><option value="58mm">თერმული — 58 მმ</option>
+                    <option value="a4">A4</option><option value="100x150">10 × 15 სმ</option><option value="80mm">თერმული - 80 მმ</option><option value="58mm">თერმული - 58 მმ</option>
                 </select>
                 <button
                     type="button"
@@ -380,7 +380,7 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
                 <div className="flex flex-wrap items-center justify-center gap-3">
                     <span className="inline-flex items-center gap-2">
                         <Icon icon={invoice.printState === "PRINTED" ? "solar:check-circle-linear" : "solar:document-text-linear"} className="h-5 w-5" />
-                        {invoice.printState === "PRINTED" ? "დაბეჭდილია" : invoice.printState === "UPDATED" ? "შეცვლილია — ხელახლა დასაბეჭდია" : "ჯერ არ დაბეჭდილა"}
+                        {invoice.printState === "PRINTED" ? "დაბეჭდილია" : invoice.printState === "UPDATED" ? "შეცვლილია - ხელახლა დასაბეჭდია" : "ჯერ არ დაბეჭდილა"}
                     </span>
                     {invoice.printState !== "PRINTED" && <button type="button" disabled={confirming || printing} onClick={confirmPrinted} className="rounded-lg bg-success px-3 py-2 font-semibold text-white disabled:opacity-50">{confirming ? "ინახება…" : "მონიშნე დაბეჭდილად"}</button>}
                 </div>

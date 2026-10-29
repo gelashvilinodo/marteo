@@ -169,7 +169,7 @@ export default function ImportProductsSummary({
     const labels = {
         READY: "გამართული ველები",
         INVALID: "საჭიროა შესწორება",
-        NEEDS_REVIEW: "შესაძლო განმეორება — გადასამოწმებელია",
+        NEEDS_REVIEW: "შესაძლო განმეორება - გადასამოწმებელია",
     } as const;
 
     function renderCard(
@@ -192,7 +192,7 @@ export default function ImportProductsSummary({
                         {record.fileName}
                         {" / "}
                         {record.sheetName}
-                        {" — რიგი "}
+                        {" - რიგი "}
                         {record.rowNumber}
                     </p>
 
@@ -236,7 +236,7 @@ export default function ImportProductsSummary({
                             </>
                         ) : (
                             <p className="text-text-secondary">
-                                მხოლოდ პროდუქტი — რაოდენობა
+                                მხოლოდ პროდუქტი - რაოდენობა
                                 მარაგში დასამატებლად არ გამოიყენება.
                             </p>
                         )}
@@ -421,7 +421,7 @@ export default function ImportProductsSummary({
                                                 {record.fileName}
                                                 {" / "}
                                                 {record.sheetName}
-                                                {" — რიგი "}
+                                                {" - რიგი "}
                                                 {record.rowNumber}
                                             </p>
 
@@ -431,7 +431,7 @@ export default function ImportProductsSummary({
                                                     {kept.fileName}
                                                     {" / "}
                                                     {kept.sheetName}
-                                                    {" — რიგი "}
+                                                    {" - რიგი "}
                                                     {kept.rowNumber}
                                                 </p>
                                             )}
@@ -484,7 +484,7 @@ export default function ImportProductsSummary({
                                     <div className="space-y-1 text-sm">
                                         <h3 className="font-semibold text-danger">
                                             დაკავშირებული შესაძლო
-                                            დამთხვევები — {group.length}
+                                            დამთხვევები - {group.length}
                                         </h3>
                                         <p className="text-text-secondary">
                                             კოდით ან სახელისა და
@@ -546,7 +546,7 @@ export default function ImportProductsSummary({
                                             {record.fileName}
                                             {" / "}
                                             {record.sheetName}
-                                            {" — რიგი "}
+                                            {" - რიგი "}
                                             {record.rowNumber}
                                         </p>
 
@@ -594,7 +594,7 @@ export default function ImportProductsSummary({
                         labels={Object.fromEntries(
                             records.map(record => [
                                 record.key,
-                                `${record.fileName} / ${record.sheetName} — რიგი ${record.rowNumber}`,
+                                `${record.fileName} / ${record.sheetName} - რიგი ${record.rowNumber}`,
                             ]),
                         )}
                         onChecked={onProductsChecked}

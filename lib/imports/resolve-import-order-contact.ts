@@ -112,7 +112,7 @@ export function resolveImportOrderContact(
                 text = String(raw);
             } else {
                 messages.push(
-                    `რიგი ${row.rowNumber}: ${labels[field]} — ` +
+                    `რიგი ${row.rowNumber}: ${labels[field]} - ` +
                     "მნიშვნელობის ფორმატი არასწორია. გადაამოწმე არჩეული სვეტი.",
                 );
                 continue;
@@ -147,7 +147,7 @@ export function resolveImportOrderContact(
         if (resolved.kind === "NEEDS_REVIEW") {
             const locations = resolved.conflicts.map(
                 conflict =>
-                    `${conflict.value} — რიგები ${conflict.rowNumbers.join(", ")}`,
+                    `${conflict.value} - რიგები ${conflict.rowNumbers.join(", ")}`,
             );
 
             messages.push(

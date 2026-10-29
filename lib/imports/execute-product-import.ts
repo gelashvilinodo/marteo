@@ -266,7 +266,7 @@ export async function executeProductImport(
 
     if (previouslyImported > 0) {
         fail(
-            "მონახაზზე უკვე არსებობს შესრულებული პროდუქტები. მათი გამეორება შეჩერებულია — შესრულების შედეგი გადასამოწმებელია.",
+            "მონახაზზე უკვე არსებობს შესრულებული პროდუქტები. მათი გამეორება შეჩერებულია - შესრულების შედეგი გადასამოწმებელია.",
             409,
         );
     }
@@ -310,7 +310,7 @@ export async function executeProductImport(
 
         fail(
             `ფოტოებზე გადასაწყვეტია ${photoPlan.problems.length} ჩანაწერი. ` +
-            `${first.fileName} / ${first.sheetName} — ` +
+            `${first.fileName} / ${first.sheetName} - ` +
             (
                 first.rowNumber === null
                     ? first.message

@@ -187,7 +187,7 @@ export default function NewOrderDrawer() {
                     } : current);
                     autoFilled.current = { ...customer, phone };
                     setCustomerInfo("მომხმარებელი მოიძებნა.");
-                } else setCustomerInfo("ახალი მომხმარებელი — შეკვეთასთან ერთად შეინახება.");
+                } else setCustomerInfo("ახალი მომხმარებელი - შეკვეთასთან ერთად შეინახება.");
             } catch (cause: unknown) {
                 if (active && !(cause instanceof Error && cause.name === "AbortError")) setCustomerInfo(cause instanceof Error ? cause.message : "მომხმარებლის მოძებნა ვერ მოხერხდა. ინფორმაციის ხელით შეყვანა შეგიძლია.");
             } finally { if (active) setCustomerBusy(false); }
@@ -500,7 +500,7 @@ export default function NewOrderDrawer() {
                 setError(cause.message);
             } else {
                 setError(
-                    "შენახვის შედეგი ვერ დადასტურდა. მონაცემები შენარჩუნებულია — დააჭირე ხელახლა ცდას.",
+                    "შენახვის შედეგი ვერ დადასტურდა. მონაცემები შენარჩუნებულია - დააჭირე ხელახლა ცდას.",
                 );
             }
         } finally {
@@ -595,7 +595,7 @@ export default function NewOrderDrawer() {
                                             htmlFor={`${formId}-notes`}
                                             className="block text-xs text-text-secondary"
                                         >
-                                            კომენტარი — არასავალდებულო
+                                            კომენტარი - არასავალდებულო
                                         </label>
 
                                         <textarea

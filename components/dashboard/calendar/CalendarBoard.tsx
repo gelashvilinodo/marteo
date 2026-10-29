@@ -66,7 +66,7 @@ export default function CalendarBoard({
         data.view === "month"
             ? `${months[Number(data.anchor.slice(5, 7)) - 1]} ${data.anchor.slice(0, 4)}`
             : data.view === "week"
-                ? `${dateLabel(data.from)} — ${dateLabel(data.to)}`
+                ? `${dateLabel(data.from)} - ${dateLabel(data.to)}`
                 : dateLabel(data.anchor);
 
     return (

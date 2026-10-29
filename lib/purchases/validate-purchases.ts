@@ -138,7 +138,7 @@ export function validatePurchase(value: unknown) {
         const purchaseItemId =
             text(
                 item.purchaseItemId,
-                `${label} — პარტიის პროდუქტის ჩანაწერი`,
+                `${label} - პარტიის პროდუქტის ჩანაწერი`,
                 100,
             ) || null;
 
@@ -154,7 +154,7 @@ export function validatePurchase(value: unknown) {
 
         const quantity = text(
             item.quantity,
-            `${label} — რაოდენობა`,
+            `${label} - რაოდენობა`,
             7,
             true,
         );
@@ -171,7 +171,7 @@ export function validatePurchase(value: unknown) {
 
         const defectiveQuantityText = text(
             item.defectiveQuantity,
-            `${label} — წუნდებული რაოდენობა`,
+            `${label} - წუნდებული რაოდენობა`,
             7,
         ) || "0";
 
@@ -188,7 +188,7 @@ export function validatePurchase(value: unknown) {
 
         const defectNote = text(
             item.defectNote,
-            `${label} — წუნის აღწერა`,
+            `${label} - წუნის აღწერა`,
             2000,
         );
 
@@ -209,7 +209,7 @@ export function validatePurchase(value: unknown) {
 
         const unitPurchasePrice = money(
             item.unitPurchasePrice,
-            `${label} — შესყიდვის ფასი`,
+            `${label} - შესყიდვის ფასი`,
             true,
         );
 
@@ -219,7 +219,7 @@ export function validatePurchase(value: unknown) {
 
         const method = text(
             item.pricingMethod,
-            `${label} — ფასის განსაზღვრის მეთოდი`,
+            `${label} - ფასის განსაზღვრის მეთოდი`,
             30,
             true,
         );
@@ -230,7 +230,7 @@ export function validatePurchase(value: unknown) {
 
         const pricingValue = money(
             item.pricingValue,
-            `${label} — გასაყიდი ფასის პარამეტრი`,
+            `${label} - გასაყიდი ფასის პარამეტრი`,
             true,
         );
 
@@ -246,25 +246,25 @@ export function validatePurchase(value: unknown) {
             sourceInventoryItemId:
                 text(
                     item.sourceInventoryItemId,
-                    `${label} — მარაგის ჩანაწერი`,
+                    `${label} - მარაგის ჩანაწერი`,
                     100,
                 ) || null,
 
-            name: text(item.name, `${label} — სახელი`, 200, true),
-            brand: text(item.brand, `${label} — ბრენდი`, 100),
+            name: text(item.name, `${label} - სახელი`, 200, true),
+            brand: text(item.brand, `${label} - ბრენდი`, 100),
             category: text(
                 item.category,
-                `${label} — კატეგორია`,
+                `${label} - კატეგორია`,
                 100,
                 true,
             ),
             description: text(
                 item.description,
-                `${label} — აღწერა`,
+                `${label} - აღწერა`,
                 2000,
             ),
-            color: text(item.color, `${label} — ფერი`, 100),
-            size: text(item.size, `${label} — ზომა`, 100),
+            color: text(item.color, `${label} - ფერი`, 100),
+            size: text(item.size, `${label} - ზომა`, 100),
 
             quantity,
             defectiveQuantity,

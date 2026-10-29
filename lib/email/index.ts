@@ -31,7 +31,7 @@ export async function sendVerificationEmail({
   const { data, error } = await resend.emails.send({
     from: fromEmail,
     to: [to],
-    subject: "MARTEO — ელფოსტის დადასტურება",
+    subject: "MARTEO - ელფოსტის დადასტურება",
     html: `
   <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
     <h2>მოგესალმებით MARTEO-ში, ${escapeHtml(firstName)}!</h2>

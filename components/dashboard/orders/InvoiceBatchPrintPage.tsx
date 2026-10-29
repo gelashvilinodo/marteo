@@ -235,7 +235,7 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                 }
             }
 
-            combined.setTitle("Marteo — ინვოისები");
+            combined.setTitle("Marteo - ინვოისები");
             combined.setCreator("Marteo");
 
             const bytes = await combined.save({
@@ -392,7 +392,7 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
             }
         `}</style>
         <div className="batch-controls mx-auto mb-6 max-w-3xl space-y-4 rounded-2xl border border-border bg-surface p-4 text-center sm:p-5">
-            <h1 className="text-xl font-semibold">ინვოისები — {entries.length} / {total ?? "…"}</h1>
+            <h1 className="text-xl font-semibold">ინვოისები - {entries.length} / {total ?? "…"}</h1>
             <div className="flex flex-wrap items-center justify-center gap-3">
                 <a
                     href="/dashboard/orders"

@@ -29,7 +29,7 @@ const navigationItems = [
         locked: false,
     },
     {
-        label: "შესყიდვები — მასალები",
+        label: "შესყიდვები - მასალები",
         href: "/dashboard/material-purchases",
         icon: "",
         locked: false,

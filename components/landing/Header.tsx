@@ -35,7 +35,8 @@ export default function Header() {
   return (
     <>
       <header className="sticky top-0 z-50">
-        <div className="landing-header-surface relative z-10 border-b border-border bg-background/95 backdrop-blur">
+        {/* The installed app draws under the status bar; the safe-area inset keeps the header below the clock. */}
+        <div className="landing-header-surface relative z-10 border-b border-border bg-background pt-[env(safe-area-inset-top,0px)]">
           <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
             <Link
               href="/"

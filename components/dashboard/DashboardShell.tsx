@@ -10,6 +10,7 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { NewOrderProvider } from "@/components/dashboard/orders/NewOrderProvider";
 import DeferredNewOrderDrawer from "@/components/dashboard/orders/DeferredNewOrderDrawer";
+import PullToRefresh from "@/components/dashboard/PullToRefresh";
 
 type DashboardShellProps = {
     children: React.ReactNode;
@@ -102,7 +103,7 @@ export default function DashboardShell({
                 />
 
                 <NewOrderProvider>
-                    {children}
+                    <PullToRefresh>{children}</PullToRefresh>
 
                     <DeferredNewOrderDrawer />
                 </NewOrderProvider>

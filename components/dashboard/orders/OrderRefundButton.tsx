@@ -106,7 +106,7 @@ export default function OrderRefundButton({ orderId, onUpdated, onChanged }: {
                 setPending(null);
                 setError(cause.message);
             } else {
-                setError("აღრიცხვის შედეგი დაუდასტურებელია. ხელახლა ცდა მხოლოდ ჩანაწერს გადაამოწმებს — მომხმარებელს თანხა მეორედ არ დაუბრუნო.");
+                setError("აღრიცხვის შედეგი დაუდასტურებელია. ხელახლა ცდა მხოლოდ ჩანაწერს გადაამოწმებს - მომხმარებელს თანხა მეორედ არ დაუბრუნო.");
             }
         } finally {
             running.current = false;

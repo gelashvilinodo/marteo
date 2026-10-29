@@ -2,6 +2,7 @@ import "server-only";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { MARTEO_CONTACTS } from "@/lib/marteo-contacts";
+import { createPrismaClient } from "@/lib/prisma";
 
 // Web Push (RFC 8291 aes128gcm + RFC 8292 VAPID) on WebCrypto only, so it runs
 // unchanged in Node and in the Cloudflare Worker runtime.
@@ -110,22 +111,43 @@ async function sendOne(subscription: { endpoint: string; p256dh: string; auth: s
         body: await encryptPayload(JSON.stringify(message), subscription.p256dh, subscription.auth) as BodyInit,
     });
     if (response.status === 404 || response.status === 410) return "gone" as const;
-    if (!response.ok) console.error("Web push rejected", response.status);
+    if (!response.ok) {
+        console.error("Web push rejected", response.status, await response.text().catch(() => ""));
+        return "rejected" as const;
+    }
     return "sent" as const;
 }
 
-export async function sendPushToUsers(prisma: PrismaClient, userIds: string[], message: PushMessage) {
-    if (!userIds.length) return;
+export type PushDelivery = { devices: number; sent: number; removed: number; failed: number };
+
+export async function sendPushToUsers(prisma: PrismaClient, userIds: string[], message: PushMessage): Promise<PushDelivery> {
+    if (!userIds.length) return { devices: 0, sent: 0, removed: 0, failed: 0 };
     const subscriptions = await prisma.webPushSubscription.findMany({
         where: { userId: { in: userIds } },
         select: { id: true, endpoint: true, p256dh: true, auth: true },
     });
     const results = await Promise.allSettled(subscriptions.map(subscription => sendOne(subscription, message)));
-    const gone = subscriptions.filter((_, index) => {
+    const outcome = (index: number) => {
         const result = results[index];
-        return result.status === "fulfilled" && result.value === "gone";
-    }).map(subscription => subscription.id);
+        return result.status === "fulfilled" ? result.value : "failed";
+    };
+    const gone = subscriptions.filter((_, index) => outcome(index) === "gone").map(subscription => subscription.id);
     if (gone.length) await prisma.webPushSubscription.deleteMany({ where: { id: { in: gone } } });
+    return {
+        devices: subscriptions.length,
+        sent: results.filter((_, index) => outcome(index) === "sent").length,
+        removed: gone.length,
+        failed: results.filter((_, index) => ["failed", "rejected", "unconfigured"].includes(outcome(index))).length,
+    };
+}
+
+// The platform owner's devices; the sender never notifies themselves.
+export async function notifyPlatformAdmin(prisma: PrismaClient, message: PushMessage, exceptUserId?: string) {
+    // A notification must never fail the request that triggered it.
+    const admin = await prisma.user.findFirst({ where: { isPlatformAdmin: true, status: "ACTIVE" }, select: { id: true } }).catch(() => null);
+    if (!admin || admin.id === exceptUserId) return;
+    const pushClient = createPrismaClient();
+    await runInBackground(sendPushToUsers(pushClient, [admin.id], message).finally(() => pushClient.$disconnect()));
 }
 
 // Keep the HTTP response fast: on Cloudflare the push continues after it.

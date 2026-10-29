@@ -226,7 +226,7 @@ export default function ProductImportPlan({
                                     {item.record.fileName}
                                     {" / "}
                                     {item.record.sheetName}
-                                    {" — რიგი "}
+                                    {" - რიგი "}
                                     {item.record.rowNumber}
                                 </p>
 
@@ -281,7 +281,7 @@ export default function ProductImportPlan({
                                 {item.record.fileName}
                                 {" / "}
                                 {item.record.sheetName}
-                                {" — რიგი "}
+                                {" - რიგი "}
                                 {item.record.rowNumber}
                             </p>
 

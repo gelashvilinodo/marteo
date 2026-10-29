@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import SupportAvatar, { MarteoAvatar } from "./SupportAvatar";
 import { playSupportChime } from "./support-sound";
+import { useKeyboardViewport } from "./useKeyboardViewport";
 import {
     SUPPORT_MESSAGE_MAX_LENGTH,
     SUPPORT_POLL_MS,
@@ -18,6 +19,8 @@ type SupportChatProps = {
     viewer: Viewer;
     endpoint: string;
     header: ReactNode;
+    // Shown under the header, e.g. the one-time notification nudge.
+    banner?: ReactNode;
     // Shown as Marteo's first message; never stored.
     welcome?: string;
     business: { name: string; logoUrl: string | null };
@@ -43,7 +46,7 @@ function dayLabel(iso: string) {
     return day;
 }
 
-export default function SupportChat({ viewer, endpoint, header, welcome, business, sound = false, self, onThread }: SupportChatProps) {
+export default function SupportChat({ viewer, endpoint, header, banner, welcome, business, sound = false, self, onThread }: SupportChatProps) {
     const [thread, setThread] = useState<SupportThreadView | null>(null);
     const [pending, setPending] = useState<Pending[]>([]);
     const [animated, setAnimated] = useState<Record<string, "in" | "out">>({});
@@ -58,6 +61,7 @@ export default function SupportChat({ viewer, endpoint, header, welcome, busines
     const known = useRef<Set<string> | null>(null);
     const sending = useRef(0);
     const scroller = useRef<HTMLDivElement>(null);
+    const keyboard = useKeyboardViewport();
     const input = useRef<HTMLTextAreaElement>(null);
     const nearBottom = useRef(true);
     const forceScroll = useRef(false);
@@ -152,6 +156,12 @@ export default function SupportChat({ viewer, endpoint, header, welcome, busines
         }
     }, [thread]);
 
+    // Opening the keyboard shrinks the list; keep the newest message in view.
+    useLayoutEffect(() => {
+        const element = scroller.current;
+        if (keyboard.open && element) element.scrollTop = element.scrollHeight;
+    }, [keyboard.open, keyboard.height]);
+
     const onScroll = () => {
         const element = scroller.current;
         if (!element) return;
@@ -226,10 +236,14 @@ export default function SupportChat({ viewer, endpoint, header, welcome, busines
 
     const createdAtOf = (row: Row) => row.kind === "message" ? row.message.createdAt : row.kind === "pending" ? row.pending.createdAt : row.createdAt;
 
-    return <section className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-[0_18px_50px_-30px_rgb(15_28_46/0.45)]">
-        <header className="flex shrink-0 items-center gap-3 border-b border-border bg-gradient-to-r from-[#0B2A55] via-[#0A244B] to-[#081F46] px-4 py-3 text-white sm:px-5">
+    return <section
+        style={keyboard.open ? { position: "fixed", left: 0, right: 0, top: keyboard.top, height: keyboard.height, zIndex: 60 } : undefined}
+        className={`relative flex min-h-0 flex-col overflow-hidden bg-surface ${keyboard.open ? "" : "h-full rounded-3xl border border-border shadow-[0_18px_50px_-30px_rgb(15_28_46/0.45)]"}`}>
+        <header className={`flex shrink-0 items-center gap-3 border-b border-border bg-gradient-to-r from-[#0B2A55] via-[#0A244B] to-[#081F46] px-4 pb-3 text-white sm:px-5 ${keyboard.open && keyboard.top === 0 ? "pt-[max(0.75rem,env(safe-area-inset-top))]" : "pt-3"}`}>
             {header}
         </header>
+
+        {!keyboard.open && banner}
 
         <div ref={scroller} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-5" aria-live="polite" aria-relevant="additions">
             <p className="mx-auto mb-4 flex w-fit items-center gap-1.5 rounded-full bg-background px-3 py-1 text-[11px] text-text-secondary">
@@ -306,9 +320,9 @@ export default function SupportChat({ viewer, endpoint, header, welcome, busines
             <Icon icon="solar:arrow-down-linear" className="h-3.5 w-3.5" aria-hidden="true" /> ახალი შეტყობინება
         </button>}
 
-        <footer className="shrink-0 border-t border-border bg-surface px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-4">
+        <footer className={`shrink-0 border-t border-border bg-surface px-3 pt-3 sm:px-4 ${keyboard.open ? "pb-2" : "pb-[max(0.75rem,env(safe-area-inset-bottom))]"}`}>
             {viewer === "USER" && thread?.status === "CLOSED" && <p className="mb-2 rounded-xl bg-background px-3 py-2 text-xs text-text-secondary">საუბარი დასრულებულია. ახალი შეტყობინება მას ხელახლა გახსნის.</p>}
-            {loadError && <p className="mb-2 text-xs text-warning">კავშირი შეფერხდა — ვცდილობთ ხელახლა…</p>}
+            {loadError && <p className="mb-2 text-xs text-warning">კავშირი შეფერხდა - ვცდილობთ ხელახლა…</p>}
             {error && <p role="alert" className="mb-2 text-xs text-danger">{error}</p>}
             <form className="flex items-end gap-2" onSubmit={event => { event.preventDefault(); send(); }}>
                 <label className="sr-only" htmlFor={`support-input-${viewer}`}>შეტყობინება</label>
@@ -327,7 +341,7 @@ export default function SupportChat({ viewer, endpoint, header, welcome, busines
                             send();
                         }
                     }}
-                    className="max-h-[140px] min-h-11 flex-1 resize-none rounded-2xl border border-border bg-background px-4 py-2.5 text-[15px] text-text-primary outline-none transition placeholder:text-text-secondary focus:border-accent focus:ring-2 focus:ring-accent/20"
+                    className="max-h-[140px] min-h-11 flex-1 resize-none rounded-2xl border border-border bg-background px-4 py-2.5 text-base text-text-primary outline-none transition placeholder:text-text-secondary focus:border-accent focus:ring-2 focus:ring-accent/20"
                 />
                 <button
                     type="submit"

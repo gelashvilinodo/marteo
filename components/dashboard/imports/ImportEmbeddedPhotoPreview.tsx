@@ -74,7 +74,7 @@ export default function ImportEmbeddedPhotoPreview({
 
                             <figcaption className="mt-2 break-words text-xs text-text-secondary">
                                 {photo.sheetName}
-                                {" — რიგი "}
+                                {" - რიგი "}
                                 {photo.rowNumber}
                             </figcaption>
                         </figure>

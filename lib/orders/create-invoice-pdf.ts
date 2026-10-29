@@ -529,7 +529,7 @@ export async function createInvoicePdf(
         gap(12);
     }
 
-    text(`მიმღები: ${invoice.recipient.name || "—"}`, true);
+    text(`მიმღები: ${invoice.recipient.name || "-"}`, true);
     text(invoice.recipient.phone);
     if (invoice.recipient.address) text(invoice.recipient.address);
 
@@ -910,7 +910,7 @@ export async function createInvoicePdf(
         top -= block.height;
     }
 
-    pdf.setTitle(`Marteo — ინვოისი${number}`);
+    pdf.setTitle(`Marteo - ინვოისი${number}`);
     pdf.setCreator("Marteo");
 
     const bytes = await pdf.save({ objectsPerTick: 10 });

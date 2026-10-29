@@ -6,7 +6,7 @@ import Footer from "@/components/landing/Footer";
 import CookieSettingsButton from "@/components/consent/CookieSettingsButton";
 
 export const metadata = {
-    title: "ქუქი-ფაილები — MARTEO",
+    title: "ქუქი-ფაილები - MARTEO",
     description: "რომელ ქუქი-ფაილებს იყენებს მართეო, რისთვის და როგორ შეცვალო შენი არჩევანი.",
 };
 
@@ -57,7 +57,7 @@ export default function CookiesPage() {
                         ქუქი-ფაილები
                     </h1>
                     <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/70 sm:text-base">
-                        მარტივად — რას ვინახავთ შენს ბრაუზერში, რისთვის და როგორ შეცვალო არჩევანი.
+                        მარტივად - რას ვინახავთ შენს ბრაუზერში, რისთვის და როგორ შეცვალო არჩევანი.
                     </p>
                 </div>
             </section>
@@ -69,7 +69,7 @@ export default function CookiesPage() {
                     </h2>
                     <p>
                         ქუქი-ფაილი პატარა ჩანაწერია, რომელსაც საიტი შენს ბრაუზერში ინახავს, რომ შენი არჩევანი ან
-                        შესვლა დაიმახსოვროს. ზოგი მათგანი საიტის მუშაობისთვის აუცილებელია, ზოგი კი — მხოლოდ
+                        შესვლა დაიმახსოვროს. ზოგი მათგანი საიტის მუშაობისთვის აუცილებელია, ზოგი კი - მხოლოდ
                         სტატისტიკისთვის.
                     </p>
                     <p>
@@ -113,7 +113,7 @@ export default function CookiesPage() {
                         როგორ შევცვალო არჩევანი?
                     </h2>
                     <p>
-                        შენი არჩევანი 12 თვე ინახება. მისი შეცვლა ნებისმიერ დროს შეგიძლია — ამ ღილაკით ან საიტის
+                        შენი არჩევანი 12 თვე ინახება. მისი შეცვლა ნებისმიერ დროს შეგიძლია - ამ ღილაკით ან საიტის
                         ბოლოში „ქუქის პარამეტრებიდან“. თანხმობის გაუქმებისას ანალიტიკური ქუქი-ფაილები იშლება.
                     </p>
                     <CookieSettingsButton className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-surface px-5 text-sm font-semibold text-text-primary transition-colors hover:border-accent/40 hover:text-accent" />

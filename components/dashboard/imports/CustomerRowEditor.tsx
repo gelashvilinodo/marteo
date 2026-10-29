@@ -24,7 +24,7 @@ export default function CustomerRowEditor({ record, onApply, onCancel }: {
                 ...record.issues.filter(issue => !Object.prototype.hasOwnProperty.call(changes, issue.field ?? "")),
             ].filter(issue => issue.severity === "ERROR" && issue.field === field).map(issue => issue.message))];
             return <label key={field} className="block space-y-1 text-sm">
-                <span>{label}{!required && " — არასავალდებულო"}</span>
+                <span>{label}{!required && " - არასავალდებულო"}</span>
                 <input type="text" inputMode={field === "phone" ? "tel" : "text"} value={String(input[field] ?? "")} aria-invalid={messages.length > 0}
                     onChange={event => setChanges(current => ({ ...current, [field]: event.target.value }))}
                     className={`min-h-11 w-full rounded-xl border bg-background px-3 text-base ${messages.length ? "border-danger" : "border-border"}`} />

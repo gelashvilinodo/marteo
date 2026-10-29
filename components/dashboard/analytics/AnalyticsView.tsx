@@ -88,7 +88,7 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
             icon: "solar:box-linear",
             tone: "bg-warning/10 text-warning",
             description: data.incompleteEntries > 0
-                ? "ჯამი არასრულია — ზოგი თვითღირებულება დასაზუსტებელია"
+                ? "ჯამი არასრულია - ზოგი თვითღირებულება დასაზუსტებელია"
                 : "გაყიდულ ნივთებზე აღრიცხული თვითღირებულება",
         },
         {
@@ -112,7 +112,7 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
             tone: "bg-success/10 text-success",
             description: data.profitReady
                 ? "აღრიცხული გაყიდვები − თვითღირებულება − სხვა ხარჯები"
-                : "სრული მოგება უცნობია — ნაჩვენებია დათვლილი ნაწილის შედეგი, სხვა ხარჯების გამოკლებით",
+                : "სრული მოგება უცნობია - ნაჩვენებია დათვლილი ნაწილის შედეგი, სხვა ხარჯების გამოკლებით",
         },
     ];
 
@@ -131,7 +131,7 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
                     />
 
                     <p className="text-xs text-text-secondary">
-                        პერიოდი: {displayDate(data.from)} —{" "}
+                        პერიოდი: {displayDate(data.from)} -{" "}
                         {displayDate(data.to)}
                     </p>
 

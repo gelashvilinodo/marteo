@@ -6,7 +6,7 @@ import Footer from "@/components/landing/Footer";
 import { MARTEO_CONTACTS } from "@/lib/marteo-contacts";
 
 export const metadata = {
-    title: "უსაფრთხოება — MARTEO",
+    title: "უსაფრთხოება - MARTEO",
     description: "როგორ იცავს მართეო შენს ანგარიშსა და ბიზნესის მონაცემებს.",
 };
 
@@ -14,7 +14,7 @@ export const metadata = {
 const protections = [
     {
         title: "დაშიფრული კავშირი",
-        text: "საიტი მხოლოდ HTTPS-ით მუშაობს — ბრაუზერსა და სერვერს შორის ყველა მონაცემი დაშიფრულია.",
+        text: "საიტი მხოლოდ HTTPS-ით მუშაობს - ბრაუზერსა და სერვერს შორის ყველა მონაცემი დაშიფრულია.",
         icon: "solar:lock-keyhole-bold-duotone",
     },
     {
@@ -39,7 +39,7 @@ const protections = [
     },
     {
         title: "წვდომის კონტროლი",
-        text: "ბიზნესის მონაცემებს მხოლოდ მისი წევრები ხედავენ — ისიც მხოლოდ იმას, რაზეც მფლობელმა წვდომა მისცა.",
+        text: "ბიზნესის მონაცემებს მხოლოდ მისი წევრები ხედავენ - ისიც მხოლოდ იმას, რაზეც მფლობელმა წვდომა მისცა.",
         icon: "solar:users-group-rounded-bold-duotone",
     },
     {
@@ -57,7 +57,7 @@ const protections = [
 const commitments = [
     {
         title: "მონაცემებს არ ვყიდით და არ ვაზიარებთ",
-        text: "შენი ბიზნესის მონაცემები — კლიენტები, შეკვეთები, ფასები, შემოსავალი — არ იყიდება და სარეკლამოდ მესამე მხარეს არ გადაეცემა.",
+        text: "შენი ბიზნესის მონაცემები - კლიენტები, შეკვეთები, ფასები, შემოსავალი - არ იყიდება და სარეკლამოდ მესამე მხარეს არ გადაეცემა.",
     },
     {
         title: "საკუთარი მიზნებისთვის არ ვიყენებთ",
@@ -65,15 +65,15 @@ const commitments = [
     },
     {
         title: "შენი კლიენტების მონაცემები შენს კონტროლშია",
-        text: "კლიენტების ტელეფონს და მისამართს მართეო მხოლოდ შენი დავალებით იყენებს — მაგალითად, შეკვეთის სტატუსის შეტყობინებისთვის. ჩვენი სახელით მათ არაფერს ვუგზავნით.",
+        text: "კლიენტების ტელეფონს და მისამართს მართეო მხოლოდ შენი დავალებით იყენებს - მაგალითად, შეკვეთის სტატუსის შეტყობინებისთვის. ჩვენი სახელით მათ არაფერს ვუგზავნით.",
     },
     {
         title: "გუნდის წვდომა შეზღუდულია",
-        text: "მართეოს გუნდი შენს შეკვეთებს, კლიენტებსა და ფინანსებს არ ათვალიერებს. შიგნით მხოლოდ შენი თხოვნით შევიხედავთ — მაგალითად, ტექნიკური პრობლემის მოსაგვარებლად.",
+        text: "მართეოს გუნდი შენს შეკვეთებს, კლიენტებსა და ფინანსებს არ ათვალიერებს. შიგნით მხოლოდ შენი თხოვნით შევიხედავთ - მაგალითად, ტექნიკური პრობლემის მოსაგვარებლად.",
     },
     {
         title: "წაშლისას ყველაფერი იშლება",
-        text: "ანგარიშის წაშლისას ბიზნესის მონაცემები სამუდამოდ იშლება, სარეზერვო ასლებიდან კი — 7 დღეში.",
+        text: "ანგარიშის წაშლისას ბიზნესის მონაცემები სამუდამოდ იშლება, სარეზერვო ასლებიდან კი - 7 დღეში.",
     },
 ];
 
@@ -82,7 +82,7 @@ const providers = [
     { name: "Cloudflare", purpose: "ჰოსტინგი და დაცვა" },
     { name: "Resend", purpose: "ელფოსტის გაგზავნა" },
     { name: "sendsms.ge", purpose: "SMS-ის გაგზავნა" },
-    { name: "Google Analytics", purpose: "საიტის სტატისტიკა — მხოლოდ თანხმობით, ბიზნესის მონაცემებს არ ხედავს" },
+    { name: "Google Analytics", purpose: "საიტის სტატისტიკა - მხოლოდ თანხმობით, ბიზნესის მონაცემებს არ ხედავს" },
 ];
 
 export default function SecurityPage() {
@@ -143,7 +143,7 @@ export default function SecurityPage() {
                             <Icon icon="solar:shield-user-bold-duotone" className="h-6 w-6" />
                         </span>
                         <h2 id="security-data" className="text-lg font-semibold text-text-primary sm:text-xl">
-                            შენი მონაცემები — შენია
+                            შენი მონაცემები - შენია
                         </h2>
                     </div>
 
@@ -190,7 +190,7 @@ export default function SecurityPage() {
                             <h2 id="security-report" className="font-semibold text-text-primary">
                                 უსაფრთხოების ხარვეზი შეამჩნიე?
                             </h2>
-                            <p className="mt-0.5 text-sm text-text-secondary">მოგვწერე — ყველა შეტყობინებას სერიოზულად განვიხილავთ.</p>
+                            <p className="mt-0.5 text-sm text-text-secondary">მოგვწერე - ყველა შეტყობინებას სერიოზულად განვიხილავთ.</p>
                         </div>
                     </div>
                     <a
@@ -203,7 +203,7 @@ export default function SecurityPage() {
                 </section>
 
                 <p className="border-t border-border pt-6 text-sm text-text-secondary">
-                    დეტალური პირობები —{" "}
+                    დეტალური პირობები -{" "}
                     <Link href="/privacy" className="font-medium text-accent hover:underline">
                         კონფიდენციალურობის პოლიტიკაში
                     </Link>

@@ -21,7 +21,7 @@ function text(value: unknown): string {
 
 function money(value: unknown): string {
     const amount = text(value);
-    return amount ? `${amount} ₾` : "—";
+    return amount ? `${amount} ₾` : "-";
 }
 
 const sourceLabels: Record<string, string> = {
@@ -50,7 +50,7 @@ const historyLabels: Record<string, string> = {
 function historyDate(value: unknown) {
     const date = new Date(text(value));
 
-    if (!Number.isFinite(date.getTime())) return "—";
+    if (!Number.isFinite(date.getTime())) return "-";
 
     const local = new Date(date.getTime() + 4 * 60 * 60 * 1000);
     const pad = (part: number) => String(part).padStart(2, "0");
@@ -73,7 +73,7 @@ function Field({
         <div className="min-w-0 rounded-xl border border-border bg-background p-3">
             <dt className="text-xs text-text-secondary">{label}</dt>
             <dd className="mt-1 break-words font-medium text-text-primary">
-                {value || "—"}
+                {value || "-"}
             </dd>
         </div>
     );
@@ -429,19 +429,19 @@ export default function MovementActions({
                                     <>
                                         <Field
                                             label="ჩამოწერილი რაოდენობა"
-                                            value={String(detail.quantity ?? "—")}
+                                            value={String(detail.quantity ?? "-")}
                                         />
                                         <Field
                                             label="მათ შორის წუნდებული"
-                                            value={String(detail.defectiveQuantity ?? "—")}
+                                            value={String(detail.defectiveQuantity ?? "-")}
                                         />
                                         <Field
                                             label="ფერი"
-                                            value={text(detail.color) || "—"}
+                                            value={text(detail.color) || "-"}
                                         />
                                         <Field
                                             label="ზომა"
-                                            value={text(detail.size) || "—"}
+                                            value={text(detail.size) || "-"}
                                         />
                                     </>
                                 )}
@@ -476,7 +476,7 @@ export default function MovementActions({
                                     <>
                                         <div className="col-span-2">
                                             <p className="text-xs text-text-secondary">
-                                                არჩეული პერიოდი: {text(detail.from)} — {text(detail.to)}
+                                                არჩეული პერიოდი: {text(detail.from)} - {text(detail.to)}
                                             </p>
                                         </div>
 
@@ -508,7 +508,7 @@ export default function MovementActions({
                                                     value={money(detail.productRevenue)}
                                                 />
                                                 <Field
-                                                    label="მიწოდების საფასური — მოგებაში არ ითვლება"
+                                                    label="მიწოდების საფასური - მოგებაში არ ითვლება"
                                                     value={money(detail.deliveryRevenue)}
                                                 />
                                                 <Field
@@ -607,7 +607,7 @@ export default function MovementActions({
                                                 რაოდენობის ცვლილება:{" "}
                                                 {typeof item.quantity === "number"
                                                     ? item.quantity
-                                                    : "—"}
+                                                    : "-"}
                                             </p>
                                             <p className="mt-1 text-xs text-text-secondary">
                                                 გაყიდვის თანხა: {money(item.revenue)}

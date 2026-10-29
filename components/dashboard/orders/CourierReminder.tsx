@@ -473,7 +473,7 @@ export default function CourierReminder() {
 
                             {!settled && (
                                 <p className="text-xs text-text-secondary">
-                                    მხოლოდ შეხსენებაა — რეალურ გადარიცხვას
+                                    მხოლოდ შეხსენებაა - რეალურ გადარიცხვას
                                     არ ასრულებს.
                                 </p>
                             )}

@@ -223,7 +223,7 @@ export default function ForgotPasswordForm() {
                     {busy
                         ? "იგზავნება…"
                         : waitSeconds > 0
-                            ? `ხელახლა გაგზავნა — ${waitSeconds} წმ`
+                            ? `ხელახლა გაგზავნა - ${waitSeconds} წმ`
                             : "აღდგენის ბმულის გაგზავნა"}
                 </button>
             </form>

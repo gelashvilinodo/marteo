@@ -331,7 +331,7 @@ export async function executeCustomerImport(
     if (blocked) {
         fail(
             `${blocked.record.fileName} / ` +
-            `${blocked.record.sheetName} — ` +
+            `${blocked.record.sheetName} - ` +
             `რიგი ${blocked.record.rowNumber}: ${blocked.reason}`,
         );
     }

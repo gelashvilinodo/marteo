@@ -255,7 +255,7 @@ function Status({
 
             if (current.status === "SHIPPED") {
                 stockReturned = window.confirm(
-                    "პროდუქტები ფიზიკურად დაბრუნდა? OK — დაბრუნდა და მარაგს დაემატოს; Cancel — ჯერ არ დაბრუნებულა.",
+                    "პროდუქტები ფიზიკურად დაბრუნდა? OK - დაბრუნდა და მარაგს დაემატოს; Cancel - ჯერ არ დაბრუნებულა.",
                 );
             }
         }
@@ -301,7 +301,7 @@ function Status({
                         />
 
                         <select
-                            aria-label={`შეკვეთა ${number(order)} — სტატუსის შეცვლა`}
+                            aria-label={`შეკვეთა ${number(order)} - სტატუსის შეცვლა`}
                             value={current.status}
                             disabled={
                                 busy ||
@@ -482,7 +482,7 @@ function Status({
                         {completionMethod === "BANK_TRANSFER" && (
                             <label className="block text-sm">
                                 <span className="mb-1 block text-text-secondary">
-                                    ბანკი — არასავალდებულო
+                                    ბანკი - არასავალდებულო
                                 </span>
                                 <input
                                     value={completionBankName}
@@ -963,7 +963,7 @@ export default function OrdersView({
                     });
                 }}
             />
-            <p className="mt-3 text-xs text-text-secondary">პერიოდი: {data.from.split("-").reverse().join(".")} — {data.to.split("-").reverse().join(".")}</p>
+            <p className="mt-3 text-xs text-text-secondary">პერიოდი: {data.from.split("-").reverse().join(".")} - {data.to.split("-").reverse().join(".")}</p>
             {data.periodError && <p role="alert" className="mt-2 text-sm text-danger">{data.periodError}</p>}
             <div className="mt-6 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
                 {cards.map((card) => (
@@ -1351,13 +1351,13 @@ export default function OrdersView({
                                             >
                                                 {order.shippingAddress
                                                     ?.trim()
-                                                    .replace(/\s+/g, " ") || "—"}
+                                                    .replace(/\s+/g, " ") || "-"}
                                             </p>
                                         </td>
 
                                         <td className="hidden px-3 py-2 align-middle lg:table-cell">
                                             <p className="truncate text-sm text-text-primary">
-                                                {order.items[0]?.name || "—"}
+                                                {order.items[0]?.name || "-"}
                                             </p>
                                             <p className="mt-1 truncate text-xs text-text-secondary">
                                                 {order.productQuantity} პროდუქტი
@@ -1389,7 +1389,7 @@ export default function OrdersView({
                                                 type="button"
                                                 onClick={() => void openDetails(order)}
                                                 aria-label={`${number(order)} დეტალები${hasExtraInfo
-                                                    ? " — დამატებითი ინფორმაცია"
+                                                    ? " - დამატებითი ინფორმაცია"
                                                     : ""
                                                     }`}
                                                 className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border text-text-secondary transition hover:border-accent hover:text-accent"
@@ -1527,7 +1527,7 @@ export default function OrdersView({
                             />
                             <span>
                                 შეკვეთაზე გადაცვლა შესრულებულია. წინა ნივთების
-                                დაბრუნების ისტორია შენახულია — მის სანახავად
+                                დაბრუნების ისტორია შენახულია - მის სანახავად
                                 სტატუსის მენიუში აირჩიე „დაბრუნების მართვა“.
                             </span>
                         </p>
@@ -1590,7 +1590,7 @@ export default function OrdersView({
                     )}
                 </section>
                 <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                    {[['მიმღები', recipient(selected)], ['ტელეფონი', selected.recipientPhone], ['მისამართი', selected.shippingAddress || '—'], ['თარიღი', date(selected.createdAt)]].map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-text-secondary">{label}</dt><dd className="mt-1 break-words">{value}</dd></div>)}
+                    {[['მიმღები', recipient(selected)], ['ტელეფონი', selected.recipientPhone], ['მისამართი', selected.shippingAddress || '-'], ['თარიღი', date(selected.createdAt)]].map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-text-secondary">{label}</dt><dd className="mt-1 break-words">{value}</dd></div>)}
                 </dl>
                 <h3 className="mt-5 font-semibold">პროდუქტები</h3>
                 <div className="mt-2 space-y-2">

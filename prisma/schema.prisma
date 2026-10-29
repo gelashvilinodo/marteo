@@ -150,6 +150,7 @@ model User {
   passwordResetRequests  PasswordResetRequest[]
   supportMessages        SupportMessage[]
   pushSubscriptions      WebPushSubscription[]
+  adminAuditLogs         AdminAuditLog[]
   notifications          Notification[]
   notificationCampaigns  NotificationCampaign[]
 }
@@ -1516,4 +1517,20 @@ model WebPushSubscription {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// Every change made from the admin panel, with the values before and after.
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String?
+  action     String
+  targetType String
+  targetId   String
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+  admin      User?    @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([targetType, targetId, createdAt])
+  @@index([createdAt])
 }

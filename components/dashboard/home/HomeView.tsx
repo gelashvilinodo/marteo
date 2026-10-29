@@ -92,7 +92,7 @@ export default function HomeView({
                         <p className="text-xs text-text-secondary">
                             პერიოდი:{" "}
                             {summary.from.split("-").reverse().join(".")}
-                            {" — "}
+                            {" - "}
                             {summary.to.split("-").reverse().join(".")}
                         </p>
 
