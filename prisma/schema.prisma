@@ -148,6 +148,10 @@ model User {
   phoneChangeRequests    PhoneChangeRequest[]
   passwordChangeRequests PasswordChangeRequest[]
   passwordResetRequests  PasswordResetRequest[]
+  supportMessages        SupportMessage[]
+  pushSubscriptions      WebPushSubscription[]
+  notifications          Notification[]
+  notificationCampaigns  NotificationCampaign[]
 }
 
 model Session {
@@ -206,6 +210,9 @@ model Business {
   materialPurchases        MaterialPurchase[]
   productions              Production[]
   productionRequests       ProductionRequest[]
+  supportConversation      SupportConversation?
+  notifications            Notification[]
+  stockAlerts              InventoryStockAlert[]
 }
 
 model BusinessMembership {
@@ -433,6 +440,7 @@ model InventoryItem {
   stockLots         InventoryStockLot[]
   writeOffs         InventoryWriteOff[]
   movements         InventoryMovement[]
+  stockAlerts       InventoryStockAlert[]
 
   @@unique([businessId, sku])
   @@index([businessId])
@@ -1358,4 +1366,154 @@ model MaterialOrderAllocation {
   @@index([orderItemId])
   @@index([purchaseItemId])
   @@index([materialId])
+}
+
+enum NotificationKind {
+  WELCOME
+  ANNOUNCEMENT
+  LOW_STOCK
+  OUT_OF_STOCK
+  STOCK_SUMMARY
+  TRIAL_ENDING
+  RENEWAL_REMINDER
+  PAYMENT_CONFIRMED
+}
+
+enum NotificationPlanAudience {
+  ALL
+  PAID
+  FREE
+}
+
+enum StockAlertLevel {
+  LOW
+  OUT
+}
+
+// One row per recipient. Campaign rows are created lazily once deliverAt passes.
+model Notification {
+  id              String           @id @default(cuid())
+  userId          String
+  businessId      String?
+  kind            NotificationKind
+  title           String
+  body            String
+  actionLabel     String?
+  actionUrl       String?
+  imageUrl        String?
+  campaignId      String?
+  inventoryItemId String?
+  dedupeKey       String?          @unique
+  deliverAt       DateTime         @default(now())
+  readAt          DateTime?
+  /// Deleted by the user. The row stays so dedupeKey keeps it from being delivered again.
+  deletedAt       DateTime?
+  createdAt       DateTime         @default(now())
+
+  user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business?             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaign NotificationCampaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([userId, deliverAt])
+  @@index([userId, readAt])
+  @@index([campaignId])
+  @@index([businessId])
+}
+
+model NotificationCampaign {
+  id                   String                   @id @default(cuid())
+  title                String
+  body                 String
+  actionLabel          String?
+  actionUrl            String?
+  modes                BusinessMode[]
+  plan                 NotificationPlanAudience @default(ALL)
+  registeredWithinDays Int?
+  deliverAt            DateTime
+  canceledAt           DateTime?
+  createdById          String?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+
+  createdBy     User?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  notifications Notification[]
+
+  @@index([deliverAt])
+}
+
+model NotificationTemplate {
+  key         String   @id
+  title       String
+  body        String
+  actionLabel String?
+  actionUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Open low/out-of-stock episode per variant; cleared once stock recovers.
+model InventoryStockAlert {
+  id              String          @id @default(cuid())
+  businessId      String
+  inventoryItemId String
+  level           StockAlertLevel
+  createdAt       DateTime        @default(now())
+
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@unique([inventoryItemId, level])
+  @@index([businessId])
+}
+
+enum SupportConversationStatus {
+  OPEN
+  CLOSED
+}
+
+enum SupportSender {
+  USER
+  ADMIN
+}
+
+// One support thread per business. Messages expire 24 hours after creation.
+model SupportConversation {
+  id            String                    @id @default(cuid())
+  businessId    String                    @unique
+  status        SupportConversationStatus @default(OPEN)
+  lastMessageAt DateTime                  @default(now())
+  adminReadAt   DateTime?
+  userReadAt    DateTime?
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  business      Business                  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  messages      SupportMessage[]
+
+  @@index([lastMessageAt])
+}
+
+model SupportMessage {
+  id             String              @id @default(cuid())
+  conversationId String
+  sender         SupportSender
+  senderUserId   String?
+  body           String
+  createdAt      DateTime            @default(now())
+  conversation   SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderUser     User?               @relation(fields: [senderUserId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId, createdAt])
+  @@index([createdAt])
+}
+
+model WebPushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

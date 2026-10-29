@@ -18,6 +18,7 @@ export default function FeaturesBento() {
 
     return (
         <section
+            id="features"
             aria-labelledby="features-bento-title"
             className="relative border-t border-border bg-background py-16 sm:py-24"
         >

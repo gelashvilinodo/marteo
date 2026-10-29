@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
+import { NOTIFICATIONS_SEEN } from "@/lib/notifications/events";
 
 type DashboardHeaderProps = {
     onMenuClick: () => void;
@@ -29,6 +31,29 @@ export default function DashboardHeader({
     const accountRef = useRef<HTMLDivElement>(null);
     const accountButtonRef = useRef<HTMLButtonElement>(null);
     const accountPanelId = useId();
+    const pathname = usePathname();
+    const [hasUnread, setHasUnread] = useState(false);
+
+    // Checked on page change and when the tab becomes visible again: no polling interval.
+    useEffect(() => {
+        const controller = new AbortController();
+        const check = () => {
+            if (document.visibilityState !== "visible") return;
+            fetch("/api/notifications/unread", { credentials: "same-origin", cache: "no-store", signal: controller.signal })
+                .then(response => response.ok ? response.json() as Promise<{ unread?: number }> : null)
+                .then((data: { unread?: number } | null) => { if (data) setHasUnread((data.unread ?? 0) > 0); })
+                .catch(() => {});
+        };
+        const seen = () => setHasUnread(false);
+        check();
+        document.addEventListener("visibilitychange", check);
+        window.addEventListener(NOTIFICATIONS_SEEN, seen);
+        return () => {
+            controller.abort();
+            document.removeEventListener("visibilitychange", check);
+            window.removeEventListener(NOTIFICATIONS_SEEN, seen);
+        };
+    }, [pathname]);
 
     useEffect(() => {
         if (!accountOpen) return;
@@ -98,16 +123,18 @@ export default function DashboardHeader({
             </div>
 
             <div className="flex items-center gap-2">
-                <button
-                    type="button"
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-300 transition hover:bg-white/10 hover:text-white"
-                    aria-label="შეტყობინებები"
+                <Link
+                    href="/dashboard/notifications"
+                    prefetch={false}
+                    className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-300 transition hover:bg-white/10 hover:text-white"
+                    aria-label={hasUnread ? "შეტყობინებები (ახალი)" : "შეტყობინებები"}
                 >
                     <Icon
                         icon="solar:bell-bold-duotone"
                         className="h-5 w-5"
                     />
-                </button>
+                    {hasUnread && <span aria-hidden="true" className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-danger ring-2 ring-[#0A244B]" />}
+                </Link>
 
                 <div
                     ref={accountRef}

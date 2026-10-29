@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useSupportUnread } from "@/components/support/useSupportUnread";
 import { BusinessModeContext } from "./business/BusinessModeContext";
 import type { BusinessMode } from "@/lib/business/business-mode";
 
@@ -29,6 +31,7 @@ export default function DashboardShell({
     isPlatformAdmin = false,
 }: DashboardShellProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const supportUnread = useSupportUnread("/api/support/unread", usePathname());
 
     useEffect(() => {
         if (!sidebarOpen) {
@@ -46,7 +49,7 @@ export default function DashboardShell({
 
     return (
         <BusinessModeContext value={businessMode}><div className="min-h-screen bg-background lg:flex">
-            <DashboardSidebar mode={businessMode} />
+            <DashboardSidebar mode={businessMode} supportUnread={supportUnread} />
 
             <div
                 id="mobile-dashboard-sidebar"
@@ -80,6 +83,7 @@ export default function DashboardShell({
                 >
                     <DashboardSidebar
                         mode={businessMode}
+                        supportUnread={supportUnread}
                         mobile
                         onSelect={() => setSidebarOpen(false)}
                     />

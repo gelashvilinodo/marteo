@@ -3,9 +3,13 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 
-type Theme = "system" | "light" | "dark";
-
-const STORAGE_KEY = "marteo-theme";
+import {
+    THEME_STORAGE_KEY,
+    applyTheme,
+    normalizeTheme,
+    saveTheme,
+    type ThemePreference as Theme,
+} from "@/lib/theme/theme-preference";
 
 const options: {
     value: Theme;
@@ -29,20 +33,6 @@ const options: {
     },
 ];
 
-function normalizeTheme(value: string | null): Theme {
-    return value === "light" || value === "dark"
-        ? value
-        : "system";
-}
-
-function applyTheme(theme: Theme) {
-    if (theme === "system") {
-        document.documentElement.removeAttribute("data-theme");
-    } else {
-        document.documentElement.setAttribute("data-theme", theme);
-    }
-}
-
 export default function AppearanceSettings() {
     const [theme, setTheme] = useState<Theme>("system");
     const [ready, setReady] = useState(false);
@@ -59,7 +49,7 @@ export default function AppearanceSettings() {
 
         function onStorage(event: StorageEvent) {
             if (
-                event.key !== STORAGE_KEY &&
+                event.key !== THEME_STORAGE_KEY &&
                 event.key !== null
             ) {
                 return;
@@ -83,19 +73,11 @@ export default function AppearanceSettings() {
         applyTheme(next);
         setTheme(next);
 
-        try {
-            if (next === "system") {
-                localStorage.removeItem(STORAGE_KEY);
-            } else {
-                localStorage.setItem(STORAGE_KEY, next);
-            }
-
-            setMessage("არჩევანი შენახულია.");
-        } catch {
-            setMessage(
-                "რეჟიმი შეიცვალა, მაგრამ ბრაუზერმა არჩევანის დამახსოვრება ვერ შეძლო.",
-            );
-        }
+        setMessage(
+            saveTheme(next)
+                ? "არჩევანი შენახულია."
+                : "რეჟიმი შეიცვალა, მაგრამ ბრაუზერმა არჩევანის დამახსოვრება ვერ შეძლო.",
+        );
     }
 
     return (

@@ -6,6 +6,13 @@ import type { BusinessMode } from "@/lib/business/business-mode";
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 
+import {
+    authCardClass,
+    authInputClass,
+    authLabelClass,
+    authPrimaryButtonClass,
+} from "@/components/auth/AuthShell";
+
 const businessTypes = [
     "ტანსაცმელი და მოდა",
     "ფეხსაცმელი და აქსესუარები",
@@ -236,7 +243,7 @@ export default function BusinessOnboardingPage() {
                     </div>
 
                     {/* Card */}
-                    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+                    <div className={authCardClass}>
                         <div className="mb-7 text-center">
                             <h1 className="text-2xl font-semibold text-text-primary">
                                 ბიზნესის ინფორმაცია
@@ -315,7 +322,7 @@ export default function BusinessOnboardingPage() {
 
                         {/* Business name */}
                         <div className="mb-4">
-                            <label className="mb-2 block pl-3 text-sm font-medium text-text-primary">
+                            <label className={authLabelClass}>
                                 ბიზნესის დასახელება
                             </label>
 
@@ -326,7 +333,7 @@ export default function BusinessOnboardingPage() {
                                     setBusinessName(e.target.value)
                                 }
                                 placeholder="მაგ. MARTEO"
-                                className="w-full rounded-xl border border-border bg-background px-4 py-3.5 text-[16px] sm:text-sm text-text-primary outline-none transition-all placeholder:text-text-secondary/70 focus:border-accent focus:ring-2 focus:ring-accent/10"
+                                className={authInputClass()}
                             />
                         </div>
 
@@ -334,7 +341,7 @@ export default function BusinessOnboardingPage() {
 
                         {/* Business type */}
                         <div className="mb-4">
-                            <label className="mb-2 block pl-3 text-sm font-medium text-text-primary">
+                            <label className={authLabelClass}>
                                 საქმიანობის სფერო
                             </label>
 
@@ -344,7 +351,7 @@ export default function BusinessOnboardingPage() {
                                     onChange={(e) =>
                                         setBusinessType(e.target.value)
                                     }
-                                    className="w-full appearance-none rounded-xl border border-border bg-background py-3.5 pl-4 pr-12 text-[16px] sm:text-sm text-text-primary outline-none transition-all focus:border-accent focus:ring-2 focus:ring-accent/10"
+                                    className={`${authInputClass()} appearance-none pr-10`}
                                 >
                                     <option value="">
                                         აირჩიეთ საქმიანობის სფერო
@@ -359,7 +366,7 @@ export default function BusinessOnboardingPage() {
 
                                 <Icon
                                     icon="solar:alt-arrow-down-linear"
-                                    className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-text-secondary"
+                                    className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-text-secondary"
                                 />
                             </div>
                         </div>
@@ -367,7 +374,7 @@ export default function BusinessOnboardingPage() {
                         {/* Other type */}
                         {businessType === "სხვა" && (
                             <div className="mb-4">
-                                <label className="mb-2 block pl-3 text-sm font-medium text-text-primary">
+                                <label className={authLabelClass}>
                                     მიუთითეთ საქმიანობის სფერო
                                 </label>
 
@@ -378,7 +385,7 @@ export default function BusinessOnboardingPage() {
                                         setOtherBusinessType(e.target.value)
                                     }
                                     placeholder="მაგ. ივენთების ორგანიზება"
-                                    className="w-full rounded-xl border border-border bg-background px-4 py-3.5 text-[16px] sm:text-sm text-text-primary outline-none transition-all placeholder:text-text-secondary/70 focus:border-accent focus:ring-2 focus:ring-accent/10"
+                                    className={authInputClass()}
                                 />
                             </div>
                         )}
@@ -407,7 +414,7 @@ export default function BusinessOnboardingPage() {
                         </label>
 
                         {error && (
-                            <p className="mt-3 text-sm text-red-500">
+                            <p className="mt-3 text-sm text-danger">
                                 {error}
                             </p>
                         )}
@@ -417,7 +424,7 @@ export default function BusinessOnboardingPage() {
                             onClick={handleSubmit}
                             type="button"
                             disabled={!canSubmit || loading}
-                            className="mt-6 w-full rounded-xl bg-primary px-5 py-3.5 text-sm font-medium text-white transition-all duration-200 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-primary"
+                            className={`mt-6 ${authPrimaryButtonClass}`}
                         >
                             {loading
                                 ? "იქმნება..."

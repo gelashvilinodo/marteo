@@ -9,6 +9,13 @@ import {
     validateNewPassword,
 } from "@/lib/profile/password-settings";
 
+import {
+    authCardClass,
+    authInputClass,
+    authLabelClass,
+    authPrimaryButtonClass,
+} from "@/components/auth/AuthShell";
+
 type Field = "newPassword" | "confirmPassword" | "form";
 
 type ApiResponse = {
@@ -168,7 +175,7 @@ export default function ResetPasswordForm() {
     }
 
     return (
-        <section className="w-full min-w-0 max-w-md rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <section className={authCardClass}>
             <div className="mb-5 flex size-12 items-center justify-center rounded-xl bg-accent/10 text-accent">
                 <Icon
                     icon={
@@ -209,7 +216,7 @@ export default function ResetPasswordForm() {
 
                     <Link
                         href="/forgot-password"
-                        className="inline-flex min-h-11 items-center justify-center rounded-xl bg-success px-4 py-2 text-sm font-semibold text-white"
+                        className={`${authPrimaryButtonClass} sm:w-auto`}
                     >
                         ახალი ბმულის მოთხოვნა
                     </Link>
@@ -239,12 +246,12 @@ export default function ResetPasswordForm() {
                                 <div key={field} className="min-w-0">
                                     <label
                                         htmlFor={`reset-${field}`}
-                                        className="text-sm text-text-primary"
+                                        className={authLabelClass}
                                     >
                                         {label}
                                     </label>
 
-                                    <div className="relative mt-2">
+                                    <div className="relative">
                                         <input
                                             id={`reset-${field}`}
                                             name={field}
@@ -274,14 +281,9 @@ export default function ResetPasswordForm() {
                                                     ? "reset-password-error"
                                                     : undefined
                                             }
-                                            className={[
-                                                "block min-h-11 w-full min-w-0 rounded-xl border",
-                                                "bg-background py-2 pl-3 pr-12 text-base text-text-primary",
-                                                "outline-none focus:border-accent",
-                                                error && errorField === field
-                                                    ? "border-danger"
-                                                    : "border-border",
-                                            ].join(" ")}
+                                            className={`${authInputClass(
+                                                Boolean(error) && errorField === field,
+                                            )} pr-12`}
                                         />
 
                                         <button
@@ -333,7 +335,7 @@ export default function ResetPasswordForm() {
                         <button
                             type="submit"
                             disabled={busy}
-                            className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-success px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                            className={`mt-5 ${authPrimaryButtonClass}`}
                         >
                             {busy && (
                                 <Icon

@@ -11,10 +11,12 @@ import {
     PASSWORD_RESET_LIFETIME_MS,
     sendPasswordResetEmail,
 } from "@/lib/auth/send-password-reset-email";
+import { rateLimitResponse, requestIp, reserveLimits } from "@/lib/security/rate-limit";
 
 const RESEND_COOLDOWN_MS = 60 * 1000;
 const REQUEST_WINDOW_MS = 60 * 60 * 1000;
 const MAX_REQUESTS_PER_WINDOW = 5;
+const MAX_REQUESTS_PER_IP_HOUR = 10;
 
 function accepted() {
     return emailChangeJson({
@@ -56,6 +58,11 @@ export async function POST(request: Request) {
                 422,
             );
         }
+
+        // Checked before the account lookup, so the limit never reveals whether an email exists.
+        await reserveLimits(prisma, [
+            { scope: "password-reset-ip", identity: requestIp(request), maximum: MAX_REQUESTS_PER_IP_HOUR, seconds: 3600 },
+        ]);
 
         const account = await prisma.user.findUnique({
             where: { email },
@@ -161,6 +168,9 @@ export async function POST(request: Request) {
 
         return accepted();
     } catch (cause: unknown) {
+        const limited = rateLimitResponse(cause);
+        if (limited) return limited;
+
         if (cause instanceof EmailChangeError) {
             return emailChangeJson(
                 {

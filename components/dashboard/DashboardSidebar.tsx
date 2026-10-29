@@ -77,6 +77,7 @@ type DashboardSidebarProps = {
     mode: BusinessMode;
     mobile?: boolean;
     onSelect?: () => void;
+    supportUnread?: number;
 };
 
 type SidebarGroupLink = {label:string;href:string;icon:string};
@@ -109,6 +110,7 @@ export default function DashboardSidebar({
     mode,
     mobile = false,
     onSelect,
+    supportUnread = 0,
 }: DashboardSidebarProps) {
     const pathname = usePathname();
 
@@ -259,12 +261,17 @@ export default function DashboardSidebar({
             </div>
 
             <div className="sidebar-footer mt-6 shrink-0 border-t border-white/10 pt-4">
-                <button
-                    type="button"
+                <Link
+                    href="/dashboard/help"
+                    prefetch={false}
+                    onClick={onSelect}
+                    aria-current={pathname.startsWith("/dashboard/help") ? "page" : undefined}
                     className={
                         "flex h-12 w-full items-center gap-3 rounded-2xl " +
-                        "px-4 text-left text-sm font-medium text-slate-300 " +
-                        "transition hover:bg-white/10 hover:text-white"
+                        "px-4 text-left text-sm font-medium transition " +
+                        (pathname.startsWith("/dashboard/help")
+                            ? "bg-white/10 text-accent"
+                            : "text-slate-300 hover:bg-white/10 hover:text-white")
                     }
                 >
                     <Icon
@@ -274,7 +281,10 @@ export default function DashboardSidebar({
                     />
 
                     <span>დახმარება</span>
-                </button>
+                    {supportUnread > 0 && <span key={supportUnread} className="support-badge-pop ml-auto min-w-5 rounded-full bg-danger px-1.5 text-center text-[11px] font-semibold leading-5 text-white" aria-label={`${supportUnread} ახალი პასუხი`}>
+                        {supportUnread > 99 ? "99+" : supportUnread}
+                    </span>}
+                </Link>
 
                 <div className="mt-2">
                     <LogoutButton />

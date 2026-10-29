@@ -2,6 +2,7 @@ import { THEME_BOOTSTRAP } from "@/lib/security/theme-bootstrap.mjs";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import ModalBackdropDismiss from "@/components/ModalBackdropDismiss";
+import CookieConsent from "@/components/consent/CookieConsent";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -42,6 +43,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ModalBackdropDismiss />
         {children}
+        <CookieConsent />
       </body>
     </html>
   );

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import AuthShell from "@/components/auth/AuthShell";
 import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
 
 export const metadata: Metadata = {
@@ -12,8 +13,11 @@ export const metadata: Metadata = {
 
 export default function ResetPasswordPage() {
     return (
-        <main className="flex min-h-dvh min-w-0 items-center justify-center bg-background px-4 py-8">
+        <AuthShell
+            heading={<>ახალი პაროლი.<br />უსაფრთხო დაბრუნება.</>}
+            text="შექმენით ახალი პაროლი და გააგრძელეთ ბიზნესის მართვა."
+        >
             <ResetPasswordForm />
-        </main>
+        </AuthShell>
     );
 }

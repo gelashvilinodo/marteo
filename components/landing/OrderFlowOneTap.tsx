@@ -277,7 +277,7 @@ export default function OrderFlowOneTap() {
 
     return (
         <section
-            id="features"
+            id="how-it-works"
             aria-labelledby="order-flow-title"
             className="order-flow-section relative border-t border-border bg-background"
         >
@@ -286,10 +286,10 @@ export default function OrderFlowOneTap() {
             </h2>
 
             {/* ~3 ეკრანის სქროლი. */}
-            <div ref={trackRef} className="relative h-[calc(100svh-5rem+300svh)]">
+            <div ref={trackRef} className="relative h-[calc(100svh-4rem+300svh)]">
                 <div
                     ref={stickyRef}
-                    className="sticky top-20 flex h-[calc(100svh-5rem)] flex-col overflow-hidden"
+                    className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col overflow-hidden"
                 >
                     <div className="order-flow-glow pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,color-mix(in_srgb,var(--marteo-accent)_9%,transparent),transparent_65%)]" />
 

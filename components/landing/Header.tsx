@@ -1,7 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Icon } from "@iconify/react";
+
+import { authPrimaryButtonClass } from "@/components/auth/AuthShell";
+
+const navigation = [
+  { label: "მთავარი", href: "/", icon: "solar:home-2-bold-duotone" },
+  { label: "ფასები", href: "#pricing", icon: "solar:tag-price-bold-duotone" },
+  { label: "ინფორმაცია", href: "/information", icon: "solar:info-circle-bold-duotone" },
+];
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -9,167 +18,184 @@ export default function Header() {
 
   const closeMenu = () => setMenuOpen(false);
 
+  // Escape ჯერ ფანჯარას ხურავს, მერე მენიუს.
+  useEffect(() => {
+    if (!menuOpen && !loginOpen) return;
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      if (loginOpen) setLoginOpen(false);
+      else setMenuOpen(false);
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen, loginOpen]);
+
   return (
     <>
-      <header className="landing-header-surface sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link
-            href="/"
-            onClick={closeMenu}
-            aria-label="MARTEO.GE"
-            className="shrink-0"
-          >
-            <img
-              src="/images/marteo-08.svg"
-              alt="MARTEO.GE"
-              className="h-14 w-auto dark:hidden"
-            />
-
-            <img
-              src="/images/logo.svg"
-              alt="MARTEO.GE"
-              className="hidden h-14 w-auto dark:block"
-            />
-          </Link>
-
-          <nav className="hidden items-center gap-8 md:flex">
+      <header className="sticky top-0 z-50">
+        <div className="landing-header-surface relative z-10 border-b border-border bg-background/95 backdrop-blur">
+          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
             <Link
               href="/"
-              className="text-sm font-medium text-text-primary transition-colors hover:text-accent"
+              onClick={closeMenu}
+              aria-label="MARTEO.GE"
+              className="shrink-0"
             >
-              მთავარი
+              <img
+                src="/images/marteo-08.svg"
+                alt="MARTEO.GE"
+                className="h-11 w-auto dark:hidden"
+              />
+
+              <img
+                src="/images/logo.svg"
+                alt="MARTEO.GE"
+                className="hidden h-11 w-auto dark:block"
+              />
             </Link>
 
-            <a
-              href="#pricing"
-              className="text-sm font-medium text-text-primary transition-colors hover:text-accent"
-            >
-              ფასები
-            </a>
+            <nav className="hidden items-center gap-8 md:flex">
+              {navigation.map(item => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="text-sm font-medium text-text-primary transition-colors hover:text-accent"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
 
-            <Link
-              href="/information"
-              className="text-sm font-medium text-text-primary transition-colors hover:text-accent"
-            >
-              ინფორმაცია
-            </Link>
-          </nav>
+            <div className="hidden md:block">
+              <button
+                type="button"
+                onClick={() => setLoginOpen(true)}
+                className="min-h-10 cursor-pointer rounded-xl bg-accent px-5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
+              >
+                შესვლა
+              </button>
+            </div>
 
-          <div className="hidden md:block">
+            <button
+              type="button"
+              onClick={() => setMenuOpen(open => !open)}
+              aria-label={menuOpen ? "მენიუს დახურვა" : "მენიუს გახსნა"}
+              aria-expanded={menuOpen}
+              aria-controls="landing-mobile-menu"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl text-text-primary transition-colors hover:bg-accent/10 md:hidden"
+            >
+              <Icon
+                icon={menuOpen ? "solar:close-circle-linear" : "solar:hamburger-menu-linear"}
+                className="h-6 w-6"
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* მობილური მენიუ ჰედერის უკნიდან ჩამოდის და გვერდს ზემოდან ეფარება. */}
+        <div
+          id="landing-mobile-menu"
+          inert={!menuOpen}
+          className={`landing-header-surface absolute inset-x-0 top-full z-0 border-b border-border bg-background shadow-[0_1.5rem_3rem_-1.5rem_rgb(15_28_46/0.35)] transition-[translate,opacity,visibility] duration-300 ease-out md:hidden ${
+            menuOpen ? "visible translate-y-0 opacity-100" : "invisible -translate-y-full opacity-0"
+          }`}
+        >
+          <nav className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-4 sm:px-6">
+            {navigation.map(item => (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={closeMenu}
+                className="flex h-12 items-center gap-3 rounded-2xl px-3 text-sm font-medium text-text-primary transition-colors hover:bg-accent/10 hover:text-accent"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                  <Icon icon={item.icon} className="h-5 w-5" />
+                </span>
+                {item.label}
+              </Link>
+            ))}
+
             <button
               type="button"
               onClick={() => setLoginOpen(true)}
-              className="cursor-pointer rounded-lg border border-primary bg-primary px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:border-accent hover:bg-accent hover:scale-[1.02]"
+              className={`mt-2 ${authPrimaryButtonClass}`}
             >
+              <Icon icon="solar:login-3-linear" className="h-5 w-5" />
               შესვლა
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      {/* მენიუს ქვეშ გვერდი მუქდება; შეხებით მენიუ იხურება. */}
+      <div
+        aria-hidden="true"
+        onClick={closeMenu}
+        className={`fixed inset-0 z-40 bg-[var(--marteo-overlay)] transition-opacity duration-300 md:hidden ${
+          menuOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
+
+      <div
+        className={`fixed inset-0 z-[100] flex items-center justify-center bg-[var(--marteo-overlay)] px-4 backdrop-blur-sm transition-opacity duration-200 ${
+          loginOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="login-modal-title"
+        aria-hidden={!loginOpen}
+        inert={!loginOpen}
+        onClick={() => setLoginOpen(false)}
+      >
+        <div
+          className={`w-full max-w-sm rounded-2xl border border-border bg-surface p-5 shadow-xl transition-transform duration-200 ease-out sm:p-6 ${
+            loginOpen ? "translate-y-0 scale-100" : "translate-y-2 scale-95"
+          }`}
+          onClick={event => event.stopPropagation()}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+              <Icon icon="solar:user-circle-bold-duotone" className="h-6 w-6" />
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setLoginOpen(false)}
+              aria-label="ფანჯრის დახურვა"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl text-text-secondary transition-colors hover:bg-background hover:text-text-primary"
+            >
+              <Icon icon="solar:close-circle-linear" className="h-6 w-6" />
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            aria-label={menuOpen ? "მენიუს დახურვა" : "მენიუს გახსნა"}
-            aria-expanded={menuOpen}
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-text-primary transition-colors hover:bg-primary/5 md:hidden"
+          <h2
+            id="login-modal-title"
+            className="mt-4 text-xl font-semibold text-text-primary"
           >
-            <span className="text-2xl leading-none">
-              {menuOpen ? "×" : "☰"}
-            </span>
-          </button>
-        </div>
+            მოგესალმებით MARTEO-ში
+          </h2>
 
-        {menuOpen && (
-          <div className="landing-header-surface border-t border-border bg-background md:hidden">
-            <nav className="mx-auto flex max-w-7xl flex-col px-4 py-4 sm:px-6">
-              <Link
-                href="/"
-                onClick={closeMenu}
-                className="rounded-lg px-3 py-3 text-base font-medium text-text-primary transition-colors hover:bg-primary/5 hover:text-accent"
-              >
-                მთავარი
-              </Link>
+          <div className="mt-6 grid gap-3">
+            <Link
+              href="/login"
+              onClick={() => setLoginOpen(false)}
+              className={authPrimaryButtonClass}
+            >
+              შესვლა
+            </Link>
 
-              <a
-                href="#pricing"
-                onClick={closeMenu}
-                className="rounded-lg px-3 py-3 text-base font-medium text-text-primary transition-colors hover:bg-primary/5 hover:text-accent"
-              >
-                ფასები
-              </a>
-
-              <Link
-                href="/information"
-                onClick={closeMenu}
-                className="rounded-lg px-3 py-3 text-base font-medium text-text-primary transition-colors hover:bg-primary/5 hover:text-accent"
-              >
-                ინფორმაცია
-              </Link>
-
-              <button
-                type="button"
-                onClick={() => {
-                  closeMenu();
-                  setLoginOpen(true);
-                }}
-                className="mt-2 cursor-pointer rounded-lg border border-primary bg-primary px-4 py-3 text-base font-medium text-white transition-all duration-200 hover:border-accent hover:bg-accent"
-              >
-                შესვლა
-              </button>
-            </nav>
-          </div>
-        )}
-      </header>
-
-      {loginOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-transparent px-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="login-modal-title"
-          onClick={() => setLoginOpen(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-xl sm:p-8"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-6 flex items-start justify-between">
-              <h2
-                id="login-modal-title"
-                className="text-xl font-semibold text-text-primary"
-              >
-                მოგესალმებით MARTEO-ში
-              </h2>
-
-              <button
-                type="button"
-                onClick={() => setLoginOpen(false)}
-                aria-label="ფანჯრის დახურვა"
-                className="cursor-pointer text-2xl leading-none text-text-secondary transition-colors hover:text-text-primary"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="grid gap-3">
-              <Link
-                href="/login"
-                onClick={() => setLoginOpen(false)}
-                className="cursor-pointer rounded-lg bg-primary px-4 py-3 text-center text-sm font-medium text-white transition-all duration-200 hover:bg-accent"
-              >
-                შესვლა
-              </Link>
-
-              <Link
-                href="/register"
-                onClick={() => setLoginOpen(false)}
-                className="cursor-pointer rounded-lg border border-border px-4 py-3 text-center text-sm font-medium text-text-primary transition-all duration-200 hover:border-accent hover:bg-accent/10"
-              >
-                რეგისტრაცია
-              </Link>
-            </div>
+            <Link
+              href="/register"
+              onClick={() => setLoginOpen(false)}
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-border bg-background px-4 text-sm font-semibold text-text-primary transition-colors hover:border-accent/40 hover:text-accent"
+            >
+              რეგისტრაცია
+            </Link>
           </div>
         </div>
-      )}
+      </div>
     </>
   );
 }

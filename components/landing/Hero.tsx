@@ -112,11 +112,11 @@ export default function Hero() {
         <section
             ref={sectionRef}
             aria-labelledby="hero-title"
-            className="landing-hero relative isolate overflow-clip text-white lg:min-h-[calc(100svh-5rem)]"
+            className="landing-hero landing-hero-page relative isolate overflow-clip text-white lg:min-h-[calc(100svh-4rem)]"
         >
             <div
                 ref={stickyRef}
-                className="relative max-lg:sticky max-lg:top-20 max-lg:h-[calc(100svh-5rem)] max-lg:overflow-hidden lg:min-h-[calc(100svh-5rem)]"
+                className="relative max-lg:sticky max-lg:top-16 max-lg:h-[calc(100svh-4rem)] max-lg:overflow-hidden lg:min-h-[calc(100svh-4rem)]"
             >
                 <div aria-hidden="true" className="landing-hero-backdrop">
                     <span className="landing-hero-glow landing-hero-glow-1" />
@@ -124,7 +124,7 @@ export default function Hero() {
                     <span className="landing-hero-glow landing-hero-glow-3" />
                 </div>
 
-                <div className="relative mx-auto w-full max-w-7xl px-4 pt-8 max-lg:h-full sm:px-6 sm:pt-12 lg:grid lg:min-h-[calc(100svh-5rem)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.45fr)] lg:items-center lg:gap-10 lg:px-8 lg:py-12 lg:[@media(max-height:820px)]:py-8">
+                <div className="relative mx-auto w-full max-w-7xl px-4 pt-8 max-lg:h-full sm:px-6 sm:pt-12 lg:grid lg:min-h-[calc(100svh-4rem)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.45fr)] lg:items-center lg:gap-10 lg:px-8 lg:py-12 lg:[@media(max-height:820px)]:py-8">
                     <div
                         ref={textRef}
                         className="landing-hero-enter landing-hero-text min-w-0"

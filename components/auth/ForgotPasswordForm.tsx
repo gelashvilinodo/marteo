@@ -4,6 +4,13 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 
+import {
+    authCardClass,
+    authInputClass,
+    authLabelClass,
+    authPrimaryButtonClass,
+} from "@/components/auth/AuthShell";
+
 type ApiResponse = {
     success?: boolean;
     message?: string;
@@ -126,7 +133,7 @@ export default function ForgotPasswordForm() {
     }
 
     return (
-        <section className="w-full min-w-0 max-w-md rounded-2xl border border-border bg-surface p-5 sm:p-6">
+        <section className={authCardClass}>
             <div className="mb-5 flex size-12 items-center justify-center rounded-xl bg-accent/10 text-accent">
                 <Icon
                     icon="solar:lock-password-linear"
@@ -154,7 +161,7 @@ export default function ForgotPasswordForm() {
             >
                 <label
                     htmlFor="recovery-email"
-                    className="block text-sm text-text-primary"
+                    className={authLabelClass}
                 >
                     ელფოსტა
                 </label>
@@ -175,7 +182,7 @@ export default function ForgotPasswordForm() {
                         setNotice("");
                     }}
                     placeholder="name@example.com"
-                    className="mt-2 block min-h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 py-2 text-base text-text-primary outline-none focus:border-accent disabled:opacity-50"
+                    className={authInputClass()}
                 />
 
                 {error && (
@@ -203,7 +210,7 @@ export default function ForgotPasswordForm() {
                 <button
                     type="submit"
                     disabled={busy || waitSeconds > 0 || !email.trim()}
-                    className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-success px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                    className={`mt-5 ${authPrimaryButtonClass}`}
                 >
                     {busy && (
                         <Icon
