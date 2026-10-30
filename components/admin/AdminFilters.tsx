@@ -39,8 +39,8 @@ export default function AdminFilters({ placeholder, values, selects }: AdminFilt
 
     const active = selects.some(select => values[select.name]) || Boolean(values.q);
 
-    return <div className="mt-5 flex flex-col gap-2 lg:flex-row lg:items-center">
-        <label className="relative min-w-0 flex-1">
+    return <div className="mt-5 flex flex-col gap-2 xl:flex-row xl:items-center">
+        <label className="relative min-w-0 flex-1 xl:min-w-[260px]">
             <span className="sr-only">ძებნა</span>
             <Icon icon={pending ? "svg-spinners:180-ring" : "solar:magnifer-linear"} className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" aria-hidden="true" />
             <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={placeholder} maxLength={100}

@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import SupportChat from "@/components/support/SupportChat";
 import SupportAvatar from "@/components/support/SupportAvatar";
+import TemplatePicker from "./TemplatePicker";
+import NotesPanel from "./NotesPanel";
+import type { AdminNote } from "@/lib/admin/support-tools";
 import { BUSINESS_MODES, type BusinessMode } from "@/lib/business/business-mode";
 import { formatSupportCount, formatSupportDate, type SupportThreadView } from "@/lib/support/support-config";
 
@@ -41,7 +44,7 @@ function Row({ icon, label, children, href }: { icon: string; label: string; chi
     </div>;
 }
 
-function BusinessPanel({ profile }: { profile: BusinessProfile }) {
+function BusinessPanel({ profile, notes }: { profile: BusinessProfile; notes: AdminNote[] }) {
     const mode = BUSINESS_MODES.find(item => item.value === profile.mode);
     const website = profile.website && /^https?:\/\//i.test(profile.website) ? profile.website : profile.website ? `https://${profile.website}` : null;
     return <div className="flex flex-col gap-3">
@@ -63,6 +66,11 @@ function BusinessPanel({ profile }: { profile: BusinessProfile }) {
                         <span className="block text-[10px] text-text-secondary">{label}</span>
                     </div>)}
             </div>
+        </section>
+
+        <section className="rounded-3xl border border-border bg-surface px-5 py-4">
+            <h3 className="pb-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">შიდა შენიშვნები</h3>
+            <NotesPanel businessId={profile.id} initial={notes} />
         </section>
 
         <section className="rounded-3xl border border-border bg-surface px-5 py-3">
@@ -96,11 +104,14 @@ function BusinessPanel({ profile }: { profile: BusinessProfile }) {
     </div>;
 }
 
-export default function AdminConversation({ conversationId, initialStatus, profile }: { conversationId: string; initialStatus: Status; profile: BusinessProfile }) {
+export default function AdminConversation({ conversationId, initialStatus, profile, notes }: { conversationId: string; initialStatus: Status; profile: BusinessProfile; notes: AdminNote[] }) {
     const [status, setStatus] = useState<Status>(initialStatus);
     const [saving, setSaving] = useState(false);
     const [infoOpen, setInfoOpen] = useState(false);
     const savingRef = useRef(false);
+    // First name of the owner for {name} in templates; an email-only account has none.
+    const firstWord = (profile.members[0]?.name ?? "").split(" ")[0];
+    const contactName = firstWord.includes("@") ? "" : firstWord;
 
     // Polls report the stored status unless a change is still being saved.
     const onThread = useCallback((thread: SupportThreadView) => {
@@ -133,6 +144,7 @@ export default function AdminConversation({ conversationId, initialStatus, profi
             <SupportChat
                 viewer="ADMIN"
                 sound
+                composerTools={insert => <TemplatePicker contactName={contactName} onPick={insert} />}
                 endpoint={`/api/admin/support/conversations/${conversationId}/messages`}
                 business={{ name: profile.name, logoUrl: profile.logoUrl }}
                 onThread={onThread}
@@ -158,7 +170,7 @@ export default function AdminConversation({ conversationId, initialStatus, profi
             />
         </div>
 
-        <aside className="hidden min-h-0 overflow-y-auto xl:block"><BusinessPanel profile={profile} /></aside>
+        <aside className="hidden min-h-0 overflow-y-auto xl:block"><BusinessPanel profile={profile} notes={notes} /></aside>
 
         <div className={`fixed inset-0 z-50 xl:hidden ${infoOpen ? "pointer-events-auto" : "pointer-events-none"}`} inert={!infoOpen} role="dialog" aria-modal="true" aria-label="ბიზნესის ინფორმაცია">
             <button type="button" aria-label="დახურვა" onClick={() => setInfoOpen(false)} className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${infoOpen ? "opacity-100" : "opacity-0"}`} />
@@ -168,7 +180,7 @@ export default function AdminConversation({ conversationId, initialStatus, profi
                         <Icon icon="solar:close-circle-linear" className="h-6 w-6" aria-hidden="true" />
                     </button>
                 </div>
-                <BusinessPanel profile={profile} />
+                <BusinessPanel profile={profile} notes={notes} />
             </div>
         </div>
     </div>;

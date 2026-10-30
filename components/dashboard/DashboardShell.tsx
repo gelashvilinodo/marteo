@@ -11,6 +11,8 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { NewOrderProvider } from "@/components/dashboard/orders/NewOrderProvider";
 import DeferredNewOrderDrawer from "@/components/dashboard/orders/DeferredNewOrderDrawer";
 import PullToRefresh from "@/components/dashboard/PullToRefresh";
+import { AiAssistantInset, AiAssistantProvider } from "@/components/dashboard/ai/AiAssistantProvider";
+import AiAssistantPanel from "@/components/dashboard/ai/AiAssistantPanel";
 
 type DashboardShellProps = {
     children: React.ReactNode;
@@ -49,7 +51,7 @@ export default function DashboardShell({
     }, [sidebarOpen]);
 
     return (
-        <BusinessModeContext value={businessMode}><div className="min-h-screen bg-background lg:flex">
+        <BusinessModeContext value={businessMode}><AiAssistantProvider><div className="min-h-screen bg-background lg:flex">
             <DashboardSidebar mode={businessMode} supportUnread={supportUnread} />
 
             <div
@@ -91,7 +93,7 @@ export default function DashboardShell({
                 </div>
             </div>
 
-            <div className="min-w-0 flex-1">
+            <AiAssistantInset>
                 <DashboardHeader
                     menuOpen={sidebarOpen}
                     onMenuClick={() => setSidebarOpen((current) => !current)}
@@ -107,7 +109,9 @@ export default function DashboardShell({
 
                     <DeferredNewOrderDrawer />
                 </NewOrderProvider>
-            </div>
-        </div></BusinessModeContext>
+            </AiAssistantInset>
+
+            <AiAssistantPanel userName={userName} />
+        </div></AiAssistantProvider></BusinessModeContext>
     );
 }

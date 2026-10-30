@@ -3,11 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminAccessError, getAdminOverview } from "@/lib/admin/overview";
 import { formatSupportCount, formatSupportTime } from "@/lib/support/support-config";
+import { getGrowthStats, parseGrowthRange } from "@/lib/admin/growth";
+import GrowthSection from "@/components/admin/GrowthSection";
 
 type Card = { label: string; value: number; icon: string; tone: string; href?: string };
 
-export default async function AdminPage() {
-    const data = await getAdminOverview().catch(error => {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+    const range = parseGrowthRange((await searchParams).range);
+    const [data, growth] = await Promise.all([getAdminOverview(), getGrowthStats(range)]).catch(error => {
         if (error instanceof AdminAccessError) notFound();
         throw error;
     });
@@ -59,6 +62,8 @@ export default async function AdminPage() {
                     : <section key={card.label} className={className}>{content}</section>;
             })}
         </div>
+
+        <GrowthSection stats={growth} range={range} />
 
         <p className="mt-5 max-w-2xl text-xs leading-6 text-text-secondary">შეკვეთებში წაშლილი ჩანაწერები არ ითვლება. დაბეჭდილი ინვოისები ითვლის შეკვეთებს, რომლებსაც აღრიცხული ბეჭდვა აქვთ; განმეორებითი ბეჭდვების რაოდენობა ბაზაში ცალკე არ ინახება.</p>
     </div>;

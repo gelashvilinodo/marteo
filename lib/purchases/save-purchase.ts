@@ -260,6 +260,8 @@ export async function savePurchase(
                     },
                 });
 
+                const groupedProducts = new Map<string, string>();
+
                 for (const [index, originalItem] of input.items.entries()) {
                     const attributes = await saveProductAttributes(
                         tx,
@@ -302,8 +304,15 @@ export async function savePurchase(
 
                     let productId: string;
 
+                    const groupedProductId =
+                        !source && item.productGroup
+                            ? groupedProducts.get(item.productGroup)
+                            : undefined;
+
                     if (source && sameProduct) {
                         productId = source.productId;
+                    } else if (groupedProductId) {
+                        productId = groupedProductId;
                     } else {
                         const createdProduct = await tx.product.create({
                             data: {
@@ -316,6 +325,10 @@ export async function savePurchase(
                         });
 
                         productId = createdProduct.id;
+
+                        if (!source && item.productGroup) {
+                            groupedProducts.set(item.productGroup, productId);
+                        }
                     }
 
                     const variants = await tx.inventoryItem.findMany({

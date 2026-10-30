@@ -12,6 +12,8 @@ import { ROLE_LABELS, SUBSCRIPTION_STATUS_LABELS as SUBSCRIPTION_STATUS, UserSta
 import SubscriptionEditor from "@/components/admin/SubscriptionEditor";
 import AuditHistory from "@/components/admin/AuditHistory";
 import { getAuditLog } from "@/lib/admin/actions";
+import { listNotes } from "@/lib/admin/support-tools";
+import NotesPanel from "@/components/admin/NotesPanel";
 import { createPrismaClient } from "@/lib/prisma";
 
 export const metadata = { title: "ბიზნესი · ადმინ პანელი" };
@@ -32,7 +34,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
     });
     if (!business) notFound();
     const prisma = createPrismaClient();
-    const history = await getAuditLog(prisma, "BUSINESS", business.id).finally(() => prisma.$disconnect());
+    const [history, notes] = await Promise.all([getAuditLog(prisma, "BUSINESS", business.id), listNotes(prisma, business.id)]).finally(() => prisma.$disconnect());
     const mode = BUSINESS_MODES.find(item => item.value === business.mode);
     const website = business.website ? (/^https?:\/\//i.test(business.website) ? business.website : `https://${business.website}`) : null;
 
@@ -68,6 +70,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
 
         <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
             <div className="flex flex-col gap-4">
+                <Panel title="შიდა შენიშვნები"><NotesPanel businessId={business.id} initial={notes} /></Panel>
                 <Panel title="აქტივობა">
                     <InfoRow icon="solar:login-3-linear" label="ბოლო შესვლა (ნებისმიერი წევრი)">{when(business.lastLoginAt)}</InfoRow>
                     <InfoRow icon="solar:cart-large-2-linear" label="ბოლო შეკვეთა">{when(business.lastOrderAt)}</InfoRow>

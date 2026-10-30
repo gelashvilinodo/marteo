@@ -13,7 +13,7 @@ type AdminHeaderProps = {
 
 export default function AdminHeader({ onMenuClick, onNavigate, menuOpen, adminName, adminEmail }: AdminHeaderProps) {
     return (
-        <header className="dashboard-safe-header sticky top-0 z-40 flex h-16 items-center justify-between border-b border-white/10 bg-gradient-to-r from-[#0B2A55] via-[#0A244B] to-[#081F46] px-4 sm:px-6 lg:px-8">
+        <header className="dashboard-safe-header sticky top-0 z-40 flex h-16 items-center justify-between border-b border-white/10 bg-[#0A244B] px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
                 <button
                     type="button"

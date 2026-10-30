@@ -11,6 +11,9 @@ self.addEventListener("push", event => {
         icon: "/icons/marteo-192.png",
         badge: "/icons/marteo-192.png",
         tag: data.tag,
+        // A repeated tag replaces the old notification; renotify makes it alert (and sound) again.
+        renotify: Boolean(data.tag),
+        silent: false,
         data: { url },
     }));
 });

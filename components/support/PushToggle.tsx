@@ -28,13 +28,32 @@ async function saveSubscription(subscription: PushSubscription) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 }
 
-type Delivery = { devices: number; sent: number; removed: number; failed: number };
+type Delivery = { devices: number; sent: number; removed: number; failed: number; unconfigured?: boolean };
 
 function describeDelivery(delivery: Delivery) {
+    if (delivery.unconfigured) return "სერვერზე შეტყობინებების გაგზავნა ჯერ არ არის გამართული. შენს მოწყობილობაზე ყველაფერი რიგზეა, მალე ჩაირთვება.";
     if (!delivery.devices) return "ეს მოწყობილობა სერვერზე არ არის დარეგისტრირებული. გამორთე და ხელახლა ჩართე.";
-    if (delivery.failed) return "შეტყობინების სერვისმა უარი თქვა. სავარაუდოდ საიტის push-გასაღები შეიცვალა: გამორთე და ხელახლა ჩართე.";
+    if (!delivery.sent && delivery.failed) return "შეტყობინების სერვისმა უარი თქვა. გამორთე და ხელახლა ჩართე.";
     if (!delivery.sent) return "მოწყობილობის გამოწერა ვადაგასულია და წაიშალა. ხელახლა ჩართე.";
-    return `გაიგზავნა (${delivery.sent} მოწყობილობა). თუ არ გამოჩნდა, შეამოწმე სისტემის შეტყობინებების პარამეტრები და „არ შემაწუხო“ რეჟიმი.`;
+    const skipped = delivery.failed ? ` ${delivery.failed} ძველმა მოწყობილობამ უარი თქვა.` : "";
+    return `გაიგზავნა (${delivery.sent} მოწყობილობა).${skipped} თუ არ გამოჩნდა, შეამოწმე სისტემის შეტყობინებების პარამეტრები და „არ შემაწუხო“ რეჟიმი.`;
+}
+
+// A subscription made with an older server key can never receive pushes again.
+function sameKey(subscription: PushSubscription, publicKey: string) {
+    const current = subscription.options?.applicationServerKey;
+    if (!current) return true;
+    const a = new Uint8Array(current), b = keyBytes(publicKey);
+    return a.length === b.length && a.every((byte, index) => byte === b[index]);
+}
+
+async function forget(subscription: PushSubscription) {
+    await fetch("/api/push/subscription", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint: subscription.endpoint }),
+    }).catch(() => undefined);
+    await subscription.unsubscribe().catch(() => false);
 }
 
 async function registration() {
@@ -55,7 +74,11 @@ export default function PushToggle({ publicKey, tone = "dark" }: { publicKey: st
             if (!supported) return isIos() && !isStandalone() ? "install" as const : "unsupported" as const;
             if (Notification.permission === "denied") return "denied" as const;
             const existing = await navigator.serviceWorker.getRegistration("/");
-            const subscription = await existing?.pushManager.getSubscription();
+            let subscription = await existing?.pushManager.getSubscription() ?? null;
+            if (subscription && !sameKey(subscription, publicKey)) {
+                await forget(subscription);
+                subscription = null;
+            }
             // Re-register silently: the server may have dropped it, or another account signed in here.
             if (subscription) void saveSubscription(subscription).catch(() => undefined);
             return subscription ? "on" as const : "off" as const;
@@ -75,8 +98,11 @@ export default function PushToggle({ publicKey, tone = "dark" }: { publicKey: st
             const worker = await registration();
             await navigator.serviceWorker.ready;
             step = "subscribe";
-            const subscription = await worker.pushManager.getSubscription()
-                ?? await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) });
+            const current = await worker.pushManager.getSubscription();
+            if (current && !sameKey(current, publicKey)) await forget(current);
+            const subscription = current && sameKey(current, publicKey)
+                ? current
+                : await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) });
             step = "save";
             await saveSubscription(subscription);
             setState("on");
@@ -112,14 +138,7 @@ export default function PushToggle({ publicKey, tone = "dark" }: { publicKey: st
         setState("busy");
         try {
             const subscription = await (await navigator.serviceWorker.getRegistration("/"))?.pushManager.getSubscription();
-            if (subscription) {
-                await fetch("/api/push/subscription", {
-                    method: "DELETE",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ endpoint: subscription.endpoint }),
-                });
-                await subscription.unsubscribe();
-            }
+            if (subscription) await forget(subscription);
         } finally { setState("off"); }
     };
 

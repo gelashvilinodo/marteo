@@ -21,6 +21,8 @@ type SupportChatProps = {
     header: ReactNode;
     // Shown under the header, e.g. the one-time notification nudge.
     banner?: ReactNode;
+    // Extra controls left of the input; `insert` adds text to the draft.
+    composerTools?: (insert: (text: string) => void) => ReactNode;
     // Shown as Marteo's first message; never stored.
     welcome?: string;
     business: { name: string; logoUrl: string | null };
@@ -46,7 +48,7 @@ function dayLabel(iso: string) {
     return day;
 }
 
-export default function SupportChat({ viewer, endpoint, header, banner, welcome, business, sound = false, self, onThread }: SupportChatProps) {
+export default function SupportChat({ viewer, endpoint, header, banner, composerTools, welcome, business, sound = false, self, onThread }: SupportChatProps) {
     const [thread, setThread] = useState<SupportThreadView | null>(null);
     const [pending, setPending] = useState<Pending[]>([]);
     const [animated, setAnimated] = useState<Record<string, "in" | "out">>({});
@@ -169,6 +171,19 @@ export default function SupportChat({ viewer, endpoint, header, banner, welcome,
         if (nearBottom.current) setShowNewPill(false);
     };
 
+    const insert = (text: string) => {
+        setDraft(current => current.trim() ? `${current.trimEnd()} ${text}` : text);
+        // Looked up by id: this runs from tools rendered in the composer, not during render.
+        requestAnimationFrame(() => {
+            const element = document.getElementById(`support-input-${viewer}`) as HTMLTextAreaElement | null;
+            if (!element) return;
+            element.style.height = "auto";
+            element.style.height = `${Math.min(element.scrollHeight, 140)}px`;
+            element.focus();
+            element.setSelectionRange(element.value.length, element.value.length);
+        });
+    };
+
     const resize = () => {
         const element = input.current;
         if (!element) return;
@@ -239,7 +254,10 @@ export default function SupportChat({ viewer, endpoint, header, banner, welcome,
     return <section
         style={keyboard.open ? { position: "fixed", left: 0, right: 0, top: keyboard.top, height: keyboard.height, zIndex: 60 } : undefined}
         className={`relative flex min-h-0 flex-col overflow-hidden bg-surface ${keyboard.open ? "" : "h-full rounded-3xl border border-border shadow-[0_18px_50px_-30px_rgb(15_28_46/0.45)]"}`}>
-        <header className={`flex shrink-0 items-center gap-3 border-b border-border bg-gradient-to-r from-[#0B2A55] via-[#0A244B] to-[#081F46] px-4 pb-3 text-white sm:px-5 ${keyboard.open && keyboard.top === 0 ? "pt-[max(0.75rem,env(safe-area-inset-top))]" : "pt-3"}`}>
+        <header
+            // ღია კლავიატურისას ჰედერი სტატუს-ბარის ქვეშ არ უნდა მოექცეს, რაც არ უნდა იყოს ხილული არის პოზიცია.
+            style={keyboard.open ? { paddingTop: `max(0.75rem, calc(env(safe-area-inset-top) - ${keyboard.top}px + 0.5rem))` } : undefined}
+            className="flex shrink-0 items-center gap-3 border-b border-border bg-gradient-to-r from-[#0B2A55] via-[#0A244B] to-[#081F46] px-4 pt-3 pb-3 text-white sm:px-5">
             {header}
         </header>
 
@@ -325,6 +343,7 @@ export default function SupportChat({ viewer, endpoint, header, banner, welcome,
             {loadError && <p className="mb-2 text-xs text-warning">კავშირი შეფერხდა - ვცდილობთ ხელახლა…</p>}
             {error && <p role="alert" className="mb-2 text-xs text-danger">{error}</p>}
             <form className="flex items-end gap-2" onSubmit={event => { event.preventDefault(); send(); }}>
+                {composerTools?.(insert)}
                 <label className="sr-only" htmlFor={`support-input-${viewer}`}>შეტყობინება</label>
                 <textarea
                     id={`support-input-${viewer}`}

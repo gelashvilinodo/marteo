@@ -3,6 +3,7 @@ import { getAdminUser } from "@/lib/admin/authorization";
 import { createPrismaClient } from "@/lib/prisma";
 import { getConversationBusinessProfile, displayName } from "@/lib/support/support-chat";
 import AdminConversation, { type BusinessProfile } from "@/components/admin/AdminConversation";
+import { listNotes } from "@/lib/admin/support-tools";
 
 export const metadata = { title: "მიმოწერა · ადმინ პანელი" };
 
@@ -42,6 +43,6 @@ export default async function AdminConversationPage({ params }: Props) {
                 joinedAt: member.user.createdAt.toISOString(),
             })),
         };
-        return <AdminConversation conversationId={conversation.id} initialStatus={conversation.status} profile={profile} />;
+        return <AdminConversation conversationId={conversation.id} initialStatus={conversation.status} profile={profile} notes={await listNotes(prisma, business.id)} />;
     } finally { await prisma.$disconnect(); }
 }

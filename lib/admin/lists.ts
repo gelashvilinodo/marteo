@@ -49,7 +49,7 @@ export function parseBusinessFilters(params: Params): AdminBusinessFilters {
     };
 }
 
-function businessWhere(filters: AdminBusinessFilters): Sql {
+export function businessWhere(filters: AdminBusinessFilters): Sql {
     const clauses: Sql[] = [sql`true`];
     if (filters.q) {
         const pattern = likePattern(filters.q);
@@ -121,7 +121,7 @@ export function parseUserFilters(params: Params): AdminUserFilters {
     };
 }
 
-function userWhere(filters: AdminUserFilters): Sql {
+export function userWhere(filters: AdminUserFilters): Sql {
     const clauses: Sql[] = [sql`true`];
     if (filters.q) {
         const pattern = likePattern(filters.q);

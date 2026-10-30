@@ -684,7 +684,7 @@ dialog:modal {
   }
 }
 
-/* ლენდინგის ჰედერი ღამის რეჟიმში პანელის საიდბარის ფერს იღებს. */
+/* ლენდინგის მობილური მენიუ ღამის რეჟიმში პანელის საიდბარის ფერს იღებს (ჰედერის ზოლი ყოველთვის ამ ფერისაა). */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .landing-header-surface {
     background-color: rgb(8 31 70);

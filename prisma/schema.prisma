@@ -151,6 +151,7 @@ model User {
   supportMessages        SupportMessage[]
   pushSubscriptions      WebPushSubscription[]
   adminAuditLogs         AdminAuditLog[]
+  adminNotes             BusinessAdminNote[]
   notifications          Notification[]
   notificationCampaigns  NotificationCampaign[]
 }
@@ -212,6 +213,7 @@ model Business {
   productions              Production[]
   productionRequests       ProductionRequest[]
   supportConversation      SupportConversation?
+  adminNotes               BusinessAdminNote[]
   notifications            Notification[]
   stockAlerts              InventoryStockAlert[]
 }
@@ -1533,4 +1535,29 @@ model AdminAuditLog {
 
   @@index([targetType, targetId, createdAt])
   @@index([createdAt])
+}
+
+// Canned replies the admin inserts into support chats.
+model SupportReplyTemplate {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
+// Private notes about a business; never shown to the business.
+model BusinessAdminNote {
+  id         String   @id @default(cuid())
+  businessId String
+  adminId    String?
+  body       String
+  createdAt  DateTime @default(now())
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  admin      User?    @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, createdAt])
 }

@@ -118,10 +118,15 @@ async function sendOne(subscription: { endpoint: string; p256dh: string; auth: s
     return "sent" as const;
 }
 
-export type PushDelivery = { devices: number; sent: number; removed: number; failed: number };
+// unconfigured: the server has no VAPID key pair, so nothing can be signed (not a device problem).
+export type PushDelivery = { devices: number; sent: number; removed: number; failed: number; unconfigured?: boolean };
 
 export async function sendPushToUsers(prisma: PrismaClient, userIds: string[], message: PushMessage): Promise<PushDelivery> {
     if (!userIds.length) return { devices: 0, sent: 0, removed: 0, failed: 0 };
+    if (!readSetting("VAPID_PUBLIC_KEY") || !readSetting("VAPID_PRIVATE_KEY")) {
+        console.error("Web push is not configured: VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY is missing");
+        return { devices: 0, sent: 0, removed: 0, failed: 0, unconfigured: true };
+    }
     const subscriptions = await prisma.webPushSubscription.findMany({
         where: { userId: { in: userIds } },
         select: { id: true, endpoint: true, p256dh: true, auth: true },

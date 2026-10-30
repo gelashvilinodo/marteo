@@ -81,6 +81,9 @@ export default function AdminSupportInbox({ initial, pushKey }: { initial: Data;
                 </p>
             </div>
             <div className="flex w-full items-start gap-2 sm:w-auto">
+                <Link href="/admin/support/templates" prefetch={false} className="flex h-[38px] shrink-0 items-center gap-1.5 rounded-xl border border-border bg-surface px-3 text-sm text-text-primary transition hover:bg-background">
+                    <Icon icon="solar:bolt-bold-duotone" className="h-4 w-4 text-accent" aria-hidden="true" /> სწრაფი პასუხები
+                </Link>
                 <button type="button" onClick={() => { setSupportSound(!soundOn); if (!soundOn) playSupportChime(); }}
                     aria-pressed={soundOn} aria-label={soundOn ? "ხმის გამორთვა" : "ხმის ჩართვა"} title={soundOn ? "ახალ შეტყობინებაზე ხმა ჩართულია" : "ხმა გამორთულია"}
                     className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl border border-border bg-surface transition hover:bg-background ${soundOn ? "text-accent" : "text-text-secondary"}`}>

@@ -6,6 +6,7 @@ import { ADMIN_PAGE_SIZE, getAdminUsers, parseAdminPage, parseUserFilters } from
 import { formatSupportCount, formatSupportDate } from "@/lib/support/support-config";
 import AdminPagination from "@/components/admin/AdminPagination";
 import AdminFilters from "@/components/admin/AdminFilters";
+import ExportButton from "@/components/admin/ExportButton";
 import { USER_STATUS_LABELS, UserStatusBadge } from "@/components/admin/AdminBadges";
 
 const PERIOD_OPTIONS = [{ value: "7", label: "ბოლო 7 დღე" }, { value: "30", label: "ბოლო 30 დღე" }, { value: "90", label: "ბოლო 90 დღე" }];
@@ -23,8 +24,13 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
     const verified = (ok: boolean) => <Icon icon={ok ? "solar:check-circle-bold" : "solar:close-circle-bold"} className={`h-4 w-4 ${ok ? "text-success" : "text-danger"}`} aria-label={ok ? "დადასტურებულია" : "არ არის დადასტურებული"} />;
 
     return <div className="mx-auto max-w-6xl">
-        <h1 className="text-2xl font-semibold text-text-primary">მომხმარებლები</h1>
-        <p className="mt-1 text-sm text-text-secondary">{filtered ? "ნაპოვნია" : "სულ"} {formatSupportCount(total)} მომხმარებელი · ახლიდან ძველისკენ</p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h1 className="text-2xl font-semibold text-text-primary">მომხმარებლები</h1>
+                <p className="mt-1 text-sm text-text-secondary">{filtered ? "ნაპოვნია" : "სულ"} {formatSupportCount(total)} მომხმარებელი · ახლიდან ძველისკენ</p>
+            </div>
+            {total > 0 && <ExportButton kind="users" filename="marteo-users" />}
+        </div>
 
         <AdminFilters placeholder="სახელი, მეილი, ტელეფონი ან ბიზნესი" values={filters} selects={[
             { name: "status", label: "ყველა სტატუსი", options: Object.entries(USER_STATUS_LABELS).map(([value, label]) => ({ value, label })) },
@@ -53,8 +59,8 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
             </li>)}
         </ul>
 
-        {rows.length > 0 && <div className="mt-4 hidden overflow-hidden rounded-2xl border border-border bg-surface md:block">
-            <table className="w-full text-left text-sm">
+        {rows.length > 0 && <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-border bg-surface md:block">
+            <table className="w-full min-w-[860px] text-left text-sm">
                 <thead className="border-b border-border text-xs text-text-secondary">
                     <tr>{["სახელი", "ელფოსტა", "ტელეფონი", "სტატუსი", "მეილი", "ტელ.", "ბიზნესები", "რეგისტრაცია"].map(h => <th key={h} scope="col" className="px-4 py-3 font-medium">{h}</th>)}</tr>
                 </thead>

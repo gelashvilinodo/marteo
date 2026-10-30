@@ -35,8 +35,9 @@ export default function Header() {
   return (
     <>
       <header className="sticky top-0 z-50">
-        {/* The installed app draws under the status bar; the safe-area inset keeps the header below the clock. */}
-        <div className="landing-header-surface relative z-10 border-b border-border bg-background pt-[env(safe-area-inset-top,0px)]">
+        {/* The installed app draws under the status bar; the safe-area inset keeps the header below the clock.
+            The bar keeps the night colours in both modes; a solid colour also lets iOS tint the status bar without blur. */}
+        <div className="relative z-10 border-b border-white/[0.08] bg-[#081F46] pt-[env(safe-area-inset-top,0px)]">
           <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
             <Link
               href="/"
@@ -45,15 +46,9 @@ export default function Header() {
               className="shrink-0"
             >
               <img
-                src="/images/marteo-08.svg"
-                alt="MARTEO.GE"
-                className="h-11 w-auto dark:hidden"
-              />
-
-              <img
                 src="/images/logo.svg"
                 alt="MARTEO.GE"
-                className="hidden h-11 w-auto dark:block"
+                className="h-11 w-auto"
               />
             </Link>
 
@@ -62,7 +57,7 @@ export default function Header() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-sm font-medium text-text-primary transition-colors hover:text-accent"
+                  className="text-sm font-medium text-[#f8fafc] transition-colors hover:text-[#5a8dee]"
                 >
                   {item.label}
                 </Link>
@@ -73,7 +68,7 @@ export default function Header() {
               <button
                 type="button"
                 onClick={() => setLoginOpen(true)}
-                className="min-h-10 cursor-pointer rounded-xl bg-accent px-5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
+                className="min-h-10 cursor-pointer rounded-xl bg-[#5a8dee] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#6d9af2]"
               >
                 შესვლა
               </button>
@@ -85,7 +80,7 @@ export default function Header() {
               aria-label={menuOpen ? "მენიუს დახურვა" : "მენიუს გახსნა"}
               aria-expanded={menuOpen}
               aria-controls="landing-mobile-menu"
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl text-text-primary transition-colors hover:bg-accent/10 md:hidden"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl text-[#f8fafc] transition-colors hover:bg-white/10 md:hidden"
             >
               <Icon
                 icon={menuOpen ? "solar:close-circle-linear" : "solar:hamburger-menu-linear"}

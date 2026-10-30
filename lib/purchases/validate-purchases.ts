@@ -263,6 +263,10 @@ export function validatePurchase(value: unknown) {
                 `${label} - აღწერა`,
                 2000,
             ),
+            // ერთი ჯგუფის ახალი ხაზები ერთ პროდუქტად ინახება, განსხვავებული ფერით/ზომით.
+            productGroup:
+                text(item.productGroup, `${label} - პროდუქტის ჯგუფი`, 100) ||
+                null,
             color: text(item.color, `${label} - ფერი`, 100),
             size: text(item.size, `${label} - ზომა`, 100),
 

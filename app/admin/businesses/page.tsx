@@ -7,6 +7,7 @@ import { BUSINESS_MODES } from "@/lib/business/business-mode";
 import { formatSupportCount, formatSupportDate } from "@/lib/support/support-config";
 import AdminPagination from "@/components/admin/AdminPagination";
 import AdminFilters from "@/components/admin/AdminFilters";
+import ExportButton from "@/components/admin/ExportButton";
 
 const PLAN_OPTIONS = [
     { value: "FREE", label: "FREE" }, { value: "START", label: "START" },
@@ -26,8 +27,13 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
     const modeLabel = (mode: string) => BUSINESS_MODES.find(item => item.value === mode)?.label ?? mode;
 
     return <div className="mx-auto max-w-6xl">
-        <h1 className="text-2xl font-semibold text-text-primary">ბიზნესები</h1>
-        <p className="mt-1 text-sm text-text-secondary">{filtered ? "ნაპოვნია" : "სულ"} {formatSupportCount(total)} ბიზნესი · ახლიდან ძველისკენ</p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h1 className="text-2xl font-semibold text-text-primary">ბიზნესები</h1>
+                <p className="mt-1 text-sm text-text-secondary">{filtered ? "ნაპოვნია" : "სულ"} {formatSupportCount(total)} ბიზნესი · ახლიდან ძველისკენ</p>
+            </div>
+            {total > 0 && <ExportButton kind="businesses" filename="marteo-businesses" />}
+        </div>
 
         <AdminFilters placeholder="სახელი, მეილი ან ტელეფონი (ბიზნესის ან წევრის)" values={filters} selects={[
             { name: "mode", label: "ყველა ტიპი", options: BUSINESS_MODES.map(mode => ({ value: mode.value, label: mode.label })) },
@@ -55,8 +61,8 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
             </li>)}
         </ul>
 
-        {rows.length > 0 && <div className="mt-4 hidden overflow-hidden rounded-2xl border border-border bg-surface md:block">
-            <table className="w-full text-left text-sm">
+        {rows.length > 0 && <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-border bg-surface md:block">
+            <table className="w-full min-w-[820px] text-left text-sm">
                 <thead className="border-b border-border text-xs text-text-secondary">
                     <tr>{["სახელი", "ტიპი", "მფლობელი", "წევრები", "შეკვეთები", "პაკეტი", "შექმნილია"].map(h => <th key={h} scope="col" className="px-4 py-3 font-medium">{h}</th>)}</tr>
                 </thead>
