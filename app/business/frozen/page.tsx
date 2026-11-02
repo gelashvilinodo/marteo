@@ -28,7 +28,7 @@ export default async function FrozenPage() {
         return (
             <AuthShell heading={<>წვდომა<br />დროებით შეჩერებულია.</>} text="შენი მონაცემები და ანგარიში უსაფრთხოდაა.">
                 <div className={authCardClass}>
-                    <Icon icon="solar:snowflake-linear" className="size-12 text-accent" aria-hidden="true" />
+                    <Icon icon="solar:lock-keyhole-linear" className="size-12 text-accent" aria-hidden="true" />
                     <h2 className="mt-3 text-xl font-semibold text-text-primary">ბიზნესში შესვლა ახლა ვერ ხერხდება</h2>
                     <p className="mt-2 text-sm leading-6 text-text-secondary">
                         {names} ბიზნესის გეგმა შეიცვალა და გუნდის წევრების ლიმიტი შემცირდა. ლიმიტში ჯერ ადრე დამატებული წევრები დარჩნენ, ამიტომ შენი წვდომა დროებით შეჩერდა.

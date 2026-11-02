@@ -139,7 +139,7 @@ export async function leaveBusiness(db: Db, businessId: string, userId: string) 
         const remaining = owners.filter(owner => owner.userId !== userId).map(owner => owner.userId);
         notices.push({
             userIds: remaining, businessId, title: "წევრმა დატოვა ბიზნესი",
-            body: `${fullName(member.user)}-მა დატოვა ბიზნესი „${member.business.name}“.`,
+            body: `ბიზნესი „${member.business.name}“ დატოვა: ${fullName(member.user)}.`,
             actionUrl: SETTINGS_URL, key: `team-left:${member.id}`,
         });
         await writeNotices(tx, notices);
@@ -233,7 +233,7 @@ async function openRequest(db: Db, businessId: string, actorId: string, kind: "R
         const others = (await activeOwners(tx, businessId)).filter(owner => owner.userId !== actorId).map(owner => owner.userId);
         const ask: Notice = {
             userIds: others, businessId, title: kind === "DELETE_BUSINESS" ? "ბიზნესის წაშლა თანხმობას ელოდება" : "წევრის გაშვება თანხმობას ელოდება",
-            body: `${fullName(actor.user)}-ს სურს ${target.text(request.business.name)} ეთანხმები?`,
+            body: `${fullName(actor.user)} ითხოვს თანხმობას: ${target.text(request.business.name)} ეთანხმები?`,
             actionUrl: SETTINGS_URL, key: `consent-ask:${request.id}`,
         };
         await writeNotices(tx, [ask]);
@@ -252,7 +252,7 @@ export function requestRemoval(db: Db, businessId: string, actorId: string, memb
         if (!target) throw new TeamError("წევრი ვერ მოიძებნა.", 404);
         if (target.role === "OWNER") throw new TeamError("თანამფლობელს ვერავინ გაუშვებს. ის ბიზნესს მხოლოდ თავისი ნებით დატოვებს.", 403);
         const name = fullName(target.user);
-        return { targetUserId: target.userId, targetName: name, text: business => `${name}-ის გაშვება ბიზნესიდან „${business}“.` };
+        return { targetUserId: target.userId, targetName: name, text: business => `ბიზნესიდან „${business}“ გავიდეს ${name}.` };
     });
 }
 
@@ -263,7 +263,7 @@ export function requestDeletion(db: Db, businessId: string, actorId: string, bod
         const business = await tx.business.findUnique({ where: { id: businessId }, select: { name: true } });
         if (!business || confirmName !== business.name.trim()) throw new TeamError("ბიზნესის სახელი არ ემთხვევა.", 422);
         if (!password || !(await bcrypt.compare(password, actor.user.password))) throw new TeamError("პაროლი არასწორია.", 401);
-        return { targetUserId: null, targetName: null, text: name => `ბიზნესის „${name}“ სამუდამოდ წაშლა.` };
+        return { targetUserId: null, targetName: null, text: name => `სამუდამოდ წაიშალოს ბიზნესი „${name}“.` };
     });
 }
 
@@ -285,7 +285,7 @@ export async function voteOnRequest(db: Db, businessId: string, actorId: string,
             const owners = (await activeOwners(tx, businessId)).map(owner => owner.userId).filter(id => id !== actorId);
             const notice: Notice = {
                 userIds: owners, businessId, title: "მოთხოვნა უარყოფილია",
-                body: `${fullName(actor.user)} არ დაეთანხმა ${request.kind === "DELETE_BUSINESS" ? "ბიზნესის წაშლას" : `${request.targetName ?? "წევრის"} გაშვებას`}.`,
+                body: `${fullName(actor.user)} არ დაეთანხმა მოთხოვნას: ${request.kind === "DELETE_BUSINESS" ? "ბიზნესის წაშლა" : `გუნდიდან გავიდეს ${request.targetName ?? "წევრი"}`}.`,
                 actionUrl: SETTINGS_URL, key: `consent-rejected:${requestId}`,
             };
             await writeNotices(tx, [notice]);

@@ -99,7 +99,7 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
 
     function requestRow(request: TeamRequestView) {
         const busy = busyId === request.id;
-        const what = request.kind === "DELETE_BUSINESS" ? "ბიზნესის წაშლა" : `${request.targetName ?? "წევრის"} გუნდიდან გაშვება`;
+        const what = request.kind === "DELETE_BUSINESS" ? "ბიზნესის წაშლა" : `გუნდიდან გაშვება: ${request.targetName ?? "წევრი"}`;
         return (
             <li key={request.id} className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
                 <p className="font-medium text-text-primary">
