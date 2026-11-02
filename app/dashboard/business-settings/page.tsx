@@ -7,6 +7,8 @@ import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { createPrismaClient } from "@/lib/prisma";
 import BusinessSettingsForm from "@/components/dashboard/business/BusinessSettingsForm";
 import AppearanceSettings from "@/components/dashboard/business/AppearanceSettings";
+import TeamSection from "@/components/dashboard/business/TeamSection";
+import { getTeamSnapshot } from "@/lib/business/team-server";
 
 export default async function BusinessSettingsPage() {
     await requireDashboardSection("/dashboard/business-settings");
@@ -56,6 +58,8 @@ export default async function BusinessSettingsPage() {
 
         if (!business) redirect("/business/onboarding");
 
+        const team = await getTeamSnapshot(prisma, business.id, user.id);
+
         return (
             <main className="min-w-0 p-4 sm:p-6 lg:p-8">
                 <div className="w-full max-w-[840px] space-y-5">
@@ -69,6 +73,7 @@ export default async function BusinessSettingsPage() {
                             updatedAt: business.updatedAt.toISOString(),
                         }}
                     />
+                    <TeamSection initialTeam={team} businessMode={business.mode} />
                     <AppearanceSettings />
 
                     <section className="min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">

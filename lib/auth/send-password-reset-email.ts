@@ -6,7 +6,7 @@ import { Resend } from "resend";
 
 export const PASSWORD_RESET_LIFETIME_MS = 15 * 60 * 1000;
 
-function readServerSetting(
+export function readServerSetting(
     name: "APP_URL" | "RESEND_API_KEY" | "RESEND_FROM_EMAIL",
 ): string {
     try {
@@ -25,7 +25,7 @@ function readServerSetting(
     return process.env[name]?.trim() ?? "";
 }
 
-function getAppOrigin(): string {
+export function getAppOrigin(): string {
     // Local tests must open the local reset page.
     const configured = process.env.NODE_ENV === "development"
         ? "http://localhost:3000"
