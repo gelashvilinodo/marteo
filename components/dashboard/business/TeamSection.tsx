@@ -125,7 +125,7 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
                                 {invite.role === "OWNER" ? "თანამფლობელი" : "თანამშრომელი"}
                             </RoleBadge>
                         </div>
-                        <p className={`mt-0.5 flex items-center gap-1.5 text-sm ${expired ? "text-danger" : "text-warning"}`}>
+                        <p className={`mt-0.5 flex flex-wrap items-center gap-x-1.5 text-sm ${expired ? "text-danger" : "text-warning"}`}>
                             <Icon icon={expired ? "solar:clock-circle-linear" : "solar:hourglass-linear"} className="size-4 shrink-0" aria-hidden="true" />
                             {expired ? "ბმულს ვადა გაუვიდა" : "ველოდებით დადასტურებას"}
                             {!expired && now > 0 && <span className="text-text-secondary">· ბმული მოქმედებს {hoursLeft} სთ</span>}

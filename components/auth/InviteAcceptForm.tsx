@@ -71,7 +71,8 @@ export default function InviteAcceptForm() {
 
     // ტოკენი URL-ის ფრაგმენტიდან იკითხება და მაშინვე იშლება მისამართის ზოლიდან.
     useEffect(() => {
-        const value = new URLSearchParams(window.location.hash.slice(1)).get("token") ?? "";
+        // ეფექტი შეიძლება ორჯერ გაეშვას, ფრაგმენტი კი პირველივე ჯერზე იშლება.
+        const value = token.current || (new URLSearchParams(window.location.hash.slice(1)).get("token") ?? "");
         token.current = value;
         if (value) window.history.replaceState(null, "", window.location.pathname);
         const controller = new AbortController();
