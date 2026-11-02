@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { createPrismaClient } from "@/lib/prisma";
@@ -8,6 +9,7 @@ import {
 import {
     getCourierReminder,
 } from "@/lib/orders/get-courier-reminder";
+import { canManageBusinessArea } from "@/lib/business/permissions";
 
 function json(data: unknown, status = 200) {
     return Response.json(data, {
@@ -56,6 +58,7 @@ function readStartDate(value: unknown): string {
 }
 
 export async function POST(request: Request) {
+    const accessDenied = await apiAccessDenied("FINANCE", "edit"); if (accessDenied) return accessDenied;
     try {
         if (
             request.headers.get("origin") !==
@@ -169,13 +172,12 @@ export async function POST(request: Request) {
                                 },
                             },
                             select: {
-                                role: true,
+                                role: true, permissions: true, readOnly: true, status: true,
                             },
                         });
 
                     if (
-                        !access ||
-                        !["OWNER", "ADMIN"].includes(access.role)
+                        !canManageBusinessArea(access, "FINANCE")
                     ) {
                         throw new OrderValidationError(
                             "ამ მოქმედებისთვის შესაბამისი უფლება არ გაქვს.",

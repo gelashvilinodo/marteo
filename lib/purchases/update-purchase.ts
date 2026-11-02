@@ -3,6 +3,7 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
+import { findActiveMembership } from "@/lib/auth/active-business";
 
 import { createInventorySkuAllocator } from "./create-inventory-sku";
 import { getPurchaseEditUsage } from "./get-purchase-edit-usage";
@@ -115,11 +116,7 @@ export async function updatePurchase(
     let uploadBusinessId: string | null = null;
 
     try {
-        const membership = await prisma.businessMembership.findFirst({
-            where: { userId: user.id },
-            orderBy: { createdAt: "asc" },
-            select: { businessId: true },
-        });
+        const membership = await findActiveMembership(prisma, user.id);
 
         if (!membership) {
             throw new PurchaseEditError(

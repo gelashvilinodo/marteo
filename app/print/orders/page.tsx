@@ -1,3 +1,4 @@
+import { requirePageAccess } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import InvoiceBatchPrintPage from "@/components/dashboard/orders/InvoiceBatchPrintPage";
@@ -7,6 +8,7 @@ export const metadata = { title: "ინვოისების ბეჭდვ
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ ids?: string | string[]; mode?: string; selection?: string }> }) {
     if (!await getCurrentUser()) redirect("/login");
+    await requirePageAccess("ORDERS");
     const params = await searchParams;
     if (params.mode === "new" || params.mode === "pending") return <InvoiceBatchPrintPage mode={params.mode} />;
     if (typeof params.selection === "string" && params.selection) return <InvoiceBatchPrintPage selectionKey={params.selection} />;

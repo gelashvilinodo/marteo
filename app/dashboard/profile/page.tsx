@@ -1,3 +1,4 @@
+import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 
 import { getCurrentUserWithClient } from "@/lib/auth/session";
@@ -6,6 +7,7 @@ import ProfileSettingsForm from "@/components/dashboard/profile/ProfileSettingsF
 import PasswordSettingsForm from "@/components/dashboard/profile/PasswordSettingsForm";
 
 export default async function ProfilePage() {
+    await requireDashboardSection("/dashboard/profile");
     const prisma = createPrismaClient();
 
     try {

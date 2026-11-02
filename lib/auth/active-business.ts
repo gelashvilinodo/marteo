@@ -24,16 +24,16 @@ type MembershipClient = Pick<ReturnType<typeof createPrismaClient>, "businessMem
 
 export async function findActiveMembership(client: MembershipClient, userId: string) {
     const preferred = await getActiveBusinessPreference();
-    const select = { businessId: true, role: true } as const;
+    const select = { businessId: true, role: true, permissions: true, readOnly: true, status: true } as const;
     if (preferred) {
         const membership = await client.businessMembership.findUnique({
             where: { userId_businessId: { userId, businessId: preferred } },
             select,
         });
-        if (membership) return membership;
+        if (membership?.status === "ACTIVE") return membership;
     }
     return client.businessMembership.findFirst({
-        where: { userId },
+        where: { userId, status: "ACTIVE" },
         orderBy: [{ createdAt: "asc" }, { businessId: "asc" }],
         select,
     });

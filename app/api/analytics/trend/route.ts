@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { createPrismaClient } from "@/lib/prisma";
@@ -16,6 +17,7 @@ function json(data: unknown, status = 200) {
 }
 
 export async function GET(request: Request) {
+    const accessDenied = await apiAccessDenied("FINANCE", "view"); if (accessDenied) return accessDenied;
     let prisma:
         ReturnType<typeof createPrismaClient> | undefined;
 

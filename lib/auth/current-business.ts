@@ -12,7 +12,7 @@ export const getUserBusinesses = cache(async () => {
     const prisma = createPrismaClient();
     try {
         const memberships = await prisma.businessMembership.findMany({
-            where: { userId: user.id },
+            where: { userId: user.id, status: "ACTIVE" },
             orderBy: [{ createdAt: "asc" }, { businessId: "asc" }],
             select: { business: { select: { id: true, name: true, logoUrl: true } } },
         });

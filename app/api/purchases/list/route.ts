@@ -1,9 +1,11 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { businessFeatureDenied } from '@/lib/business/feature-access';
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { getPurchasesSnapshot } from "@/lib/purchases/get-purchases-snapshot";
 import { orderJson } from "@/lib/orders/order-http";
 export async function GET(request: Request) {
+    const accessDenied = await apiAccessDenied("PURCHASES", "view"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('imports');if(denied)return denied;
 
     try {

@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
 import { orderJson } from "@/lib/orders/order-http";
 
@@ -20,6 +21,7 @@ const sections: HomeRefreshSection[] = [
 ];
 
 export async function GET(request: Request) {
+    const accessDenied = await apiAccessDenied("FINANCE", "view"); if (accessDenied) return accessDenied;
     try {
         const context = await getPgDashboardContext();
 

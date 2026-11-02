@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { businessFeatureDenied } from '@/lib/business/feature-access';
 import { NextResponse } from "next/server";
 
@@ -88,6 +89,7 @@ export async function POST(
         params: Promise<{ purchaseId: string }>;
     },
 ) {
+    const accessDenied = await apiAccessDenied(["PURCHASES", "INVENTORY"], "edit"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('imports');if(denied)return denied;
 
     try {

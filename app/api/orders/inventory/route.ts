@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { hasBusinessFeature, businessFeatureMessage } from "@/lib/business/business-mode";
 import { getMaterialPicker } from "@/lib/orders/get-material-picker";
 import { getProductPicker } from "@/lib/orders/get-product-picker";
@@ -15,6 +16,7 @@ function json(data: unknown, status = 200) {
 }
 
 export async function GET(request: Request) {
+    const accessDenied = await apiAccessDenied("ORDERS", "view"); if (accessDenied) return accessDenied;
     let reader: ReturnType<typeof createPgReader> | undefined;
 
     try {

@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
 import { hasBusinessFeature } from "@/lib/business/business-mode";
 import { orderJson } from "@/lib/orders/order-http";
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 // ბრაუზერი ამას კვირაში ერთხელ ითხოვს; ლიმიტი მხოლოდ ზედმეტ გამოძახებას აჩერებს.
 export async function GET() {
+    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
     const context = await getPgDashboardContext();
 
     if (!context) return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);

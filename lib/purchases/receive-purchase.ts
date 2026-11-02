@@ -3,6 +3,7 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
+import { findActiveMembership } from "@/lib/auth/active-business";
 
 export class ReceivePurchaseError extends Error {
     constructor(
@@ -129,11 +130,7 @@ export async function receivePurchase(
     const prisma = createPrismaClient();
 
     try {
-        const membership = await prisma.businessMembership.findFirst({
-            where: { userId: user.id },
-            orderBy: { createdAt: "asc" },
-            select: { businessId: true },
-        });
+        const membership = await findActiveMembership(prisma, user.id);
 
         if (!membership) {
             fail("ბიზნესზე წვდომა ვერ მოიძებნა.", 403);

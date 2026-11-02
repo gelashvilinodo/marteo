@@ -1,3 +1,4 @@
+import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPgReader } from "@/lib/database/pg-reader";
@@ -9,6 +10,7 @@ import { getCurrentBusiness } from "@/lib/auth/current-business";
 export default async function OrdersPage({ searchParams }: {
     searchParams: Promise<OrdersSearchParams>;
 }) {
+    await requireDashboardSection("/dashboard/orders");
     const user = await getCurrentUser();
     if (!user) redirect("/login");
     const membership = await getCurrentBusiness();

@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { createPrismaClient } from "@/lib/prisma";
@@ -16,6 +17,7 @@ function json(data: unknown, status = 200) {
 }
 
 export async function POST(request: Request) {
+    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
     try {
         const user = await getCurrentUser();
 
@@ -175,6 +177,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
+    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
     try {
         const user = await getCurrentUser();
 

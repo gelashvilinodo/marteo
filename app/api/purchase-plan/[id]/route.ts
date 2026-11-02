@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { orderJson } from "@/lib/orders/order-http";
 import { guardMutation } from "@/lib/security/mutation-request";
 import {
@@ -11,6 +12,7 @@ import { withPurchasePlan } from "@/lib/purchases/purchase-plan-http";
 type Context = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: Request, { params }: Context) {
+    const accessDenied = await apiAccessDenied(["PURCHASES", "INVENTORY"], "edit"); if (accessDenied) return accessDenied;
     const { id } = await params;
 
     return guardMutation(async (guarded) => {
@@ -24,6 +26,7 @@ export async function PATCH(request: Request, { params }: Context) {
 }
 
 export async function DELETE(request: Request, { params }: Context) {
+    const accessDenied = await apiAccessDenied(["PURCHASES", "INVENTORY"], "edit"); if (accessDenied) return accessDenied;
     const { id } = await params;
 
     return guardMutation(async () => withPurchasePlan(async (prisma, businessId) => {

@@ -1,3 +1,4 @@
+import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
@@ -9,6 +10,7 @@ import HelpView from "@/components/dashboard/help/HelpView";
 export const metadata = { title: "დახმარება · MARTEO" };
 
 export default async function HelpPage() {
+    await requireDashboardSection("/dashboard/help");
     const user = await getCurrentUser();
     if (!user) redirect("/login");
     const membership = await getCurrentBusiness();

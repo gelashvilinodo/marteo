@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import type { Prisma } from "@/generated/prisma/client";
 
 import { getCurrentUser } from "@/lib/auth/session";
@@ -32,6 +33,7 @@ export async function POST(
     request: Request,
     context: { params: Promise<{ draftId: string }> },
 ) {
+    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
     try {
         const user = await getCurrentUser();
 

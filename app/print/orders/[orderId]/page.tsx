@@ -1,3 +1,4 @@
+import { requirePageAccess } from "@/lib/business/access";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -16,6 +17,7 @@ export default async function PrintOrderPage({ params, searchParams }: {
 }) {
     const user = await getCurrentUser();
     if (!user) redirect("/login");
+    await requirePageAccess("ORDERS");
     const { orderId } = await params;
     const { format } = await searchParams;
     const paper = isInvoicePaper(format) ? format : "a4";

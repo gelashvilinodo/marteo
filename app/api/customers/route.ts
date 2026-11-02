@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { mutateCustomers } from "@/lib/customers/customer-mutations";
 import { OrderValidationError } from "@/lib/orders/validate-order";
 import { readOrderBody } from "@/lib/orders/order-http";
@@ -42,13 +43,16 @@ async function handle(
 }
 
 export async function POST(request: Request) {
+    const accessDenied = await apiAccessDenied("ORDERS", "edit"); if (accessDenied) return accessDenied;
     return handle(request, "create");
 }
 
 export async function PATCH(request: Request) {
+    const accessDenied = await apiAccessDenied("ORDERS", "edit"); if (accessDenied) return accessDenied;
     return handle(request, "edit");
 }
 
 export async function DELETE(request: Request) {
+    const accessDenied = await apiAccessDenied("ORDERS", "edit"); if (accessDenied) return accessDenied;
     return handle(request, "delete");
 }

@@ -1,4 +1,4 @@
-import { canManageBusinessData } from "@/lib/security/business-permissions";
+import { canManageBusinessArea } from "@/lib/business/permissions";
 import { numericQuantities } from "@/lib/orders/quantity";
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
@@ -56,8 +56,8 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
     try {
         const membership = await findActiveMembership(prisma, user.id);
         if (!membership) fail("ბიზნესი ვერ მოიძებნა.", 403);
-        if (!canManageBusinessData(membership.role)) {
-            fail("ამ მოქმედებისთვის მფლობელის ან ადმინისტრატორის უფლებაა საჭირო.", 403);
+        if (!canManageBusinessArea(membership, "ORDERS")) {
+            fail("ამ მოქმედების უფლება არ გაქვს.", 403);
         }
 
         const businessId = membership.businessId;

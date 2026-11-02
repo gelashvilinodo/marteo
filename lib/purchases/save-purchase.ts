@@ -3,6 +3,7 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
+import { findActiveMembership } from "@/lib/auth/active-business";
 
 import { createInventorySkuAllocator } from "./create-inventory-sku";
 
@@ -102,11 +103,7 @@ export async function savePurchase(
 
     try {
         const membership =
-            await prisma.businessMembership.findFirst({
-                where: { userId: user.id },
-                orderBy: { createdAt: "asc" },
-                select: { businessId: true },
-            });
+            await findActiveMembership(prisma, user.id);
 
         if (!membership) {
             fail("ბიზნესი ვერ მოიძებნა.");

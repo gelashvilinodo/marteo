@@ -1,3 +1,4 @@
+import { requirePageAccess } from "@/lib/business/access";
 import type { BusinessMode } from "@/lib/business/business-mode";
 import { createHash } from "crypto";
 import { cookies } from "next/headers";
@@ -11,6 +12,7 @@ import OrdersView from "@/components/dashboard/orders/OrdersView";
 
 type Context = { mode:BusinessMode; expiresAt: Date; status: string; firstName: string | null; email: string; businessId: string | null; name: string; logoUrl: string | null };
 export default async function OrdersPgExperiment({ searchParams }: { searchParams: Promise<OrdersSearchParams> }) {
+    await requirePageAccess("ORDERS");
     const cookieStore = await cookies();
     const token = cookieStore.get("marteo_session")?.value;
     const preferred = cookieStore.get(ACTIVE_BUSINESS_COOKIE)?.value ?? "";
@@ -21,7 +23,7 @@ export default async function OrdersPgExperiment({ searchParams }: { searchParam
         const [context] = await client.$queryRaw<Context[]>`
             SELECT s."expiresAt", u.status::text AS status, u."firstName", u.email, m."businessId", b.name, b."logoUrl", b.mode
             FROM "Session" s JOIN "User" u ON u.id = s."userId"
-            LEFT JOIN LATERAL (SELECT "businessId" FROM "BusinessMembership" WHERE "userId" = u.id ORDER BY ("businessId" = ${preferred}) DESC, "createdAt" ASC, "businessId" ASC LIMIT 1) m ON true
+            LEFT JOIN LATERAL (SELECT "businessId" FROM "BusinessMembership" WHERE "userId" = u.id AND "status" = 'ACTIVE' ORDER BY ("businessId" = ${preferred}) DESC, "createdAt" ASC, "businessId" ASC LIMIT 1) m ON true
             LEFT JOIN "Business" b ON b.id = m."businessId"
             WHERE s."tokenHash" = ${tokenHash} LIMIT 1
         `;

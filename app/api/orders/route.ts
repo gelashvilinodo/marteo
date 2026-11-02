@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { saveOrder } from "@/lib/orders/save-order";
 import { OrderValidationError } from "@/lib/orders/validate-order";
 
@@ -17,6 +18,7 @@ function errorResponse(message: string, status: number) {
 }
 
 export async function POST(request: Request) {
+    const accessDenied = await apiAccessDenied("ORDERS", "edit"); if (accessDenied) return accessDenied;
     try {
         if (
             request.headers.get("origin") !==

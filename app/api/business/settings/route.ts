@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import type { BusinessMode } from "@/lib/business/business-mode";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
@@ -214,6 +215,7 @@ async function readBody(request: Request): Promise<unknown> {
 }
 
 export async function GET() {
+    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
     try {
         const context = await getContext();
         const prisma = createPrismaClient();
@@ -241,6 +243,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
     try {
         const context = await getContext();
         const input = validateBusinessSettings(

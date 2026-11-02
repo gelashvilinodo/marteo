@@ -10,6 +10,7 @@ type Row = {
     expiresAt: Date; status: string; id: string; email: string;
     firstName: string | null; lastName: string | null; phone: string | null;
     businessMode: BusinessMode | null; businessId: string | null; businessName: string | null; logoUrl: string | null;
+    role: string | null; permissions: string[] | null; readOnly: boolean | null; membershipStatus: string | null;
 };
 
 // React cache deduplicates only within this render/request, never across users.
@@ -24,11 +25,12 @@ export const getPgDashboardContext = cache(async () => {
         const [row] = await client.$queryRaw<Row[]>`
             SELECT s."expiresAt", u.status::text AS status, u.id, u.email,
                 u."firstName", u."lastName", u.phone,
-                m."businessId", b.name AS "businessName", b."logoUrl", b.mode AS "businessMode"
+                m."businessId", b.name AS "businessName", b."logoUrl", b.mode AS "businessMode",
+                m.role::text AS role, m.permissions::text[] AS permissions, m."readOnly", m.status::text AS "membershipStatus"
             FROM "Session" s JOIN "User" u ON u.id = s."userId"
             LEFT JOIN LATERAL (
-                SELECT "businessId" FROM "BusinessMembership"
-                WHERE "userId" = u.id
+                SELECT "businessId", role, permissions, "readOnly", "status" FROM "BusinessMembership"
+                WHERE "userId" = u.id AND "status" = 'ACTIVE'
                 ORDER BY ("businessId" = ${preferred}) DESC, "createdAt" ASC, "businessId" ASC LIMIT 1
             ) m ON true
             LEFT JOIN "Business" b ON b.id = m."businessId"
@@ -45,6 +47,8 @@ export const getPgDashboardContext = cache(async () => {
                 lastName: row.lastName, phone: row.phone, status: "ACTIVE" as const },
             membership: row.businessId && row.businessName !== null ? {
                 businessId: row.businessId,
+                access: { role: row.role ?? "MEMBER", permissions: row.permissions ?? [],
+                    readOnly: row.readOnly ?? true, status: row.membershipStatus ?? "FROZEN" },
                 business: { mode: row.businessMode ?? "IMPORT", id: row.businessId, name: row.businessName, logoUrl: row.logoUrl },
             } : null,
         };

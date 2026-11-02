@@ -1,9 +1,10 @@
-import { canManageBusinessData } from "@/lib/security/business-permissions";
+import { canManageBusinessArea } from "@/lib/business/permissions";
 import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
+import { findActiveMembership } from "@/lib/auth/active-business";
 import { OrderValidationError } from "@/lib/orders/validate-order";
 import { expenseCategories } from "./expense-categories";
 
@@ -84,16 +85,12 @@ export async function createExpense(raw: unknown) {
     const prisma = createPrismaClient();
 
     try {
-        const membership = await prisma.businessMembership.findFirst({
-            where: { userId: user.id },
-            orderBy: [{ createdAt: "asc" }, { businessId: "asc" }],
-            select: { businessId: true, role: true },
-        });
+        const membership = await findActiveMembership(prisma, user.id);
 
         if (!membership) fail("ბიზნესი ვერ მოიძებნა.", 403);
 
-        if (!canManageBusinessData(membership.role)) {
-            fail("ამ მოქმედებისთვის მფლობელის ან ადმინისტრატორის უფლებაა საჭირო.", 403);
+        if (!canManageBusinessArea(membership, "FINANCE")) {
+            fail("ამ მოქმედების უფლება არ გაქვს.", 403);
         }
 
         const businessId = membership.businessId;

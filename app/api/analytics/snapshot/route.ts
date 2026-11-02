@@ -1,9 +1,11 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { getAnalyticsSnapshot } from "@/lib/analytics/get-analytics-snapshot";
 import { orderJson, orderError } from "@/lib/orders/order-http";
 
 export async function GET(request: Request) {
+    const accessDenied = await apiAccessDenied("FINANCE", "view"); if (accessDenied) return accessDenied;
     try {
         if (!(await getCurrentUser())) return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
         const membership = await getCurrentBusiness();

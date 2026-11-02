@@ -8,6 +8,7 @@ import {
     getCourierReminder,
     type CourierReminder,
 } from "./get-courier-reminder";
+import { canManageBusinessArea } from "@/lib/business/permissions";
 
 function object(value: unknown): Record<string, unknown> {
     if (
@@ -115,13 +116,12 @@ export async function settleCourierReminder(
             },
         },
         select: {
-            role: true,
+            role: true, permissions: true, readOnly: true, status: true,
         },
     });
 
     if (
-        !access ||
-        !["OWNER", "ADMIN"].includes(access.role)
+        !canManageBusinessArea(access, "FINANCE")
     ) {
         throw new OrderValidationError(
             "ამ მოქმედებისთვის შესაბამისი უფლება არ გაქვს.",

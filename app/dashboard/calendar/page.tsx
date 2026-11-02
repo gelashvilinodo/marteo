@@ -1,3 +1,4 @@
+import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -12,6 +13,7 @@ export default async function CalendarPage({
 }: {
     searchParams: Promise<CalendarSearchParams>;
 }) {
+    await requireDashboardSection("/dashboard/calendar");
     if (!(await getCurrentUser())) redirect("/login");
 
     const membership = await getCurrentBusiness();

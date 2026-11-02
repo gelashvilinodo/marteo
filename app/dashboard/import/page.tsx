@@ -1,3 +1,4 @@
+import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
@@ -6,6 +7,7 @@ import { createPrismaClient } from "@/lib/prisma";
 import ImportWorkspace from "@/components/dashboard/imports/ImportWorkspace";
 
 export default async function ImportPage() {
+    await requireDashboardSection("/dashboard/import");
     const user = await getCurrentUser();
 
     if (!user) redirect("/login");

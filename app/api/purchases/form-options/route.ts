@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { businessFeatureDenied } from '@/lib/business/feature-access';
 import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
 import { createPgReader } from "@/lib/database/pg-reader";
@@ -5,6 +6,7 @@ import { orderJson } from "@/lib/orders/order-http";
 import { getPurchaseFormOptions } from "@/lib/purchases/get-purchase-form-options";
 
 export async function GET() {
+    const accessDenied = await apiAccessDenied("PURCHASES", "view"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('imports');if(denied)return denied;
 
     const context = await getPgDashboardContext();

@@ -1,3 +1,4 @@
+import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -8,6 +9,7 @@ import BusinessSettingsForm from "@/components/dashboard/business/BusinessSettin
 import AppearanceSettings from "@/components/dashboard/business/AppearanceSettings";
 
 export default async function BusinessSettingsPage() {
+    await requireDashboardSection("/dashboard/business-settings");
     const user = await getCurrentUser();
 
     if (!user) redirect("/login");

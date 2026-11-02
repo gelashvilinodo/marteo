@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
 import { orderJson } from "@/lib/orders/order-http";
 import { createPrismaClient } from "@/lib/prisma";
@@ -30,6 +31,7 @@ function readTurns(body: unknown): AiChatTurn[] | null {
 }
 
 export const POST = guardMutation(async (request) => {
+    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
     const context = await getPgDashboardContext();
 
     if (!context) {

@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { createPrismaClient } from "@/lib/prisma";
@@ -5,6 +6,7 @@ import { getCustomersPage } from "@/lib/customers/get-customers-page";
 import { orderJson } from "@/lib/orders/order-http";
 
 export async function GET(request: Request) {
+    const accessDenied = await apiAccessDenied("ORDERS", "view"); if (accessDenied) return accessDenied;
     try {
         if (!(await getCurrentUser())) return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
         const membership = await getCurrentBusiness();

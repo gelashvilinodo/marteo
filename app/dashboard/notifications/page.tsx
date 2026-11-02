@@ -1,3 +1,4 @@
+import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
 import { openNotifications } from "@/lib/notifications/user-notifications";
@@ -7,6 +8,7 @@ import { getVapidPublicKey } from "@/lib/push/web-push";
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
+    await requireDashboardSection("/dashboard/notifications");
     const context = await getPgDashboardContext();
     if (!context) redirect("/login");
     const notifications = await openNotifications(context.user.id, context.membership?.businessId ?? null);

@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { cookies } from "next/headers";
 import { readCourierReminder } from "@/lib/orders/read-courier-reminder";
 import {
@@ -120,6 +121,7 @@ async function readBody(
 }
 
 export async function GET() {
+    const accessDenied = await apiAccessDenied(["ORDERS", "FINANCE"], "view"); if (accessDenied) return accessDenied;
     try {
         const token = (await cookies()).get("marteo_session")?.value;
         return json({ success: true, ...await readCourierReminder(token) });
@@ -129,6 +131,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+    const accessDenied = await apiAccessDenied("FINANCE", "edit"); if (accessDenied) return accessDenied;
     try {
         const context = await getContext();
         const body = await readBody(request);

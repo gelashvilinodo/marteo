@@ -1,9 +1,11 @@
+import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { getPurchasesSnapshot, type PurchasesSearchParams } from "@/lib/purchases/get-purchases-snapshot";
 import PurchasesView from "@/components/dashboard/purchases/PurchasesView";
 export default async function PurchasesPage({ searchParams }: { searchParams: Promise<PurchasesSearchParams> }) {
+    await requireDashboardSection("/dashboard/purchases");
   if (!(await getCurrentUser())) redirect("/login");
   const membership = await getCurrentBusiness();
   if (!membership) redirect("/business/onboarding");

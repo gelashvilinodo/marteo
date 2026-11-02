@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { businessFeatureDenied } from '@/lib/business/feature-access';
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -5,6 +6,7 @@ import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { createPrismaClient } from "@/lib/prisma";
 const json=(value:unknown,status=200)=>NextResponse.json(value,{status,headers:{'Cache-Control':'private, no-store'}});
 export async function GET(request:Request){
+    const accessDenied = await apiAccessDenied("PURCHASES", "view"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('manufacturing');if(denied)return denied;
 
     if(!await getCurrentUser())return json({error:'გაიარე ავტორიზაცია.'},401);

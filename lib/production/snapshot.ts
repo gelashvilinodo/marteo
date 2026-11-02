@@ -1,6 +1,7 @@
 import 'server-only';
 import { Prisma } from '@/generated/prisma/client';
 import { createPrismaClient } from '@/lib/prisma';
+import { canManageBusinessArea } from "@/lib/business/permissions";
 export const productionInclude={inputs:true,outputs:{where:{active:true}}} as const;
 export type ProductionRecord={id:string;number:number;name:string|null;productionDate:string;status:'IN_PROGRESS'|'COMPLETED';note:string|null;overheadCost:string;additionalCosts:Array<{name:string;amount:string}>;materialsCost:string;totalCost:string;updatedAt:string;inputs:Array<{id:string;materialId:string;name:string;unit:string;quantity:string;totalCost:string}>;outputs:Array<{id:string;rowKey:string;inventoryItemId:string|null;stockLotId:string|null;name:string;category:string|null;brand:string|null;description:string|null;color:string|null;size:string|null;imageUrl:string|null;quantity:number;costShare:string;totalCost:string;salePrice:string|null}>};
 export type ProductionSnapshot={records:ProductionRecord[];q:string;status:string;page:number;pages:number;count:number;inProgress:number;completed:number;canWrite:boolean};
@@ -10,7 +11,7 @@ export async function getProductionSnapshot(businessId:string,params:Record<stri
     const db=createPrismaClient();try{return await db.$transaction(async tx=>{
         const where:Prisma.ProductionWhereInput={businessId,...(status?{status}:{}),...(q?{OR:[{name:{contains:q,mode:'insensitive'}},{inputs:{some:{name:{contains:q,mode:'insensitive'}}}},{outputs:{some:{active:true,name:{contains:q,mode:'insensitive'}}}},...(/^#?\d{1,8}$/.test(q)?[{number:Number(q.replace('#',''))}]:[])]}:{})};
         const membership=await tx.businessMembership.findUnique({where:{userId_businessId:{userId,businessId}}});
-        const canWrite=!!membership&&['OWNER','ADMIN'].includes(membership.role);
+        const canWrite=canManageBusinessArea(membership,'PRODUCTION');
         const count=await tx.production.count({where}),pages=Math.max(1,Math.ceil(count/10)),page=Math.min(requested,pages);
         const [records,inProgress,completed]=await Promise.all([tx.production.findMany({where,include:productionInclude,orderBy:[{productionDate:'desc'},{id:'desc'}],skip:(page-1)*10,take:10}),tx.production.count({where:{businessId,status:'IN_PROGRESS'}}),tx.production.count({where:{businessId,status:'COMPLETED'}})]);
         return JSON.parse(JSON.stringify({records,q,status,page,pages,count,inProgress,completed,canWrite})) as ProductionSnapshot;

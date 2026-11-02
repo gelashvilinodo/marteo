@@ -1,3 +1,4 @@
+import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
@@ -6,6 +7,7 @@ import type { AnalyticsSearchParams } from "@/lib/analytics/get-analytics-page";
 import AnalyticsView from "@/components/dashboard/analytics/AnalyticsView";
 
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<AnalyticsSearchParams> }) {
+    await requireDashboardSection("/dashboard/analytics");
     if (!(await getCurrentUser())) redirect("/login");
     const membership = await getCurrentBusiness();
     if (!membership) redirect("/business/onboarding");

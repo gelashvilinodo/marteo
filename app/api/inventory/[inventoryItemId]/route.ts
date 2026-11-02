@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { Prisma } from "@/generated/prisma/client";
 import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
 import { createPrismaClient } from "@/lib/prisma";
@@ -330,6 +331,7 @@ export async function GET(
     request: Request,
     context: RouteContext,
 ) {
+    const accessDenied = await apiAccessDenied(["INVENTORY", "PURCHASES"], "view"); if (accessDenied) return accessDenied;
     return handle(request, context, false);
 }
 
@@ -337,5 +339,6 @@ export async function PATCH(
     request: Request,
     context: RouteContext,
 ) {
+    const accessDenied = await apiAccessDenied("INVENTORY", "edit"); if (accessDenied) return accessDenied;
     return handle(request, context, true);
 }

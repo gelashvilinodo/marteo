@@ -1,12 +1,13 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { MaterialError, calculate, type MaterialInput } from "./input";
+import { canManageBusinessArea } from "@/lib/business/permissions";
 
 type Tx = Prisma.TransactionClient;
 export async function lockBusiness(tx: Tx, businessId: string, userId: string) {
     await tx.$queryRaw`SELECT id FROM "Business" WHERE id = ${businessId} FOR UPDATE`;
     const member = await tx.businessMembership.findUnique({where:{userId_businessId:{userId,businessId}}});
-    if (!member || !["OWNER","ADMIN"].includes(member.role)) throw new MaterialError("პარტიის მართვის უფლება არ გაქვს.",403);
+    if (!canManageBusinessArea(member, "PURCHASES")) throw new MaterialError("პარტიის მართვის უფლება არ გაქვს.",403);
 }
 export async function writable(tx:Tx,businessId:string,id:string,version:string) {
     const old = await tx.materialPurchase.findFirst({where:{id,businessId,deletedAt:null},include:{items:true}});

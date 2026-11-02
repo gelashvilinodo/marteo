@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { businessFeatureDenied } from '@/lib/business/feature-access';
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/session';
@@ -8,11 +9,14 @@ import { saveProduction } from '@/lib/production/store';
 import { getProductionSnapshot } from '@/lib/production/snapshot';
 import { readPurchaseForm, PurchaseFormError } from '@/lib/purchases/read-purchase-form';
 import { uploadProductImage, removeUncommittedProductImages, ProductImageError } from '@/lib/purchases/product-images';
+import { canManageBusinessArea } from "@/lib/business/permissions";
 const json=(body:unknown,status=200)=>NextResponse.json(body,{status,headers:{'Cache-Control':'private, no-store'}});
 export async function GET(request:Request){
+    const accessDenied = await apiAccessDenied("PRODUCTION", "view"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('manufacturing');if(denied)return denied;
 try{const user=await getCurrentUser();if(!user)return json({error:'გაიარე ავტორიზაცია.'},401);const member=await getCurrentBusiness();if(!member)return json({error:'ბიზნესი ვერ მოიძებნა.'},403);return json(await getProductionSnapshot(member.businessId,Object.fromEntries(new URL(request.url).searchParams),user.id));}catch(e){console.error('Production read failed',e instanceof Error?e.name:'Unknown');return json({error:'წარმოებები ვერ ჩაიტვირთა. სცადე ხელახლა.'},500);}}
 export async function POST(request:Request){
+    const accessDenied = await apiAccessDenied("PRODUCTION", "edit"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('manufacturing');if(denied)return denied;
 
     if(request.headers.get('origin')!==new URL(request.url).origin)return json({error:'მოთხოვნის წყარო დაუშვებელია.'},403);
@@ -21,7 +25,7 @@ export async function POST(request:Request){
     const db=createPrismaClient(),uploaded:{path:string;url:string}[]=[];
     async function cleanup(){if(!uploaded.length)return;const urls=uploaded.map(i=>i.url);const [outputs,inventory]=await Promise.all([db.productionOutput.findMany({where:{production:{businessId:member!.businessId},imageUrl:{in:urls}},select:{imageUrl:true}}),db.inventoryItem.findMany({where:{businessId:member!.businessId,imageUrl:{in:urls}},select:{imageUrl:true}})]);await removeUncommittedProductImages(member!.businessId,uploaded.filter(u=>![...outputs,...inventory].some(i=>i.imageUrl===u.url)).map(u=>u.path));}
     try{
-        const fresh=await db.businessMembership.findUnique({where:{userId_businessId:{userId:user.id,businessId:member.businessId}}});if(!fresh||!['OWNER','ADMIN'].includes(fresh.role))throw new ProductionError('წარმოების მართვის უფლება არ გაქვს.',403);
+        const fresh=await db.businessMembership.findUnique({where:{userId_businessId:{userId:user.id,businessId:member.businessId}}});if(!canManageBusinessArea(fresh,'PRODUCTION'))throw new ProductionError('წარმოების მართვის უფლება არ გაქვს.',403);
         const {payload,purchase,imageChanges}=await readPurchaseForm(request),input=readProduction({...purchase,requestId:payload.requestId,id:payload.id,version:payload.version});
         if(imageChanges.length!==Math.max(1,input.outputs.length))throw new ProductionError('ფოტოების რაოდენობა არასწორია.');
         const images=new Map<string,string>(),removed=new Set<string>();

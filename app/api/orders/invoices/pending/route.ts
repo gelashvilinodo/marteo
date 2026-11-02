@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { sql, empty } from "@prisma/client-runtime-utils";
 import { cookies } from "next/headers";
 import { withInvoiceReader } from "@/lib/orders/read-invoice-order";
@@ -5,6 +6,7 @@ import { orderJson, orderError } from "@/lib/orders/order-http";
 import { OrderValidationError } from "@/lib/orders/order-validation-error";
 
 export async function GET(request: Request) {
+    const accessDenied = await apiAccessDenied("ORDERS", "view"); if (accessDenied) return accessDenied;
     try {
         const token = (await cookies()).get("marteo_session")?.value;
         return await withInvoiceReader(token, async (reader, businessId) => {

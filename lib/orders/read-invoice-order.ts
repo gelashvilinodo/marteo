@@ -3,12 +3,14 @@ import { createHash } from 'node:crypto';
 import { createPgReader } from '@/lib/database/pg-reader';
 import { getInvoiceOrder, getInvoiceOrders } from './get-invoice-order';
 import { OrderValidationError } from './order-validation-error';
+import { getActiveBusinessPreference } from '@/lib/auth/active-business';
 
 // A request-owned connection and read-only snapshot; no cross-request data cache.
 type Reader = Pick<ReturnType<typeof createPgReader>, '$queryRaw'>;
 export async function withInvoiceReader<T>(token:string|undefined,read:(reader:Reader,businessId:string)=>Promise<T>):Promise<T> {
     if(!token)throw new OrderValidationError('გაიარე ავტორიზაცია.',401);
     const tokenHash=createHash('sha256').update(token).digest('hex');
+    const preferred=await getActiveBusinessPreference();
     const reader=createPgReader();
     try {
         return await reader.withReadTransaction(async tx=>{
@@ -16,8 +18,8 @@ export async function withInvoiceReader<T>(token:string|undefined,read:(reader:R
                 SELECT s."expiresAt",u.status::text status,m."businessId"
                 FROM "Session" s JOIN "User" u ON u.id=s."userId"
                 LEFT JOIN LATERAL (
-                    SELECT "businessId" FROM "BusinessMembership" WHERE "userId"=u.id
-                    ORDER BY "createdAt" ASC,"businessId" ASC LIMIT 1
+                    SELECT "businessId" FROM "BusinessMembership" WHERE "userId"=u.id AND "status"='ACTIVE'
+                    ORDER BY ("businessId"=${preferred}) DESC,"createdAt" ASC,"businessId" ASC LIMIT 1
                 ) m ON true
                 WHERE s."tokenHash"=${tokenHash} LIMIT 1
             `;

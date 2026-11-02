@@ -1,9 +1,11 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getOrderRecords } from "@/lib/orders/get-order-records";
 import { serializeOrderRecord } from "@/lib/orders/serialize-order-record";
 import { orderJson } from "@/lib/orders/order-http";
 import { withOrderPgReadContext } from "@/lib/orders/order-pg-read-context";
 
 export async function GET(_request: Request, context: { params: Promise<{ orderId: string }> }) {
+    const accessDenied = await apiAccessDenied("ORDERS", "view"); if (accessDenied) return accessDenied;
     return withOrderPgReadContext(async (client, businessId) => {
         const { orderId } = await context.params;
         const [record] = await getOrderRecords(client, businessId, [orderId], true);

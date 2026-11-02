@@ -1,8 +1,10 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { Prisma } from "@/generated/prisma/client";
 import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
 import { createPrismaClient } from "@/lib/prisma";
 import { CostInputError, readCostScope } from "@/lib/costs/cost-input";
 import { getCostPreview, saveMissingCosts } from "@/lib/costs/cost-resolution";
+import { canManageBusinessArea } from "@/lib/business/permissions";
 const json = (data: unknown, status = 200) => Response.json(data, {
     status,
     headers: {
@@ -10,6 +12,7 @@ const json = (data: unknown, status = 200) => Response.json(data, {
     }
 });
 async function handle(request: Request, saving: boolean) {
+    const accessDenied = await apiAccessDenied("FINANCE", saving ? "edit" : "view"); if (accessDenied) return accessDenied;
     let prisma: ReturnType<typeof createPrismaClient> | undefined;
     try {
         if (saving && (request.headers.get("origin") !== new URL(request.url).origin || request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json"))
@@ -42,10 +45,10 @@ async function handle(request: Request, saving: boolean) {
                     }
                 },
                 select: {
-                    role: true
+                    role: true, permissions: true, readOnly: true, status: true
                 }
             });
-            if (!access || !["OWNER", "ADMIN"].includes(access.role))
+            if (!canManageBusinessArea(access, "FINANCE"))
                 throw new CostInputError("თვითღირებულების შესაცვლელად შესაბამისი უფლება არ გაქვს.", 403);
             return saving ? saveMissingCosts(tx, businessId, body) : getCostPreview(tx, businessId, scope);
         }, {

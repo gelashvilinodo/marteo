@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { businessFeatureDenied } from '@/lib/business/feature-access';
 import { NextResponse } from "next/server";
 
@@ -161,6 +162,7 @@ async function clearPlannedItems(value: unknown) {
 }
 
 export async function POST(request: Request) {
+    const accessDenied = await apiAccessDenied("PURCHASES", "edit"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('imports');if(denied)return denied;
 
     try {

@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { businessFeatureDenied } from '@/lib/business/feature-access';
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -8,6 +9,7 @@ import { getMaterialSnapshot } from "@/lib/material-purchases/snapshot";
 import { saveMaterialPurchase, actOnPurchase } from "@/lib/material-purchases/store";
 import { readPurchaseForm, PurchaseFormError } from "@/lib/purchases/read-purchase-form";
 import { uploadProductImage, removeUncommittedProductImages, ProductImageError } from "@/lib/purchases/product-images";
+import { canManageBusinessArea } from "@/lib/business/permissions";
 const json=(body:unknown,status=200)=>NextResponse.json(body,{status,headers:{'Cache-Control':'private, no-store'}});
 async function context() {
     const user=await getCurrentUser();if(!user)throw new MaterialError("გაიარე ავტორიზაცია.",401);
@@ -22,6 +24,7 @@ function failure(e:unknown) {
     return json({error:"შენახვის შედეგი ვერ დადასტურდა. სცადე ხელახლა იმავე ფორმიდან."},500);
 }
 export async function GET(request:Request) {
+    const accessDenied = await apiAccessDenied("PURCHASES", "view"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('manufacturing');if(denied)return denied;
 
     try {const c=await context();return json(await getMaterialSnapshot(c.businessId,Object.fromEntries(new URL(request.url).searchParams)));}catch(e){return failure(e);}
@@ -36,6 +39,7 @@ async function smallJson(request:Request) {
     return result as Record<string,unknown>;
 }
 export async function POST(request:Request) {
+    const accessDenied = await apiAccessDenied("PURCHASES", "edit"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('manufacturing');if(denied)return denied;
 
     if(request.headers.get('origin')!==new URL(request.url).origin)return json({error:'მოთხოვნის წყარო დაუშვებელია.'},403);
@@ -51,7 +55,7 @@ export async function POST(request:Request) {
     try {
         const c=await context();businessId=c.businessId;
         const member=await db.businessMembership.findUnique({where:{userId_businessId:{userId:c.userId,businessId}}});
-        if(!member||!['OWNER','ADMIN'].includes(member.role))throw new MaterialError('პარტიის მართვის უფლება არ გაქვს.',403);
+        if(!canManageBusinessArea(member,'PURCHASES'))throw new MaterialError('პარტიის მართვის უფლება არ გაქვს.',403);
         if(request.headers.get('content-type')?.startsWith('application/json')) {
             const action=await smallJson(request);
             if(action.action!=='receive'&&action.action!=='delete')throw new MaterialError('მოქმედება არასწორია.');

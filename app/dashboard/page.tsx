@@ -1,3 +1,4 @@
+import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
@@ -64,9 +65,10 @@ async function DashboardContent({
     );
 }
 
-export default function DashboardPage(props: {
+export default async function DashboardPage(props: {
     searchParams: Promise<HomeSearchParams>;
 }) {
+    await requireDashboardSection("/dashboard");
     return (
         <Suspense fallback={<HomeSkeleton />}>
             <DashboardContent {...props} />

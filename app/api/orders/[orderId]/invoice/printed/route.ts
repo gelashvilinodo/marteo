@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
 import { findActiveMembership } from "@/lib/auth/active-business";
@@ -7,6 +8,7 @@ function json(data: unknown, status = 200) {
 }
 
 export async function POST(request: Request, context: { params: Promise<{ orderId: string }> }) {
+    const accessDenied = await apiAccessDenied("ORDERS", "edit"); if (accessDenied) return accessDenied;
     let prisma: ReturnType<typeof createPrismaClient> | undefined;
     try {
         if (request.headers.get("origin") !== new URL(request.url).origin) {

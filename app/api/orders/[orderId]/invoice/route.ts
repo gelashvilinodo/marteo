@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { buildInvoice } from "@/lib/orders/build-invoice";
 import { readInvoiceOrder } from "@/lib/orders/read-invoice-order";
 import { OrderValidationError } from "@/lib/orders/order-validation-error";
@@ -19,6 +20,7 @@ export async function GET(
         params: Promise<{ orderId: string }>;
     },
 ) {
+    const accessDenied = await apiAccessDenied("ORDERS", "view"); if (accessDenied) return accessDenied;
     const startedAt = performance.now();
     let stageStartedAt = startedAt;
     const diagnosticsEnabled = typeof process !== "undefined" && process.env.MARTEO_PERFORMANCE_DIAGNOSTICS === "1";

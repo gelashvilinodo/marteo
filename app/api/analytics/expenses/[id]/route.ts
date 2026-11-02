@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
@@ -222,9 +223,11 @@ async function mutate(
 }
 
 export async function PATCH(request: Request, context: Context) {
+    const accessDenied = await apiAccessDenied("FINANCE", "edit"); if (accessDenied) return accessDenied;
     return mutate(request, context, "edit");
 }
 
 export async function DELETE(request: Request, context: Context) {
+    const accessDenied = await apiAccessDenied("FINANCE", "edit"); if (accessDenied) return accessDenied;
     return mutate(request, context, "delete");
 }

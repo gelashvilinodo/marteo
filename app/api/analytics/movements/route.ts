@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { createPrismaClient } from "@/lib/prisma";
@@ -6,6 +7,7 @@ import { getFinancialMovements } from "@/lib/analytics/get-financial-movements";
 import { orderJson, orderError } from "@/lib/orders/order-http";
 
 export async function GET(request: Request) {
+    const accessDenied = await apiAccessDenied("FINANCE", "view"); if (accessDenied) return accessDenied;
     try {
         if (!(await getCurrentUser())) {
             return orderJson(

@@ -1,8 +1,10 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getPgDashboardContext } from '@/lib/auth/pg-dashboard-context';
 import { createPrismaClient } from '@/lib/prisma';
 import { getStocktakeDocument, StocktakeError } from '@/lib/inventory/stocktake/get-document';
 const json=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'private, no-store'}});
 export async function GET(request:Request) {
+    const accessDenied = await apiAccessDenied("INVENTORY", "view"); if (accessDenied) return accessDenied;
     let db:ReturnType<typeof createPrismaClient>|undefined;
     try{
         const context=await getPgDashboardContext();

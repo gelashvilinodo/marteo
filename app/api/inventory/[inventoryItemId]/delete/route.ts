@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
 import { createPrismaClient } from "@/lib/prisma";
 import { InventoryEditError } from "@/lib/inventory/validate-inventory-edit";
@@ -80,6 +81,7 @@ export async function GET(
     _request: Request,
     routeContext: RouteContext,
 ) {
+    const accessDenied = await apiAccessDenied("INVENTORY", "edit"); if (accessDenied) return accessDenied;
     let prisma: ReturnType<typeof createPrismaClient> | undefined;
 
     try {
@@ -136,6 +138,7 @@ export async function POST(
     request: Request,
     routeContext: RouteContext,
 ) {
+    const accessDenied = await apiAccessDenied("INVENTORY", "edit"); if (accessDenied) return accessDenied;
     try {
         const body = await readOrderBody(request);
         const access = await getAccess(routeContext);

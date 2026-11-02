@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { mutateContent } from "@/lib/content/mutate-content";
 import { contentBody } from "@/lib/content/validate-content";
 import {
@@ -14,6 +15,7 @@ type Context = {
 };
 
 export async function PATCH(request: Request, context: Context) {
+    const accessDenied = await apiAccessDenied("CONTENT", "edit"); if (accessDenied) return accessDenied;
     try {
         const body = contentBody(await readOrderBody(request));
         const { id } = await context.params;
@@ -33,6 +35,7 @@ export async function PATCH(request: Request, context: Context) {
 }
 
 export async function DELETE(request: Request, context: Context) {
+    const accessDenied = await apiAccessDenied("CONTENT", "edit"); if (accessDenied) return accessDenied;
     try {
         const body = await readOrderBody(request);
         const { id } = await context.params;
@@ -45,6 +48,7 @@ export async function DELETE(request: Request, context: Context) {
 }
 
 export async function GET(_request: Request, context: Context) {
+    const accessDenied = await apiAccessDenied("CONTENT", "view"); if (accessDenied) return accessDenied;
     try {
         if (!(await getCurrentUser())) {
             return orderJson(

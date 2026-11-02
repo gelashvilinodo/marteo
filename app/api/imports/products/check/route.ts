@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import {
     getCurrentBusiness,
@@ -46,6 +47,7 @@ function nullableText(
 }
 
 export async function POST(request: Request) {
+    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
     try {
         const user = await getCurrentUser();
 

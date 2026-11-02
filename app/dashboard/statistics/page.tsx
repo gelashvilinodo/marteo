@@ -1,3 +1,4 @@
+import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { Prisma } from "@/generated/prisma/client";
@@ -23,6 +24,7 @@ export default async function StatisticsPage({
 }: {
     searchParams: Promise<StatisticsSearchParams>;
 }) {
+    await requireDashboardSection("/dashboard/statistics");
     if (!(await getCurrentUser())) redirect("/login");
 
     const membership = await getCurrentBusiness();

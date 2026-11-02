@@ -2,6 +2,7 @@ import "server-only";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
+import { findActiveMembership } from "@/lib/auth/active-business";
 import {
     getPurchaseDeleteImpact,
     type PurchaseDeleteExpectation,
@@ -45,11 +46,7 @@ export async function changePurchaseStatus(
     const prisma = createPrismaClient();
 
     try {
-        const membership = await prisma.businessMembership.findFirst({
-            where: { userId: user.id },
-            orderBy: { createdAt: "asc" },
-            select: { businessId: true },
-        });
+        const membership = await findActiveMembership(prisma, user.id);
 
         if (!membership) {
             throw new PurchaseActionError(

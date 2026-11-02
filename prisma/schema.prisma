@@ -14,6 +14,28 @@ enum MembershipRole {
   MEMBER
 }
 
+// თანამშრომლის უფლებები. მფლობელს (OWNER) ყველაფერი შეუძლია და ამ სიას არ იყენებს.
+enum BusinessPermission {
+  ORDERS
+  INVENTORY
+  PURCHASES
+  PRODUCTION
+  CONTENT
+  FINANCE
+}
+
+// FROZEN: გეგმის ლიმიტს გადაჭარბებული წევრი, რომელიც ბიზნესში ვერ შედის.
+enum MembershipStatus {
+  ACTIVE
+  FROZEN
+}
+
+enum BusinessInviteStatus {
+  PENDING
+  ACCEPTED
+  CANCELED
+}
+
 enum SubscriptionStatus {
   ACTIVE
   TRIALING
@@ -126,22 +148,25 @@ enum ContentPlatform {
 }
 
 model User {
-  isPlatformAdmin Boolean @default(false)
-  id        String     @id @default(cuid())
-  email     String     @unique
-  password  String
-  firstName String?
-  lastName  String?
-  avatarUrl String?
-  phone     String     @unique
-  status    UserStatus @default(PENDING_VERIFICATION)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  isPlatformAdmin Boolean    @default(false)
+  id              String     @id @default(cuid())
+  email           String     @unique
+  password        String
+  firstName       String?
+  lastName        String?
+  avatarUrl       String?
+  phone           String     @unique
+  status          UserStatus @default(PENDING_VERIFICATION)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   emailVerifiedAt DateTime?
   phoneVerifiedAt DateTime?
 
   memberships            BusinessMembership[]
+  invitedMemberships     BusinessMembership[]    @relation("MembershipInvitedBy")
+  sentBusinessInvites    BusinessInvite[]        @relation("BusinessInviteInvitedBy")
+  createdOrders          Order[]                 @relation("OrderCreatedBy")
   verifications          VerificationToken[]
   sessions               Session[]
   emailChangeRequests    EmailChangeRequest[]
@@ -193,6 +218,7 @@ model Business {
   updatedAt DateTime @updatedAt
 
   memberships              BusinessMembership[]
+  invites                  BusinessInvite[]
   subscription             Subscription?
   customers                Customer[]
   orders                   Order[]
@@ -227,12 +253,43 @@ model BusinessMembership {
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  permissions BusinessPermission[] @default([])
+  readOnly    Boolean              @default(false)
+  status      MembershipStatus     @default(ACTIVE)
+  invitedById String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  invitedBy User?    @relation("MembershipInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
 
   @@unique([userId, businessId])
   @@index([businessId])
   @@index([userId])
+}
+
+// ერთჯერადი მოწვევა ბიზნესში. ლინკში მხოლოდ ტოკენია, ბაზაში მისი ჰეში ინახება.
+model BusinessInvite {
+  id          String               @id @default(cuid())
+  businessId  String
+  email       String
+  role        MembershipRole
+  permissions BusinessPermission[] @default([])
+  readOnly    Boolean              @default(false)
+  status      BusinessInviteStatus @default(PENDING)
+  tokenHash   String               @unique
+  expiresAt   DateTime
+  sendCount   Int                  @default(1)
+  lastSentAt  DateTime             @default(now())
+  invitedById String?
+  acceptedAt  DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  invitedBy User?    @relation("BusinessInviteInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@index([businessId, status])
+  @@index([email])
 }
 
 model Subscription {
@@ -296,6 +353,8 @@ model Order {
   deletedAt            DateTime?
   publicAccessToken    String?   @unique
   analyticsPendingCost Boolean   @default(false)
+  createdById          String?
+  createdBy            User?     @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   mutations OrderMutation[]
 

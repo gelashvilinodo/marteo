@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { cookies } from 'next/headers';
 import { readInvoiceOrders } from '@/lib/orders/read-invoice-order';
 import { buildInvoice } from '@/lib/orders/build-invoice';
@@ -5,6 +6,7 @@ import { orderJson, orderError } from '@/lib/orders/order-http';
 import { OrderValidationError } from '@/lib/orders/order-validation-error';
 
 export async function GET(request:Request) {
+    const accessDenied = await apiAccessDenied("ORDERS", "view"); if (accessDenied) return accessDenied;
     try {
         const token=(await cookies()).get('marteo_session')?.value;
         if(!token)throw new OrderValidationError('გაიარე ავტორიზაცია.',401);

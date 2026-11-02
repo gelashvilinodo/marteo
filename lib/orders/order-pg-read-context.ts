@@ -22,7 +22,7 @@ export async function withOrderPgReadContext(
             FROM "Session" s JOIN "User" u ON u.id = s."userId"
             LEFT JOIN LATERAL (
                 SELECT "businessId" FROM "BusinessMembership"
-                WHERE "userId" = u.id
+                WHERE "userId" = u.id AND "status" = 'ACTIVE'
                 ORDER BY ("businessId" = ${preferred}) DESC, "createdAt" ASC, "businessId" ASC LIMIT 1
             ) m ON true WHERE s."tokenHash" = ${tokenHash} LIMIT 1
         `;

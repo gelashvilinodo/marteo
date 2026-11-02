@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { businessFeatureDenied } from '@/lib/business/feature-access';
 import { NextResponse } from "next/server";
 
@@ -35,6 +36,7 @@ export async function POST(
         }>;
     },
 ) {
+    const accessDenied = await apiAccessDenied("PURCHASES", "edit"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('imports');if(denied)return denied;
 
     try {
@@ -148,6 +150,7 @@ export async function GET(
         }>;
     },
 ) {
+    const accessDenied = await apiAccessDenied("PURCHASES", "view"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('imports');if(denied)return denied;
 
     let prisma: ReturnType<typeof createPrismaClient> | undefined;

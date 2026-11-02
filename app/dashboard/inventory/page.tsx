@@ -1,3 +1,4 @@
+import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
@@ -11,6 +12,7 @@ import type { InventoryMovementEntry } from "@/components/dashboard/inventory/La
 
 
 export default async function InventoryPage({ searchParams }: { searchParams: Promise<InventorySearchParams> }) {
+    await requireDashboardSection("/dashboard/inventory");
     const user = await getCurrentUser();
 
     if (!user) {

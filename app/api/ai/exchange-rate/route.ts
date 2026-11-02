@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
 import { orderJson } from "@/lib/orders/order-http";
 
@@ -8,6 +9,7 @@ type NbgDay = {
 
 // ეროვნული ბანკის ოფიციალური კურსი: 1 ერთეული უცხოური ვალუტა ლარში.
 export async function GET(request: Request) {
+    const accessDenied = await apiAccessDenied("PURCHASES", "view"); if (accessDenied) return accessDenied;
     const context = await getPgDashboardContext();
 
     if (!context?.membership) {

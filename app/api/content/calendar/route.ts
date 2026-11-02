@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
@@ -6,6 +7,7 @@ import { getCalendarPage } from "@/lib/content/get-calendar-page";
 import { orderJson, orderError } from "@/lib/orders/order-http";
 
 export async function GET(request: Request) {
+    const accessDenied = await apiAccessDenied("CONTENT", "view"); if (accessDenied) return accessDenied;
     try {
         if (!(await getCurrentUser())) {
             return orderJson(

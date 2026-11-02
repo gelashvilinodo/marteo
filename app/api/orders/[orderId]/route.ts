@@ -1,8 +1,10 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getOrder } from "@/lib/orders/get-order";
 import { mutateOrder } from "@/lib/orders/order-mutations";
 import { orderError, orderJson, readOrderBody } from "@/lib/orders/order-http";
 
 export async function PATCH(request: Request, context: { params: Promise<{ orderId: string }> }) {
+    const accessDenied = await apiAccessDenied("ORDERS", "edit"); if (accessDenied) return accessDenied;
     try {
         const body = await readOrderBody(request);
         const { orderId } = await context.params;
@@ -11,6 +13,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ order
 }
 
 export async function DELETE(request: Request, context: { params: Promise<{ orderId: string }> }) {
+    const accessDenied = await apiAccessDenied("ORDERS", "edit"); if (accessDenied) return accessDenied;
     try {
         const body = await readOrderBody(request);
         const { orderId } = await context.params;
@@ -19,6 +22,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ orde
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ orderId: string }> }) {
+    const accessDenied = await apiAccessDenied("ORDERS", "view"); if (accessDenied) return accessDenied;
     try { const { orderId } = await context.params; return orderJson({ success: true, order: await getOrder(orderId) }); }
     catch (cause: unknown) { return orderError(cause); }
 }

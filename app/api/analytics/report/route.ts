@@ -1,8 +1,10 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { getPgDashboardContext } from '@/lib/auth/pg-dashboard-context';
 import { createPrismaClient } from '@/lib/prisma';
 import { getAccountantReport, ReportError } from '@/lib/analytics/report/get-report';
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'private, no-store' } });
 export async function GET(request: Request) {
+    const accessDenied = await apiAccessDenied("FINANCE", "view"); if (accessDenied) return accessDenied;
     let db: ReturnType<typeof createPrismaClient> | undefined;
     try {
         // Route handlers do not need two independent reads of the same context.
