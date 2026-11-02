@@ -10,6 +10,8 @@ const root = process.cwd();
 const EXEMPT_API = [
     "app/api/admin/", "app/api/auth/", "app/api/profile/", "app/api/push/",
     "app/api/business/onboarding/", "app/api/business/switch/", "app/api/business/upload-logo/",
+    // მოწვევის ბმული: წვდომას ტოკენი განსაზღვრავს.
+    "app/api/invites/",
 ];
 
 function walk(dir, name) {

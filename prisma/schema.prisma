@@ -1465,6 +1465,7 @@ enum NotificationKind {
   TRIAL_ENDING
   RENEWAL_REMINDER
   PAYMENT_CONFIRMED
+  TEAM
 }
 
 enum NotificationPlanAudience {

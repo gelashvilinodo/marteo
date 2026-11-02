@@ -59,7 +59,6 @@ async function post(request: Request) {
         password: true,
         status: true,
         emailVerifiedAt: true,
-        phoneVerifiedAt: true,
       },
     });
 
@@ -77,10 +76,11 @@ async function post(request: Request) {
       );
     }
 
+    // ACTIVE is reached only after registration verifies the phone. Invited
+    // team members confirm their email through the invite and skip the phone.
     if (
       user.status !== "ACTIVE" ||
-      !user.emailVerifiedAt ||
-      !user.phoneVerifiedAt
+      !user.emailVerifiedAt
     ) {
       return NextResponse.json(
         {
