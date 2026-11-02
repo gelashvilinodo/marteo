@@ -65,6 +65,8 @@ async function deliverSubscriptionReminders(tx: Tx, businessId: string, now: Dat
             lower(s.status::text) || ':' || s.id || ':' || to_char(s."expiresAt", 'YYYYMMDDHH24MISS') || ':' || m."userId",
             ${now}, ${now}
         FROM "Subscription" s JOIN "BusinessMembership" m ON m."businessId" = s."businessId"
+            -- გადახდა მფლობელების საქმეა; თანამშრომელი სხვის გეგმაზე შეხსენებას არ იღებს.
+            AND m.role = 'OWNER' AND m.status = 'ACTIVE'
         WHERE s."businessId" = ${businessId} AND s."canceledAt" IS NULL
           AND s."expiresAt" > ${now} AND s."expiresAt" <= ${until}
           AND (s.status = 'TRIALING' OR (s.status = 'ACTIVE' AND s.plan <> 'FREE'))
@@ -122,7 +124,9 @@ async function deliverStockAlerts(tx: Tx, businessId: string, now: Date) {
     `;
     if (!alerts.length) return;
 
-    const members = Prisma.sql`SELECT "userId" FROM "BusinessMembership" WHERE "businessId" = ${businessId}`;
+    // მარაგის შეტყობინება მხოლოდ მათ, ვინც მარაგს ან შესყიდვებს ხედავს.
+    const members = Prisma.sql`SELECT "userId" FROM "BusinessMembership" WHERE "businessId" = ${businessId} AND status = 'ACTIVE'
+        AND (role IN ('OWNER', 'ADMIN') OR permissions && ARRAY['INVENTORY', 'PURCHASES']::"BusinessPermission"[])`;
     if (alerts.length > STOCK_SUMMARY_AFTER) {
         // Many alerts at once (e.g. the first check of a business): one summary, not a flood.
         const out = alerts.filter(a => a.level === "OUT").length;
@@ -167,7 +171,7 @@ export async function notifyPaymentConfirmed(tx: Tx, input: { businessId: string
         SELECT gen_random_uuid()::text, m."userId", ${input.businessId}, 'PAYMENT_CONFIRMED', 'გადახდა დადასტურდა - მადლობა! 🎉',
             ${`${plan} პაკეტი წარმატებით გააქტიურდა. მადლობა, რომ მართეოს ენდობი - წარმატებებს გისურვებთ!`},
             'მთავარზე გადასვლა', '/dashboard', ${`payment:${input.paymentId}:`} || m."userId", ${now}, ${now}
-        FROM "BusinessMembership" m WHERE m."businessId" = ${input.businessId}
+        FROM "BusinessMembership" m WHERE m."businessId" = ${input.businessId} AND m.role = 'OWNER' AND m.status = 'ACTIVE'
         ON CONFLICT ("dedupeKey") DO NOTHING
     `;
 }

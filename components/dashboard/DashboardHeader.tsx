@@ -12,6 +12,7 @@ export type BusinessOption = {
     id: string;
     name: string;
     logoUrl: string | null;
+    role: string;
 };
 
 // Rows of the business switcher shown before it scrolls.
@@ -27,6 +28,7 @@ type DashboardHeaderProps = {
     userName: string;
     userEmail: string;
     isPlatformAdmin?: boolean;
+    isOwner?: boolean;
 };
 
 export default function DashboardHeader({
@@ -39,6 +41,7 @@ export default function DashboardHeader({
     userName,
     userEmail,
     isPlatformAdmin = false,
+    isOwner = true,
 }: DashboardHeaderProps) {
     const [accountOpen, setAccountOpen] = useState(false);
     const router = useRouter();
@@ -126,19 +129,28 @@ export default function DashboardHeader({
             icon: "solar:user-circle-bold-duotone",
             href: "/dashboard/profile",
         },
-        {
-            label: "ბიზნესის პარამეტრები",
-            icon: "solar:settings-bold-duotone",
-            href: "/dashboard/business-settings",
-        },
-        {
-            label: "პაკეტი და გადახდები",
-            icon: "solar:wallet-bold-duotone",
-        },
+        // პარამეტრები და გადახდა მფლობელის საქმეა; თანამშრომელი სხვის გეგმას არ იხდის.
+        ...(isOwner ? [
+            {
+                label: "ბიზნესის პარამეტრები",
+                icon: "solar:settings-bold-duotone",
+                href: "/dashboard/business-settings",
+            },
+            {
+                label: "პაკეტი და გადახდები",
+                icon: "solar:wallet-bold-duotone",
+            },
+        ] : [
+            {
+                label: "საკუთარი ბიზნესის შექმნა",
+                icon: "solar:buildings-2-bold-duotone",
+                href: "/business/new",
+            },
+        ]),
         ...(isPlatformAdmin ? [{ label: "ადმინ პანელი", icon: "solar:shield-user-bold-duotone", href: "/admin" }] : []),
     ];
     const panelHeight =
-        216 +
+        (isOwner ? 216 : 168) +
         (isPlatformAdmin ? 48 : 0) +
         (canSwitchBusiness ? 41 + Math.min(businesses.length, VISIBLE_BUSINESS_ROWS) * 48 : 0);
 
@@ -292,7 +304,12 @@ export default function DashboardHeader({
                                                         )}
                                                     </span>
 
-                                                    <span className="min-w-0 flex-1 truncate">{business.name}</span>
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="block truncate">{business.name}</span>
+                                                        <span className="block truncate text-xs font-normal text-slate-400">
+                                                            {business.role === "MEMBER" ? "თანამშრომელი" : "მფლობელი"}
+                                                        </span>
+                                                    </span>
 
                                                     {active && (
                                                         <Icon icon="solar:check-circle-bold" className="h-5 w-5 shrink-0 text-accent" aria-label="მიმდინარე ბიზნესი" />

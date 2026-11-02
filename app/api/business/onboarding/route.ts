@@ -80,9 +80,17 @@ async function post(request: Request) {
 
     await reserveLimits(prisma, [{ scope: "business-create", identity: user.id, maximum: 10, seconds: 24 * 60 * 60 }]);
 
-    // An additional business starts on the plan of the business the user is
-    // working in now; the first business starts on FREE.
-    const currentMembership = await findActiveMembership(prisma, user.id);
+    // An additional business starts on the plan of a business the user owns
+    // (the open one first); the first business starts on FREE. A business where
+    // the user is only staff is someone else's subscription and never passes on.
+    const activeMembership = await findActiveMembership(prisma, user.id);
+    const currentMembership = activeMembership?.role === "OWNER"
+      ? activeMembership
+      : await prisma.businessMembership.findFirst({
+          where: { userId: user.id, role: "OWNER", status: "ACTIVE" },
+          orderBy: [{ createdAt: "asc" }, { businessId: "asc" }],
+          select: { businessId: true },
+        });
     const currentSubscription = currentMembership
       ? await prisma.subscription.findUnique({
           where: { businessId: currentMembership.businessId },

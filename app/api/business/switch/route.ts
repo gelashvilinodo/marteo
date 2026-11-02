@@ -17,9 +17,9 @@ async function post(request: Request) {
     try {
         const membership = await prisma.businessMembership.findUnique({
             where: { userId_businessId: { userId: user.id, businessId } },
-            select: { businessId: true },
+            select: { businessId: true, status: true },
         });
-        if (!membership) return NextResponse.json({ error: "ეს ბიზნესი ვერ მოიძებნა." }, { status: 404 });
+        if (!membership || membership.status !== "ACTIVE") return NextResponse.json({ error: "ეს ბიზნესი ვერ მოიძებნა." }, { status: 404 });
 
         const response = NextResponse.json({ businessId: membership.businessId });
         response.cookies.set(ACTIVE_BUSINESS_COOKIE, membership.businessId, activeBusinessCookieOptions);

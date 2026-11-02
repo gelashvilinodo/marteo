@@ -28,6 +28,7 @@ export default async function DashboardLayout({
     return (
         <DashboardShell
             isPlatformAdmin={Boolean(await getAdminUser())}
+            isOwner={membership.access.role === "OWNER"}
             businessMode={membership.business.mode}
             businessName={membership.business.name}
             businessLogoUrl={membership.business.logoUrl}

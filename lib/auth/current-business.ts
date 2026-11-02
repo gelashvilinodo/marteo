@@ -14,9 +14,9 @@ export const getUserBusinesses = cache(async () => {
         const memberships = await prisma.businessMembership.findMany({
             where: { userId: user.id, status: "ACTIVE" },
             orderBy: [{ createdAt: "asc" }, { businessId: "asc" }],
-            select: { business: { select: { id: true, name: true, logoUrl: true } } },
+            select: { role: true, business: { select: { id: true, name: true, logoUrl: true } } },
         });
-        return memberships.map(({ business }) => business);
+        return memberships.map(({ role, business }) => ({ ...business, role }));
     } finally {
         await prisma.$disconnect();
     }

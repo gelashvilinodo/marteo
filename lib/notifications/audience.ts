@@ -19,6 +19,8 @@ export function audienceMatch(a: { modes: Prisma.Sql; plan: Prisma.Sql; days: Pr
             JOIN "Business" b ON b.id = am."businessId"
             LEFT JOIN "Subscription" s ON s."businessId" = b.id
             WHERE am."userId" = u.id
+              -- გეგმაზე მიმართული შეტყობინება მხოლოდ მფლობელს ეხება: თანამშრომელი სხვის გეგმას არ იხდის.
+              AND am.status = 'ACTIVE' AND (${a.plan} = 'ALL' OR am.role = 'OWNER')
               AND (coalesce(cardinality(${a.modes}), 0) = 0 OR b.mode = ANY(${a.modes}))
               AND (${a.plan} = 'ALL' OR (${a.plan} = 'PAID') = ${PAID_SUBSCRIPTION})
         )`;

@@ -25,6 +25,7 @@ type DashboardShellProps = {
     userName: string;
     userEmail: string;
     isPlatformAdmin?: boolean;
+    isOwner?: boolean;
 };
 
 export default function DashboardShell({
@@ -37,6 +38,7 @@ export default function DashboardShell({
     userName,
     userEmail,
     isPlatformAdmin = false,
+    isOwner = true,
 }: DashboardShellProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const supportUnread = useSupportUnread("/api/support/unread", usePathname());
@@ -109,6 +111,7 @@ export default function DashboardShell({
                     userName={userName}
                     userEmail={userEmail}
                     isPlatformAdmin={isPlatformAdmin}
+                    isOwner={isOwner}
                 />
 
                 <NewOrderProvider>
