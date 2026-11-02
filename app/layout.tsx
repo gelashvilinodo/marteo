@@ -12,13 +12,25 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  // ლინკის პრევიუს სურათს (app/opengraph-image.png) სრული მისამართი სჭირდება.
+  metadataBase: new URL(process.env.APP_URL ?? "https://marteo.ge"),
   title: "Marteo",
   applicationName: "Marteo",
   description: "ბიზნესის მართვის თანამედროვე პლატფორმა",
   appleWebApp: {
     capable: true,
     title: "Marteo",
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Marteo",
+    title: "Marteo",
+    description: "ბიზნესის მართვის თანამედროვე პლატფორმა",
+    locale: "ka_GE",
+  },
+  twitter: {
+    card: "summary_large_image",
   },
 };
 

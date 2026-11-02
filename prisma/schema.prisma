@@ -200,6 +200,7 @@ model Business {
   productAttributes        ProductAttribute[]
   inventoryItems           InventoryItem[]
   purchases                Purchase[]
+  purchasePlanItems        PurchasePlanItem[]
   expenses                 Expense[]
   financialEntries         OrderFinancialEntry[]
   contentItems             ContentItem[]
@@ -444,6 +445,7 @@ model InventoryItem {
   writeOffs         InventoryWriteOff[]
   movements         InventoryMovement[]
   stockAlerts       InventoryStockAlert[]
+  purchasePlanItems PurchasePlanItem[]
 
   @@unique([businessId, sku])
   @@index([businessId])
@@ -480,6 +482,30 @@ model Purchase {
   @@unique([businessId, number])
   @@index([businessId])
   @@index([purchaseDate])
+}
+
+// შესაძენი სია: პროდუქტები, რომლებიც შემდეგ პარტიაში უნდა შევიძინოთ.
+model PurchasePlanItem {
+  id              String             @id @default(cuid())
+  businessId      String
+  inventoryItemId String
+  quantity        Int
+  reason          String?
+  source          PurchasePlanSource @default(MANUAL)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, inventoryItemId])
+  @@index([businessId, createdAt])
+}
+
+enum PurchasePlanSource {
+  AI
+  MANUAL
 }
 
 model PurchaseItem {

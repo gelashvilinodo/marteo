@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
+import { findActiveMembership } from "@/lib/auth/active-business";
 
 function json(data: unknown, status = 200) {
     return Response.json(data, { status, headers: { "Cache-Control": "private, no-store" } });
@@ -21,9 +22,7 @@ export async function POST(request: Request, context: { params: Promise<{ orderI
             return json({ success: false, message: "ინვოისის ვერსია არასწორია." }, 422);
         }
         prisma = createPrismaClient();
-        const membership = await prisma.businessMembership.findFirst({
-            where: { userId: user.id }, orderBy: [{ createdAt: "asc" }, { businessId: "asc" }], select: { businessId: true },
-        });
+        const membership = await findActiveMembership(prisma, user.id);
         if (!membership) return json({ success: false, message: "ბიზნესი ვერ მოიძებნა." }, 403);
         const { orderId } = await context.params;
         const where = { id: orderId, businessId: membership.businessId, deletedAt: null };

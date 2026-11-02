@@ -18,7 +18,7 @@ import {
 } from "./product-images";
 
 import {
-    saveProductAttributes,
+    saveProductAttributesBatch,
     normalizeAttributeName,
 } from "./save-product-attributes";
 
@@ -260,31 +260,49 @@ export async function savePurchase(
                     },
                 });
 
-                const groupedProducts = new Map<string, string>();
+                // ყველა ხაზი ერთად მზადდება და ბაზაში ჯგუფურად იწერება,
+                // რომ დიდი პარტიაც ტრანზაქციის დროში ჩაეტიოს.
+                const attributes = await saveProductAttributesBatch(
+                    tx,
+                    businessId,
+                    input.items,
+                );
 
-                for (const [index, originalItem] of input.items.entries()) {
-                    const attributes = await saveProductAttributes(
-                        tx,
-                        businessId,
-                        originalItem,
-                    );
+                const items = input.items.map((item, index) => ({
+                    ...item,
+                    ...attributes[index],
+                }));
 
-                    const item = {
-                        ...originalItem,
-                        ...attributes,
-                    };
+                const sourceIds = [
+                    ...new Set(
+                        items.flatMap((item) =>
+                            item.sourceInventoryItemId
+                                ? [item.sourceInventoryItemId]
+                                : [],
+                        ),
+                    ),
+                ];
 
-                    const calculated = input.calculation.items[index];
-
-                    const source = item.sourceInventoryItemId
-                        ? await tx.inventoryItem.findFirst({
+                const sources = new Map(
+                    (sourceIds.length > 0
+                        ? await tx.inventoryItem.findMany({
                             where: {
-                                id: item.sourceInventoryItemId,
+                                id: { in: sourceIds },
                                 businessId,
                                 isActive: true,
                             },
                             include: { product: true },
                         })
+                        : []
+                    ).map((source) => [source.id, source]),
+                );
+
+                const groupedProducts = new Map<string, string>();
+                const newProducts: Prisma.ProductCreateManyInput[] = [];
+
+                const plans = items.map((item, index) => {
+                    const source = item.sourceInventoryItemId
+                        ? sources.get(item.sourceInventoryItemId) ?? null
                         : null;
 
                     if (item.sourceInventoryItemId && !source) {
@@ -314,29 +332,104 @@ export async function savePurchase(
                     } else if (groupedProductId) {
                         productId = groupedProductId;
                     } else {
-                        const createdProduct = await tx.product.create({
-                            data: {
-                                businessId,
-                                name: item.name,
-                                brand: item.brand || null,
-                                category: item.category,
-                                description: item.description || null,
-                            },
-                        });
+                        productId = crypto.randomUUID();
 
-                        productId = createdProduct.id;
+                        newProducts.push({
+                            id: productId,
+                            businessId,
+                            name: item.name,
+                            brand: item.brand || null,
+                            category: item.category,
+                            description: item.description || null,
+                        });
 
                         if (!source && item.productGroup) {
                             groupedProducts.set(item.productGroup, productId);
                         }
                     }
 
-                    const variants = await tx.inventoryItem.findMany({
+                    return { item, source, sameProduct, productId };
+                });
+
+                if (newProducts.length > 0) {
+                    await tx.product.createMany({ data: newProducts });
+                }
+
+                const createdProductIds = new Set(
+                    newProducts.map((product) => product.id),
+                );
+
+                const existingProductIds = [
+                    ...new Set(plans.map((plan) => plan.productId)),
+                ].filter((productId) => !createdProductIds.has(productId));
+
+                type VariantState = {
+                    id: string;
+                    productId: string;
+                    color: string | null;
+                    size: string | null;
+                    imageUrl: string | null;
+                    currentStock: number;
+                };
+
+                const variantsByProduct = new Map<string, VariantState[]>();
+                const variantsById = new Map<string, VariantState>();
+
+                function rememberVariant(variant: VariantState) {
+                    const list = variantsByProduct.get(variant.productId) ?? [];
+
+                    list.push(variant);
+                    variantsByProduct.set(variant.productId, list);
+                    variantsById.set(variant.id, variant);
+                }
+
+                const existingVariants = existingProductIds.length > 0
+                    ? await tx.inventoryItem.findMany({
                         where: {
                             businessId,
-                            productId,
+                            productId: { in: existingProductIds },
                         },
-                    });
+                        select: {
+                            id: true,
+                            productId: true,
+                            color: true,
+                            size: true,
+                            imageUrl: true,
+                            currentStock: true,
+                        },
+                    })
+                    : [];
+
+                for (const variant of existingVariants) {
+                    rememberVariant({ ...variant });
+                }
+
+                const createdInventory = new Map<
+                    string,
+                    Prisma.InventoryItemCreateManyInput
+                >();
+
+                const updatedInventory = new Map<string, {
+                    imageUrl: string | null;
+                    pricing: {
+                        salePrice: string;
+                        pricingMethod: string;
+                        pricingValue: string;
+                    } | null;
+                    increment: number;
+                }>();
+
+                const purchaseItems: Prisma.PurchaseItemCreateManyInput[] = [];
+                const stockLots: Prisma.InventoryStockLotCreateManyInput[] = [];
+                const movements: Prisma.InventoryMovementCreateManyInput[] = [];
+
+                // FIFO რიგი createdAt-ით წყდება, ამიტომ ხაზების თანმიმდევრობას ვინარჩუნებთ.
+                const createdBase = Date.now();
+
+                for (const [index, plan] of plans.entries()) {
+                    const { item, source, sameProduct, productId } = plan;
+                    const calculated = input.calculation.items[index];
+                    const variants = variantsByProduct.get(productId) ?? [];
 
                     const exactSource =
                         source &&
@@ -345,7 +438,7 @@ export async function savePurchase(
                             normalizeAttributeName(item.color) &&
                             normalizeAttributeName(source.size ?? "") ===
                             normalizeAttributeName(item.size)
-                            ? source
+                            ? variantsById.get(source.id) ?? null
                             : null;
 
                     const inventory =
@@ -436,125 +529,220 @@ export async function savePurchase(
                         // ახალი ვარიანტი საწყისი პროდუქტის ფოტოს იღებს.
                         imageUrl = inventory
                             ? inventory.imageUrl
-                            : source?.imageUrl ?? null;
+                            : source
+                                ? variantsById.get(source.id)?.imageUrl ??
+                                source.imageUrl
+                                : null;
                     }
 
-                    const savedInventory = inventory
-                        ? await tx.inventoryItem.update({
-                            where: { id: inventory.id },
-                            data: {
+                    let inventoryItemId: string;
+
+                    if (inventory) {
+                        inventoryItemId = inventory.id;
+                        inventory.imageUrl = imageUrl;
+                        inventory.currentStock += receivedQuantity;
+
+                        const created = createdInventory.get(inventory.id);
+
+                        if (created) {
+                            // ამავე პარტიაში შექმნილ ვარიანტს ჩანაწერშივე ვასწორებთ.
+                            created.imageUrl = imageUrl;
+
+                            if (isReceived) {
+                                Object.assign(created, pricingData);
+                                created.currentStock = inventory.currentStock;
+                            }
+                        } else {
+                            const previous = updatedInventory.get(inventory.id);
+
+                            updatedInventory.set(inventory.id, {
                                 imageUrl,
 
                                 // გზაში მყოფი პარტია არსებული
                                 // მარაგის ფასსა და ნაშთს არ ცვლის.
-                                ...(isReceived
-                                    ? {
-                                        ...pricingData,
-                                        isActive: true,
-                                        currentStock: {
-                                            increment: receivedQuantity,
-                                        },
-                                    }
-                                    : {}),
-                            },
-                        })
-                        : await tx.inventoryItem.create({
-                            data: {
-                                businessId,
-                                productId,
-                                sku: nextInventorySku(),
-                                color: item.color || null,
-                                size: item.size || null,
-                                imageUrl,
+                                pricing: isReceived
+                                    ? pricingData
+                                    : previous?.pricing ?? null,
+                                increment:
+                                    (previous?.increment ?? 0) +
+                                    receivedQuantity,
+                            });
+                        }
+                    } else {
+                        inventoryItemId = crypto.randomUUID();
 
-                                // ახალი პროდუქტის ჩანაწერი იქმნება,
-                                // მაგრამ მიღებამდე ნაშთი ნულია.
-                                currentStock: receivedQuantity,
+                        createdInventory.set(inventoryItemId, {
+                            id: inventoryItemId,
+                            businessId,
+                            productId,
+                            sku: nextInventorySku(),
+                            color: item.color || null,
+                            size: item.size || null,
+                            imageUrl,
 
-                                ...(isReceived ? pricingData : {}),
-                            },
+                            // ახალი პროდუქტის ჩანაწერი იქმნება,
+                            // მაგრამ მიღებამდე ნაშთი ნულია.
+                            currentStock: receivedQuantity,
+
+                            ...(isReceived ? pricingData : {}),
                         });
 
-                    const purchaseItem = await tx.purchaseItem.create({
-                        data: {
-                            purchaseId: purchase.id,
-                            inventoryItemId: savedInventory.id,
+                        rememberVariant({
+                            id: inventoryItemId,
+                            productId,
+                            color: item.color || null,
+                            size: item.size || null,
+                            imageUrl,
+                            currentStock: receivedQuantity,
+                        });
+                    }
+
+                    const purchaseItemId = crypto.randomUUID();
+                    const createdAt = new Date(createdBase + index);
+
+                    const remainingCost = isReceived
+                        ? new Prisma.Decimal(calculated.unitPurchasePrice)
+                            .mul(calculated.quantity)
+                            .plus(calculated.allocatedExtraCostTotal)
+                        : new Prisma.Decimal(0);
+
+                    purchaseItems.push({
+                        id: purchaseItemId,
+                        purchaseId: purchase.id,
+                        inventoryItemId,
+
+                        quantity: calculated.quantity,
+                        remainingQuantity: receivedQuantity,
+
+                        remainingCost,
+
+                        defectiveQuantity: item.defectiveQuantity,
+                        remainingDefectiveQuantity:
+                            receivedDefectiveQuantity,
+                        defectNote: item.defectNote || null,
+
+                        unitPurchasePrice:
+                            calculated.unitPurchasePrice,
+                        allocatedExtraCostTotal:
+                            calculated.allocatedExtraCostTotal,
+                        finalUnitCost:
+                            calculated.finalUnitCost,
+
+                        plannedPricingMethod: item.pricingMethod,
+                        plannedPricingValue: pricingData.pricingValue,
+
+                        createdAt,
+                    });
+
+                    if (isReceived) {
+                        stockLots.push({
+                            id: purchaseItemId,
+                            inventoryItemId,
+                            purchaseItemId,
 
                             quantity: calculated.quantity,
                             remainingQuantity: receivedQuantity,
 
-                            remainingCost: isReceived
-                                ? new Prisma.Decimal(calculated.unitPurchasePrice)
-                                    .mul(calculated.quantity)
-                                    .plus(calculated.allocatedExtraCostTotal)
-                                : new Prisma.Decimal(0),
-
                             defectiveQuantity: item.defectiveQuantity,
                             remainingDefectiveQuantity:
                                 receivedDefectiveQuantity,
-                            defectNote: item.defectNote || null,
 
-                            unitPurchasePrice:
-                                calculated.unitPurchasePrice,
-                            allocatedExtraCostTotal:
-                                calculated.allocatedExtraCostTotal,
-                            finalUnitCost:
-                                calculated.finalUnitCost,
+                            unitCost: calculated.finalUnitCost,
+                            remainingCost,
 
-                            plannedPricingMethod: item.pricingMethod,
-                            plannedPricingValue: pricingData.pricingValue,
-                        },
-                    });
-
-                    if (isReceived) {
-                        await tx.inventoryStockLot.create({
-                            data: {
-                                id: purchaseItem.id,
-                                inventoryItemId: savedInventory.id,
-                                purchaseItemId: purchaseItem.id,
-
-                                quantity: purchaseItem.quantity,
-                                remainingQuantity:
-                                    purchaseItem.remainingQuantity,
-
-                                defectiveQuantity:
-                                    purchaseItem.defectiveQuantity,
-                                remainingDefectiveQuantity:
-                                    purchaseItem.remainingDefectiveQuantity,
-
-                                unitCost: purchaseItem.finalUnitCost,
-                                remainingCost: purchaseItem.remainingCost,
-
-                                availableAt: purchase.purchaseDate,
-                                createdAt: purchaseItem.createdAt,
-                            },
+                            availableAt: purchase.purchaseDate,
+                            createdAt,
                         });
                     }
 
                     if (receivedGoodQuantity > 0) {
-                        await tx.inventoryMovement.create({
-                            data: {
-                                inventoryItemId: savedInventory.id,
-                                purchaseItemId: purchaseItem.id,
-                                type: "PURCHASE_IN",
-                                condition: "GOOD",
-                                quantity: receivedGoodQuantity,
-                            },
+                        movements.push({
+                            inventoryItemId,
+                            purchaseItemId,
+                            type: "PURCHASE_IN",
+                            condition: "GOOD",
+                            quantity: receivedGoodQuantity,
+                            createdAt,
                         });
                     }
 
                     if (receivedDefectiveQuantity > 0) {
-                        await tx.inventoryMovement.create({
-                            data: {
-                                inventoryItemId: savedInventory.id,
-                                purchaseItemId: purchaseItem.id,
-                                type: "PURCHASE_IN",
-                                condition: "DEFECTIVE",
-                                quantity: receivedDefectiveQuantity,
-                                note: item.defectNote || null,
-                            },
+                        movements.push({
+                            inventoryItemId,
+                            purchaseItemId,
+                            type: "PURCHASE_IN",
+                            condition: "DEFECTIVE",
+                            quantity: receivedDefectiveQuantity,
+                            note: item.defectNote || null,
+                            createdAt,
                         });
-                    };
+                    }
+                }
+
+                if (createdInventory.size > 0) {
+                    await tx.inventoryItem.createMany({
+                        data: [...createdInventory.values()],
+                    });
+                }
+
+                if (updatedInventory.size > 0) {
+                    const updates = [...updatedInventory.entries()];
+                    const ids = updates.map(([id]) => id);
+                    const images = updates.map(([, update]) => update.imageUrl);
+
+                    if (isReceived) {
+                        await tx.$executeRaw`
+                            UPDATE "InventoryItem" AS item
+                            SET
+                                "imageUrl" = changes."imageUrl",
+                                "salePrice" = changes."salePrice"::numeric,
+                                "pricingMethod" = changes."pricingMethod"::"PricingMethod",
+                                "pricingValue" = changes."pricingValue"::numeric,
+                                "isActive" = true,
+                                "currentStock" = item."currentStock" + changes."increment",
+                                "updatedAt" = NOW()
+                            FROM unnest(
+                                ${ids}::text[],
+                                ${images}::text[],
+                                ${updates.map(([, update]) => update.pricing?.salePrice ?? null)}::text[],
+                                ${updates.map(([, update]) => update.pricing?.pricingMethod ?? null)}::text[],
+                                ${updates.map(([, update]) => update.pricing?.pricingValue ?? null)}::text[],
+                                ${updates.map(([, update]) => update.increment)}::int[]
+                            ) AS changes(
+                                "id",
+                                "imageUrl",
+                                "salePrice",
+                                "pricingMethod",
+                                "pricingValue",
+                                "increment"
+                            )
+                            WHERE item."id" = changes."id"
+                              AND item."businessId" = ${businessId}
+                        `;
+                    } else {
+                        await tx.$executeRaw`
+                            UPDATE "InventoryItem" AS item
+                            SET
+                                "imageUrl" = changes."imageUrl",
+                                "updatedAt" = NOW()
+                            FROM unnest(
+                                ${ids}::text[],
+                                ${images}::text[]
+                            ) AS changes("id", "imageUrl")
+                            WHERE item."id" = changes."id"
+                              AND item."businessId" = ${businessId}
+                        `;
+                    }
+                }
+
+                await tx.purchaseItem.createMany({ data: purchaseItems });
+
+                if (stockLots.length > 0) {
+                    await tx.inventoryStockLot.createMany({ data: stockLots });
+                }
+
+                if (movements.length > 0) {
+                    await tx.inventoryMovement.createMany({ data: movements });
                 }
 
                 return {

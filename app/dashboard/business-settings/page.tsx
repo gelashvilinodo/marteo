@@ -99,6 +99,38 @@ export default async function BusinessSettingsPage() {
                             იმპორტზე გადასვლა
                         </Link>
                     </section>
+
+                    <section className="min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+                        <h2 className="flex items-center gap-2 font-semibold text-text-primary">
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="size-5 shrink-0 text-accent"
+                                aria-hidden="true"
+                            >
+                                <path d="M3 21h18M5 21V7l7-4 7 4v14" />
+                                <path d="M12 10v6m-3-3h6" />
+                            </svg>
+                            ახალი ბიზნესის დამატება
+                        </h2>
+
+                        <p className="mt-2 text-sm text-text-secondary">
+                            შექმენი კიდევ ერთი ბიზნესი იმავე ანგარიშით. თითოეულს
+                            ცალკე შეკვეთები, მარაგი და ანალიტიკა აქვს, ხოლო მათ
+                            შორის გადართვა პროფილის მენიუდან შეგიძლია.
+                        </p>
+
+                        <Link
+                            href="/business/new"
+                            className="mt-4 inline-flex min-h-11 max-w-full items-center justify-center rounded-xl border border-border px-4 py-2 text-center text-sm font-medium text-text-primary transition-colors hover:bg-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        >
+                            ბიზნესის დამატება
+                        </Link>
+                    </section>
                 </div>
             </main>
         );

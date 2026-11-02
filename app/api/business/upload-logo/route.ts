@@ -5,6 +5,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
+import { rateLimitResponse, reserveLimits } from "@/lib/security/rate-limit";
 
 const SUPABASE_URL =
     "https://uwxmbyweyvnekzzecroz.supabase.co";
@@ -98,23 +99,8 @@ async function post(request: Request) {
             );
         }
 
-        const prisma = createPrismaClient();
-
-        const existingBusiness =
-            await prisma.businessMembership.findFirst({
-                where: {
-                    userId: user.id,
-                    role: "OWNER",
-                },
-                select: { id: true },
-            });
-
-        if (existingBusiness) {
-            return errorResponse(
-                "ბიზნესი უკვე შექმნილია. ეს ატვირთვა მხოლოდ რეგისტრაციისთვისაა.",
-                409
-            );
-        }
+        // New businesses can be added any time, so uploads are bounded per user.
+        await reserveLimits(createPrismaClient(), [{ scope: "business-logo-upload", identity: user.id, maximum: 20, seconds: 60 * 60 }]);
 
         const contentType = request.headers.get("content-type");
 
@@ -246,7 +232,9 @@ async function post(request: Request) {
             { logoUrl: data.publicUrl },
             { status: 201 }
         );
-    } catch {
+    } catch (error) {
+        const limited = rateLimitResponse(error);
+        if (limited) return limited;
         console.error("Logo upload request failed");
 
         return errorResponse(

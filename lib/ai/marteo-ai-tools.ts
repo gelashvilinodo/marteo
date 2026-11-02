@@ -6,6 +6,11 @@ import { getHomeSummary } from "@/lib/dashboard/get-home-summary";
 import { getHomeLists } from "@/lib/dashboard/get-home-lists";
 import { getOrdersSummary } from "@/lib/orders/get-orders-summary";
 import { getInventoryPage } from "@/lib/inventory/get-inventory-page";
+import { getCustomersPage } from "@/lib/customers/get-customers-page";
+import { getOrderRecords } from "@/lib/orders/get-order-records";
+import { serializeOrderRecord } from "@/lib/orders/serialize-order-record";
+import { AI_CARD_LIMIT, orderCard, type AiCardGroup } from "./ai-cards";
+import { ADVICE_TOOLS, runAdviceTool } from "./advice-tools";
 
 // ყველა ხელსაწყო მხოლოდ კითხულობს და აბრუნებს ჯამებს ან მოკლე სიებს.
 // ბიზნესი ყოველთვის სესიიდან მოდის და არასდროს მოდელის არგუმენტიდან.
@@ -13,6 +18,10 @@ export type AiToolContext = {
     businessId: string;
     prisma: ReturnType<typeof createPrismaClient>;
     now: Date;
+    // შესაძენი სია მხოლოდ შესყიდვების მქონე ბიზნესებს აქვს.
+    purchasePlan: boolean;
+    // ნაპოვნი ჩანაწერები ჩატში ბარათებად ჩანს; მოდელი მხოლოდ მოკლე მონაცემებს იღებს.
+    cards: AiCardGroup[];
 };
 
 const DAY = 86_400_000;
@@ -44,7 +53,7 @@ const periodProperties = {
     to: { type: "string", description: "End date YYYY-MM-DD (inclusive), only for custom." },
 } as const;
 
-export const AI_TOOLS: Anthropic.Tool[] = [
+const DATA_TOOLS: Anthropic.Tool[] = [
     {
         name: "get_business_summary",
         description:
@@ -81,7 +90,7 @@ export const AI_TOOLS: Anthropic.Tool[] = [
     {
         name: "get_stock",
         description:
-            "Product stock levels (not materials). filter low = 1 to 4 units left, exhausted = 0 units. query searches product names. Returns at most 15 rows plus totals.",
+            "Product stock levels (not materials). filter low = 1 to 4 units left, exhausted = 0 units. query searches product names. Returns at most 15 rows plus totals. The app shows the found products to the user as cards with photos.",
         input_schema: {
             type: "object",
             properties: {
@@ -94,16 +103,37 @@ export const AI_TOOLS: Anthropic.Tool[] = [
     {
         name: "find_orders",
         description:
-            "Finds up to 5 orders by order number or by customer name, newest first. Returns status, payment status, date, customer, total and the products in each order (name, color, size, quantity, unit price, returned quantity).",
+            "Finds orders by order number, customer name, status and/or creation period, newest first. Returns found (the total count) and details of the 5 newest: status, payment status, date, customer, total and products (name, color, size, quantity, unit price, returned quantity). The app shows all found orders to the user as cards.",
         input_schema: {
             type: "object",
             properties: {
                 number: { type: "integer", description: "Order number, without #." },
                 customer: { type: "string", description: "Part of the customer's first or last name." },
+                status: { type: "string", enum: ["PROCESSING", "SHIPPED", "COMPLETED", "CANCELED", "RETURNED"] },
+                ...periodProperties,
+            },
+        },
+    },
+    {
+        name: "find_customers",
+        description:
+            "Finds the business's customers (buyers) by name, phone or address. filter repeat = 2 or more completed orders, top = the customer with the most completed orders. Returns found (the total count) and up to 20 customers with completed order count and last completed order date. The app shows them to the user as cards with phone and address.",
+        input_schema: {
+            type: "object",
+            properties: {
+                query: { type: "string", description: "Part of the name, phone or address. Omit to list all." },
+                filter: { type: "string", enum: ["all", "repeat", "top"] },
+                sort: {
+                    type: "string",
+                    enum: ["orders-desc", "last-order-desc", "name-asc"],
+                    description: "orders-desc = most completed orders first.",
+                },
             },
         },
     },
 ];
+
+export const AI_TOOLS: Anthropic.Tool[] = [...DATA_TOOLS, ...ADVICE_TOOLS];
 
 class ToolInputError extends Error {}
 
@@ -207,6 +237,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 
 type OrderRow = {
     id: string;
+    found: number;
     number: number | null;
     createdAt: Date;
     status: string;
@@ -229,14 +260,19 @@ type OrderLineRow = {
 async function findOrders(context: AiToolContext, input: Record<string, unknown>) {
     const number = Number.isSafeInteger(input.number) && Number(input.number) > 0 ? Number(input.number) : null;
     const customer = typeof input.customer === "string" ? input.customer.trim().slice(0, 60) : "";
+    const status = typeof input.status === "string" && input.status in STATUS_LABELS ? input.status : "";
+    const range = input.period ? resolveRange(input.period, input.from, input.to, context.now) : null;
+    // createdAt UTC-ში ინახება დროის სარტყლის გარეშე; ISO სტრიქონი პირდაპირ ედრება.
+    const start = range ? new Date(Date.parse(`${range.from}T00:00:00.000Z`) - TBILISI_OFFSET).toISOString() : null;
+    const end = range ? new Date(Date.parse(`${range.to}T00:00:00.000Z`) + DAY - TBILISI_OFFSET).toISOString() : null;
 
-    if (number === null && !customer) {
-        throw new ToolInputError("Give an order number or a customer name.");
+    if (number === null && !customer && !status && !range) {
+        throw new ToolInputError("Give an order number, a customer name, a status or a period.");
     }
 
     // დაბრუნებული რაოდენობები ჯამს აკლდება, როგორც მთავარ გვერდზე.
     const rows = await context.prisma.$queryRaw<OrderRow[]>`
-        SELECT o.id, o.number, o."createdAt", o.status::text AS status, o."paymentStatus"::text AS "paymentStatus",
+        SELECT o.id, (COUNT(*) OVER ())::int AS found, o.number, o."createdAt", o.status::text AS status, o."paymentStatus"::text AS "paymentStatus",
             NULLIF(TRIM(CONCAT_WS(' ', o."recipientFirstName", o."recipientLastName")), '') AS customer,
             COUNT(i.id)::int AS items,
             ROUND(o."courierFee" + COALESCE(SUM(CASE WHEN o."stockReturnedAt" IS NOT NULL THEN 0
@@ -253,12 +289,23 @@ async function findOrders(context: AiToolContext, input: Record<string, unknown>
             AND o."deletedAt" IS NULL
             AND (${number}::int IS NULL OR o.number = ${number}::int)
             AND (${customer} = '' OR strpos(lower(CONCAT_WS(' ', o."recipientFirstName", o."recipientLastName")), lower(${customer})) > 0)
+            AND (${status} = '' OR o.status::text = ${status})
+            AND (${start}::timestamp IS NULL OR o."createdAt" >= ${start}::timestamp)
+            AND (${end}::timestamp IS NULL OR o."createdAt" < ${end}::timestamp)
         GROUP BY o.id
         ORDER BY o."createdAt" DESC, o.id DESC
-        LIMIT 5
+        LIMIT ${AI_CARD_LIMIT}
     `;
 
-    const ids = rows.map((row) => row.id);
+    const records = await getOrderRecords(context.prisma, context.businessId, rows.map((row) => row.id), false);
+    const cards = rows
+        .map((row) => records.find((record) => record.id === row.id))
+        .filter((record) => record !== undefined)
+        .map((record) => orderCard(serializeOrderRecord(record, false)));
+    context.cards.push({ kind: "orders", total: rows[0]?.found ?? 0, items: cards });
+
+    const detailed = rows.slice(0, 5);
+    const ids = detailed.map((row) => row.id);
     // შეკვეთის პროდუქტები — მხოლოდ ამავე ბიზნესის ნაპოვნი შეკვეთებიდან.
     const lines = ids.length === 0 ? [] : await context.prisma.$queryRaw<OrderLineRow[]>`
         SELECT i."orderId", i.name, i.color, i.size, i.quantity::text AS quantity,
@@ -279,7 +326,9 @@ async function findOrders(context: AiToolContext, input: Record<string, unknown>
 
     return {
         currency: "GEL",
-        orders: rows.map((row) => ({
+        ...(range ? { range } : {}),
+        found: rows[0]?.found ?? 0,
+        orders: detailed.map((row) => ({
             number: row.number,
             date: tbilisiToday(row.createdAt),
             status: STATUS_LABELS[row.status] ?? row.status,
@@ -359,12 +408,13 @@ async function runTool(name: string, input: Record<string, unknown>, context: Ai
         case "get_stock": {
             const filter = ["low", "exhausted", "all"].includes(String(input.filter)) ? String(input.filter) : "all";
             const query = typeof input.query === "string" ? input.query.slice(0, 60) : "";
-            const page = await getInventoryPage(context.prisma, businessId, { status: filter, q: query, sort: "quantity-asc" }, 15);
+            const page = await getInventoryPage(context.prisma, businessId, { status: filter, q: query, sort: "quantity-asc" }, AI_CARD_LIMIT);
+            context.cards.push({ kind: "stock", total: page.totalProducts, items: page.products });
             return {
                 matching_variants: page.totalProducts,
                 low_variants_total: page.counts.low.species,
                 exhausted_variants_total: page.counts.exhausted.species,
-                items: page.products.map((item) => ({
+                items: page.products.slice(0, 15).map((item) => ({
                     name: item.name,
                     color: item.color,
                     size: item.size,
@@ -376,6 +426,25 @@ async function runTool(name: string, input: Record<string, unknown>, context: Ai
         }
         case "find_orders":
             return findOrders(context, input);
+        case "get_business_advice":
+        case "get_purchase_list":
+            return runAdviceTool(name, input, context);
+        case "find_customers": {
+            const query = typeof input.query === "string" ? input.query.trim().slice(0, 60) : "";
+            const filter = ["repeat", "top"].includes(String(input.filter)) ? String(input.filter) : "all";
+            const sort = ["orders-desc", "last-order-desc", "name-asc"].includes(String(input.sort)) ? String(input.sort) : "orders-desc";
+            const page = await getCustomersPage(context.prisma, businessId, { q: query, filter, sort });
+            context.cards.push({ kind: "customers", total: page.totalCount, items: page.customers });
+            // ტელეფონი და მისამართი მოდელს არ ეგზავნება — ისინი მხოლოდ ბარათზე ჩანს.
+            return {
+                found: page.totalCount,
+                customers: page.customers.map((item) => ({
+                    name: [item.firstName, item.lastName].filter(Boolean).join(" ") || null,
+                    completed_orders: item.completedOrders,
+                    last_completed_order: item.lastOrderAt ? tbilisiToday(new Date(item.lastOrderAt)) : null,
+                })),
+            };
+        }
         default:
             throw new ToolInputError(`Unknown tool ${name}.`);
     }

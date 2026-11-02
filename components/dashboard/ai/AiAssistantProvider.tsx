@@ -10,6 +10,7 @@ import {
     useRef,
 } from "react";
 import type { AiPurchaseDraft } from "@/lib/ai/purchase-draft-types";
+import type { AiCardGroup } from "@/lib/ai/ai-cards";
 import { readPurchaseFile } from "@/lib/ai/purchase-file-client";
 
 export type AiAttachment = {
@@ -28,6 +29,8 @@ export type AiMessage = {
     draft?: AiPurchaseDraft;
     draftSaved?: boolean;
     link?: { href: string; label: string };
+    // ნაპოვნი შეკვეთები, პროდუქტები ან მომხმარებლები ბარათებად.
+    cards?: AiCardGroup[];
 };
 
 export type AiPurchaseTarget = "products" | "materials";
@@ -48,6 +51,7 @@ type AiAction =
     | { type: "send"; message: AiMessage }
     | { type: "reply"; message: AiMessage }
     | { type: "add"; message: AiMessage }
+    | { type: "notify"; message: AiMessage }
     | { type: "update"; id: string; patch: Partial<AiMessage>; done?: boolean };
 
 const INITIAL_STATE: AiState = {
@@ -85,6 +89,9 @@ function reducer(state: AiState, action: AiAction): AiState {
             };
         case "add":
             return { ...state, messages: [...state.messages, action.message] };
+        case "notify":
+            // AI-ის საკუთარი შეტყობინება (კვირის მიმოხილვა) — დახურულ პანელზე წერტილით.
+            return { ...state, unread: !state.open, messages: [...state.messages, action.message] };
         case "update":
             return {
                 ...state,
@@ -114,6 +121,30 @@ const FILE_STEPS = [
     "ვამოწმებ ციფრებს და ჯამებს",
 ];
 const FAILED_REPLY = "მართეო AI დროებით მიუწვდომელია. სცადე ხელახლა.";
+const DIGEST_KEY = "marteo.ai.digest-week";
+
+// კვირის დასაწყისი (ორშაბათი) თბილისის დროით.
+function currentWeek() {
+    const local = new Date(Date.now() + 4 * 60 * 60 * 1000);
+    const weekday = (local.getUTCDay() + 6) % 7;
+    return new Date(local.getTime() - weekday * 86_400_000).toISOString().slice(0, 10);
+}
+
+function readStorage(key: string) {
+    try {
+        return window.localStorage.getItem(key);
+    } catch {
+        return null;
+    }
+}
+
+function writeStorage(key: string, value: string) {
+    try {
+        window.localStorage.setItem(key, value);
+    } catch {
+        // პირად რეჟიმში საცავი შეიძლება მიუწვდომელი იყოს; მიმოხილვა მაშინ ხელახლა გამოჩნდება.
+    }
+}
 
 export function AiAssistantProvider({ children }: { children: React.ReactNode }) {
     const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
@@ -126,10 +157,42 @@ export function AiAssistantProvider({ children }: { children: React.ReactNode })
 
     useEffect(() => () => request.current?.abort(), []);
 
-    const reply = useCallback((text: string, failed = false) => {
+    // კვირის პირველ შემოსვლაზე AI თავად ამზადებს მოკლე მიმოხილვას.
+    useEffect(() => {
+        const week = currentWeek();
+        if (readStorage(DIGEST_KEY) === week) return;
+
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => {
+            fetch("/api/ai/digest", { cache: "no-store", credentials: "same-origin", signal: controller.signal })
+                .then((response) => response.ok ? response.json() as Promise<{ digest?: { text: string; cards: AiCardGroup[] } | null }> : null)
+                .then((body) => {
+                    if (!body) return;
+                    writeStorage(DIGEST_KEY, week);
+                    if (!body.digest) return;
+                    dispatch({
+                        type: "notify",
+                        message: {
+                            id: crypto.randomUUID(),
+                            role: "assistant",
+                            text: body.digest.text,
+                            cards: body.digest.cards.length ? body.digest.cards : undefined,
+                        },
+                    });
+                })
+                .catch(() => undefined);
+        }, 4000);
+
+        return () => {
+            window.clearTimeout(timer);
+            controller.abort();
+        };
+    }, []);
+
+    const reply = useCallback((text: string, failed = false, cards?: AiCardGroup[]) => {
         dispatch({
             type: "reply",
-            message: { id: crypto.randomUUID(), role: "assistant", text, failed },
+            message: { id: crypto.randomUUID(), role: "assistant", text, failed, cards: cards?.length ? cards : undefined },
         });
     }, []);
 
@@ -215,10 +278,10 @@ export function AiAssistantProvider({ children }: { children: React.ReactNode })
                 body: JSON.stringify({ messages: history }),
                 signal: controller.signal,
             });
-            const data = await response.json().catch(() => null) as { reply?: string; message?: string } | null;
+            const data = await response.json().catch(() => null) as { reply?: string; cards?: AiCardGroup[]; message?: string } | null;
 
             if (response.ok && data?.reply) {
-                reply(data.reply);
+                reply(data.reply, false, Array.isArray(data.cards) ? data.cards : undefined);
             } else {
                 reply(data?.message || FAILED_REPLY, true);
             }

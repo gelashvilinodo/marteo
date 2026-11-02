@@ -24,6 +24,7 @@ import { recordFinancialAdjustment } from "@/lib/analytics/record-financial-adju
 import {
     resolveHistoricalOrderPayment,
 } from "./resolve-historical-order-payment";
+import { findActiveMembership } from "@/lib/auth/active-business";
 
 export type MutationKind =
     | "edit"
@@ -53,7 +54,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
     const hash = await fingerprint({ kind, body });
     const prisma = createPrismaClient();
     try {
-        const membership = await prisma.businessMembership.findFirst({ where: { userId: user.id }, orderBy: [{ createdAt: "asc" }, { businessId: "asc" }], select: { businessId: true, role: true } });
+        const membership = await findActiveMembership(prisma, user.id);
         if (!membership) fail("ბიზნესი ვერ მოიძებნა.", 403);
         if (!canManageBusinessData(membership.role)) {
             fail("ამ მოქმედებისთვის მფლობელის ან ადმინისტრატორის უფლებაა საჭირო.", 403);

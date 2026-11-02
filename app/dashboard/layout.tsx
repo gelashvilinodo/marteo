@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
-import { getCurrentBusiness } from "@/lib/auth/current-business";
+import { getCurrentBusiness, getUserBusinesses } from "@/lib/auth/current-business";
 import { getAdminUser } from "@/lib/admin/authorization";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
@@ -31,6 +31,8 @@ export default async function DashboardLayout({
             businessMode={membership.business.mode}
             businessName={membership.business.name}
             businessLogoUrl={membership.business.logoUrl}
+            businessId={membership.businessId}
+            businesses={await getUserBusinesses()}
             userName={user.firstName || ""}
             userEmail={user.email}
         >

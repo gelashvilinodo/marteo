@@ -4,6 +4,7 @@ import Link from "next/link";
 import { hasBusinessFeature, type BusinessMode } from "@/lib/business/business-mode";
 import { useId, useState } from "react";
 import { usePathname } from "next/navigation";
+import usePurchasePlanCount from "@/components/dashboard/purchases/usePurchasePlanCount";
 import { Icon } from "@iconify/react";
 import Image from "next/image";
 
@@ -89,7 +90,12 @@ const purchaseLinks:SidebarGroupLink[]=[
     {label:'პროდუქტები',href:'/dashboard/purchases',icon:'solar:box-bold-duotone'},
     {label:'მასალები',href:'/dashboard/material-purchases',icon:'solar:layers-bold-duotone'},
 ];
-function SidebarGroup({label,icon,links,pathname,onSelect}:{label:string;icon:string;links:SidebarGroupLink[];pathname:string;onSelect?:()=>void}) {
+function PlanBadge({count}:{count:number}) {
+    if(count<=0)return null;
+    return <span className="ml-auto min-w-5 rounded-full bg-accent px-1.5 text-center text-[11px] font-semibold leading-5 text-white" aria-label={`შესაძენ სიაში ${count} პროდუქტი`} title="შესაძენი სია">{count>99?"99+":count}</span>;
+}
+
+function SidebarGroup({label,icon,links,pathname,onSelect,badges={}}:{label:string;icon:string;links:SidebarGroupLink[];pathname:string;onSelect?:()=>void;badges?:Record<string,number>}) {
     const active=links.some(link=>pathname===link.href||pathname.startsWith(link.href+'/'));
     const [open,setOpen]=useState(active);
     const linksId=useId();
@@ -100,7 +106,7 @@ function SidebarGroup({label,icon,links,pathname,onSelect}:{label:string;icon:st
         <div id={linksId} role="region" aria-label={label} inert={!open} className={`grid transition-[grid-template-rows,opacity] duration-200 motion-reduce:transition-none ${open?'grid-rows-[1fr] opacity-100':'grid-rows-[0fr] opacity-0'}`}>
             <div className="min-h-0 overflow-hidden"><div className="ml-6 mr-4 my-1 space-y-1 border-l border-white/15 pl-3">{links.map(link=>{
                 const selected=pathname===link.href||pathname.startsWith(link.href+'/');
-                return <Link key={link.href} href={link.href} prefetch={false} onClick={onSelect} aria-current={selected?'page':undefined} className={`flex min-h-10 min-w-0 items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors ${selected?'bg-white/10 font-medium text-accent':'text-slate-300 hover:bg-white/5 hover:text-white'}`}><span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${selected?'bg-accent/15':'bg-white/5'}`}><Icon icon={link.icon} className="h-4 w-4"/></span><span className="min-w-0 truncate">{link.label}</span></Link>;
+                return <Link key={link.href} href={link.href} prefetch={false} onClick={onSelect} aria-current={selected?'page':undefined} className={`flex min-h-10 min-w-0 items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors ${selected?'bg-white/10 font-medium text-accent':'text-slate-300 hover:bg-white/5 hover:text-white'}`}><span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${selected?'bg-accent/15':'bg-white/5'}`}><Icon icon={link.icon} className="h-4 w-4"/></span><span className="min-w-0 truncate">{link.label}</span><PlanBadge count={badges[link.href]??0}/></Link>;
             })}</div></div>
         </div>
     </div>;
@@ -113,6 +119,7 @@ export default function DashboardSidebar({
     supportUnread = 0,
 }: DashboardSidebarProps) {
     const pathname = usePathname();
+    const planCount = usePurchasePlanCount(hasBusinessFeature(mode, "imports"));
 
     return (
         <aside
@@ -200,7 +207,7 @@ export default function DashboardSidebar({
                                 : pathname.startsWith(item.href);
 
                         if(item.href === "/dashboard/purchases" && mode==='HYBRID') {
-                            return <SidebarGroup key={pathname+item.href} label="შესყიდვები" icon="solar:cart-large-2-bold-duotone" links={purchaseLinks} pathname={pathname} onSelect={onSelect}/>;
+                            return <SidebarGroup key={pathname+item.href} label="შესყიდვები" icon="solar:cart-large-2-bold-duotone" links={purchaseLinks} pathname={pathname} onSelect={onSelect} badges={{"/dashboard/purchases":planCount}}/>;
                         }
                         if(item.href === "/dashboard/material-purchases" && mode==='HYBRID') return null;
                         if(item.href === "/dashboard/purchases" && !hasBusinessFeature(mode,"imports")) return null;
@@ -254,6 +261,7 @@ export default function DashboardSidebar({
                                 {item.href==="/dashboard/material-purchases"&&mode==="MANUFACTURING" ? <Icon icon="solar:cart-large-2-bold-duotone" className="h-5 w-5 shrink-0"/> : item.icon ? <Icon icon={item.icon} className="h-5 w-5 shrink-0" /> : <span aria-hidden="true" className="h-5 w-5 shrink-0" />}
 
                                 <span>{item.href==="/dashboard/material-purchases"&&mode==="MANUFACTURING"?"შესყიდვები":item.label}</span>
+                                {item.href==="/dashboard/purchases" && <span className="ml-auto"><PlanBadge count={planCount}/></span>}
                             </Link>
                         );
                     })}

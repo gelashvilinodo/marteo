@@ -252,7 +252,7 @@ export default function SupportChat({ viewer, endpoint, header, banner, composer
     const createdAtOf = (row: Row) => row.kind === "message" ? row.message.createdAt : row.kind === "pending" ? row.pending.createdAt : row.createdAt;
 
     return <section
-        style={keyboard.open ? { position: "fixed", left: 0, right: 0, top: keyboard.top, height: keyboard.height, zIndex: 60 } : undefined}
+        style={keyboard.open ? { position: "fixed", left: 0, right: 0, top: keyboard.top, height: keyboard.height, zIndex: 60, boxShadow: "0 10rem 0 0 var(--marteo-surface)" } : undefined}
         className={`relative flex min-h-0 flex-col overflow-hidden bg-surface ${keyboard.open ? "" : "h-full rounded-3xl border border-border shadow-[0_18px_50px_-30px_rgb(15_28_46/0.45)]"}`}>
         <header
             // ღია კლავიატურისას ჰედერი სტატუს-ბარის ქვეშ არ უნდა მოექცეს, რაც არ უნდა იყოს ხილული არის პოზიცია.
@@ -338,7 +338,7 @@ export default function SupportChat({ viewer, endpoint, header, banner, composer
             <Icon icon="solar:arrow-down-linear" className="h-3.5 w-3.5" aria-hidden="true" /> ახალი შეტყობინება
         </button>}
 
-        <footer className={`shrink-0 border-t border-border bg-surface px-3 pt-3 sm:px-4 ${keyboard.open ? "pb-2" : "pb-[max(0.75rem,env(safe-area-inset-bottom))]"}`}>
+        <footer className={`shrink-0 border-t border-border bg-surface px-3 pt-3 sm:px-4 ${keyboard.open ? "pb-1.5" : "pb-[max(0.75rem,env(safe-area-inset-bottom))]"}`}>
             {viewer === "USER" && thread?.status === "CLOSED" && <p className="mb-2 rounded-xl bg-background px-3 py-2 text-xs text-text-secondary">საუბარი დასრულებულია. ახალი შეტყობინება მას ხელახლა გახსნის.</p>}
             {loadError && <p className="mb-2 text-xs text-warning">კავშირი შეფერხდა - ვცდილობთ ხელახლა…</p>}
             {error && <p role="alert" className="mb-2 text-xs text-danger">{error}</p>}

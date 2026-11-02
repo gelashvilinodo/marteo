@@ -2,6 +2,9 @@ import { businessFeatureDenied } from '@/lib/business/feature-access';
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentBusiness } from "@/lib/auth/current-business";
+import { createPrismaClient } from "@/lib/prisma";
+import { removePurchasePlanItems } from "@/lib/purchases/purchase-plan";
 import {
     savePurchase,
     type PurchaseImageChange,
@@ -136,6 +139,25 @@ function readPayload(formData: FormData) {
     }
 
     return parsed as Record<string, unknown>;
+}
+
+// შესაძენი სიიდან შექმნილი შესყიდვის შემდეგ ეს პროდუქტები სიიდან იხსნება.
+// შესყიდვა უკვე შენახულია, ამიტომ აქ შეცდომა პასუხს არ აფუჭებს.
+async function clearPlannedItems(value: unknown) {
+    if (!Array.isArray(value) || value.length === 0) return;
+
+    const ids = value.filter((id): id is string => typeof id === "string" && id.length <= 64).slice(0, 200);
+    const membership = await getCurrentBusiness();
+    if (!membership || ids.length === 0) return;
+
+    const prisma = createPrismaClient();
+    try {
+        await removePurchasePlanItems(prisma, membership.businessId, ids);
+    } catch (error) {
+        console.error("Purchase plan cleanup failed", error instanceof Error ? error.name : "UnknownError");
+    } finally {
+        await prisma.$disconnect();
+    }
 }
 
 export async function POST(request: Request) {
@@ -278,6 +300,8 @@ export async function POST(request: Request) {
             payload.requestId,
             imageChanges,
         );
+
+        await clearPlannedItems(payload.planItemIds);
 
         return NextResponse.json(
             {

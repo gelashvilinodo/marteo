@@ -6,12 +6,13 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
 import { OrderValidationError } from "./validate-order";
 import { orderPayableTotal } from "./order-payable-total";
+import { findActiveMembership } from "@/lib/auth/active-business";
 export async function getOrder(orderId: string) {
     const user = await getCurrentUser();
     if (!user) throw new OrderValidationError("გაიარე ავტორიზაცია.", 401);
     const prisma = createPrismaClient();
     try {
-        const membership = await prisma.businessMembership.findFirst({ where: { userId: user.id }, orderBy: [{ createdAt: "asc" }, { businessId: "asc" }], select: { businessId: true } });
+        const membership = await findActiveMembership(prisma, user.id);
         if (!membership) throw new OrderValidationError("ბიზნესი ვერ მოიძებნა.", 403);
         const order = await prisma.order.findFirst({
             where: { id: orderId, businessId: membership.businessId, deletedAt: null }, include: {

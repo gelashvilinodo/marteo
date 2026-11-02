@@ -4,6 +4,7 @@ import { createPrismaClient } from "@/lib/prisma";
 import { guardMutation } from "@/lib/security/mutation-request";
 import { rateLimitResponse, reserveLimits } from "@/lib/security/rate-limit";
 import { AiChatError, runMarteoAiChat, type AiChatTurn } from "@/lib/ai/marteo-ai-chat";
+import { hasBusinessFeature } from "@/lib/business/business-mode";
 
 const MAX_TURNS = 10;
 const MAX_TEXT = 2000;
@@ -55,13 +56,14 @@ export const POST = guardMutation(async (request) => {
             { scope: "ai-chat-month", identity: businessId, maximum: 500, seconds: 30 * 24 * 60 * 60 },
         ]);
 
-        const reply = await runMarteoAiChat(turns, context.membership.business.name, {
+        const { text: reply, cards } = await runMarteoAiChat(turns, context.membership.business.name, {
             businessId,
             prisma,
             now: new Date(),
+            purchasePlan: hasBusinessFeature(context.membership.business.mode, "imports"),
         });
 
-        return orderJson({ success: true, reply });
+        return orderJson({ success: true, reply, cards });
     } catch (error) {
         const limited = rateLimitResponse(error);
         if (limited) return limited;

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSupportUnread } from "@/components/support/useSupportUnread";
 import { BusinessModeContext } from "./business/BusinessModeContext";
 import type { BusinessMode } from "@/lib/business/business-mode";
+import type { BusinessOption } from "@/components/dashboard/DashboardHeader";
 
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -19,6 +20,8 @@ type DashboardShellProps = {
     businessMode: BusinessMode;
     businessName: string;
     businessLogoUrl: string | null;
+    businessId: string;
+    businesses: BusinessOption[];
     userName: string;
     userEmail: string;
     isPlatformAdmin?: boolean;
@@ -29,6 +32,8 @@ export default function DashboardShell({
     businessMode,
     businessName,
     businessLogoUrl,
+    businessId,
+    businesses,
     userName,
     userEmail,
     isPlatformAdmin = false,
@@ -99,6 +104,8 @@ export default function DashboardShell({
                     onMenuClick={() => setSidebarOpen((current) => !current)}
                     businessName={businessName}
                     businessLogoUrl={businessLogoUrl}
+                    businessId={businessId}
+                    businesses={businesses}
                     userName={userName}
                     userEmail={userEmail}
                     isPlatformAdmin={isPlatformAdmin}

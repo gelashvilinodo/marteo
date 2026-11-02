@@ -7,6 +7,7 @@ import { prepareProductPhoto } from "@/lib/images/prepare-product-photo";
 import {
     useEffect,
     useId,
+    useEffectEvent,
     useRef,
     useState,
     type ReactNode,
@@ -15,6 +16,7 @@ import {
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import InventoryPicker from "@/components/dashboard/purchases/Inventory/InventoryPicker";
+import { PURCHASE_FROM_PLAN, PURCHASE_PLAN_CHANGED, type PurchaseFromPlanDetail } from "@/lib/purchases/purchase-plan-client";
 import AttributeInput from "@/components/dashboard/purchases/AttributeInput";
 
 type PricingMethod =
@@ -159,6 +161,26 @@ function createProduct(): ProductDraft {
         unitPurchasePrice: "",
         pricingMethod: "MANUAL",
         pricingValue: "",
+    };
+}
+
+// შესაძენი სიიდან: პროდუქტი მარაგიდან უკვე არჩეულია, რაოდენობა სიიდან მოდის.
+function draftFromInventory(item: InventoryOption, quantity: number): ProductDraft {
+    return {
+        ...createProduct(),
+        sourceInventoryItemId: item.id,
+        sourceProductId: item.productId,
+        name: item.name,
+        category: item.category,
+        brand: item.brand,
+        description: item.description,
+        color: item.color,
+        size: item.size,
+        imageUrl: item.imageUrl,
+        quantity: String(quantity),
+        unitPurchasePrice: item.unitPurchasePrice,
+        pricingMethod: item.pricingMethod,
+        pricingValue: item.pricingValue,
     };
 }
 
@@ -406,6 +428,8 @@ export default function NewPurchasePanel({
     const [customs, setCustoms] = useState("0");
     const [other, setOther] = useState("0");
     const [products, setProducts] = useState<ProductDraft[]>([]);
+    // შესაძენი სიის ჩანაწერები, რომლებიც შენახვის შემდეგ სიიდან მოიხსნება.
+    const planItemIds = useRef<string[]>([]);
 
     function getAttributeOptions(
         field: "name" | "category" | "brand" | "color" | "size",
@@ -835,11 +859,37 @@ export default function NewPurchasePanel({
         setCustoms("0");
         setOther("0");
         setProducts([createProduct()]);
+        planItemIds.current = [];
         setError("");
         setDirty(false);
         setVisible(false);
         setMounted(true);
     }
+
+    const openFromPlan = useEffectEvent((detail: PurchaseFromPlanDetail) => {
+        if (editPurchaseId || requestLocked.current || pendingSubmission.current) return;
+
+        const entries = detail.items.flatMap((entry) => {
+            const item = inventoryOptions.find((option) => option.id === entry.inventoryItemId);
+            return item ? [{ entry, draft: draftFromInventory(item, entry.quantity) }] : [];
+        });
+        if (entries.length === 0) return;
+
+        openPanel();
+        setProducts(entries.map(({ draft }) => draft));
+        planItemIds.current = entries.map(({ entry }) => entry.planItemId);
+        setDirty(true);
+    });
+
+    useEffect(() => {
+        function onFromPlan(event: Event) {
+            const detail = (event as CustomEvent<PurchaseFromPlanDetail>).detail;
+            if (detail?.items?.length) openFromPlan(detail);
+        }
+
+        window.addEventListener(PURCHASE_FROM_PLAN, onFromPlan);
+        return () => window.removeEventListener(PURCHASE_FROM_PLAN, onFromPlan);
+    }, []);
 
     function closePanel() {
         if (requestLocked.current) return;
@@ -1114,6 +1164,7 @@ export default function NewPurchasePanel({
                         requestId: crypto.randomUUID(),
                         purchase,
                         imageActions,
+                        planItemIds: planItemIds.current,
                     },
             );
 
@@ -1298,6 +1349,10 @@ export default function NewPurchasePanel({
                 setProducts([]);
                 openButton.current?.focus();
                 refreshPurchasesAfterMutation(() => router.refresh());
+                if (planItemIds.current.length > 0) {
+                    planItemIds.current = [];
+                    window.dispatchEvent(new Event(PURCHASE_PLAN_CHANGED));
+                }
             }, duration);
         } catch {
             setRetryPending(true);

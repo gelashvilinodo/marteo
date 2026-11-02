@@ -2,9 +2,11 @@ import { isOwnedStorageImage } from "@/lib/security/storage-image";
 import { guardMutation } from "@/lib/security/mutation-request";
 import { isBusinessMode } from "@/lib/business/business-mode";
 import { NextResponse } from "next/server";
+import { rateLimitResponse, reserveLimits } from "@/lib/security/rate-limit";
 
 import { createPrismaClient } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
+import { activeBusinessCookieOptions, ACTIVE_BUSINESS_COOKIE, findActiveMembership } from "@/lib/auth/active-business";
 
 async function post(request: Request) {
   try {
@@ -76,21 +78,19 @@ async function post(request: Request) {
       );
     }
 
-    const existingMembership = await prisma.businessMembership.findFirst({
-      where: {
-        userId: user.id,
-        role: "OWNER",
-      },
-    });
+    await reserveLimits(prisma, [{ scope: "business-create", identity: user.id, maximum: 10, seconds: 24 * 60 * 60 }]);
 
-    if (existingMembership) {
-      return NextResponse.json(
-        {
-          error: "თქვენ უკვე გაქვთ შექმნილი ბიზნესი.",
-        },
-        { status: 409 }
-      );
-    }
+    // An additional business starts on the plan of the business the user is
+    // working in now; the first business starts on FREE.
+    const currentMembership = await findActiveMembership(prisma, user.id);
+    const currentSubscription = currentMembership
+      ? await prisma.subscription.findUnique({
+          where: { businessId: currentMembership.businessId },
+          select: { plan: true, status: true, expiresAt: true },
+        })
+      : null;
+    const inheritsPlan =
+      currentSubscription?.status === "ACTIVE" || currentSubscription?.status === "TRIALING";
 
     const result = await prisma.$transaction(async (tx) => {
       const business = await tx.business.create({
@@ -113,8 +113,9 @@ async function post(request: Request) {
       const subscription = await tx.subscription.create({
         data: {
           businessId: business.id,
-          plan: "FREE",
-          status: "ACTIVE",
+          plan: inheritsPlan ? currentSubscription.plan : "FREE",
+          status: inheritsPlan ? currentSubscription.status : "ACTIVE",
+          expiresAt: inheritsPlan ? currentSubscription.expiresAt : null,
         },
       });
 
@@ -124,7 +125,7 @@ async function post(request: Request) {
       };
     });
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         message: "ბიზნესი წარმატებით შეიქმნა.",
         businessId: result.business.id,
@@ -134,7 +135,13 @@ async function post(request: Request) {
       },
       { status: 201 }
     );
+
+    response.cookies.set(ACTIVE_BUSINESS_COOKIE, result.business.id, activeBusinessCookieOptions);
+
+    return response;
   } catch (error) {
+    const limited = rateLimitResponse(error);
+    if (limited) return limited;
     console.error("Business onboarding error:", error);
 
     return NextResponse.json(

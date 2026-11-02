@@ -6,12 +6,24 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { NOTIFICATIONS_SEEN } from "@/lib/notifications/events";
+import AiHeaderButton from "@/components/dashboard/ai/AiHeaderButton";
+
+export type BusinessOption = {
+    id: string;
+    name: string;
+    logoUrl: string | null;
+};
+
+// Rows of the business switcher shown before it scrolls.
+const VISIBLE_BUSINESS_ROWS = 4;
 
 type DashboardHeaderProps = {
     onMenuClick: () => void;
     menuOpen: boolean;
     businessName: string;
     businessLogoUrl: string | null;
+    businessId: string;
+    businesses: BusinessOption[];
     userName: string;
     userEmail: string;
     isPlatformAdmin?: boolean;
@@ -22,6 +34,8 @@ export default function DashboardHeader({
     menuOpen,
     businessName,
     businessLogoUrl,
+    businessId,
+    businesses,
     userName,
     userEmail,
     isPlatformAdmin = false,
@@ -33,6 +47,29 @@ export default function DashboardHeader({
     const accountPanelId = useId();
     const pathname = usePathname();
     const [hasUnread, setHasUnread] = useState(false);
+    const [switchingId, setSwitchingId] = useState<string | null>(null);
+    const [failedSwitchId, setFailedSwitchId] = useState<string | null>(null);
+    const canSwitchBusiness = businesses.length > 1;
+
+    async function switchBusiness(id: string) {
+        if (id === businessId || switchingId) return;
+        setSwitchingId(id);
+        setFailedSwitchId(null);
+        try {
+            const response = await fetch("/api/business/switch", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ businessId: id }),
+            });
+            if (!response.ok) throw new Error("Business switch failed");
+            // A full load drops every client cache of the previous business.
+            window.location.assign("/dashboard");
+        } catch {
+            setSwitchingId(null);
+            setFailedSwitchId(id);
+        }
+    }
 
     // Checked on page change and when the tab becomes visible again: no polling interval.
     useEffect(() => {
@@ -100,6 +137,11 @@ export default function DashboardHeader({
         },
         ...(isPlatformAdmin ? [{ label: "ადმინ პანელი", icon: "solar:shield-user-bold-duotone", href: "/admin" }] : []),
     ];
+    const panelHeight =
+        216 +
+        (isPlatformAdmin ? 48 : 0) +
+        (canSwitchBusiness ? 41 + Math.min(businesses.length, VISIBLE_BUSINESS_ROWS) * 48 : 0);
+
     return (
         <header className="dashboard-safe-header sticky top-0 z-40 flex h-16 items-center justify-between border-b border-white/10 bg-[#0A244B] px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
@@ -123,6 +165,8 @@ export default function DashboardHeader({
             </div>
 
             <div className="flex items-center gap-2">
+                <AiHeaderButton />
+
                 <Link
                     href="/dashboard/notifications"
                     prefetch={false}
@@ -154,7 +198,6 @@ export default function DashboardHeader({
                     <div
                         className={[
                             "absolute right-0 top-0 z-0 overflow-hidden rounded-2xl ring-1 ring-inset ring-white/10",
-                            isPlatformAdmin ? "[--account-panel-height:264px]" : "[--account-panel-height:216px]",
                             "transition-[width,height,background-color,box-shadow]",
                             "duration-[550ms] ease-in-out",
                             "motion-reduce:transition-none",
@@ -165,9 +208,7 @@ export default function DashboardHeader({
                             width: accountOpen
                                 ? "max(100%, min(320px, calc(100vw - 2rem)))"
                                 : "100%",
-                            height: accountOpen
-                                ? "var(--account-panel-height)"
-                                : 48,
+                            height: accountOpen ? panelHeight : 48,
                         }}
                     >
                         <div
@@ -203,6 +244,71 @@ export default function DashboardHeader({
                                 accountOpen ? "" : "pointer-events-none",
                             ].join(" ")}
                         >
+                            {canSwitchBusiness && (
+                                <div className="border-b border-white/15 pb-2">
+                                    <p className="flex h-8 items-end px-2.5 pb-1 text-xs font-medium text-slate-400">
+                                        ბიზნესის შეცვლა
+                                    </p>
+
+                                    <div
+                                        className="overflow-y-auto overscroll-contain"
+                                        style={{ maxHeight: VISIBLE_BUSINESS_ROWS * 48 }}
+                                    >
+                                        {businesses.map((business) => {
+                                            const active = business.id === businessId;
+                                            const switching = business.id === switchingId;
+                                            const failed = business.id === failedSwitchId;
+
+                                            return (
+                                                <button
+                                                    key={business.id}
+                                                    type="button"
+                                                    disabled={active || switchingId !== null}
+                                                    aria-current={active ? "true" : undefined}
+                                                    onClick={() => switchBusiness(business.id)}
+                                                    className={[
+                                                        "flex h-12 w-full items-center gap-3 rounded-xl px-2.5 text-left text-sm font-medium transition-colors",
+                                                        "focus-visible:bg-white/10 focus-visible:outline-2 focus-visible:outline-accent",
+                                                        active
+                                                            ? "cursor-default text-white"
+                                                            : "text-slate-200 hover:bg-white/10 hover:text-white disabled:cursor-wait",
+                                                    ].join(" ")}
+                                                >
+                                                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg ${business.logoUrl ? "bg-white" : "bg-white/10"}`}>
+                                                        {business.logoUrl ? (
+                                                            <Image
+                                                                src={business.logoUrl}
+                                                                alt=""
+                                                                width={28}
+                                                                height={28}
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <Icon
+                                                                icon="solar:buildings-2-bold-duotone"
+                                                                className="h-4 w-4 text-slate-300"
+                                                                aria-hidden="true"
+                                                            />
+                                                        )}
+                                                    </span>
+
+                                                    <span className="min-w-0 flex-1 truncate">{business.name}</span>
+
+                                                    {active && (
+                                                        <Icon icon="solar:check-circle-bold" className="h-5 w-5 shrink-0 text-accent" aria-label="მიმდინარე ბიზნესი" />
+                                                    )}
+                                                    {switching && (
+                                                        <Icon icon="solar:refresh-circle-bold" className="h-5 w-5 shrink-0 animate-spin text-slate-300" aria-label="გადართვა..." />
+                                                    )}
+                                                    {failed && (
+                                                        <Icon icon="solar:danger-circle-bold" className="h-5 w-5 shrink-0 text-danger" aria-label="გადართვა ვერ მოხერხდა, სცადე ხელახლა" />
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
 
                             {accountItems.map((item, index) => (
                                 <button

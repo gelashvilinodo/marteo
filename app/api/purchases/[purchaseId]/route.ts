@@ -15,6 +15,7 @@ import {
 } from "@/lib/purchases/read-purchase-form";
 import { ProductImageError } from "@/lib/purchases/product-images";
 import { assertPurchaseEditable } from "@/lib/purchases/assert-purchase-editable";
+import { findActiveMembership } from "@/lib/auth/active-business";
 
 function errorResponse(message: string, status: number) {
     return NextResponse.json(
@@ -69,11 +70,7 @@ export async function GET(
 
         prisma = createPrismaClient();
 
-        const membership = await prisma.businessMembership.findFirst({
-            where: { userId: user.id },
-            orderBy: { createdAt: "asc" },
-            select: { businessId: true },
-        });
+        const membership = await findActiveMembership(prisma, user.id);
 
         if (!membership) {
             return errorResponse(

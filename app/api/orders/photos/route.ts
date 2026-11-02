@@ -3,6 +3,7 @@ import { createPrismaClient } from "@/lib/prisma";
 import { orderJson, orderError } from "@/lib/orders/order-http";
 import { OrderValidationError } from "@/lib/orders/validate-order";
 import { ProductImageError, uploadProductImage } from "@/lib/purchases/product-images";
+import { findActiveMembership } from "@/lib/auth/active-business";
 
 export async function POST(request: Request) {
     try {
@@ -14,11 +15,7 @@ export async function POST(request: Request) {
         const prisma = createPrismaClient();
         let businessId: string;
         try {
-            const membership = await prisma.businessMembership.findFirst({
-                where: { userId: user.id },
-                orderBy: [{ createdAt: "asc" }, { businessId: "asc" }],
-                select: { businessId: true },
-            });
+            const membership = await findActiveMembership(prisma, user.id);
             if (!membership) throw new OrderValidationError("ბიზნესი ვერ მოიძებნა.", 403);
             businessId = membership.businessId;
         } finally {

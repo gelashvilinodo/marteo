@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import PurchasesListSkeleton from "./PurchasesListSkeleton";
 import type { PurchasesSnapshot } from "@/lib/purchases/get-purchases-snapshot";
 import { PURCHASES_CHANGED } from "@/lib/purchases/refresh-purchases-client";
+import PurchasePlanSection from "./PurchasePlanSection";
 import NewPurchasePanel from "./NewPurchasePanel";
 import PurchaseProducts from "./PurchaseProducts";
 import PurchaseFiltersDisclosure from "./PurchaseFiltersDisclosure";
@@ -112,6 +113,8 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
             </div>
           </div>
         </div>
+
+        {!isArchive && <PurchasePlanSection inventoryOptions={inventoryOptions} />}
 
         <PurchaseFiltersDisclosure
           key={`${query}|${from}|${to}|${filterError}`}

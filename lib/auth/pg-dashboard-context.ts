@@ -4,6 +4,7 @@ import { createHash } from "crypto";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { createPgReader } from "@/lib/database/pg-reader";
+import { ACTIVE_BUSINESS_COOKIE } from "./active-business";
 
 type Row = {
     expiresAt: Date; status: string; id: string; email: string;
@@ -13,8 +14,10 @@ type Row = {
 
 // React cache deduplicates only within this render/request, never across users.
 export const getPgDashboardContext = cache(async () => {
-    const token = (await cookies()).get("marteo_session")?.value;
+    const cookieStore = await cookies();
+    const token = cookieStore.get("marteo_session")?.value;
     if (!token) return null;
+    const preferred = cookieStore.get(ACTIVE_BUSINESS_COOKIE)?.value ?? "";
     const tokenHash = createHash("sha256").update(token).digest("hex");
     const client = createPgReader();
     try {
@@ -25,7 +28,8 @@ export const getPgDashboardContext = cache(async () => {
             FROM "Session" s JOIN "User" u ON u.id = s."userId"
             LEFT JOIN LATERAL (
                 SELECT "businessId" FROM "BusinessMembership"
-                WHERE "userId" = u.id ORDER BY "createdAt" ASC LIMIT 1
+                WHERE "userId" = u.id
+                ORDER BY ("businessId" = ${preferred}) DESC, "createdAt" ASC, "businessId" ASC LIMIT 1
             ) m ON true
             LEFT JOIN "Business" b ON b.id = m."businessId"
             WHERE s."tokenHash" = ${tokenHash} LIMIT 1

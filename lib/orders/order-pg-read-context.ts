@@ -1,6 +1,7 @@
 import { createHash } from "crypto";
 import { cookies } from "next/headers";
 import { createPgReader } from "@/lib/database/pg-reader";
+import { ACTIVE_BUSINESS_COOKIE } from "@/lib/auth/active-business";
 import { orderJson, orderError } from "./order-http";
 
 type SessionRow = { expiresAt: Date; status: string; businessId: string | null };
@@ -10,7 +11,9 @@ export async function withOrderPgReadContext(
 ) {
     let client: ReturnType<typeof createPgReader> | undefined;
     try {
-        const token = (await cookies()).get("marteo_session")?.value;
+        const cookieStore = await cookies();
+        const token = cookieStore.get("marteo_session")?.value;
+        const preferred = cookieStore.get(ACTIVE_BUSINESS_COOKIE)?.value ?? "";
         if (!token) return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
         const tokenHash = createHash("sha256").update(token).digest("hex");
         client = createPgReader();
@@ -19,7 +22,8 @@ export async function withOrderPgReadContext(
             FROM "Session" s JOIN "User" u ON u.id = s."userId"
             LEFT JOIN LATERAL (
                 SELECT "businessId" FROM "BusinessMembership"
-                WHERE "userId" = u.id ORDER BY "createdAt" ASC LIMIT 1
+                WHERE "userId" = u.id
+                ORDER BY ("businessId" = ${preferred}) DESC, "createdAt" ASC, "businessId" ASC LIMIT 1
             ) m ON true WHERE s."tokenHash" = ${tokenHash} LIMIT 1
         `;
         if (!session) return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);

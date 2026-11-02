@@ -9,6 +9,7 @@ import { useBusinessMode } from "@/components/dashboard/business/BusinessModeCon
 import { hasBusinessFeature } from "@/lib/business/business-mode";
 import { useAiAssistant, type AiAttachment, type AiMessage, type AiPurchaseTarget } from "./AiAssistantProvider";
 import AiPurchaseDraftCard from "./AiPurchaseDraftCard";
+import AiCards from "./AiCards";
 import { useKeyboardViewport } from "@/components/support/useKeyboardViewport";
 
 const ACCEPTED_EXTENSIONS = [".numbers", ".xlsx", ".csv"];
@@ -45,6 +46,18 @@ function getQuickActions(manufacturing: boolean): QuickAction[] {
             prompt: manufacturing
                 ? "რომელი პროდუქტი ან მასალა მთავრდება მარაგში?"
                 : "რომელი პროდუქტი მთავრდება მარაგში?",
+        },
+        {
+            label: "რჩევები",
+            hint: "რა შევიძინო, რა გაჩერდა",
+            icon: "solar:lightbulb-bolt-bold-duotone",
+            prompt: "მომეცი რჩევები ჩემი ბიზნესისთვის.",
+        },
+        {
+            label: "რა შევიძინო?",
+            hint: "შემდეგი პარტიისთვის",
+            icon: "solar:cart-plus-bold-duotone",
+            prompt: "რა უნდა შევიძინო შემდეგ პარტიაში და რამდენი?",
         },
         {
             label: "ტოპ 5 პროდუქტი",
@@ -143,7 +156,7 @@ function subscribeDesktop(onChange: () => void) {
 }
 
 export default function AiAssistantPanel({ userName }: { userName: string }) {
-    const { open, unread, pending, draft, messages, openPanel, collapse, reset, setDraft, send } = useAiAssistant();
+    const { open, unread, pending, draft, messages, openPanel, collapse, reset, setDraft, send, updateMessage } = useAiAssistant();
     const mode = useBusinessMode();
     const manufacturing = hasBusinessFeature(mode, "manufacturing");
     const [file, setFile] = useState<File | null>(null);
@@ -247,7 +260,8 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
         if (!open) return;
 
         function onKeyDown(event: KeyboardEvent) {
-            if (event.key === "Escape" && !event.defaultPrevented) collapse();
+            // ბარათიდან გახსნილი ფანჯარა Escape-ით თვითონ იხურება; ჩატი რჩება.
+            if (event.key === "Escape" && !event.defaultPrevented && !document.querySelector("dialog[open]")) collapse();
         }
 
         document.addEventListener("keydown", onKeyDown);
@@ -319,14 +333,12 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
                 {messages.length === 0 ? (
                     <div className="flex min-h-full flex-col justify-end">
                         <div className="mb-5">
-                            <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                                <Icon icon="solar:stars-minimalistic-bold-duotone" className="h-6 w-6" aria-hidden="true" />
-                            </div>
+                            <Image src="/images/marteoAI.svg" alt="" width={40} height={40} className="mb-3 h-10 w-10 rounded-xl ring-1 ring-border" />
                             <p className="text-lg font-semibold text-text-primary">
                                 გამარჯობა{userName ? `, ${userName}` : ""}!
                             </p>
                             <p className="mt-1 text-sm text-text-secondary">
-                                მკითხე მოგებაზე, შეკვეთებზე ან მარაგზე, ან ატვირთე შესყიდვის ფაილი.
+                                მკითხე მოგებაზე, შეკვეთებზე, მარაგზე ან მომხმარებლებზე, ან ატვირთე შესყიდვის ფაილი.
                             </p>
                         </div>
 
@@ -380,6 +392,13 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
 
                                 {message.draft && <AiPurchaseDraftCard message={{ ...message, draft: message.draft }} />}
 
+                                {message.cards && (
+                                    <AiCards
+                                        groups={message.cards}
+                                        onChange={(cards) => updateMessage(message.id, { cards })}
+                                    />
+                                )}
+
                                 {message.link && (
                                     <Link
                                         href={message.link.href}
@@ -415,7 +434,7 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
                     event.preventDefault();
                     submit();
                 }}
-                className={`shrink-0 border-t border-border p-3 ${!desktop && !keyboard.open ? "pb-[max(0.75rem,env(safe-area-inset-bottom))]" : ""}`}
+                className={`shrink-0 border-t border-border px-3 pt-3 ${desktop ? "pb-3" : keyboard.open ? "pb-1.5" : "pb-[max(0.75rem,env(safe-area-inset-bottom))]"}`}
             >
                 {(attachment || fileError) && (
                     <div className="mb-2 flex flex-col items-start gap-1">
@@ -527,7 +546,7 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
 
     const title = (
         <>
-            <Image src="/icon.svg" alt="" width={22} height={22} className="h-[22px] w-[22px] rounded-md" />
+            <Image src="/images/marteoAI.svg" alt="" width={22} height={22} className="h-[22px] w-[22px] rounded-md" />
             <span className="truncate text-sm font-semibold text-white">მართეო AI</span>
             {unread && <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-danger" />}
             {pending && !open && (
@@ -573,16 +592,15 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
         );
     }
 
-    // ტელეფონი: მრგვალი ღილაკი ქვედა კუთხეში იზრდება მთელ ეკრანზე (ჰედერის ქვემოთ),
-    // ისევე როგორც პროფილის ჩამოსაშლელი ჰედერში. ღია კლავიატურისას ფანჯარა
-    // ხილულ არეს ეკვრის, ასე რომ ჰედერიც და ველიც ყოველთვის ჩანს.
-    const hidden = !open && pathname.startsWith("/dashboard/help");
-    const fullHeight = "calc(100dvh - 4rem - env(safe-area-inset-top))";
-    const box: React.CSSProperties = keyboard.open && open
-        ? { top: keyboard.top, bottom: "auto", right: 0, width: "100vw", height: keyboard.height, borderRadius: 0, zIndex: 60, transition: "none" }
-        : open
-            ? { right: 0, bottom: 0, width: "100vw", height: fullHeight, borderRadius: 0 }
-            : { right: 16, bottom: "calc(1rem + env(safe-area-inset-bottom))", width: 56, height: 56, borderRadius: 16 };
+    // ტელეფონი: ღილაკი ჰედერშია (AiHeaderButton), ფანჯარა კი ჰედერის ქვემოთ
+    // მთელ ეკრანზე იშლება. ღია კლავიატურისას ფანჯარა ხილულ არეს ეკვრის,
+    // ასე რომ სათაურიც და ველიც ყოველთვის ჩანს.
+    const typing = keyboard.open && open;
+    const box: React.CSSProperties = typing
+        // ჩრდილი თეთრ ფონს ქვემოთ აგრძელებს, რომ iOS-ის ^ ˅ ✓ ზოლის მიღმა
+        // დეშბორდი არ გამოჩნდეს და ველი კლავიატურაზე მიკრული ჩანდეს.
+        ? { top: keyboard.top, height: keyboard.height, zIndex: 60, boxShadow: "0 10rem 0 0 var(--marteo-surface)" }
+        : { top: "calc(4rem + env(safe-area-inset-top))", height: "calc(100dvh - 4rem - env(safe-area-inset-top))" };
 
     return (
         <aside
@@ -590,53 +608,29 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
             ref={panelRef}
             id="marteo-ai-panel"
             aria-label="მართეო AI"
+            inert={!open}
+            aria-hidden={!open}
             className={[
-                "fixed z-30 overflow-hidden bg-[#0A244B] ring-1 ring-inset ring-white/10",
-                "transition-[width,height,right,bottom,border-radius,box-shadow] duration-[550ms] ease-in-out motion-reduce:transition-none",
-                open ? "" : "shadow-xl shadow-[#0A244B]/30",
-                hidden ? "hidden" : "",
+                "fixed inset-x-0 z-30 flex w-screen origin-top flex-col overflow-hidden bg-[#0A244B]",
+                "transition-[opacity,transform,visibility] duration-300 ease-out motion-reduce:transition-none",
+                open ? "visible translate-y-0 opacity-100" : "pointer-events-none invisible -translate-y-3 opacity-0",
             ].join(" ")}
             style={box}
         >
-            {/* ჩაკეცილი: მხოლოდ ღილაკი */}
-            <button
-                type="button"
-                onClick={openPanel}
-                tabIndex={open ? -1 : 0}
-                aria-hidden={open}
-                aria-label={unread ? "მართეო AI (ახალი პასუხი)" : "მართეო AI"}
-                className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${open ? "pointer-events-none opacity-0" : "opacity-100 delay-300"}`}
+            <header
+                className="flex shrink-0 items-center justify-between gap-2 bg-[#0A244B] px-3 pb-2"
+                style={{
+                    paddingTop: typing
+                        ? `max(0.5rem, calc(env(safe-area-inset-top) - ${keyboard.top}px + 0.5rem))`
+                        : "0.5rem",
+                }}
             >
-                <Icon icon="solar:stars-minimalistic-bold-duotone" className="h-7 w-7 text-accent" aria-hidden="true" />
-                {unread && <span aria-hidden="true" className="absolute right-2.5 top-2.5 h-2.5 w-2.5 rounded-full bg-danger ring-2 ring-[#0A244B]" />}
-                {pending && !open && (
-                    <span aria-hidden="true" className="absolute inset-1.5 animate-spin rounded-xl border-2 border-accent/60 border-t-transparent motion-reduce:animate-none" />
-                )}
-            </button>
+                <div className="flex min-w-0 items-center gap-2">{title}</div>
+                {headerActions}
+            </header>
 
-            {/* სრული ფანჯარა საბოლოო ზომისაა და იზრდებოდა ყუთთან ერთად ჩნდება. */}
-            <div
-                id="marteo-ai-body"
-                inert={!open}
-                aria-hidden={!open}
-                className={`absolute right-0 bottom-0 flex w-screen flex-col transition-opacity duration-300 ${open ? "opacity-100 delay-150" : "pointer-events-none opacity-0"}`}
-                style={{ height: keyboard.open && open ? keyboard.height : fullHeight }}
-            >
-                <header
-                    className="flex shrink-0 items-center justify-between gap-2 bg-[#0A244B] px-3 pb-2"
-                    style={{
-                        paddingTop: keyboard.open && open
-                            ? `max(0.5rem, calc(env(safe-area-inset-top) - ${keyboard.top}px + 0.5rem))`
-                            : "0.5rem",
-                    }}
-                >
-                    <div className="flex min-w-0 items-center gap-2">{title}</div>
-                    {headerActions}
-                </header>
-
-                <div className="flex min-h-0 flex-1 flex-col bg-surface">
-                    {conversation}
-                </div>
+            <div id="marteo-ai-body" className="flex min-h-0 flex-1 flex-col bg-surface">
+                {conversation}
             </div>
         </aside>
     );

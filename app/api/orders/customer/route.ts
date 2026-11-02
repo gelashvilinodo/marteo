@@ -6,6 +6,7 @@ import {
     normalizeCustomerPhone,
     OrderValidationError,
 } from "@/lib/orders/validate-order";
+import { findActiveMembership } from "@/lib/auth/active-business";
 
 function json(data: unknown, status = 200) {
     return Response.json(data, {
@@ -48,11 +49,7 @@ export async function GET(request: Request) {
         prisma = createPrismaClient();
 
         const membership =
-            await prisma.businessMembership.findFirst({
-                where: { userId: user.id },
-                orderBy: { createdAt: "asc" },
-                select: { businessId: true },
-            });
+            await findActiveMembership(prisma, user.id);
 
         if (!membership) {
             return json(

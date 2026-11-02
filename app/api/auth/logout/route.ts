@@ -4,6 +4,7 @@ import { createHash } from "crypto";
 import { cookies } from "next/headers";
 
 import { createPrismaClient } from "@/lib/prisma";
+import { ACTIVE_BUSINESS_COOKIE } from "@/lib/auth/active-business";
 
 function hashSessionToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -35,6 +36,7 @@ async function post() {
     );
 
     response.cookies.delete("marteo_session");
+    response.cookies.delete(ACTIVE_BUSINESS_COOKIE);
 
     return response;
   } catch (error) {

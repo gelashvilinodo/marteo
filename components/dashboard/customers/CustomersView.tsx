@@ -13,6 +13,7 @@ import InventoryFiltersDisclosure from "@/components/dashboard/inventory/Invento
 import CustomersPeriodSelect from "./CustomersPeriodSelect";
 import CustomerForm from "./CustomerForm";
 import CustomerDeleteButton from "./CustomerDeleteButton";
+import CustomerDetails, { formatDate } from "./CustomerDetails";
 import { createPortal } from "react-dom";
 import CustomersListSkeleton from "./CustomersListSkeleton";
 
@@ -47,23 +48,6 @@ const filters = [
         "text-accent",
     ],
 ] as const;
-
-function formatDate(value: string | null) {
-    if (!value) return "-";
-
-    const timestamp = Date.parse(value);
-
-    if (Number.isNaN(timestamp)) return "-";
-
-    // თარიღი თბილისის დროით — სერვერსა და ბრაუზერში ერთნაირად.
-    const tbilisiDate = new Date(timestamp + 4 * 60 * 60 * 1000);
-
-    const day = String(tbilisiDate.getUTCDate()).padStart(2, "0");
-    const month = String(tbilisiDate.getUTCMonth() + 1).padStart(2, "0");
-    const year = tbilisiDate.getUTCFullYear();
-
-    return `${day}.${month}.${year}`;
-}
 
 export default function CustomersView({
     data: initialData,
@@ -589,84 +573,15 @@ export default function CustomersView({
                 }
             >
                 {selected && (
-                    <>
-                        <div className="flex items-center justify-between gap-3">
-                            <h2 className="font-semibold">
-                                მომხმარებლის ინფორმაცია
-                            </h2>
-
-                            <button
-                                type="button"
-                                onClick={() => dialogRef.current?.close()}
-                                aria-label="დახურვა"
-                                className={
-                                    "flex h-10 w-10 items-center " +
-                                    "justify-center rounded-xl " +
-                                    "border border-border"
-                                }
-                            >
-                                <Icon
-                                    icon="solar:close-circle-linear"
-                                    className="h-6 w-6"
-                                />
-                            </button>
-                        </div>
-
-                        <dl className="mt-4 space-y-3 text-sm">
-                            {[
-                                ["სახელი", selected.firstName],
-                                ["გვარი", selected.lastName],
-                                ["ტელეფონი", selected.phone],
-                                ["მისამართი", selected.address],
-                                [
-                                    "დასრულებული შეკვეთები",
-                                    String(selected.completedOrders),
-                                ],
-                                [
-                                    "ბოლო დასრულებული",
-                                    formatDate(selected.lastOrderAt),
-                                ],
-                            ].map(([label, value]) => (
-                                <div key={label}>
-                                    <dt className="text-xs text-text-secondary">
-                                        {label}
-                                    </dt>
-                                    <dd className="mt-1 break-words">
-                                        {value || "-"}
-                                    </dd>
-                                </div>
-                            ))}
-                        </dl>
-                        <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-border pt-4">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const customer = selected;
-
-                                    dialogRef.current?.close();
-                                    setFormCustomer(customer);
-                                }}
-                                className={
-                                    "inline-flex items-center gap-2 rounded-xl " +
-                                    "border border-border px-4 py-3 text-sm " +
-                                    "transition hover:border-accent hover:text-accent"
-                                }
-                            >
-                                <Icon
-                                    icon="solar:pen-linear"
-                                    className="h-5 w-5"
-                                />
-
-                                რედაქტირება
-                            </button>
-                            <CustomerDeleteButton
-                                key={selected.id}
-                                ids={[selected.id]}
-                                onDeleted={() => dialogRef.current?.close()}
-                                onSuccess={(message) => setNotice({ message })}
-                            />
-                        </div>
-                    </>
+                    <CustomerDetails
+                        customer={selected}
+                        onClose={() => dialogRef.current?.close()}
+                        onEdit={(customer) => {
+                            dialogRef.current?.close();
+                            setFormCustomer(customer);
+                        }}
+                        onSuccess={(message) => setNotice({ message })}
+                    />
                 )}
             </dialog>
             {

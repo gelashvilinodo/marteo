@@ -57,6 +57,9 @@ export async function getInventoryPage(
         // strpos treats %, _ and backslashes as literal search characters.
         conditions.push(Prisma.sql`strpos(b.searchable, ${word}) > 0`);
     }
+    // AI-ის ბარათებისთვის კონკრეტული ვარიანტები (მხოლოდ ამავე ბიზნესის).
+    const ids = Array.isArray(params.ids) ? params.ids.filter((id) => typeof id === "string").slice(0, 100) : [];
+    if (ids.length) conditions.push(Prisma.sql`b.id = ANY(${ids}::text[])`);
     const where = conditions.length ? Prisma.join(conditions, " AND ") : Prisma.sql`TRUE`;
     const nameOrder = Prisma.sql`lower(normalize(trim(b.name), NFKC)) COLLATE "C"`;
     const quantity = filter === "defective" ? Prisma.sql`b."defectiveStock"` : Prisma.sql`b."goodStock"`;

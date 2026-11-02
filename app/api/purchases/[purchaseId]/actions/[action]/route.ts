@@ -11,6 +11,7 @@ import { PurchaseEditError } from "@/lib/purchases/lock-purchase-for-edit";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
 import { getPurchaseDeleteImpact } from "@/lib/purchases/get-purchase-delete-impact";
+import { findActiveMembership } from "@/lib/auth/active-business";
 
 function errorResponse(message: string, status: number) {
     return NextResponse.json(
@@ -170,11 +171,7 @@ export async function GET(
 
         prisma = createPrismaClient();
 
-        const membership = await prisma.businessMembership.findFirst({
-            where: { userId: user.id },
-            orderBy: { createdAt: "asc" },
-            select: { businessId: true },
-        });
+        const membership = await findActiveMembership(prisma, user.id);
 
         if (!membership) {
             return errorResponse("ბიზნესზე წვდომა ვერ მოიძებნა.", 403);
