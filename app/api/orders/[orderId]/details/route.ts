@@ -1,3 +1,4 @@
+import { costSafeJson } from "@/lib/business/redact-costs";
 import { apiAccessDenied } from "@/lib/business/access";
 import { getOrderRecords } from "@/lib/orders/get-order-records";
 import { serializeOrderRecord } from "@/lib/orders/serialize-order-record";
@@ -10,6 +11,6 @@ export async function GET(_request: Request, context: { params: Promise<{ orderI
         const { orderId } = await context.params;
         const [record] = await getOrderRecords(client, businessId, [orderId], true);
         if (!record) return orderJson({ success: false, message: "შეკვეთა ვერ მოიძებნა." }, 404);
-        return orderJson({ success: true, order: serializeOrderRecord(record, true) });
+        return costSafeJson({ success: true, order: serializeOrderRecord(record, true) });
     });
 }

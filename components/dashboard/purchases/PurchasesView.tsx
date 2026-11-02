@@ -1,4 +1,5 @@
 "use client";
+import { useBusinessAccess } from "@/components/dashboard/business/BusinessAccessContext";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import PurchasesListSkeleton from "./PurchasesListSkeleton";
@@ -19,6 +20,7 @@ function displayMoney(value: string) {
   return `${integer.replace(/\B(?=(\d{3})+(?!\d))/g, " ")}.${decimal} ₾`;
 }
 export default function PurchasesView({ initialSnapshot }: { initialSnapshot: PurchasesSnapshot }) {
+  const canEditPurchases = useBusinessAccess().can("PURCHASES", "edit");
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [previous, setPrevious] = useState(initialSnapshot);
   const [refreshing, setRefreshing] = useState(false);
@@ -104,6 +106,7 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
           </h1>
 
           <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+            {canEditPurchases && (
             <div className="order-1 min-w-0 sm:order-2">
               <NewPurchasePanel
                 inventoryOptions={inventoryOptions}
@@ -111,6 +114,7 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
                 countryOptions={countryOptions}
               />
             </div>
+            )}
           </div>
         </div>
 
@@ -343,7 +347,7 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
                     </div>
 
                     <div className="flex shrink-0 items-center gap-1">
-                      {purchase.archivedAt === null ? (
+                      {!canEditPurchases ? null : purchase.archivedAt === null ? (
                         <NewPurchasePanel
                           editPurchaseId={purchase.id}
                           inventoryOptions={inventoryOptions}

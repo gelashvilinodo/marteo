@@ -1,3 +1,4 @@
+import { hideCostsIfNeeded } from "@/lib/business/redact-costs";
 import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
@@ -8,5 +9,5 @@ export default async function MaterialInventoryPage({searchParams}:{searchParams
     await requireDashboardSection("/dashboard/material-inventory");
     if(!await getCurrentUser())redirect('/login');
     const member=await getCurrentBusiness();if(!member)redirect('/business/onboarding');
-    return <MaterialInventoryView data={await getMaterialInventoryPage(member.businessId,await searchParams)}/>;
+    return <MaterialInventoryView data={await hideCostsIfNeeded(await getMaterialInventoryPage(member.businessId,await searchParams))}/>;
 }

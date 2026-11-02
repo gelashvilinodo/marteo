@@ -1,4 +1,5 @@
 "use client";
+import { useBusinessAccess } from "@/components/dashboard/business/BusinessAccessContext";
 
 import { Icon } from "@iconify/react";
 import { useNewOrder } from "./NewOrderProvider";
@@ -9,6 +10,8 @@ export default function NewOrderButton({
     className?: string;
 }) {
     const { openNewOrder } = useNewOrder();
+    const { can } = useBusinessAccess();
+    if (!can("ORDERS", "edit")) return null;
 
     return (
         <button

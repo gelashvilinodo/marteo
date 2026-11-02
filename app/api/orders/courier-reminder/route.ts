@@ -1,3 +1,4 @@
+import { costSafeJson } from "@/lib/business/redact-costs";
 import { apiAccessDenied } from "@/lib/business/access";
 import { cookies } from "next/headers";
 import { readCourierReminder } from "@/lib/orders/read-courier-reminder";
@@ -124,7 +125,7 @@ export async function GET() {
     const accessDenied = await apiAccessDenied(["ORDERS", "FINANCE"], "view"); if (accessDenied) return accessDenied;
     try {
         const token = (await cookies()).get("marteo_session")?.value;
-        return json({ success: true, ...await readCourierReminder(token) });
+        return costSafeJson({ success: true, ...await readCourierReminder(token) });
     } catch (cause: unknown) {
         return failure(cause);
     }
@@ -157,8 +158,7 @@ export async function POST(request: Request) {
                 },
             );
 
-            return json({
-                success: true,
+            return costSafeJson({ success: true,
                 ...result,
             });
         } finally {

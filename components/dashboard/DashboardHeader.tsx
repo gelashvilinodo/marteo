@@ -177,7 +177,7 @@ export default function DashboardHeader({
             </div>
 
             <div className="flex items-center gap-2">
-                <AiHeaderButton />
+                {isOwner && <AiHeaderButton />}
 
                 <Link
                     href="/dashboard/notifications"

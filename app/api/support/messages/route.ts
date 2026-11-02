@@ -17,7 +17,7 @@ async function currentMember() {
 }
 
 export async function GET() {
-    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("MEMBER", "edit"); if (accessDenied) return accessDenied;
     const member = await currentMember();
     if (!member) return supportUnauthorized();
     const prisma = createPrismaClient();
@@ -29,7 +29,7 @@ export async function GET() {
 }
 
 async function post(request: Request) {
-    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("MEMBER", "edit"); if (accessDenied) return accessDenied;
     const member = await currentMember();
     if (!member) return supportUnauthorized();
     const text = await request.json().then(readSupportText).catch(supportFailure);

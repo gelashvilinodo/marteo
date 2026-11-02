@@ -1,3 +1,4 @@
+import { hideCostsIfNeeded } from "@/lib/business/redact-costs";
 import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -21,7 +22,7 @@ export default async function OrdersPage({ searchParams }: {
     const client = createPgReader();
     try {
         const data = await getOrdersPgPage(client, membership.businessId, await searchParams);
-        return <OrdersView data={data} />;
+        return <OrdersView data={await hideCostsIfNeeded(data)} />;
     } finally {
         await client.$disconnect();
     }

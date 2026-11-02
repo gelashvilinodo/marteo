@@ -103,6 +103,8 @@ export function serializeOrderRecord(order: OrderRecord, details: boolean) {
             ),
         createdAt:
             order.createdAt.toISOString(),
+        // ვინ გააფორმა შეკვეთა; ძველ და იმპორტირებულ შეკვეთებზე უცნობია.
+        createdByName: order.createdByName ?? null,
         updatedAt:
             order.updatedAt.toISOString(),
         printState: order.lastPrintedInvoiceVersion === null ? "NEW" as const : order.lastPrintedInvoiceVersion === order.invoiceVersion ? "PRINTED" as const : "UPDATED" as const,

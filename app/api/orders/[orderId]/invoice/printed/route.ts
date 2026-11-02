@@ -1,3 +1,4 @@
+import { costSafeJson } from "@/lib/business/redact-costs";
 import { apiAccessDenied } from "@/lib/business/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
@@ -39,7 +40,7 @@ export async function POST(request: Request, context: { params: Promise<{ orderI
                 ? "ინვოისი შეიცვალა. განაახლე გვერდი და დაბეჭდე ახალი ვერსია."
                 : "შეკვეთა ვერ მოიძებნა." }, order ? 409 : 404);
         }
-        return json({ success: true, printedAt: printedAt.toISOString(), version });
+        return costSafeJson({ success: true, printedAt: printedAt.toISOString(), version });
     } catch (cause: unknown) {
         console.error("Invoice print confirmation failed", cause instanceof Error ? cause.name : "UnknownError");
         return json({ success: false, message: "დაბეჭდვის მონიშვნა ვერ მოხერხდა. სცადე ხელახლა." }, 500);

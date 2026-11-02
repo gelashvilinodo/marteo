@@ -1,3 +1,4 @@
+import { costSafeJson } from "@/lib/business/redact-costs";
 import { apiAccessDenied } from "@/lib/business/access";
 import {
     mutateOrder,
@@ -25,8 +26,7 @@ export async function POST(
             body,
         );
 
-        return orderJson({
-            success: true,
+        return costSafeJson({ success: true,
             order,
         });
     } catch (cause: unknown) {

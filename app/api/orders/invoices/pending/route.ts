@@ -1,3 +1,4 @@
+import { costSafeJson } from "@/lib/business/redact-costs";
 import { apiAccessDenied } from "@/lib/business/access";
 import { sql, empty } from "@prisma/client-runtime-utils";
 import { cookies } from "next/headers";
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
             `);
             const entries = rows.slice(0, 50);
             const last = entries.at(-1);
-            return orderJson({ success: true, ids: entries.map(entry => entry.id), snapshot: snapshot.toISOString(),
+            return costSafeJson({ success: true, ids: entries.map(entry => entry.id), snapshot: snapshot.toISOString(),
                 cursor: rows.length > 50 && last ? JSON.stringify({ id: last.id, createdAt: last.createdAt.toISOString() }) : null });
         });
     } catch (cause: unknown) { return orderError(cause); }

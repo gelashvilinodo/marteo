@@ -1,3 +1,4 @@
+import { costSafeJson } from "@/lib/business/redact-costs";
 import { apiAccessDenied } from "@/lib/business/access";
 import { getOrder } from "@/lib/orders/get-order";
 import { mutateOrder } from "@/lib/orders/order-mutations";
@@ -8,7 +9,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ order
     try {
         const body = await readOrderBody(request);
         const { orderId } = await context.params;
-        return orderJson({ success: true, order: await mutateOrder(orderId, "edit", body) });
+        return costSafeJson({ success: true, order: await mutateOrder(orderId, "edit", body) });
     } catch (cause: unknown) { return orderError(cause); }
 }
 
@@ -17,12 +18,12 @@ export async function DELETE(request: Request, context: { params: Promise<{ orde
     try {
         const body = await readOrderBody(request);
         const { orderId } = await context.params;
-        return orderJson({ success: true, order: await mutateOrder(orderId, "delete", body) });
+        return costSafeJson({ success: true, order: await mutateOrder(orderId, "delete", body) });
     } catch (cause: unknown) { return orderError(cause); }
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ orderId: string }> }) {
     const accessDenied = await apiAccessDenied("ORDERS", "view"); if (accessDenied) return accessDenied;
-    try { const { orderId } = await context.params; return orderJson({ success: true, order: await getOrder(orderId) }); }
+    try { const { orderId } = await context.params; return costSafeJson({ success: true, order: await getOrder(orderId) }); }
     catch (cause: unknown) { return orderError(cause); }
 }

@@ -35,7 +35,8 @@ export function orderEditDraft(order: Order): OrderFormDraft {
             condition: item.condition,
             quantity: String(item.quantity),
             unitPrice: item.unitPrice,
-            unitCost: item.unitCost,
+            // თანამშრომელს, რომელიც თვითღირებულებას ვერ ხედავს, აქ null მოდის.
+            unitCost: item.unitCost ?? "",
         })),
     };
 }

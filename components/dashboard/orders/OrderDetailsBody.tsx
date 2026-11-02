@@ -690,7 +690,7 @@ export function OrderDetailsBody({
                 )}
             </section>
             <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                {[['მიმღები', recipient(order)], ['ტელეფონი', order.recipientPhone], ['მისამართი', order.shippingAddress || '-'], ['თარიღი', date(order.createdAt)]].map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-text-secondary">{label}</dt><dd className="mt-1 break-words">{value}</dd></div>)}
+                {[['მიმღები', recipient(order)], ['ტელეფონი', order.recipientPhone], ['მისამართი', order.shippingAddress || '-'], ['თარიღი', date(order.createdAt)], ...(order.createdByName ? [['გააფორმა', order.createdByName]] : [])].map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-text-secondary">{label}</dt><dd className="mt-1 break-words">{value}</dd></div>)}
             </dl>
             <h3 className="mt-5 font-semibold">პროდუქტები</h3>
             <div className="mt-2 space-y-2">

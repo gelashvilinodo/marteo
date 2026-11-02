@@ -1,3 +1,4 @@
+import { costSafeJson } from "@/lib/business/redact-costs";
 import { apiAccessDenied } from "@/lib/business/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
@@ -221,8 +222,7 @@ export async function POST(request: Request) {
                 },
             );
 
-            return json({
-                success: true,
+            return costSafeJson({ success: true,
                 reminder,
             });
         } finally {

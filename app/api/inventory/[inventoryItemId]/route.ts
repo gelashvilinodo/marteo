@@ -1,3 +1,4 @@
+import { costSafeJson } from "@/lib/business/redact-costs";
 import { apiAccessDenied } from "@/lib/business/access";
 import { Prisma } from "@/generated/prisma/client";
 import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
@@ -299,7 +300,7 @@ async function handle(
             },
         );
 
-        return json({ success: true, data });
+        return costSafeJson({ success: true, data });
     } catch (cause: unknown) {
         if (cause instanceof InventoryEditError) {
             return json(

@@ -1,3 +1,4 @@
+import { costSafeJson } from "@/lib/business/redact-costs";
 import { apiAccessDenied } from "@/lib/business/access";
 import { hasBusinessFeature, businessFeatureMessage } from "@/lib/business/business-mode";
 import { getMaterialPicker } from "@/lib/orders/get-material-picker";
@@ -71,8 +72,7 @@ export async function GET(request: Request) {
             ? await getMaterialPicker(reader, businessId, query, Math.min(requestedPage, 1000000))
             : await getProductPicker(reader, businessId, query, requestedPage);
 
-        return json({
-            success: true,
+        return costSafeJson({ success: true,
             ...result,
         });
     } catch (error: unknown) {

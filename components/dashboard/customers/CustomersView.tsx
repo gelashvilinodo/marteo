@@ -1,4 +1,5 @@
 "use client";
+import { useBusinessAccess } from "@/components/dashboard/business/BusinessAccessContext";
 import { CUSTOMERS_CHANGED } from "@/lib/customers/refresh-customers-client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -54,6 +55,7 @@ export default function CustomersView({
 }: {
     data: CustomersPageData;
 }) {
+    const canEdit = useBusinessAccess().can("ORDERS", "edit");
     const router = useRouter();
     const [routePending, startTransition] = useTransition();
     const [data, setData] = useState(initialData);
@@ -205,7 +207,7 @@ export default function CustomersView({
                             მომხმარებლები
                         </h1>
                     }
-                    action={
+                    action={canEdit &&
                         <button
                             type="button"
                             onClick={() => setFormCustomer(null)}

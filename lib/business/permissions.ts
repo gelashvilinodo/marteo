@@ -70,3 +70,13 @@ export function meetsNeed(access: BusinessAccess | null | undefined, need: Secti
 export function firstAllowedDashboardPath(access: BusinessAccess | null | undefined) {
     return DASHBOARD_SECTIONS.find(section => meetsNeed(access, section.need))?.path ?? "/dashboard/profile";
 }
+
+// თვითღირებულებას ხედავს მფლობელი, ფინანსები და შესყიდვები (ის ფასებს თვითონ წერს).
+export function canSeeCosts(access: BusinessAccess | null | undefined) {
+    return hasBusinessAccess(access, ["FINANCE", "PURCHASES"], "view");
+}
+
+// უცნობი გზა მხოლოდ მფლობელისთვისაა, რომ ახალი განყოფილება შემთხვევით არ გაიხსნას.
+export function sectionNeed(path: string): SectionNeed {
+    return DASHBOARD_SECTIONS.find(section => section.path === path)?.need ?? "OWNER";
+}

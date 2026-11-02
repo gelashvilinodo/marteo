@@ -1,3 +1,4 @@
+import { costSafeJson } from "@/lib/business/redact-costs";
 import { apiAccessDenied } from "@/lib/business/access";
 import { businessFeatureDenied } from '@/lib/business/feature-access';
 import { NextResponse } from 'next/server';
@@ -14,7 +15,7 @@ const json=(body:unknown,status=200)=>NextResponse.json(body,{status,headers:{'C
 export async function GET(request:Request){
     const accessDenied = await apiAccessDenied("PRODUCTION", "view"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('manufacturing');if(denied)return denied;
-try{const user=await getCurrentUser();if(!user)return json({error:'გაიარე ავტორიზაცია.'},401);const member=await getCurrentBusiness();if(!member)return json({error:'ბიზნესი ვერ მოიძებნა.'},403);return json(await getProductionSnapshot(member.businessId,Object.fromEntries(new URL(request.url).searchParams),user.id));}catch(e){console.error('Production read failed',e instanceof Error?e.name:'Unknown');return json({error:'წარმოებები ვერ ჩაიტვირთა. სცადე ხელახლა.'},500);}}
+try{const user=await getCurrentUser();if(!user)return json({error:'გაიარე ავტორიზაცია.'},401);const member=await getCurrentBusiness();if(!member)return json({error:'ბიზნესი ვერ მოიძებნა.'},403);return costSafeJson(await getProductionSnapshot(member.businessId,Object.fromEntries(new URL(request.url).searchParams),user.id));}catch(e){console.error('Production read failed',e instanceof Error?e.name:'Unknown');return json({error:'წარმოებები ვერ ჩაიტვირთა. სცადე ხელახლა.'},500);}}
 export async function POST(request:Request){
     const accessDenied = await apiAccessDenied("PRODUCTION", "edit"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('manufacturing');if(denied)return denied;
@@ -31,7 +32,7 @@ export async function POST(request:Request){
         const images=new Map<string,string>(),removed=new Set<string>();
         for(let index=0;index<imageChanges.length;index++){const image=imageChanges[index],output=input.outputs[index];if(!output){if(image.action!=='keep')throw new ProductionError('პროდუქტის გარეშე ფოტო ვერ აიტვირთება.');continue;}if(image.action==='remove')removed.add(output.rowKey);if(image.action==='upload'){if(output.inventoryItemId)throw new ProductionError('მარაგიდან არჩეული პროდუქტის ფოტო ამ ფორმიდან არ იცვლება.');const photo=await uploadProductImage(member.businessId,image.file,image.thumbnail);uploaded.push(photo);images.set(output.rowKey,photo.url);}}
         const result=await db.$transaction(tx=>saveProduction(tx,member.businessId,user.id,input,images,removed),{isolationLevel:'Serializable',maxWait:10000,timeout:30000});
-        try{await cleanup();}catch{console.error('Production photo cleanup requires verification');}return json({success:true,...result});
+        try{await cleanup();}catch{console.error('Production photo cleanup requires verification');}return costSafeJson({success:true,...result});
     }catch(e){try{await cleanup();}catch{console.error('Production photo cleanup requires verification');}
         if(e instanceof ProductionError||e instanceof PurchaseFormError)return json({error:e.message},e.status);
         if(e instanceof ProductImageError)return json({error:e.message},422);

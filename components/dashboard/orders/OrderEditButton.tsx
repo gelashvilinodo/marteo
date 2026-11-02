@@ -1,4 +1,5 @@
 "use client";
+import { useBusinessAccess } from "@/components/dashboard/business/BusinessAccessContext";
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
@@ -14,6 +15,7 @@ export default function OrderEditButton({
     orderId: string;
     onOpened?: () => void;
 }) {
+    const canEdit = useBusinessAccess().can("ORDERS", "edit");
     const { openEditOrder } = useNewOrder();
     const request = useRef<AbortController | null>(null);
     const [loading, setLoading] = useState(false);
@@ -82,6 +84,8 @@ export default function OrderEditButton({
             }
         }
     }
+
+    if (!canEdit) return null;
 
     return (
         <div className="relative shrink-0">

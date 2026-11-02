@@ -146,7 +146,8 @@ function writeStorage(key: string, value: string) {
     }
 }
 
-export function AiAssistantProvider({ children }: { children: React.ReactNode }) {
+// enabled=false: AI მხოლოდ მფლობელისაა, თანამშრომლისთვის მიმოხილვა არ მზადდება.
+export function AiAssistantProvider({ children, enabled = true }: { children: React.ReactNode; enabled?: boolean }) {
     const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
     const request = useRef<AbortController | null>(null);
     const messagesRef = useRef(state.messages);
@@ -160,7 +161,7 @@ export function AiAssistantProvider({ children }: { children: React.ReactNode })
     // კვირის პირველ შემოსვლაზე AI თავად ამზადებს მოკლე მიმოხილვას.
     useEffect(() => {
         const week = currentWeek();
-        if (readStorage(DIGEST_KEY) === week) return;
+        if (!enabled || readStorage(DIGEST_KEY) === week) return;
 
         const controller = new AbortController();
         const timer = window.setTimeout(() => {
@@ -187,7 +188,7 @@ export function AiAssistantProvider({ children }: { children: React.ReactNode })
             window.clearTimeout(timer);
             controller.abort();
         };
-    }, []);
+    }, [enabled]);
 
     const reply = useCallback((text: string, failed = false, cards?: AiCardGroup[]) => {
         dispatch({

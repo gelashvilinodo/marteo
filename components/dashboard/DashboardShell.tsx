@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSupportUnread } from "@/components/support/useSupportUnread";
 import { BusinessModeContext } from "./business/BusinessModeContext";
+import { BusinessAccessContext } from "./business/BusinessAccessContext";
+import type { BusinessAccess } from "@/lib/business/permissions";
 import type { BusinessMode } from "@/lib/business/business-mode";
 import type { BusinessOption } from "@/components/dashboard/DashboardHeader";
 
@@ -26,6 +28,7 @@ type DashboardShellProps = {
     userEmail: string;
     isPlatformAdmin?: boolean;
     isOwner?: boolean;
+    access: BusinessAccess;
 };
 
 export default function DashboardShell({
@@ -39,6 +42,7 @@ export default function DashboardShell({
     userEmail,
     isPlatformAdmin = false,
     isOwner = true,
+    access,
 }: DashboardShellProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const supportUnread = useSupportUnread("/api/support/unread", usePathname());
@@ -58,7 +62,7 @@ export default function DashboardShell({
     }, [sidebarOpen]);
 
     return (
-        <BusinessModeContext value={businessMode}><AiAssistantProvider><div className="min-h-screen bg-background lg:flex">
+        <BusinessModeContext value={businessMode}><BusinessAccessContext value={access}><AiAssistantProvider enabled={isOwner}><div className="min-h-screen bg-background lg:flex">
             <DashboardSidebar mode={businessMode} supportUnread={supportUnread} />
 
             <div
@@ -121,7 +125,7 @@ export default function DashboardShell({
                 </NewOrderProvider>
             </AiAssistantInset>
 
-            <AiAssistantPanel userName={userName} />
-        </div></AiAssistantProvider></BusinessModeContext>
+            {isOwner && <AiAssistantPanel userName={userName} />}
+        </div></AiAssistantProvider></BusinessAccessContext></BusinessModeContext>
     );
 }

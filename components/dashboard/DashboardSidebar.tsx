@@ -5,6 +5,7 @@ import { hasBusinessFeature, type BusinessMode } from "@/lib/business/business-m
 import { useId, useState } from "react";
 import { usePathname } from "next/navigation";
 import usePurchasePlanCount from "@/components/dashboard/purchases/usePurchasePlanCount";
+import { useBusinessAccess } from "@/components/dashboard/business/BusinessAccessContext";
 import { Icon } from "@iconify/react";
 import Image from "next/image";
 
@@ -119,7 +120,11 @@ export default function DashboardSidebar({
     supportUnread = 0,
 }: DashboardSidebarProps) {
     const pathname = usePathname();
-    const planCount = usePurchasePlanCount(hasBusinessFeature(mode, "imports"));
+    const { can, canOpen } = useBusinessAccess();
+    const planCount = usePurchasePlanCount(hasBusinessFeature(mode, "imports") && can(["PURCHASES", "INVENTORY"]));
+    // თანამშრომელი მხოლოდ იმ განყოფილებებს ხედავს, რომლებზეც წვდომა აქვს.
+    const allowedPurchaseLinks = purchaseLinks.filter(link => canOpen(link.href));
+    const allowedInventoryLinks = inventoryLinks.filter(link => canOpen(link.href));
 
     return (
         <aside
@@ -207,14 +212,18 @@ export default function DashboardSidebar({
                                 : pathname.startsWith(item.href);
 
                         if(item.href === "/dashboard/purchases" && mode==='HYBRID') {
-                            return <SidebarGroup key={pathname+item.href} label="შესყიდვები" icon="solar:cart-large-2-bold-duotone" links={purchaseLinks} pathname={pathname} onSelect={onSelect} badges={{"/dashboard/purchases":planCount}}/>;
+                            if(!allowedPurchaseLinks.length) return null;
+                            return <SidebarGroup key={pathname+item.href} label="შესყიდვები" icon="solar:cart-large-2-bold-duotone" links={allowedPurchaseLinks} pathname={pathname} onSelect={onSelect} badges={{"/dashboard/purchases":planCount}}/>;
                         }
                         if(item.href === "/dashboard/material-purchases" && mode==='HYBRID') return null;
                         if(item.href === "/dashboard/purchases" && !hasBusinessFeature(mode,"imports")) return null;
                         if(["/dashboard/material-purchases","/dashboard/production"].includes(item.href) && !hasBusinessFeature(mode,"manufacturing")) return null;
                         if (item.href === "/dashboard/inventory" && hasBusinessFeature(mode,"manufacturing")) {
-                            return <SidebarGroup key={pathname + item.href} label="მარაგები" icon="solar:box-bold-duotone" links={inventoryLinks} pathname={pathname} onSelect={onSelect}/>;
+                            if(!allowedInventoryLinks.length) return null;
+                            return <SidebarGroup key={pathname + item.href} label="მარაგები" icon="solar:box-bold-duotone" links={allowedInventoryLinks} pathname={pathname} onSelect={onSelect}/>;
                         }
+
+                        if (!canOpen(item.href)) return null;
 
                         if (item.locked) {
                             return (

@@ -1,4 +1,5 @@
 "use client";
+import { useBusinessAccess } from "@/components/dashboard/business/BusinessAccessContext";
 import SuccessToast from '@/components/shared/SuccessToast';
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -12,7 +13,7 @@ import MaterialPurchaseForm, { money, dateInput } from "./MaterialPurchaseForm";
 const field="block h-11 w-full min-w-0 max-w-full rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary outline-none focus:border-accent lg:text-sm";
 const units=(key:string)=>UNITS.find(([id])=>id===key)?.[1]??key;
 const sum=(values:string[])=>values.reduce((s,v)=>s.plus(v),new Prisma.Decimal(0));
-export default function MaterialPurchasesView({initialSnapshot}:{initialSnapshot:MaterialSnapshot}) {
+export default function MaterialPurchasesView({initialSnapshot}:{initialSnapshot:MaterialSnapshot}) {const canEdit=useBusinessAccess().can('PURCHASES','edit');
     const [snapshot,setSnapshot]=useState(initialSnapshot),[previous,setPrevious]=useState(initialSnapshot);
     const [editing,setEditing]=useState<MaterialBatch|null|undefined>(undefined),[expanded,setExpanded]=useState<string|null>(null),[deleting,setDeleting]=useState<string|null>(null);
     const [loading,setLoading]=useState(false),[busy,setBusy]=useState<string|null>(null),[error,setError]=useState(''),[success,setSuccess]=useState('');
@@ -41,7 +42,7 @@ export default function MaterialPurchasesView({initialSnapshot}:{initialSnapshot
         catch(e){setError(e instanceof Error?e.message:'შედეგი ვერ დადასტურდა. გაიმეორე იგივე მოქმედება.');}finally{setBusy(null);}
     }
     return <main className="min-w-0 p-4 sm:p-6 lg:p-8"><div className="mx-auto min-w-0 max-w-7xl">
-        <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><h1 className="text-2xl font-semibold text-text-primary">შესყიდვები <span className="text-base font-normal text-text-secondary">- მასალები</span></h1><button type="button" onClick={()=>setEditing(null)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-success px-5 text-sm font-semibold text-white"><Icon icon="solar:add-circle-bold" className="h-5 w-5"/>ახალი პარტია</button></div>
+        <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><h1 className="text-2xl font-semibold text-text-primary">შესყიდვები <span className="text-base font-normal text-text-secondary">- მასალები</span></h1>{canEdit&&<button type="button" onClick={()=>setEditing(null)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-success px-5 text-sm font-semibold text-white"><Icon icon="solar:add-circle-bold" className="h-5 w-5"/>ახალი პარტია</button>}</div>
         <PurchaseFiltersDisclosure defaultOpen={!!(snapshot.q||snapshot.from||snapshot.to||snapshot.error)} hasFilters={!!(snapshot.q||snapshot.from||snapshot.to)}>
             <form onSubmit={e=>{e.preventDefault();void reload(search(),true);}} className="border-t border-border p-3 sm:border-t-0 sm:p-4"><div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-end">
                 <label className="block min-w-0 sm:col-span-2 xl:col-span-1"><span className="mb-1.5 block text-xs text-text-secondary">ძებნა</span><input type="search" className={field} placeholder="პარტიის ნომერი, სახელი ან მასალა" value={q} maxLength={150} onChange={e=>setQ(e.target.value)}/></label>

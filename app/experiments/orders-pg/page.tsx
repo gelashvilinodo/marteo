@@ -1,4 +1,5 @@
 import { requirePageAccess } from "@/lib/business/access";
+import { hideCostsIfNeeded } from "@/lib/business/redact-costs";
 import type { BusinessMode } from "@/lib/business/business-mode";
 import { createHash } from "crypto";
 import { cookies } from "next/headers";
@@ -12,7 +13,7 @@ import OrdersView from "@/components/dashboard/orders/OrdersView";
 
 type Context = { mode:BusinessMode; expiresAt: Date; status: string; firstName: string | null; email: string; businessId: string | null; name: string; logoUrl: string | null };
 export default async function OrdersPgExperiment({ searchParams }: { searchParams: Promise<OrdersSearchParams> }) {
-    await requirePageAccess("ORDERS");
+    const { access } = await requirePageAccess("ORDERS");
     const cookieStore = await cookies();
     const token = cookieStore.get("marteo_session")?.value;
     const preferred = cookieStore.get(ACTIVE_BUSINESS_COOKIE)?.value ?? "";
@@ -35,8 +36,8 @@ export default async function OrdersPgExperiment({ searchParams }: { searchParam
         if (context.status !== "ACTIVE") redirect("/login");
         if (!context.businessId) redirect("/business/onboarding");
         const data = await getOrdersPgPage(client, context.businessId, await searchParams);
-        return <DashboardShell businessMode={context.mode} businessName={context.name} businessLogoUrl={context.logoUrl} businessId={context.businessId} businesses={[]} userName={context.firstName || ""} userEmail={context.email}>
-            <OrdersView data={data} basePath="/experiments/orders-pg" listEndpoint="/api/orders/list-pg" />
+        return <DashboardShell businessMode={context.mode} businessName={context.name} businessLogoUrl={context.logoUrl} businessId={context.businessId} businesses={[]} userName={context.firstName || ""} userEmail={context.email} isOwner={access.role === "OWNER"} access={access}>
+            <OrdersView data={await hideCostsIfNeeded(data)} basePath="/experiments/orders-pg" listEndpoint="/api/orders/list-pg" />
         </DashboardShell>;
     } finally { await client.$disconnect(); }
 }

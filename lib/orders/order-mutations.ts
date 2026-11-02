@@ -1,4 +1,4 @@
-import { canManageBusinessArea } from "@/lib/business/permissions";
+import { canManageBusinessArea, canSeeCosts } from "@/lib/business/permissions";
 import { numericQuantities } from "@/lib/orders/quantity";
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
@@ -127,6 +127,15 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                     fail("ამ შეკვეთაზე გამოიყენე გადაცვლის შესაბამისი მოქმედება.", 409);
                 }
                 const data = validateOrder({ ...object(body.order), clientRequestId: requestId, status: order.status }, "edit");
+                // ვინც თვითღირებულებას ვერ ხედავს, ფორმიდან ცარიელს აგზავნის: არსებული ხარჯი უცვლელი რჩება.
+                if (!canSeeCosts(membership)) {
+                    for (const item of data.items) {
+                        const old = item.source === "MANUAL" && item.unitCost === null
+                            ? order.items.find(existing => existing.id === item.orderItemId && existing.source === "MANUAL")
+                            : undefined;
+                        if (old && old.totalCost !== null) item.unitCost = old.unitCost;
+                    }
+                }
                 if (order.status !== "PROCESSING") {
                     // გაგზავნილ/გაუქმებულ შეკვეთაზე იცვლება მომხმარებლის ინფორმაცია და გადახდა.
                     const same = data.items.length === order.items.length && data.items.every((item, index) => {

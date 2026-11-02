@@ -1,3 +1,4 @@
+import { costSafeJson } from "@/lib/business/redact-costs";
 import { apiAccessDenied } from "@/lib/business/access";
 import { getOrdersPgPage } from "@/lib/orders/get-orders-pg-page";
 import { orderJson } from "@/lib/orders/order-http";
@@ -9,7 +10,7 @@ export async function GET(request: Request, context: { params: Promise<{ orderId
         const { orderId } = await context.params;
         const params = Object.fromEntries(new URL(request.url).searchParams.entries());
         const data = await getOrdersPgPage(client, businessId, params, orderId);
-        return orderJson({ success: true, order: data.orders[0] ?? null,
+        return costSafeJson({ success: true, order: data.orders[0] ?? null,
             summary: { counts: data.counts, invoiceCounts: data.invoiceCounts,
                 totalOrders: data.totalOrders, currentPage: data.currentPage, totalPages: data.totalPages },
         });

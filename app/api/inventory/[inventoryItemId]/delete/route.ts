@@ -1,3 +1,4 @@
+import { costSafeJson } from "@/lib/business/redact-costs";
 import { apiAccessDenied } from "@/lib/business/access";
 import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
 import { createPrismaClient } from "@/lib/prisma";
@@ -124,7 +125,7 @@ export async function GET(
             },
         );
 
-        return json({ success: true, data });
+        return costSafeJson({ success: true, data });
     } catch (cause: unknown) {
         return errorResponse(cause);
     } finally {
@@ -150,7 +151,7 @@ export async function POST(
             body,
         );
 
-        return json({ success: true, data });
+        return costSafeJson({ success: true, data });
     } catch (cause: unknown) {
         return errorResponse(cause);
     }

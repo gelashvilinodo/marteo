@@ -11,7 +11,7 @@ import { UNITS } from '@/lib/material-purchases/input';
 import type { MaterialInventoryData } from '@/lib/material-inventory/get-page';
 import InventoryFiltersDisclosure from '@/components/dashboard/inventory/InventoryFiltersDisclosure';
 const quantity=(s:string)=>{const [whole,fraction]=new Prisma.Decimal(s).toFixed().split('.');return whole.replace(/\B(?=(\d{3})+(?!\d))/g,' ')+(fraction?'.'+fraction:'');};
-const money=(s:string,digits=2)=>{const fixed=new Prisma.Decimal(s).toDecimalPlaces(digits).toFixed(digits);return `${digits>2?fixed.replace(/(\.\d{2}\d*?)0+$/,'$1'):fixed} ₾`;};
+const money=(s:string|null,digits=2)=>{if(s===null)return '-';const fixed=new Prisma.Decimal(s).toDecimalPlaces(digits).toFixed(digits);return `${digits>2?fixed.replace(/(\.\d{2}\d*?)0+$/,'$1'):fixed} ₾`;};
 const unit=(key:string)=>UNITS.find(([id])=>id===key)?.[1]??key;
 const field='h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary outline-none focus:border-accent lg:text-sm';
 export default function MaterialInventoryView({data}:{data:MaterialInventoryData}){

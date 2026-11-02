@@ -19,7 +19,7 @@ type RecordRow = {
     status: "PROCESSING" | "SHIPPED" | "COMPLETED" | "CANCELED" | "RETURNED";
     paymentStatus: "PAID" | "UNPAID" | "PARTIALLY_PAID" | "COURIER_ONLY_PAID" | "UNKNOWN";
     courierFee: string; stockReturnedAt: Date | null; deleteRequestedAt: Date | null;
-    fulfillmentCycle: number; createdAt: Date; updatedAt: Date;
+    fulfillmentCycle: number; createdAt: Date; updatedAt: Date; createdByName: string | null;
     invoiceVersion: number; lastPrintedInvoiceVersion: number | null; invoicePrintedAt: Date | null;
     items: ItemRow[];
     returns: Array<{ status: "PENDING" | "RECEIVED"; fulfillmentCycle: number; items: Array<{ orderItemId: string; quantity: number }> }>;
@@ -56,6 +56,7 @@ export async function getOrderRecords(
             o."paymentStatus"::text AS "paymentStatus", o."courierFee"::text AS "courierFee",
             o."stockReturnedAt", o."deleteRequestedAt", o."fulfillmentCycle", o."createdAt", o."updatedAt",
             o."invoiceVersion", o."lastPrintedInvoiceVersion", o."invoicePrintedAt",
+            (SELECT NULLIF(btrim(concat_ws(' ', u."firstName", u."lastName")), '') FROM "User" u WHERE u.id = o."createdById") AS "createdByName",
             COALESCE((SELECT jsonb_agg(
                 jsonb_build_object('id', i.id, 'name', i.name, 'quantity', i.quantity,
                     'imageUrl', i."imageUrl", 'source', i.source, 'materialId',i."materialId",'unit',i.unit, 'unitPrice', i."unitPrice"::text,

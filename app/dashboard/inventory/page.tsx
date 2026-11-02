@@ -1,3 +1,4 @@
+import { hideCostsIfNeeded } from "@/lib/business/redact-costs";
 import { requireDashboardSection } from "@/lib/business/access";
 import { redirect } from "next/navigation";
 
@@ -31,7 +32,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
 
     try {
 
-        const data = await getInventoryPage(prisma, businessId, await searchParams);
+        const data = await hideCostsIfNeeded(await getInventoryPage(prisma, businessId, await searchParams));
 
         const latestMovements = await prisma.inventoryMovement.findMany({
             where: {

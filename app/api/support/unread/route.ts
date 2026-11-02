@@ -8,7 +8,7 @@ import { supportFailure, supportJson, supportUnauthorized } from "@/lib/support/
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("MEMBER", "edit"); if (accessDenied) return accessDenied;
     const user = await getCurrentUser();
     const membership = user ? await getCurrentBusiness() : null;
     if (!membership) return supportUnauthorized();

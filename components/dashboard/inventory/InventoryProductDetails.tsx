@@ -4,6 +4,7 @@ import { useEffect, useId, useRef } from "react";
 import Image from "next/image";
 import { Icon } from "@iconify/react";
 import type { InventoryProduct } from "./InventoryView";
+import { useBusinessAccess } from "@/components/dashboard/business/BusinessAccessContext";
 
 function formatQuantity(value: number) {
     return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
@@ -73,6 +74,8 @@ export default function InventoryProductDetails({
 }) {
     const dialogRef = useRef<HTMLDialogElement>(null);
     const titleId = useId();
+    const { canSeeCosts, can } = useBusinessAccess();
+    const canEdit = can("INVENTORY", "edit");
 
     useEffect(() => {
         if (!product) return;
@@ -110,13 +113,13 @@ export default function InventoryProductDetails({
             ["სულ დარჩენილი", `${formatQuantity(product.totalStock)} პროდუქტი`],
             ["რეალიზებადი", `${formatQuantity(product.goodStock)} პროდუქტი`],
             ["წუნდებული", `${formatQuantity(product.defectiveStock)} პროდუქტი`],
-            [
+            ...(canSeeCosts ? [[
                 "საშუალო თვითღირებულება",
                 product.totalStock > 0 &&
                 product.averageUnitCost === null
                     ? "უცნობია"
                     : formatMoney(product.averageUnitCost),
-            ],
+            ]] : []),
             ["გასაყიდი ფასი", formatMoney(product.salePrice)],
             ["დამატების თარიღი", formatDate(product.createdAt)],
         ]
@@ -209,6 +212,7 @@ export default function InventoryProductDetails({
                         ))}
                     </div>
 
+                    {canEdit && <>
                     <button
                         type="button"
                         onClick={() => {
@@ -245,6 +249,7 @@ export default function InventoryProductDetails({
                         />
                         წაშლა
                     </button>
+                    </>}
 
                     <dl className="mt-4 divide-y divide-border">
                         {details.map(([label, value]) => (

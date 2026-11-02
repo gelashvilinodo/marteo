@@ -8,6 +8,7 @@ import { quantityLabel } from "@/lib/orders/quantity";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { materialCost } from "@/lib/production/input";
 import { useEffect, useRef } from "react";
+import { useBusinessAccess } from "@/components/dashboard/business/BusinessAccessContext";
 
 const input = "h-11 w-full min-w-0 max-w-full rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary outline-none focus:border-accent lg:h-10 lg:text-sm";
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -28,6 +29,8 @@ export default function OrderProductEditor({
     readOnly?: boolean;
     onRemovingChange?: (removing: boolean) => void;
 }) {
+    // თვითღირებულების ველი მხოლოდ მას უჩანს, ვისაც ფასების ნახვა შეუძლია.
+    const { canSeeCosts } = useBusinessAccess();
     const cardRef = useRef<HTMLElement>(null);
     const removing = useRef(false);
     const animationRef = useRef<Animation | null>(null);
@@ -225,7 +228,7 @@ export default function OrderProductEditor({
             <Field label={item.source==="MATERIAL"?`რაოდენობა · ${quantityLabel(0,item.unit).slice(2)} *`:"რაოდენობა *"}><input inputMode={item.source==="MATERIAL"?"decimal":"numeric"} value={item.quantity} onChange={event => update({ quantity: event.target.value })} required className={input} /></Field>
             <Field label={item.source==="MATERIAL"?`ფასი / ${quantityLabel(0,item.unit).slice(2)} · ₾ *`:"გასაყიდი ფასი · ₾ *"}><input inputMode="decimal" value={item.unitPrice} onChange={event => update({ unitPrice: event.target.value })} placeholder="0.00" required className={input} /></Field>
         </div>
-        {item.source === "MATERIAL" ? <div className="mt-3 rounded-xl border border-border p-3 text-xs text-text-secondary">არჩეული რაოდენობის თვითღირებულება: <strong className="text-text-primary">{materialTotal??"-"}{materialTotal?" ₾":""}</strong><p className="mt-1">ითვლება მასალის შესყიდვის პარტიებიდან. ზუსტი თანხა შენახვისას მოწმდება.</p></div> : <div className="mt-3 rounded-xl border border-border p-3">
+        {!canSeeCosts ? null : item.source === "MATERIAL" ? <div className="mt-3 rounded-xl border border-border p-3 text-xs text-text-secondary">არჩეული რაოდენობის თვითღირებულება: <strong className="text-text-primary">{materialTotal??"-"}{materialTotal?" ₾":""}</strong><p className="mt-1">ითვლება მასალის შესყიდვის პარტიებიდან. ზუსტი თანხა შენახვისას მოწმდება.</p></div> : <div className="mt-3 rounded-xl border border-border p-3">
             <Field label="ერთი ერთეულის თვითღირებულება · ₾">
                 <input
                     inputMode="decimal"

@@ -1,3 +1,4 @@
+import { costSafeJson } from "@/lib/business/redact-costs";
 import { apiAccessDenied } from "@/lib/business/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
         const thumbnail = form.get("thumbnail");
         if (thumbnail !== null && !(thumbnail instanceof File)) throw new OrderValidationError("მცირე ფოტოს მონაცემები არასწორია.");
         const uploaded = await uploadProductImage(businessId, file, thumbnail);
-        return orderJson({ success: true, imageUrl: uploaded.url }, 201);
+        return costSafeJson({ success: true, imageUrl: uploaded.url }, 201);
     } catch (cause: unknown) {
         if (cause instanceof ProductImageError) {
             return orderJson({ success: false, message: cause.message }, 422);

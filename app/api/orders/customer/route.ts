@@ -1,3 +1,4 @@
+import { costSafeJson } from "@/lib/business/redact-costs";
 import { apiAccessDenied } from "@/lib/business/access";
 import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -117,8 +118,7 @@ export async function GET(request: Request) {
 
         const customer = customers[0];
 
-        return json({
-            success: true,
+        return costSafeJson({ success: true,
             customer: customer
                 ? {
                     id: customer.id,
