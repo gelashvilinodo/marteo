@@ -4,6 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 import type { createPrismaClient } from "@/lib/prisma";
 import { isAllowedSmsPhone, normalizePhone } from "@/lib/security/phone";
 import { hashInviteToken, TeamError } from "./team-server";
+import { enforceTeamLimits } from "./team-manage";
 
 type Db = ReturnType<typeof createPrismaClient>;
 
@@ -152,6 +153,7 @@ export async function acceptInvite(db: Db, token: string, input: AcceptInput) {
             });
         }
         await tx.businessInvite.update({ where: { id: invite.id }, data: { status: "ACCEPTED", acceptedAt: now } });
+        await enforceTeamLimits(tx, invite.businessId);
 
         const memberName = input.kind === "new"
             ? `${input.account.firstName} ${input.account.lastName}`

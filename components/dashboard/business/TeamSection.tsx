@@ -6,8 +6,9 @@ import { Icon } from "@iconify/react";
 import SuccessToast from "@/components/shared/SuccessToast";
 import type { BusinessMode } from "@/lib/business/business-mode";
 import type { BusinessPermission } from "@/lib/business/permissions";
-import { PERMISSION_OPTIONS, type TeamInvite, type TeamMember, type TeamSnapshot } from "@/lib/business/team";
+import { PERMISSION_OPTIONS, type TeamInvite, type TeamMember, type TeamRequestView, type TeamSnapshot } from "@/lib/business/team";
 import InviteMemberDialog from "./InviteMemberDialog";
+import EditMemberDialog from "./EditMemberDialog";
 
 type ApiResponse = { success?: boolean; message?: string; team?: TeamSnapshot };
 
@@ -42,6 +43,8 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
     const [inviting, setInviting] = useState(false);
     const [busyId, setBusyId] = useState("");
     const [confirmCancel, setConfirmCancel] = useState("");
+    const [confirmRemove, setConfirmRemove] = useState("");
+    const [editing, setEditing] = useState<TeamMember | null>(null);
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
     const [now, setNow] = useState(0);
@@ -57,7 +60,79 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
     }, []);
 
     const closeDialog = useCallback(() => setInviting(false), []);
-    const founderId = team.members.find(member => member.role === "OWNER")?.id;
+    const founderId = team.members.find(member => member.isFounder)?.id;
+    const activeOwners = team.members.filter(member => member.role === "OWNER" && member.status === "ACTIVE").length;
+
+    // გუნდის მოქმედებები ერთ ადგილას: პასუხად ყოველთვის განახლებული გუნდი მოდის.
+    async function send(id: string, url: string, method: string, body?: unknown) {
+        if (busyId) return null;
+        setBusyId(id);
+        setError("");
+        try {
+            const response = await fetch(url, {
+                method,
+                headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+                body: body === undefined ? undefined : JSON.stringify(body),
+            });
+            const data = (await response.json().catch(() => ({}))) as ApiResponse & { redirectTo?: string };
+            if (!response.ok || !data.success) {
+                setError(data.message || "მოთხოვნა ვერ შესრულდა. სცადე ხელახლა.");
+                return null;
+            }
+            if (data.team) setTeam(data.team);
+            setNotice(data.message ?? "");
+            return data;
+        } catch {
+            setError("კავშირი ვერ დამყარდა. სცადე ხელახლა.");
+            return null;
+        } finally {
+            setBusyId("");
+            setConfirmRemove("");
+        }
+    }
+
+    async function leave(member: TeamMember) {
+        if (!window.confirm("ნამდვილად ტოვებ ამ ბიზნესს? დაბრუნება მხოლოდ ახალი მოწვევით შეიძლება.")) return;
+        const data = await send(member.id, "/api/business/members/leave", "POST");
+        if (data) window.location.assign(data.redirectTo || "/dashboard");
+    }
+
+    function requestRow(request: TeamRequestView) {
+        const busy = busyId === request.id;
+        const what = request.kind === "DELETE_BUSINESS" ? "ბიზნესის წაშლა" : `${request.targetName ?? "წევრის"} გუნდიდან გაშვება`;
+        return (
+            <li key={request.id} className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
+                <p className="font-medium text-text-primary">
+                    {request.requestedByYou ? "შენ ითხოვე" : `${request.requestedByName} ითხოვს`}: {what}
+                </p>
+                <p className="mt-1 text-text-secondary">ელოდება თანხმობას: {request.waitingFor.join(", ") || "-"}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                    {!request.youApproved && (
+                        <>
+                            <button type="button" disabled={Boolean(busyId)}
+                                onClick={() => send(request.id, `/api/business/requests/${encodeURIComponent(request.id)}/vote`, "POST", { approve: true })
+                                    .then(data => { if ((data as { deleted?: boolean } | null)?.deleted) window.location.assign("/dashboard"); })}
+                                className={`inline-flex min-h-9 items-center rounded-xl px-3 text-sm font-medium text-white disabled:opacity-50 ${request.kind === "DELETE_BUSINESS" ? "bg-danger" : "bg-success"}`}>
+                                {busy ? "იგზავნება…" : "ვეთანხმები"}
+                            </button>
+                            <button type="button" disabled={Boolean(busyId)}
+                                onClick={() => send(request.id, `/api/business/requests/${encodeURIComponent(request.id)}/vote`, "POST", { approve: false })}
+                                className="inline-flex min-h-9 items-center rounded-xl border border-border px-3 text-sm disabled:opacity-50">
+                                არ ვეთანხმები
+                            </button>
+                        </>
+                    )}
+                    {request.requestedByYou && (
+                        <button type="button" disabled={Boolean(busyId)}
+                            onClick={() => send(request.id, `/api/business/requests/${encodeURIComponent(request.id)}`, "DELETE")}
+                            className="inline-flex min-h-9 items-center rounded-xl border border-border px-3 text-sm disabled:opacity-50">
+                            მოთხოვნის გაუქმება
+                        </button>
+                    )}
+                </div>
+            </li>
+        );
+    }
     const canInvite = team.used.coOwners < team.limits.coOwners || team.used.staff < team.limits.staff;
 
     async function act(invite: TeamInvite, action: "resend" | "cancel") {
@@ -102,6 +177,44 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
                     </div>
                     <p className="truncate text-sm text-text-secondary">{member.email}</p>
                     {member.role === "MEMBER" && <Chips permissions={member.permissions} readOnly={member.readOnly} />}
+                    {member.role !== "OWNER" && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {confirmRemove === member.id ? (
+                                <>
+                                    <span className="w-full text-xs text-text-secondary">
+                                        {activeOwners > 1 ? "გაშვებას დანარჩენი მფლობელების თანხმობაც დასჭირდება." : "წევრი მაშინვე დაკარგავს წვდომას."}
+                                    </span>
+                                    <button type="button" disabled={Boolean(busyId)}
+                                        onClick={() => send(member.id, `/api/business/members/${encodeURIComponent(member.id)}/remove`, "POST")}
+                                        className="inline-flex min-h-9 items-center rounded-xl bg-danger px-3 text-sm font-medium text-white disabled:opacity-50">
+                                        {busyId === member.id ? "იგზავნება…" : "დიახ, გაუშვი"}
+                                    </button>
+                                    <button type="button" disabled={Boolean(busyId)} onClick={() => setConfirmRemove("")}
+                                        className="inline-flex min-h-9 items-center rounded-xl border border-border px-3 text-sm disabled:opacity-50">
+                                        არა
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button type="button" disabled={Boolean(busyId)} onClick={() => setEditing(member)}
+                                        className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-border px-3 text-sm font-medium text-text-primary hover:bg-background disabled:opacity-50">
+                                        <Icon icon="solar:pen-linear" className="size-4" aria-hidden="true" />
+                                        უფლებები
+                                    </button>
+                                    <button type="button" disabled={Boolean(busyId)} onClick={() => setConfirmRemove(member.id)}
+                                        className="inline-flex min-h-9 items-center rounded-xl border border-border px-3 text-sm text-danger hover:bg-danger/10 disabled:opacity-50">
+                                        გუნდიდან გაშვება
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    )}
+                    {member.isYou && member.role === "OWNER" && activeOwners > 1 && (
+                        <button type="button" disabled={Boolean(busyId)} onClick={() => leave(member)}
+                            className="mt-2 inline-flex min-h-9 items-center rounded-xl border border-border px-3 text-sm text-danger hover:bg-danger/10 disabled:opacity-50">
+                            ბიზნესის დატოვება
+                        </button>
+                    )}
                 </div>
             </li>
         );
@@ -196,11 +309,17 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
 
             {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}
 
+            {team.requests.length > 0 && <ul className="mt-3 space-y-2">{team.requests.map(requestRow)}</ul>}
+
             <ul className="mt-3 divide-y divide-border">
                 {team.members.map(memberRow)}
                 {team.invites.map(inviteRow)}
             </ul>
 
+            {editing && (
+                <EditMemberDialog member={editing} businessMode={businessMode} onClose={() => setEditing(null)}
+                    onSaved={(updated, message) => { setTeam(updated); setNotice(message); setEditing(null); }} />
+            )}
             {inviting && (
                 <InviteMemberDialog team={team} businessMode={businessMode} onClose={closeDialog}
                     onInvited={updated => setTeam(updated)} />

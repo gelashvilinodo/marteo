@@ -64,6 +64,7 @@ export type TeamMember = {
     readOnly: boolean;
     status: "ACTIVE" | "FROZEN";
     isYou: boolean;
+    isFounder: boolean;
     joinedAt: string;
 };
 
@@ -79,8 +80,19 @@ export type TeamInvite = {
     resendAvailableAt: string;
 };
 
+export type TeamRequestView = {
+    id: string;
+    kind: "REMOVE_MEMBER" | "DELETE_BUSINESS";
+    targetName: string | null;
+    requestedByName: string;
+    requestedByYou: boolean;
+    youApproved: boolean;
+    waitingFor: string[];
+};
+
 export type TeamSnapshot = {
     plan: TeamPlan;
+    requests: TeamRequestView[];
     limits: { coOwners: number; staff: number };
     used: { coOwners: number; staff: number };
     members: TeamMember[];

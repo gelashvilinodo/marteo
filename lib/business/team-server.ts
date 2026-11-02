@@ -6,6 +6,7 @@ import { getAppOrigin, readServerSetting } from "@/lib/auth/send-password-reset-
 import { reserveDelivery } from "@/lib/security/delivery-limit";
 import { escapeHtml } from "@/lib/security/html";
 import { isBusinessPermission, type BusinessPermission } from "./permissions";
+import { getTeamRequests } from "./team-manage";
 import {
     INVITE_LIFETIME_HOURS,
     INVITE_MAX_RESENDS,
@@ -40,7 +41,7 @@ function newInviteToken() {
 const inviteExpiry = (now: Date) => new Date(now.getTime() + INVITE_LIFETIME_HOURS * 3600_000);
 
 // ვადაგასული ან გაუქმებული გამოწერა ლიმიტებს FREE-ზე აბრუნებს.
-async function readPlan(db: Reader, businessId: string, now: Date): Promise<TeamPlan> {
+export async function readPlan(db: Reader, businessId: string, now: Date): Promise<TeamPlan> {
     const subscription = await db.subscription.findUnique({
         where: { businessId },
         select: { plan: true, status: true, expiresAt: true },
@@ -81,8 +82,10 @@ export async function getTeamSnapshot(db: Db, businessId: string, userId: string
             select: { id: true, email: true, role: true, permissions: true, readOnly: true, expiresAt: true, sendCount: true, lastSentAt: true },
         }),
     ]);
+    const founderId = memberships.find(member => member.role === "OWNER")?.id;
     return {
         plan,
+        requests: await getTeamRequests(db, businessId, userId),
         limits: TEAM_LIMITS[plan],
         used,
         members: memberships.map(member => ({
@@ -94,6 +97,7 @@ export async function getTeamSnapshot(db: Db, businessId: string, userId: string
             readOnly: member.readOnly,
             status: member.status,
             isYou: member.userId === userId,
+            isFounder: member.id === founderId,
             joinedAt: member.createdAt.toISOString(),
         })),
         invites: invites.map(invite => ({

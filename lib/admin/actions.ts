@@ -3,6 +3,7 @@ import { randomBytes } from "crypto";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { hashEmailChangeValue } from "@/lib/profile/email-change";
 import { PASSWORD_RESET_LIFETIME_MS, sendPasswordResetEmail } from "@/lib/auth/send-password-reset-email";
+import { enforceTeamLimits } from "@/lib/business/team-manage";
 
 export class AdminActionError extends Error {
     constructor(message: string, public status = 422) {
@@ -178,6 +179,8 @@ export async function updateSubscription(prisma: PrismaClient, adminId: string, 
         });
         if (JSON.stringify(subscriptionView(before)) === JSON.stringify(subscriptionView(after))) throw new AdminActionError("ცვლილება არ არის.", 409);
         await audit(tx, adminId, "subscription", "BUSINESS", businessId, subscriptionView(before), subscriptionView(after));
+        // გეგმის შემცირებისას ლიმიტს გადაცილებული წევრები იყინება, გაზრდისას იღვიძებს.
+        await enforceTeamLimits(tx, businessId);
         return "პაკეტი განახლდა.";
     });
 }

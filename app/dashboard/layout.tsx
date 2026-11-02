@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
-import { getCurrentBusiness, getUserBusinesses } from "@/lib/auth/current-business";
+import { getCurrentBusiness, getUserBusinesses, hasFrozenMembership } from "@/lib/auth/current-business";
 import { getAdminUser } from "@/lib/admin/authorization";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
@@ -22,7 +22,7 @@ export default async function DashboardLayout({
     const membership = await getCurrentBusiness();
 
     if (!membership) {
-        redirect("/business/onboarding");
+        redirect(await hasFrozenMembership(user.id) ? "/business/frozen" : "/business/onboarding");
     }
 
     return (

@@ -30,6 +30,19 @@ enum MembershipStatus {
   FROZEN
 }
 
+// ქმედებები, რომლებსაც ბიზნესის ყველა მფლობელის თანხმობა სჭირდება.
+enum BusinessConsentKind {
+  REMOVE_MEMBER
+  DELETE_BUSINESS
+}
+
+enum BusinessConsentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELED
+}
+
 enum BusinessInviteStatus {
   PENDING
   ACCEPTED
@@ -164,9 +177,11 @@ model User {
   phoneVerifiedAt DateTime?
 
   memberships            BusinessMembership[]
-  invitedMemberships     BusinessMembership[]    @relation("MembershipInvitedBy")
-  sentBusinessInvites    BusinessInvite[]        @relation("BusinessInviteInvitedBy")
-  createdOrders          Order[]                 @relation("OrderCreatedBy")
+  invitedMemberships     BusinessMembership[]     @relation("MembershipInvitedBy")
+  sentBusinessInvites    BusinessInvite[]         @relation("BusinessInviteInvitedBy")
+  consentRequests        BusinessConsentRequest[] @relation("ConsentRequestedBy")
+  consentVotes           BusinessConsentVote[]
+  createdOrders          Order[]                  @relation("OrderCreatedBy")
   verifications          VerificationToken[]
   sessions               Session[]
   emailChangeRequests    EmailChangeRequest[]
@@ -219,6 +234,7 @@ model Business {
 
   memberships              BusinessMembership[]
   invites                  BusinessInvite[]
+  consentRequests          BusinessConsentRequest[]
   subscription             Subscription?
   customers                Customer[]
   orders                   Order[]
@@ -233,7 +249,7 @@ model Business {
   contentCampaigns         ContentCampaign[]
   inventoryWriteOffs       InventoryWriteOff[]
   importJobs               ImportJob[]
-  courierReminderStartDate DateTime?             @db.Date
+  courierReminderStartDate DateTime?                @db.Date
   courierSettlements       CourierSettlement[]
   materials                Material[]
   materialPurchases        MaterialPurchase[]
@@ -290,6 +306,39 @@ model BusinessInvite {
 
   @@index([businessId, status])
   @@index([email])
+}
+
+model BusinessConsentRequest {
+  id            String                @id @default(cuid())
+  businessId    String
+  kind          BusinessConsentKind
+  status        BusinessConsentStatus @default(PENDING)
+  targetUserId  String?
+  // სახელი შენახულია, რომ წევრის წაშლის შემდეგაც ჩანდეს, ვის ეხებოდა.
+  targetName    String?
+  requestedById String?
+  resolvedAt    DateTime?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  business    Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  requestedBy User?                 @relation("ConsentRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+  votes       BusinessConsentVote[]
+
+  @@index([businessId, status])
+}
+
+model BusinessConsentVote {
+  id        String   @id @default(cuid())
+  requestId String
+  userId    String
+  approve   Boolean
+  createdAt DateTime @default(now())
+
+  request BusinessConsentRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user    User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, userId])
 }
 
 model Subscription {

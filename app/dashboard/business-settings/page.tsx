@@ -8,7 +8,9 @@ import { createPrismaClient } from "@/lib/prisma";
 import BusinessSettingsForm from "@/components/dashboard/business/BusinessSettingsForm";
 import AppearanceSettings from "@/components/dashboard/business/AppearanceSettings";
 import TeamSection from "@/components/dashboard/business/TeamSection";
+import DangerZone from "@/components/dashboard/business/DangerZone";
 import { getTeamSnapshot } from "@/lib/business/team-server";
+import { enforceTeamLimitsFor } from "@/lib/business/team-manage";
 
 export default async function BusinessSettingsPage() {
     await requireDashboardSection("/dashboard/business-settings");
@@ -58,6 +60,7 @@ export default async function BusinessSettingsPage() {
 
         if (!business) redirect("/business/onboarding");
 
+        await enforceTeamLimitsFor(prisma, [business.id]);
         const team = await getTeamSnapshot(prisma, business.id, user.id);
 
         return (
@@ -138,6 +141,11 @@ export default async function BusinessSettingsPage() {
                             ბიზნესის დამატება
                         </Link>
                     </section>
+
+                    <DangerZone
+                        businessName={business.name}
+                        ownerCount={team.members.filter(member => member.role === "OWNER" && member.status === "ACTIVE").length}
+                    />
                 </div>
             </main>
         );

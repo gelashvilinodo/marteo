@@ -13,6 +13,7 @@ export type BusinessOption = {
     name: string;
     logoUrl: string | null;
     role: string;
+    frozen?: boolean;
 };
 
 // Rows of the business switcher shown before it scrolls.
@@ -72,6 +73,17 @@ export default function DashboardHeader({
             setSwitchingId(null);
             setFailedSwitchId(id);
         }
+    }
+
+    async function leaveBusiness() {
+        if (!window.confirm(`ნამდვილად ტოვებ ბიზნესს „${businessName}“? დაბრუნება მხოლოდ ახალი მოწვევით შეიძლება.`)) return;
+        const response = await fetch("/api/business/members/leave", { method: "POST", credentials: "same-origin" }).catch(() => null);
+        const data = response ? await response.json().catch(() => ({})) as { message?: string } : {};
+        if (!response?.ok) {
+            window.alert(data.message || "ბიზნესის დატოვება ვერ მოხერხდა. სცადე ხელახლა.");
+            return;
+        }
+        window.location.assign("/dashboard");
     }
 
     // Checked on page change and when the tab becomes visible again: no polling interval.
@@ -146,11 +158,16 @@ export default function DashboardHeader({
                 icon: "solar:buildings-2-bold-duotone",
                 href: "/business/new",
             },
+            {
+                label: "ბიზნესის დატოვება",
+                icon: "solar:logout-3-bold-duotone",
+                onSelect: leaveBusiness,
+            },
         ]),
         ...(isPlatformAdmin ? [{ label: "ადმინ პანელი", icon: "solar:shield-user-bold-duotone", href: "/admin" }] : []),
     ];
     const panelHeight =
-        (isOwner ? 216 : 168) +
+        (isOwner ? 216 : 216) +
         (isPlatformAdmin ? 48 : 0) +
         (canSwitchBusiness ? 41 + Math.min(businesses.length, VISIBLE_BUSINESS_ROWS) * 48 : 0);
 
@@ -275,7 +292,7 @@ export default function DashboardHeader({
                                                 <button
                                                     key={business.id}
                                                     type="button"
-                                                    disabled={active || switchingId !== null}
+                                                    disabled={active || business.frozen || switchingId !== null}
                                                     aria-current={active ? "true" : undefined}
                                                     onClick={() => switchBusiness(business.id)}
                                                     className={[
@@ -307,7 +324,7 @@ export default function DashboardHeader({
                                                     <span className="min-w-0 flex-1">
                                                         <span className="block truncate">{business.name}</span>
                                                         <span className="block truncate text-xs font-normal text-slate-400">
-                                                            {business.role === "MEMBER" ? "თანამშრომელი" : "მფლობელი"}
+                                                            {business.frozen ? "გაყინულია: გეგმის ლიმიტი" : business.role === "MEMBER" ? "თანამშრომელი" : "მფლობელი"}
                                                         </span>
                                                     </span>
 
@@ -334,7 +351,9 @@ export default function DashboardHeader({
                                     onClick={() => {
                                         setAccountOpen(false);
 
-                                        if (item.href) {
+                                        if ("onSelect" in item && item.onSelect) {
+                                            void item.onSelect();
+                                        } else if (item.href) {
                                             router.push(item.href);
                                         } else {
                                             accountButtonRef.current?.focus();

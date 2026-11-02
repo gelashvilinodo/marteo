@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { createPrismaClient } from "@/lib/prisma";
 
 import { reserveLimits, requestIp, rateLimitResponse } from "@/lib/security/rate-limit";
+import { enforceTeamLimitsFor } from "@/lib/business/team-manage";
 
 const SESSION_DURATION_DAYS = 30;
 // Match registration's bcrypt cost even when an account does not exist.
@@ -89,6 +90,10 @@ async function post(request: Request) {
         { status: 403 }
       );
     }
+
+    // ვადაგასული გეგმა ლიმიტებს ამცირებს: შესვლისას წევრობები სწორდება.
+    const businessIds = await prisma.businessMembership.findMany({ where: { userId: user.id }, select: { businessId: true } });
+    await enforceTeamLimitsFor(prisma, businessIds.map(row => row.businessId));
 
     const sessionToken = randomBytes(32).toString("hex");
     const tokenHash = hashSessionToken(sessionToken);

@@ -18,8 +18,10 @@ export default async function OnboardingLayout({
     const prisma = createPrismaClient();
 
     const membership = await prisma.businessMembership.findFirst({
+        // გაყინული წევრობა ხელს არ უშლის საკუთარი ბიზნესის შექმნას.
         where: {
             userId: user.id,
+            status: "ACTIVE",
         },
         select: {
             id: true,
