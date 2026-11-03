@@ -1,3 +1,4 @@
+import { apiAccessDenied } from "@/lib/business/access";
 import { orderJson } from "@/lib/orders/order-http";
 import { guardMutation } from "@/lib/security/mutation-request";
 import {
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Context) {
+    const accessDenied = await apiAccessDenied("OWNER", "view"); if (accessDenied) return accessDenied;
     const { id } = await params;
 
     return withAiHistory(async (prisma, owner) =>
@@ -21,6 +23,7 @@ export async function GET(_request: Request, { params }: Context) {
 }
 
 export async function PUT(request: Request, { params }: Context) {
+    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
     const { id } = await params;
 
     return guardMutation(async (guarded) => {
@@ -30,15 +33,16 @@ export async function PUT(request: Request, { params }: Context) {
             const title = typeof body?.title === "string" ? body.title.trim().slice(0, 80) || null : null;
             const saved = await saveConversation(prisma, owner, readConversationId(id), sanitizeMessages(body?.messages), title);
             return orderJson({ success: true, ...saved });
-        }, "edit");
+        });
     })(request);
 }
 
 export async function DELETE(request: Request, { params }: Context) {
+    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
     const { id } = await params;
 
     return guardMutation(async () => withAiHistory(async (prisma, owner) => {
         await deleteConversation(prisma, owner, readConversationId(id));
         return orderJson({ success: true });
-    }, "edit"), "empty")(request);
+    }), "empty")(request);
 }

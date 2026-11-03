@@ -1,7 +1,6 @@
 import "server-only";
 
 import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
-import { apiAccessDenied } from "@/lib/business/access";
 import { orderJson } from "@/lib/orders/order-http";
 import { createPrismaClient } from "@/lib/prisma";
 import { rateLimitResponse } from "@/lib/security/rate-limit";
@@ -12,11 +11,9 @@ type Handler = (
     owner: { businessId: string; userId: string },
 ) => Promise<Response>;
 
-// ისტორია იმავე წვდომით, რაც მართეო AI-ს აქვს; თითო მომხმარებელი მხოლოდ თავის ჩათებს ხედავს.
-export async function withAiHistory(handler: Handler, level: "view" | "edit" = "view") {
-    const denied = await apiAccessDenied("OWNER", level);
-    if (denied) return denied;
-
+// წვდომას (იგივე, რაც მართეო AI-ს აქვს) თითო როუტი თვითონ ამოწმებს, რომ ბილდის შემოწმებამ დაინახოს.
+// თითო მომხმარებელი მხოლოდ თავის ჩათებს ხედავს.
+export async function withAiHistory(handler: Handler) {
     const context = await getPgDashboardContext();
     if (!context) return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
     if (!context.membership) return orderJson({ success: false, message: "ბიზნესი ვერ მოიძებნა." }, 403);
