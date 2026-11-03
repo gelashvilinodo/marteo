@@ -21,7 +21,7 @@ import {
 } from "@/lib/orders/order-actions-client";
 import {
     emptyOrderDraft, inventoryOrderItem, matchesStockItem, incrementStockQuantity, lookupPhone, manualOrderItem, moneyCents, moneyText, orderCreatePayload, orderFormTotals,
-    type InventoryOrderProduct, type OrderCreatePayload, type OrderFormDraft, type OrderFormItem, type PaidMode
+    type DeliveryZone, type InventoryOrderProduct, type OrderCreatePayload, type OrderFormDraft, type OrderFormItem, type PaidMode
 } from "@/lib/orders/order-form";
 
 const input = "h-11 w-full min-w-0 max-w-full rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary outline-none placeholder:text-text-secondary focus:border-accent lg:h-10 lg:text-sm";
@@ -518,7 +518,7 @@ export default function NewOrderDrawer() {
                 event.stopPropagation();
                 requestClose();
             }
-        }} className="order-create-dialog fixed bottom-0 left-0 right-0 top-16 z-30 m-0 h-[calc(100dvh-4rem)] max-h-none w-auto max-w-none overflow-hidden border-0 bg-background p-0 text-text-primary lg:left-[280px]">
+        }} className="order-create-dialog fixed bottom-0 left-0 right-0 top-16 z-[35] m-0 h-[calc(100dvh-4rem)] max-h-none w-auto max-w-none overflow-hidden border-0 bg-background p-0 text-text-primary lg:left-[280px]">
             <style>{`
                 .order-create-dialog[open] { display:flex; flex-direction:column; animation:orderDrawerEnter .3s cubic-bezier(.2,.8,.2,1); }
                 .order-create-dialog[data-closing="true"] { animation:orderDrawerExit .26s ease-in forwards; pointer-events:none; }
@@ -550,10 +550,11 @@ export default function NewOrderDrawer() {
                 <fieldset disabled={blocked} className="min-w-0 space-y-3 disabled:opacity-70 lg:flex lg:min-h-full lg:flex-col lg:gap-3 lg:space-y-0">
                     <section className="shrink-0 rounded-2xl border border-border bg-surface p-3 sm:p-4">
                         <div className="mb-3 flex flex-wrap items-center gap-2"><Icon icon="solar:user-linear" className="h-5 w-5 text-accent" /><h3 className="text-sm font-semibold">მომხმარებლის ინფორმაცია</h3>{customerBusy && <Icon icon="solar:refresh-linear" className="h-4 w-4 animate-spin text-accent" />}<span role="status" className="text-xs text-text-secondary">{customerInfo}</span>{customerInfo && !customerInfo.startsWith("მომხმარებელი მოიძებნა") && !customerInfo.startsWith("ახალი მომხმარებელი") && <button type="button" onClick={() => setLookupRevision(value => value + 1)} className="text-xs text-accent underline">ხელახლა მოძებნა</button>}</div>
-                        <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.6fr)]">
+                        <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.75fr)_minmax(0,1.6fr)]">
                             <div className="col-span-2 lg:col-span-1"><Field label="ტელეფონი *"><input type="tel" autoComplete="off" value={draft.recipientPhone} onChange={event => changePhone(event.target.value)} required placeholder="მაგ: 599 12 34 56" className={input} /></Field></div>
                             <Field label="სახელი"><input value={draft.recipientFirstName} onChange={event => patch({ recipientFirstName: event.target.value })} className={input} /></Field>
                             <Field label="გვარი"><input value={draft.recipientLastName} onChange={event => patch({ recipientLastName: event.target.value })} className={input} /></Field>
+                            <div className="col-span-2 lg:col-span-1"><Field label="მიწოდება"><select value={draft.deliveryZone ?? ""} onChange={event => patch({ deliveryZone: event.target.value as DeliveryZone })} className={input}>{draft.deliveryZone === null && <option value="" disabled>აირჩიე</option>}<option value="TBILISI">თბილისი</option><option value="REGION">რეგიონი</option></select></Field></div>
                             <div className="col-span-2 lg:col-span-1"><Field label="მისამართი"><input value={draft.shippingAddress} onChange={event => patch({ shippingAddress: event.target.value })} placeholder="ქალაქი, ქუჩა, ნომერი" className={input} /></Field></div>
                         </div>
                         <div className="mt-3">

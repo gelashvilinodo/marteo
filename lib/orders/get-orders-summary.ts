@@ -4,6 +4,8 @@ type SummaryRow = {
     grouped: Array<{ status: string; count: number }>;
     newCount: bigint;
     updatedCount: bigint;
+    processingCount: bigint;
+    shippedCount: bigint;
 };
 
 export async function getOrdersSummary(
@@ -24,12 +26,16 @@ export async function getOrdersSummary(
             FROM period_counts), '[]'::jsonb) AS grouped,
             COUNT(*) FILTER (WHERE "lastPrintedInvoiceVersion" IS NULL) AS "newCount",
             COUNT(*) FILTER (WHERE "lastPrintedInvoiceVersion" IS NOT NULL
-                AND "lastPrintedInvoiceVersion" <> "invoiceVersion") AS "updatedCount"
+                AND "lastPrintedInvoiceVersion" <> "invoiceVersion") AS "updatedCount",
+            COUNT(*) FILTER (WHERE status = 'PROCESSING') AS "processingCount",
+            COUNT(*) FILTER (WHERE status = 'SHIPPED') AS "shippedCount"
         FROM "Order"
         WHERE "businessId" = ${businessId} AND "deletedAt" IS NULL AND status <> 'CANCELED'
     `;
     return {
         grouped: (row?.grouped ?? []).map(group => ({ status: group.status, _count: { _all: Number(group.count) } })),
         invoiceCounts: { new: Number(row?.newCount ?? 0), updated: Number(row?.updatedCount ?? 0) },
+        // მთელი ბიზნესის (არა პერიოდის) რაოდენობები ჯგუფური სტატუსის ღილაკებისთვის.
+        queueCounts: { processing: Number(row?.processingCount ?? 0), shipped: Number(row?.shippedCount ?? 0) },
     };
 }

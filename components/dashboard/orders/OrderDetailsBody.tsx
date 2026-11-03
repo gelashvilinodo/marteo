@@ -7,7 +7,7 @@ import { Icon } from "@iconify/react";
 import MissingCostsButton from "@/components/dashboard/costs/MissingCostsButton";
 import type { OrderEntry, OrderDetailEntry } from "@/lib/orders/get-orders-page";
 import { quantityLabel } from "@/lib/orders/quantity";
-import { moneyCents } from "@/lib/orders/order-form";
+import { deliveryZoneLabel, moneyCents } from "@/lib/orders/order-form";
 import { OrderActionError, sendOrderAction } from "@/lib/orders/order-actions-client";
 import OrderEditButton from "./OrderEditButton";
 import OrderInvoiceButton from "./OrderInvoiceButton";
@@ -690,7 +690,7 @@ export function OrderDetailsBody({
                 )}
             </section>
             <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                {[['მიმღები', recipient(order)], ['ტელეფონი', order.recipientPhone], ['მისამართი', order.shippingAddress || '-'], ['თარიღი', date(order.createdAt)], ...(order.createdByName ? [['გააფორმა', order.createdByName]] : [])].map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-text-secondary">{label}</dt><dd className="mt-1 break-words">{value}</dd></div>)}
+                {[['მიმღები', recipient(order)], ['ტელეფონი', order.recipientPhone], ['მიწოდება', order.deliveryZone ? deliveryZoneLabel[order.deliveryZone] : '-'], ['მისამართი', order.shippingAddress || '-'], ['თარიღი', date(order.createdAt)], ...(order.createdByName ? [['გააფორმა', order.createdByName]] : [])].map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-text-secondary">{label}</dt><dd className="mt-1 break-words">{value}</dd></div>)}
             </dl>
             <h3 className="mt-5 font-semibold">პროდუქტები</h3>
             <div className="mt-2 space-y-2">

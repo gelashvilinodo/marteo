@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import type { getOrder } from "@/lib/orders/get-order";
+import type { OrderEntry } from "@/lib/orders/get-orders-page";
 import { OrderActionError, sendOrderAction } from "@/lib/orders/order-actions-client";
 import { useOrderLeaveGuard } from "./useOrderLeaveGuard";
 
@@ -16,14 +17,37 @@ type Row = {
     state: "READY" | "REVIEW" | "DELETED" | "ERROR" | "UNCERTAIN";
     message: string;
     payload?: Record<string, unknown>;
+    // დასრულებული/გაუქმებული შეკვეთა ერთი საერთო მოთხოვნით იშლება.
+    fast?: boolean;
 };
+type KnownOrder = Pick<OrderEntry, "id" | "number" | "status">;
+
+function orderLabel(id: string, number: number | null) {
+    return number === null ? id : `#${String(number).padStart(4, "0")}`;
+}
+
+async function deleteSettled(orderIds: string[], signal: AbortSignal) {
+    const response = await fetch("/api/orders/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderIds }),
+        signal,
+    });
+    const result = await response.json() as { success?: boolean; message?: string; deletedIds?: string[] };
+    if (!response.ok || !result.success || !Array.isArray(result.deletedIds)) {
+        throw new OrderActionError(result.message || "წაშლა ვერ შესრულდა.", response.status);
+    }
+    return result.deletedIds;
+}
 
 export default function OrderBulkDeleteButton({
     orderIds,
+    knownOrders = [],
     onDeleted,
     onReview,
 }: {
     orderIds: string[];
+    knownOrders?: KnownOrder[];
     onDeleted: (ids: string[]) => void;
     onReview: (orderId: string) => void;
 }) {
@@ -66,7 +90,7 @@ export default function OrderBulkDeleteButton({
             throw new Error(result.message || "შეკვეთა ვერ ჩაიტვირთა.");
         }
         const order = result.order;
-        const label = order.number === null ? id : `#${String(order.number).padStart(4, "0")}`;
+        const label = orderLabel(id, order.number);
         const pending = order.returns.some(entry => entry.status === "PENDING");
         const fullyReturned = order.stockReturned || (
             order.items.length > 0 && order.items.every(
@@ -131,6 +155,20 @@ export default function OrderBulkDeleteButton({
         const inspected: Row[] = [];
         try {
             for (const id of ids) {
+                const known = knownOrders.find(order => order.id === id);
+                if (known && (known.status === "COMPLETED" || known.status === "CANCELED")) {
+                    inspected.push({
+                        id,
+                        label: orderLabel(id, known.number),
+                        state: "READY",
+                        fast: true,
+                        message: known.status === "COMPLETED"
+                            ? "შეკვეთა დასრულებულია; თანხა და მარაგი მოწესრიგებულია."
+                            : "შეკვეთა გაუქმებულია; თანხა და მარაგი მოწესრიგებულია.",
+                    });
+                    setRows([...inspected]);
+                    continue;
+                }
                 try {
                     inspected.push(await inspect(id, abort.signal));
                 } catch (cause: unknown) {
@@ -155,7 +193,41 @@ export default function OrderBulkDeleteButton({
         setBusy(true);
         const deleted: string[] = [];
         try {
-            for (const row of targets) {
+            const fast = targets.filter(row => row.fast);
+            const slow = targets.filter(row => !row.fast);
+            if (fast.length) {
+                try {
+                    const deletedIds = await deleteSettled(fast.map(row => row.id), abort.signal);
+                    deleted.push(...deletedIds);
+                    setRows(current => current.map(value => deletedIds.includes(value.id)
+                        ? { ...value, state: "DELETED", message: "შეკვეთა წაშლილია." }
+                        : value));
+                    // იშვიათად დასრულებულ შეკვეთაზეც შეიძლება დაბრუნება ან თანხის ნაშთი იყოს: ასეთს ჩვეულებრივ ვამოწმებთ.
+                    for (const row of fast.filter(value => !deletedIds.includes(value.id))) {
+                        if (abort.signal.aborted) break;
+                        let checked: Row;
+                        try {
+                            checked = { ...await inspect(row.id, abort.signal), fast: false };
+                        } catch (cause: unknown) {
+                            if (abort.signal.aborted) break;
+                            checked = { ...row, fast: false, state: "ERROR", message: cause instanceof Error ? cause.message : "ჩატვირთვა ვერ შესრულდა." };
+                        }
+                        setRows(current => current.map(value => value.id === row.id ? checked : value));
+                        if (checked.state === "READY") slow.push(checked);
+                    }
+                } catch (cause: unknown) {
+                    const definite = cause instanceof OrderActionError && cause.status < 500;
+                    const ids = fast.map(row => row.id);
+                    setRows(current => current.map(value => ids.includes(value.id)
+                        ? {
+                            ...value,
+                            state: definite ? "ERROR" : "UNCERTAIN",
+                            message: definite ? cause.message : "შედეგი დაუდასტურებელია. სცადე ხელახლა.",
+                        }
+                        : value));
+                }
+            }
+            for (const row of slow) {
                 if (abort.signal.aborted) break;
                 try {
                     await sendOrderAction(row.id, "delete", row.payload!, abort.signal);

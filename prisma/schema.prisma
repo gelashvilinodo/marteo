@@ -75,6 +75,11 @@ enum VerificationType {
   PHONE
 }
 
+enum DeliveryZone {
+  TBILISI
+  REGION
+}
+
 enum OrderStatus {
   PROCESSING
   SHIPPED
@@ -422,6 +427,7 @@ model Order {
   recipientPhone            String
   recipientFirstName        String?
   recipientLastName         String?
+  deliveryZone              DeliveryZone?
   shippingAddress           String?
 
   status        OrderStatus   @default(PROCESSING)

@@ -53,7 +53,7 @@ export async function getOrdersPgPage(
     }
     const where = join(clauses, " AND ");
     return client.withReadTransaction(async tx => {
-        const { grouped, invoiceCounts } = await getOrdersSummary(tx, businessId, range.start, range.end);
+        const { grouped, invoiceCounts, queueCounts } = await getOrdersSummary(tx, businessId, range.start, range.end);
         const counts = { all: 0, processing: 0, shipped: 0, completed: 0, canceled: 0 };
         for (const group of grouped) {
             counts.all += group._count._all;
@@ -73,7 +73,7 @@ export async function getOrdersPgPage(
         const ids = await tx.$queryRaw<Array<{ id: string }>>(sql`SELECT o.id FROM "Order" o WHERE ${rowWhere} ORDER BY ${raw(ordering[sort])} LIMIT ${singleOrderId ? 1 : PAGE_SIZE} OFFSET ${singleOrderId ? 0 : (currentPage - 1) * PAGE_SIZE}`);
         const records = await getOrderRecords(tx, businessId, ids.map(row => row.id), Boolean(singleOrderId));
         return {
-            orders: records.map(record => serializeOrderRecord(record, Boolean(singleOrderId))), invoiceCounts, counts,
+            orders: records.map(record => serializeOrderRecord(record, Boolean(singleOrderId))), invoiceCounts, queueCounts, counts,
             filter, query, sort, payment, period: range.period, from: range.from, to: range.to, periodError: range.error,
             totalOrders, currentPage, totalPages, pageSize: PAGE_SIZE,
         };

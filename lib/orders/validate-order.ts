@@ -26,6 +26,7 @@ export type ValidatedOrder = {
     recipientPhone: string;
     recipientFirstName: string;
     recipientLastName: string;
+    deliveryZone: "TBILISI" | "REGION" | null;
     shippingAddress: string;
     notes: string;
     status: "PROCESSING" | "SHIPPED" | "COMPLETED" | "CANCELED";
@@ -60,6 +61,15 @@ function text(value: unknown, label: string): string {
     }
 
     return value.normalize("NFC").trim();
+}
+
+function deliveryZone(value: unknown): "TBILISI" | "REGION" | null {
+    if (value === undefined || value === null || value === "") return null;
+    if (value !== "TBILISI" && value !== "REGION") {
+        fail("მიწოდების ზონა არასწორია.");
+    }
+
+    return value;
 }
 
 export function normalizeCustomerPhone(value: string): string {
@@ -135,8 +145,9 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
         fail("შეკვეთის სტატუსი არასწორია.");
     }
 
-    if (mode === "create" && data.status === "COMPLETED" && data.confirmCompleted !== true) {
-        fail("დაადასტურე დასრულება: ამის შემდეგ შეკვეთა აღარ რედაქტირდება.");
+    // დასრულება მხოლოდ სტატუსის ცვლილებით ხდება, სადაც თანხის სრული მიღება დასტურდება.
+    if (mode === "create" && data.status === "COMPLETED") {
+        fail("ახალი შეკვეთა დასრულებულად ვერ შეიქმნება. დაასრულე სტატუსის შეცვლით, თანხის მიღების დადასტურების შემდეგ.");
     }
 
     if (
@@ -272,6 +283,7 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
             data.recipientLastName,
             "გვარი",
         ),
+        deliveryZone: deliveryZone(data.deliveryZone),
         shippingAddress: text(
             data.shippingAddress,
             "მისამართი",

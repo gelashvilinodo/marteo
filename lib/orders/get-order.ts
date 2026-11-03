@@ -219,7 +219,7 @@ export async function getOrder(orderId: string) {
                     unitPrice: item.unitPrice.toFixed(2),
                 })),
             })),
-            recipientPhone: order.recipientPhone, recipientFirstName: order.recipientFirstName ?? "", recipientLastName: order.recipientLastName ?? "", shippingAddress: order.shippingAddress ?? "",
+            recipientPhone: order.recipientPhone, recipientFirstName: order.recipientFirstName ?? "", recipientLastName: order.recipientLastName ?? "", deliveryZone: order.deliveryZone, shippingAddress: order.shippingAddress ?? "",
             courierFee: order.courierFee.toFixed(2), paidAmount: paidAmount.toFixed(2),
             paymentMethod: order.payments.at(-1)?.method ?? "CASH", bankName: order.payments.at(-1)?.bankName ?? "",
             items: order.items.map(item => ({

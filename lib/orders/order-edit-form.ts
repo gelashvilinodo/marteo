@@ -13,6 +13,7 @@ export function orderEditDraft(order: Order): OrderFormDraft {
         recipientPhone: order.recipientPhone,
         recipientFirstName: order.recipientFirstName,
         recipientLastName: order.recipientLastName,
+        deliveryZone: order.deliveryZone,
         shippingAddress: order.shippingAddress,
         notes: order.notes,
         courierFee: order.courierFee,

@@ -165,7 +165,7 @@ export async function getOrdersPage(
     return prisma.$transaction(
         async (tx) => {
             // ქარდები არჩეულ პერიოდს აჯამებს, ძებნისა და სხვა ფილტრების მიუხედავად.
-            const { grouped, invoiceCounts } = await getOrdersSummary(tx, businessId, range.start, range.end);
+            const { grouped, invoiceCounts, queueCounts } = await getOrdersSummary(tx, businessId, range.start, range.end);
 
             const counts = {
                 all: 0,
@@ -235,6 +235,7 @@ export async function getOrdersPage(
             return {
                 orders: entries,
                 invoiceCounts,
+                queueCounts,
                 counts,
                 filter,
                 query,

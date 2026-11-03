@@ -17,14 +17,16 @@ export type OrderFormItem = {
     materialCostSnapshot?:{quantity:string;totalCost:string};
     uploadPending?: boolean;
 };
+export type DeliveryZone = "TBILISI" | "REGION";
+export const deliveryZoneLabel: Record<DeliveryZone, string> = { TBILISI: "თბილისი", REGION: "რეგიონი" };
 export type OrderFormDraft = {
-    recipientPhone: string; recipientFirstName: string; recipientLastName: string; shippingAddress: string; notes: string;
+    recipientPhone: string; recipientFirstName: string; recipientLastName: string; deliveryZone: DeliveryZone | null; shippingAddress: string; notes: string;
     courierFee: string; paidAmount: string; paymentMethod: "CASH" | "BANK_TRANSFER" | "CARD" | "UNKNOWN";
     bankName: string; status: "PROCESSING" | "COMPLETED"; items: OrderFormItem[];
 };
 export type PaidMode = "none" | "full" | "courier" | "custom";
 export function emptyOrderDraft(): OrderFormDraft {
-    return { recipientPhone: "", recipientFirstName: "", recipientLastName: "", shippingAddress: "", notes: "", courierFee: "0", paidAmount: "0", paymentMethod: "CASH", bankName: "", status: "PROCESSING", items: [] };
+    return { recipientPhone: "", recipientFirstName: "", recipientLastName: "", deliveryZone: "TBILISI", shippingAddress: "", notes: "", courierFee: "0", paidAmount: "0", paymentMethod: "CASH", bankName: "", status: "PROCESSING", items: [] };
 }
 export function manualOrderItem(): OrderFormItem {
     return { key: crypto.randomUUID(), source: "MANUAL", inventoryItemId: null, name: "", description: "", color: "", size: "", imageUrl: null, condition: "GOOD", quantity: "1", unitPrice: "", unitCost: "" };
@@ -115,7 +117,7 @@ export function orderCreatePayload(
     }
     return {
         clientRequestId, recipientPhone: draft.recipientPhone, recipientFirstName: draft.recipientFirstName,
-        recipientLastName: draft.recipientLastName, shippingAddress: draft.shippingAddress, notes: draft.notes, status: "PROCESSING" as const,
+        recipientLastName: draft.recipientLastName, deliveryZone: draft.deliveryZone, shippingAddress: draft.shippingAddress, notes: draft.notes, status: "PROCESSING" as const,
         confirmCompleted: false, courierFee: moneyText(totals.courier), paidAmount: moneyText(totals.paid), paymentMethod: draft.paymentMethod,
         bankName: draft.bankName, items
     };

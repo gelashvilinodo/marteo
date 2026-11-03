@@ -15,6 +15,7 @@ type ItemRow = {
 type RecordRow = {
     id: string; number: number | null; recipientPhone: string;
     recipientFirstName: string | null; recipientLastName: string | null;
+    deliveryZone: "TBILISI" | "REGION" | null;
     shippingAddress: string | null; notes: string | null;
     status: "PROCESSING" | "SHIPPED" | "COMPLETED" | "CANCELED" | "RETURNED";
     paymentStatus: "PAID" | "UNPAID" | "PARTIALLY_PAID" | "COURIER_ONLY_PAID" | "UNKNOWN";
@@ -52,7 +53,7 @@ export async function getOrderRecords(
     };
     const rows = await query<RecordRow[]>`
         SELECT o.id, o.number, o."recipientPhone", o."recipientFirstName", o."recipientLastName",
-            o."shippingAddress", o.notes, o.status::text AS status,
+            o."deliveryZone"::text AS "deliveryZone", o."shippingAddress", o.notes, o.status::text AS status,
             o."paymentStatus"::text AS "paymentStatus", o."courierFee"::text AS "courierFee",
             o."stockReturnedAt", o."deleteRequestedAt", o."fulfillmentCycle", o."createdAt", o."updatedAt",
             o."invoiceVersion", o."lastPrintedInvoiceVersion", o."invoicePrintedAt",

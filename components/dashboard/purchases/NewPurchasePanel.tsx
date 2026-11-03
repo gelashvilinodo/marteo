@@ -1583,7 +1583,7 @@ export default function NewPurchasePanel({
                         }
                     }}
                     className={[
-                        "fixed inset-x-0 bottom-0 top-16 z-30",
+                        "fixed inset-x-0 bottom-0 top-16 z-[35]",
                         "flex origin-bottom flex-col overflow-hidden bg-background",
                         "lg:left-[280px]",
                         "transition-[translate,scale,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",

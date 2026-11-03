@@ -163,6 +163,7 @@ export async function saveOrder(raw: unknown) {
                             data.recipientFirstName || null,
                         recipientLastName:
                             data.recipientLastName || null,
+                        deliveryZone: data.deliveryZone,
                         shippingAddress:
                             data.shippingAddress || null,
                         notes: data.notes || null,

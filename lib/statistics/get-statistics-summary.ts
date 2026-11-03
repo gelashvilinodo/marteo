@@ -160,19 +160,30 @@ export async function getStatisticsSummary(
         return number;
     }
 
+    // მასალები ათწილადი რაოდენობით იყიდება (მაგ. 1.5 მ), ამიტომ ერთეულები მთელი არ არის.
+    function quantity(value: string) {
+        const number = Number(value);
+
+        if (!Number.isFinite(number)) {
+            throw new Error("სტატისტიკის რაოდენობა ვერ დამუშავდა.");
+        }
+
+        return Math.round(number * 1_000_000) / 1_000_000;
+    }
+
     return {
         period: range.period,
         from: range.from,
         to: range.to,
         periodError: range.error,
         completedOrders: integer(summary.completedOrders),
-        soldUnits: integer(summary.soldUnits),
+        soldUnits: quantity(summary.soldUnits),
         newCustomers: integer(summary.newCustomers),
         returningCustomers: integer(summary.returningCustomers),
         createdOrders: integer(summary.createdOrders),
         completedCreatedOrders: integer(summary.completedCreatedOrders),
         completionRate: summary.completionRate,
-        returnedUnits: integer(summary.returnedUnits),
+        returnedUnits: quantity(summary.returnedUnits),
         exchanges: integer(summary.exchanges),
     };
 }

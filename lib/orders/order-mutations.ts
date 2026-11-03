@@ -10,16 +10,13 @@ import { createOrderItems, orderWithStock, resolveOrderCustomer, restoreOrderSto
 import { createPublicOrderToken } from "./create-public-order-token";
 import { exchangeOrderProducts } from "./order-exchanges";
 import { confirmOrderRefund } from "./order-refunds";
-import { orderPayableTotal } from "./order-payable-total";
 import { assertOrderDeletionBalance } from "./assert-order-deletion-balance";
-import { prepareCompletionCosts } from "./prepare-completion-costs";
+import { completeOrder } from "./complete-order";
 import {
     requestOrderReturn,
     receiveOrderReturn,
     type ReturnSelection,
 } from "./order-returns";
-import { buildSaleSnapshot } from "@/lib/analytics/build-sale-snapshot";
-import { recordSaleSnapshot } from "@/lib/analytics/record-sale-snapshot";
 import { recordFinancialAdjustment } from "@/lib/analytics/record-financial-adjustment";
 import {
     resolveHistoricalOrderPayment,
@@ -316,6 +313,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                     where: { id: orderId }, data: {
                         customerId: customer.id, recipientPhone: data.recipientPhone,
                         recipientFirstName: data.recipientFirstName || null, recipientLastName: data.recipientLastName || null,
+                        deliveryZone: data.deliveryZone,
                         shippingAddress: data.shippingAddress || null,
                         notes: data.notes || null,
                         courierFee: data.courierFee,
@@ -335,143 +333,33 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                 const next = state(body.status);
                 assertTransition(order.status, next, body.confirmCompleted);
                 if (next !== order.status) {
-                    const receivedQuantities = new Map<string, number>();
-
-                    let completionSnapshot:
-                        ReturnType<typeof buildSaleSnapshot> | null = null;
-
                     if (next === "COMPLETED") {
-                        if (order.paymentStatus === "UNKNOWN") {
-                            fail(
-                                "ამ შეკვეთაზე გადახდა დაუზუსტებელია. დასრულებამდე მიუთითე რეალურად გადახდილი თანხა.",
-                                422,
+                        await completeOrder(tx, businessId, order, body);
+                    } else {
+                        const returnStock = next === "CANCELED" && (order.status === "PROCESSING" || body.stockReturned === true);
+                        const fullyRestored = returnStock
+                            ? await restoreOrderStock(
+                                tx,
+                                order,
+                                "შეკვეთის გაუქმება და დაბრუნება",
+                            )
+                            : false;
+                        await tx.order.update({
+                            where: { id: orderId }, data: {
+                                status: next,
+                                invoiceVersion: { increment: 1 },
+                                ...(fullyRestored ? { stockReturnedAt: new Date() } : {}),
+                            }
+                        });
+                        if (next === "CANCELED" && fullyRestored) {
+                            await recordFinancialAdjustment(
+                                tx,
+                                businessId,
+                                orderId,
+                                requestId,
+                                "RETURN",
                             );
                         }
-
-                        if (hasReturnHistory > 0) {
-                            const returnedItems = await tx.orderReturnItem.groupBy({
-                                by: ["orderItemId"],
-                                where: {
-                                    orderReturn: {
-                                        orderId,
-                                        fulfillmentCycle: order.fulfillmentCycle,
-                                        status: "RECEIVED",
-                                    },
-                                },
-                                _sum: {
-                                    quantity: true,
-                                },
-                            });
-
-                            for (const item of returnedItems) {
-                                receivedQuantities.set(
-                                    item.orderItemId,
-                                    Number(item._sum.quantity ?? 0),
-                                );
-                            }
-                        }
-
-                        completionSnapshot = await prepareCompletionCosts(
-                            tx,
-                            order,
-                            receivedQuantities,
-                            body.completionCosts,
-                        );
-
-                        const total = orderPayableTotal(
-                            order,
-                            receivedQuantities,
-                        );
-
-                        const paid = order.payments.reduce(
-                            (sum, payment) => sum.plus(payment.amount),
-                            new Prisma.Decimal(0),
-                        );
-
-                        const remaining = total.minus(paid);
-
-                        if (remaining.gt(0)) {
-                            if (body.confirmFullPayment !== true) {
-                                fail(
-                                    `დარჩენილია ${remaining.toFixed(2)} ₾. დასრულებამდე დაადასტურე ამ თანხის რეალურად მიღება.`,
-                                    422,
-                                );
-                            }
-
-                            const method = body.completionPaymentMethod;
-
-                            if (
-                                method !== "CASH" &&
-                                method !== "BANK_TRANSFER" &&
-                                method !== "CARD"
-                            ) {
-                                fail("აირჩიე დარჩენილი თანხის გადახდის მეთოდი.", 422);
-                            }
-
-                            if (
-                                body.completionBankName !== undefined &&
-                                typeof body.completionBankName !== "string"
-                            ) {
-                                fail("ბანკის დასახელება არასწორია.", 422);
-                            }
-
-                            const bankName =
-                                method === "BANK_TRANSFER" &&
-                                    typeof body.completionBankName === "string"
-                                    ? body.completionBankName.trim()
-                                    : "";
-
-                            await tx.orderPayment.create({
-                                data: {
-                                    orderId,
-                                    amount: remaining,
-                                    method,
-                                    bankName: bankName || null,
-                                },
-                            });
-                        }
-                    }
-                    const returnStock = next === "CANCELED" && (order.status === "PROCESSING" || body.stockReturned === true);
-                    const fullyRestored = returnStock
-                        ? await restoreOrderStock(
-                            tx,
-                            order,
-                            "შეკვეთის გაუქმება და დაბრუნება",
-                        )
-                        : false;
-                    await tx.order.update({
-                        where: { id: orderId }, data: {
-                            status: next,
-                            invoiceVersion: { increment: 1 },
-                            ...(next === "COMPLETED"
-                                ? { paymentStatus: "PAID" as const }
-                                : {}),
-                            ...(fullyRestored ? { stockReturnedAt: new Date() } : {}),
-                        }
-                    });
-                    if (next === "CANCELED" && fullyRestored) {
-                        await recordFinancialAdjustment(
-                            tx,
-                            businessId,
-                            orderId,
-                            requestId,
-                            "RETURN",
-                        );
-                    }
-                    if (next === "COMPLETED") {
-                        if (!completionSnapshot) {
-                            fail("დასრულების ფინანსური მონაცემები ვერ მომზადდა.", 500);
-                        }
-
-                        const snapshot = completionSnapshot;
-
-                        await recordSaleSnapshot(
-                            tx,
-                            businessId,
-                            order,
-                            snapshot,
-                            `sale:${order.id}:${order.fulfillmentCycle}`,
-                        );
                     }
                     changed = true;
                 }

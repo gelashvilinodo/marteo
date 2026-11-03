@@ -11,7 +11,7 @@ export async function GET(request: Request, context: { params: Promise<{ orderId
         const params = Object.fromEntries(new URL(request.url).searchParams.entries());
         const data = await getOrdersPgPage(client, businessId, params, orderId);
         return costSafeJson({ success: true, order: data.orders[0] ?? null,
-            summary: { counts: data.counts, invoiceCounts: data.invoiceCounts,
+            summary: { counts: data.counts, invoiceCounts: data.invoiceCounts, queueCounts: data.queueCounts,
                 totalOrders: data.totalOrders, currentPage: data.currentPage, totalPages: data.totalPages },
         });
     });

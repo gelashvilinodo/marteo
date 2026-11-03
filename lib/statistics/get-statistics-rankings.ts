@@ -156,7 +156,7 @@ export async function getStatisticsRankings(
         throw new Error("სტატისტიკის რეიტინგები ვერ ჩაიტვირთა.");
     }
 
-    function quantity(value: string) {
+    function count(value: string) {
         const number = Number(value);
 
         if (!Number.isSafeInteger(number) || number < 0) {
@@ -166,6 +166,17 @@ export async function getStatisticsRankings(
         return number;
     }
 
+    // მასალები ათწილადი რაოდენობით იყიდება (მაგ. 1.5 მ).
+    function quantity(value: string) {
+        const number = Number(value);
+
+        if (!Number.isFinite(number) || number < 0) {
+            throw new Error("რეიტინგის რაოდენობა ვერ დამუშავდა.");
+        }
+
+        return Math.round(number * 1_000_000) / 1_000_000;
+    }
+
     return {
         products: result.snapshot.products.map(product => ({
             ...product,
@@ -173,7 +184,7 @@ export async function getStatisticsRankings(
         })),
         customers: result.snapshot.customers.map(customer => ({
             ...customer,
-            orders: quantity(customer.orders),
+            orders: count(customer.orders),
         })),
     };
 }

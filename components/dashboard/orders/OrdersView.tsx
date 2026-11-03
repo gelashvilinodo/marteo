@@ -11,10 +11,12 @@ import dynamic from "next/dynamic";
 import { Icon } from "@iconify/react";
 import type { OrderEntry, OrderDetailEntry, OrdersFilter, OrdersPageData, OrdersSort, OrdersPaymentFilter } from "@/lib/orders/get-orders-page";
 import type { OrdersPeriod } from "@/lib/orders/orders-period";
+import { deliveryZoneLabel } from "@/lib/orders/order-form";
 import NewOrderButton from "./NewOrderButton";
 import OrdersPagination from "./OrdersPagination";
 import InventoryFiltersDisclosure from "@/components/dashboard/inventory/InventoryFiltersDisclosure";
 import OrderBulkDeleteButton from "./OrderBulkDeleteButton";
+import OrderBulkStatusButtons from "./OrderBulkStatusButtons";
 import OrdersListSkeleton from "./OrdersListSkeleton";
 import CourierReminder, {
     COURIER_REMINDER_CHANGED,
@@ -76,6 +78,7 @@ export default function OrdersView({
         useState<string | null>(null);
     const [checkedIds, setCheckedIds] = useState<string[]>([]);
     const [selectionMode, setSelectionMode] = useState(false);
+    const checkedOrders = data.orders.filter(order => checkedIds.includes(order.id));
     const [printError, setPrintError] = useState("");
     useEffect(() => {
         let active = true;
@@ -179,6 +182,27 @@ export default function OrdersView({
     }, [detailsOpen]);
 
     useEffect(() => () => detailRequest.current?.abort(), []);
+
+    // ჯგუფური დასრულებიდან გახსნილი შეკვეთა შეიძლება მიმდინარე გვერდზე არ იყოს.
+    async function openOrderById(orderId: string) {
+        const known = data.orders.find(order => order.id === orderId);
+        if (known) return openDetails(known);
+        detailRequest.current?.abort();
+        const controller = new AbortController();
+        detailRequest.current = controller;
+        try {
+            const response = await fetch(
+                `/api/orders/${encodeURIComponent(orderId)}/details`,
+                { cache: "no-store", credentials: "same-origin", signal: controller.signal },
+            );
+            const body = await response.json() as { success?: boolean; order?: OrderDetailEntry | null };
+            if (controller.signal.aborted || !response.ok || !body.success || !body.order?.detailsLoaded) return;
+            setDetailTarget(null);
+            setSelected(body.order);
+        } catch {
+            // დეტალები ვერ ჩაიტვირთა: შეკვეთა ძებნით მაინც მოიძებნება.
+        }
+    }
 
     async function openDetails(order: OrderEntry) {
         detailRequest.current?.abort();
@@ -296,6 +320,7 @@ export default function OrdersView({
                     OrdersPageData,
                     | "counts"
                     | "invoiceCounts"
+                    | "queueCounts"
                     | "totalOrders"
                     | "currentPage"
                     | "totalPages"
@@ -528,7 +553,8 @@ export default function OrdersView({
                         </div>
                     )}
                 <div className="border-t border-border px-3 py-3 sm:px-4">
-                    <div className="flex flex-wrap items-center gap-2">
+                    {/* ერთი ხაზი, რომელიც ჰორიზონტალურად სქროლდება, რომ ღილაკების რაოდენობამ სიმაღლე არ შეცვალოს. */}
+                    <div className="-mx-3 -my-1 flex items-center gap-2 overflow-x-auto whitespace-nowrap px-3 py-1 [scrollbar-width:none] sm:-mx-4 sm:px-4 [&::-webkit-scrollbar]:hidden [&>*]:shrink-0">
                         {data.orders.length > 0 && (
                             <button
                                 type="button"
@@ -587,6 +613,12 @@ export default function OrdersView({
                                         )
                                     </a>
                                 )}
+
+                                <OrderBulkStatusButtons
+                                    processing={data.queueCounts.processing}
+                                    shipped={data.queueCounts.shipped}
+                                    onOpenOrder={orderId => void openOrderById(orderId)}
+                                />
                             </>
                         )}
 
@@ -594,27 +626,40 @@ export default function OrdersView({
                             <>
                                 <span
                                     aria-live="polite"
-                                    className="px-1 text-sm text-text-secondary"
+                                    aria-label={`მონიშნულია ${checkedIds.length} შეკვეთა ${data.orders.length}-დან`}
+                                    className="inline-flex min-h-10 items-center rounded-xl border border-border px-3 text-sm tabular-nums"
                                 >
-                                    მონიშნულია: {checkedIds.length}
+                                    <span className="font-semibold text-text-primary">{checkedIds.length}</span>
+                                    <span className="text-text-secondary">/{data.orders.length}</span>
                                 </span>
 
-                                {checkedIds.length > 0 && (
-                                    <button
-                                        type="button"
-                                        onClick={openSelectedPrint}
-                                        className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-success px-3 text-sm font-semibold text-white"
-                                    >
-                                        <Icon
-                                            icon="solar:documents-linear"
-                                            className="h-5 w-5"
-                                        />
-                                        ბეჭდვა
-                                    </button>
-                                )}
+                                <button
+                                    type="button"
+                                    onClick={openSelectedPrint}
+                                    disabled={!checkedIds.length}
+                                    className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-success px-3 text-sm font-semibold text-white disabled:opacity-40"
+                                >
+                                    <Icon
+                                        icon="solar:documents-linear"
+                                        className="h-5 w-5"
+                                    />
+                                    ბეჭდვა
+                                </button>
+
+                                <OrderBulkStatusButtons
+                                    processing={data.queueCounts.processing}
+                                    shipped={data.queueCounts.shipped}
+                                    selection={{
+                                        ids: checkedIds,
+                                        canShip: checkedOrders.length > 0 && checkedOrders.every(order => order.status === "PROCESSING"),
+                                        canComplete: checkedOrders.length > 0 && checkedOrders.every(order => order.status === "SHIPPED"),
+                                    }}
+                                    onOpenOrder={orderId => void openOrderById(orderId)}
+                                />
 
                                 <OrderBulkDeleteButton
                                     orderIds={checkedIds}
+                                    knownOrders={data.orders.filter(order => checkedIds.includes(order.id))}
                                     onDeleted={deletedIds => {
                                         setCheckedIds(current =>
                                             current.filter(
@@ -731,7 +776,9 @@ export default function OrdersView({
                                 return (
                                     <tr
                                         key={order.id}
-                                        className={`h-20 border-t border-border transition-colors ${selectionMode && checkedIds.includes(order.id)
+                                        // მონიშვნის რეჟიმში მთელი რიგი რთავს/თიშავს მონიშვნას; სამი წერტილი ისევ დეტალებს ხსნის.
+                                        onClick={selectionMode && !pending ? () => toggleOrder(order.id) : undefined}
+                                        className={`h-20 border-t border-border transition-colors ${selectionMode ? "cursor-pointer select-none " : ""}${selectionMode && checkedIds.includes(order.id)
                                             ? "bg-accent/10"
                                             : order.pendingReturnQuantity > 0
                                                 ? "bg-warning/10"
@@ -745,6 +792,7 @@ export default function OrdersView({
                                                     checked={checkedIds.includes(order.id)}
                                                     disabled={pending}
                                                     onChange={() => toggleOrder(order.id)}
+                                                    onClick={event => event.stopPropagation()}
                                                     aria-label={`${number(order)} მონიშვნა`}
                                                     className="h-4 w-4 accent-accent"
                                                 />
@@ -795,9 +843,10 @@ export default function OrdersView({
                                                 title={order.shippingAddress || undefined}
                                                 className="mt-1 block w-full min-w-0 max-w-full truncate text-xs text-text-secondary"
                                             >
-                                                {order.shippingAddress
-                                                    ?.trim()
-                                                    .replace(/\s+/g, " ") || "-"}
+                                                {[
+                                                    order.deliveryZone && deliveryZoneLabel[order.deliveryZone],
+                                                    order.shippingAddress?.trim().replace(/\s+/g, " "),
+                                                ].filter(Boolean).join(" · ") || "-"}
                                             </p>
                                         </td>
 
@@ -817,11 +866,13 @@ export default function OrdersView({
                                         </td>
 
                                         <td className="px-1 py-2 align-middle">
-                                            <Status
-                                                onChanged={refreshOrder}
-                                                order={order}
-                                                onReturn={openOrderReturn}
-                                            />
+                                            <div inert={selectionMode} className={selectionMode ? "pointer-events-none" : undefined}>
+                                                <Status
+                                                    onChanged={refreshOrder}
+                                                    order={order}
+                                                    onReturn={openOrderReturn}
+                                                />
+                                            </div>
                                         </td>
 
                                         <td className="hidden px-2 py-2 align-middle xl:table-cell">
@@ -833,7 +884,10 @@ export default function OrdersView({
                                         <td className="px-1 py-2 align-middle">
                                             <button
                                                 type="button"
-                                                onClick={() => void openDetails(order)}
+                                                onClick={event => {
+                                                    event.stopPropagation();
+                                                    void openDetails(order);
+                                                }}
                                                 aria-label={`${number(order)} დეტალები${hasExtraInfo
                                                     ? " - დამატებითი ინფორმაცია"
                                                     : ""
