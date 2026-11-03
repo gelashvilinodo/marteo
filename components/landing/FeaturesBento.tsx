@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import Image from "next/image";
 import { Icon } from "@iconify/react";
 
 import { BUSINESS_MODES, type BusinessMode } from "@/lib/business/business-mode";
@@ -116,6 +117,17 @@ export default function FeaturesBento() {
                             {active => <DocumentsVisual active={active} />}
                         </BentoCard>
                     </div>
+
+                    <BentoCard
+                        index={7}
+                        logo="/images/marteoAI.svg"
+                        icon="solar:magic-stick-3-bold-duotone"
+                        tone="bg-accent/10 text-accent"
+                        title="მართეო AI"
+                        text={aiScenes[mode].text}
+                    >
+                        {active => <AiVisual key={mode} mode={mode} active={active} />}
+                    </BentoCard>
                 </div>
             </div>
         </section>
@@ -231,6 +243,7 @@ function Slot({
 function BentoCard({
     index,
     icon,
+    logo,
     tone,
     title,
     text,
@@ -238,6 +251,7 @@ function BentoCard({
 }: {
     index: number;
     icon: string;
+    logo?: string;
     tone: string;
     title: string;
     text: string;
@@ -282,9 +296,13 @@ function BentoCard({
             style={{ transitionDelay: revealed ? undefined : `${index * 70}ms` }}
         >
             <div className="flex items-start gap-3">
-                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tone}`}>
-                    <Icon icon={icon} className="h-6 w-6" />
-                </span>
+                {logo ? (
+                    <Image src={logo} alt="" width={44} height={44} className="h-11 w-11 shrink-0 rounded-xl ring-1 ring-border" />
+                ) : (
+                    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tone}`}>
+                        <Icon icon={icon} className="h-6 w-6" />
+                    </span>
+                )}
                 <div className="min-w-0">
                     <h3 className="text-lg font-semibold text-text-primary">{title}</h3>
                     <p className="mt-0.5 text-sm leading-relaxed text-text-secondary">{text}</p>
@@ -718,6 +736,144 @@ function DocumentsVisual({ active }: { active: boolean }) {
                         />
                     </span>
                 ))}
+            </div>
+        </div>
+    );
+}
+
+// AI ბარათის სცენები ბიზნესის ტიპის მიხედვით: მარცხნივ კითხვა-პასუხი,
+// მარჯვნივ მომწოდებლის ფაილიდან შედგენილი შესყიდვა.
+const aiScenes: Record<
+    BusinessMode,
+    {
+        text: string;
+        question: string;
+        answer: string;
+        file: string;
+        steps: string[];
+        total: string;
+    }
+> = {
+    IMPORT: {
+        text: "ჰკითხე ბიზნესზე ან ატვირთე მომწოდებლის ფაილი — შესყიდვას თავად შეადგენს.",
+        question: "რა შევიძინო შემდეგ პარტიაში?",
+        answer: "ტყავის საფულე ყველაზე სწრაფად იყიდება — 20 ცალი დაახლოებით 3 კვირას გეყოფა.",
+        file: "მომწოდებელი.xlsx",
+        steps: ["24 პროდუქტი ვიპოვე", "სახელები ვთარგმნე, ფერები დავყავი", "USD → ₾ ეროვნული ბანკის კურსით"],
+        total: "3 420 ₾",
+    },
+    MANUFACTURING: {
+        text: "ჰკითხე ბიზნესზე ან ატვირთე მასალების ფაილი — შესყიდვას თავად შეადგენს.",
+        question: "რომელი პროდუქტი მთავრდება?",
+        answer: "ტყავის საფულე — 4 ცალი დარჩა. დროა ახალი პარტია დაამზადო.",
+        file: "მასალები.xlsx",
+        steps: ["12 მასალა ვიპოვე", "ერთეულები ამოვიცანი: მ², მ, ც.", "ტრანსპორტის ხარჯი გადავანაწილე"],
+        total: "1 180 ₾",
+    },
+    HYBRID: {
+        text: "ჰკითხე ბიზნესზე ან ატვირთე ფაილი — პროდუქტებსაც და მასალებსაც თავად გაარჩევს.",
+        question: "რამდენია ამ თვის მოგება?",
+        answer: "2 742 ₾ — წინა თვეზე 12%-ით მეტი.",
+        file: "შესყიდვა.xlsx",
+        steps: ["18 ხაზი ვიპოვე", "პროდუქტები და მასალები გავყავი", "USD → ₾ ეროვნული ბანკის კურსით"],
+        total: "2 650 ₾",
+    },
+};
+
+// AI პანელის სწრაფი კითხვები (იხ. AiAssistantPanel).
+const aiQuickActions = [
+    { label: "ამ თვის მოგება", icon: "solar:graph-up-bold-duotone" },
+    { label: "რა მთავრდება?", icon: "solar:box-bold-duotone" },
+    { label: "რა შევიძინო?", icon: "solar:cart-plus-bold-duotone" },
+    { label: "ტოპ 5 პროდუქტი", icon: "solar:cup-star-bold-duotone" },
+    { label: "რჩევები", icon: "solar:lightbulb-bolt-bold-duotone" },
+];
+
+function AiVisual({ mode, active }: { mode: BusinessMode; active: boolean }) {
+    const scene = aiScenes[mode];
+
+    return (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="flex flex-col justify-end gap-2 rounded-xl border border-border bg-background p-3">
+                <div className="mb-auto flex flex-wrap gap-1.5 pb-2">
+                    {aiQuickActions.map(action => (
+                        <span
+                            key={action.label}
+                            className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-1 text-[11px] text-text-secondary"
+                        >
+                            <Icon icon={action.icon} className="h-3.5 w-3.5 text-accent" />
+                            {action.label}
+                        </span>
+                    ))}
+                </div>
+
+                <span className="order-flow-pop ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-accent px-3 py-2 text-xs text-white">
+                    {scene.question}
+                </span>
+
+                <div className="flex items-end gap-2">
+                    <Image src="/images/marteoAI.svg" alt="" width={24} height={24} className="h-6 w-6 shrink-0 rounded-md" />
+                    {active ? (
+                        <span className="order-flow-pop max-w-[85%] rounded-2xl rounded-bl-md border border-border bg-surface px-3 py-2 text-xs leading-relaxed text-text-primary">
+                            {scene.answer}
+                        </span>
+                    ) : (
+                        <span className="flex h-8 items-center gap-1 rounded-2xl rounded-bl-md border border-border bg-surface px-3">
+                            {[0, 150, 300].map(delay => (
+                                <span
+                                    key={delay}
+                                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-text-secondary/60"
+                                    style={{ animationDelay: `${delay}ms` }}
+                                />
+                            ))}
+                        </span>
+                    )}
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2.5 rounded-xl border border-border bg-background px-3 py-2">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success">
+                        <Icon icon="solar:file-text-bold-duotone" className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-text-primary">{scene.file}</span>
+                    <Icon icon="solar:paperclip-linear" className="h-4 w-4 shrink-0 text-text-secondary" />
+                </div>
+
+                {scene.steps.map((step, index) => (
+                    <span
+                        key={step}
+                        className={`flex items-center gap-2 px-1 text-xs transition-colors duration-500 ${
+                            active ? "text-text-primary" : "text-text-secondary"
+                        }`}
+                        style={{ transitionDelay: active ? `${200 + index * 200}ms` : "0ms" }}
+                    >
+                        <Icon
+                            icon={active ? "solar:check-circle-bold" : "solar:record-circle-linear"}
+                            className={`h-4 w-4 shrink-0 ${active ? "text-success" : "text-text-secondary/60"}`}
+                        />
+                        <span className="min-w-0 truncate">{step}</span>
+                    </span>
+                ))}
+
+                <div
+                    className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs transition-all duration-500 ${
+                        active ? "border-accent/30 bg-accent/5" : "border-border bg-background"
+                    }`}
+                    style={{ transitionDelay: active ? "800ms" : "0ms" }}
+                >
+                    <span className="text-text-secondary">
+                        სულ{" "}
+                        <span className="font-bold text-text-primary tabular-nums">{active ? scene.total : "…"}</span>
+                    </span>
+                    <span
+                        className={`rounded-lg bg-accent px-2.5 py-1 text-[11px] font-semibold text-white transition-opacity duration-300 ${
+                            active ? "opacity-100" : "opacity-40"
+                        }`}
+                    >
+                        შენახვა
+                    </span>
+                </div>
             </div>
         </div>
     );
