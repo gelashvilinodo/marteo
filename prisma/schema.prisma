@@ -238,34 +238,32 @@ model Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships              BusinessMembership[]
-  invites                  BusinessInvite[]
-  consentRequests          BusinessConsentRequest[]
-  subscription             Subscription?
-  customers                Customer[]
-  orders                   Order[]
-  products                 Product[]
-  productAttributes        ProductAttribute[]
-  inventoryItems           InventoryItem[]
-  purchases                Purchase[]
-  purchasePlanItems        PurchasePlanItem[]
-  aiConversations          AiConversation[]
-  expenses                 Expense[]
-  financialEntries         OrderFinancialEntry[]
-  contentItems             ContentItem[]
-  contentCampaigns         ContentCampaign[]
-  inventoryWriteOffs       InventoryWriteOff[]
-  importJobs               ImportJob[]
-  courierReminderStartDate DateTime?                @db.Date
-  courierSettlements       CourierSettlement[]
-  materials                Material[]
-  materialPurchases        MaterialPurchase[]
-  productions              Production[]
-  productionRequests       ProductionRequest[]
-  supportConversation      SupportConversation?
-  adminNotes               BusinessAdminNote[]
-  notifications            Notification[]
-  stockAlerts              InventoryStockAlert[]
+  memberships         BusinessMembership[]
+  invites             BusinessInvite[]
+  consentRequests     BusinessConsentRequest[]
+  subscription        Subscription?
+  customers           Customer[]
+  orders              Order[]
+  products            Product[]
+  productAttributes   ProductAttribute[]
+  inventoryItems      InventoryItem[]
+  purchases           Purchase[]
+  purchasePlanItems   PurchasePlanItem[]
+  aiConversations     AiConversation[]
+  expenses            Expense[]
+  financialEntries    OrderFinancialEntry[]
+  contentItems        ContentItem[]
+  contentCampaigns    ContentCampaign[]
+  inventoryWriteOffs  InventoryWriteOff[]
+  importJobs          ImportJob[]
+  materials           Material[]
+  materialPurchases   MaterialPurchase[]
+  productions         Production[]
+  productionRequests  ProductionRequest[]
+  supportConversation SupportConversation?
+  adminNotes          BusinessAdminNote[]
+  notifications       Notification[]
+  stockAlerts         InventoryStockAlert[]
 }
 
 model BusinessMembership {
@@ -419,7 +417,7 @@ model Order {
   fulfillmentCycle  Int             @default(0)
   deleteRequestedAt DateTime?
 
-  invoiceVersion            Int       @default(1)
+  invoiceVersion            Int           @default(1)
   lastPrintedInvoiceVersion Int?
   invoicePrintedAt          DateTime?
   businessId                String
@@ -1233,23 +1231,6 @@ model ImportPhoto {
 
   @@unique([fileId, sourceKey])
   @@index([fileId, sheetName, rowNumber])
-}
-
-model CourierSettlement {
-  id              String @id @default(cuid())
-  businessId      String
-  clientRequestId String
-
-  // დადებითი: გამყიდველმა გადაურიცხა საკურიეროს.
-  // უარყოფითი: გამყიდველმა მიიღო თანხა საკურიეროსგან.
-  amount Decimal @db.Decimal(14, 2)
-
-  createdAt DateTime @default(now())
-
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  @@unique([businessId, clientRequestId])
-  @@index([businessId, createdAt])
 }
 
 model EmailChangeRequest {
