@@ -18,9 +18,6 @@ import InventoryFiltersDisclosure from "@/components/dashboard/inventory/Invento
 import OrderBulkDeleteButton from "./OrderBulkDeleteButton";
 import OrderBulkStatusButtons from "./OrderBulkStatusButtons";
 import OrdersListSkeleton from "./OrdersListSkeleton";
-import CourierReminder, {
-    COURIER_REMINDER_CHANGED,
-} from "./CourierReminder";
 import PeriodFilter, {
     standardPeriodOptions,
 } from "@/components/dashboard/shared/PeriodFilter";
@@ -30,20 +27,8 @@ import PeriodFilter, {
 const OrderReturnButton = dynamic(() => import("./OrderReturnButton"), { ssr: false });
 const OrderDeleteButton = dynamic(() => import("./OrderDeleteButton"), { ssr: false });
 import { OrderDetailsBody, Status, number, payments, recipient, date } from "./OrderDetailsBody";
+import { orderCards as cards } from "./order-labels";
 
-const cards = [
-    { id: "all", title: "სულ შეკვეთები", icon: "solar:clipboard-list-linear", tone: "text-accent bg-accent/10", selected: "border-accent bg-accent/5" },
-    { id: "processing", title: "მუშავდება", icon: "solar:clock-circle-linear", tone: "text-warning bg-warning/10", selected: "border-warning bg-warning/5" },
-    {
-        id: "shipped",
-        title: "გაგზავნილი",
-        icon: "solar:delivery-linear",
-        tone: "text-accent bg-accent/10",
-        selected: "border-accent bg-accent/5",
-    },
-    { id: "completed", title: "დასრულებული", icon: "solar:check-circle-linear", tone: "text-success bg-success/10", selected: "border-success bg-success/5" },
-    { id: "canceled", title: "გაუქმებული", icon: "solar:close-circle-linear", tone: "text-danger bg-danger/10", selected: "border-danger bg-danger/5" },
-] as const;
 
 
 export default function OrdersView({
@@ -230,9 +215,6 @@ export default function OrdersView({
     }
 
     async function refreshOrder(orderId: string) {
-        window.dispatchEvent(
-            new Event(COURIER_REMINDER_CHANGED),
-        );
         if (mutationLoading) {
             window.dispatchEvent(new Event(ORDERS_CHANGED, { cancelable: true }));
             return;
@@ -501,7 +483,6 @@ export default function OrdersView({
                     </button>
                 ))}
             </div>
-            <CourierReminder />
             <section id="orders-list" aria-busy={pending} className="mt-6 min-w-0 scroll-mt-20 rounded-2xl border border-border bg-surface">
                 <div className="flex items-center gap-2 p-4">
                     <Icon icon="solar:clipboard-list-linear" className="h-5 w-5 text-accent" />

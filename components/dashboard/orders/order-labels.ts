@@ -41,3 +41,18 @@ export function date(value: string) {
     const pad = (v: number) => String(v).padStart(2, "0");
     return `${pad(d.getUTCDate())}.${pad(d.getUTCMonth() + 1)}.${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
+
+// შეკვეთების გვერდის სტატუსის ბარათები — გვერდზეც და ჩატვირთვის სკელეტონშიც.
+export const orderCards = [
+    { id: "all", title: "სულ შეკვეთები", icon: "solar:clipboard-list-linear", tone: "text-accent bg-accent/10", selected: "border-accent bg-accent/5" },
+    { id: "processing", title: "მუშავდება", icon: "solar:clock-circle-linear", tone: "text-warning bg-warning/10", selected: "border-warning bg-warning/5" },
+    {
+        id: "shipped",
+        title: "გაგზავნილი",
+        icon: "solar:delivery-linear",
+        tone: "text-accent bg-accent/10",
+        selected: "border-accent bg-accent/5",
+    },
+    { id: "completed", title: "დასრულებული", icon: "solar:check-circle-linear", tone: "text-success bg-success/10", selected: "border-success bg-success/5" },
+    { id: "canceled", title: "გაუქმებული", icon: "solar:close-circle-linear", tone: "text-danger bg-danger/10", selected: "border-danger bg-danger/5" },
+] as const;

@@ -93,7 +93,7 @@ export default function OrdersListSkeleton({
 
                             <td className="px-1 py-2">
                                 <div className="@container min-w-0 w-full">
-                                    <div className="h-8 w-12 max-w-full rounded-lg bg-success/10 @[11rem]:w-36" />
+                                    <div className="h-7 w-12 max-w-full rounded-lg bg-success/10 @[11rem]:w-32" />
                                 </div>
                             </td>
 
@@ -102,7 +102,7 @@ export default function OrdersListSkeleton({
                             </td>
 
                             <td className="px-1 py-2">
-                                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-background">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border">
                                     <div className="h-1 w-5 rounded bg-border/60" />
                                 </div>
                             </td>

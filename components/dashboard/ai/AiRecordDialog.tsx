@@ -12,7 +12,6 @@ import { orderCard, type AiContentCard, type AiOrderCard, type AiPostDraft } fro
 import { refreshOrdersAfterMutation } from "@/lib/orders/refresh-orders-client";
 import { OrderDetailsBody } from "@/components/dashboard/orders/OrderDetailsBody";
 import { number } from "@/components/dashboard/orders/order-labels";
-import { COURIER_REMINDER_CHANGED } from "@/components/dashboard/orders/CourierReminder";
 import InventoryProductDetails from "@/components/dashboard/inventory/InventoryProductDetails";
 import CustomerDetails from "@/components/dashboard/customers/CustomerDetails";
 
@@ -123,9 +122,8 @@ function OrderDialog({ card, onClose, onOrderUpdated, onRemoved }: Props & { car
         return () => request.current?.abort();
     }, [load]);
 
-    // ცვლილების შემდეგ ბარათიც ახლდება და ღია გვერდებიც.
+    // ცვლილების შემდეგ ღია გვერდებიც ახლდება.
     async function changed() {
-        window.dispatchEvent(new Event(COURIER_REMINDER_CHANGED));
         refreshOrdersAfterMutation(() => router.refresh());
         const next = await load();
         if (next) onOrderUpdated(orderCard(next));
