@@ -61,46 +61,61 @@ export default function PurchasesLoading() {
         >
             <span className="sr-only">შესყიდვები იტვირთება…</span>
 
-            <div aria-hidden="true" className="mx-auto min-w-0 max-w-7xl">
+            <div className="mx-auto min-w-0 max-w-7xl">
                 <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <Pulse className="h-8 w-36" />
+                    <h1 className="text-2xl font-semibold text-text-primary">
+                        შესყიდვები
+                    </h1>
                     <Pulse className="h-11 w-full rounded-xl sm:w-44" />
                 </div>
 
-                <div className="mt-4 min-w-0 rounded-2xl border border-border bg-surface sm:mt-6">
-                    <div className="flex min-h-11 items-center justify-between gap-3 px-4 py-2 sm:hidden">
-                        <div className="flex items-center gap-2">
-                            <Pulse className="h-4 w-4" />
-                            <Pulse className="h-4 w-32" />
+                <div aria-hidden="true">
+                    <div className="mt-6 flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-surface p-4">
+                        <Pulse className="h-10 w-10 shrink-0 rounded-xl" />
+
+                        <div className="min-w-0 flex-1 space-y-2">
+                            <Pulse className="h-5 w-32" />
+                            <Pulse className="h-3 w-full max-w-sm" />
                         </div>
-                        <Pulse className="h-4 w-4" />
+
+                        <Pulse className="h-5 w-5 shrink-0" />
                     </div>
 
-                    <div className="hidden p-4 sm:block">
-                        <div className="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-end">
-                            <div className="min-w-0 space-y-1.5 sm:col-span-2 xl:col-span-1">
-                                <Pulse className="h-5 w-12" />
-                                <Pulse className="h-11 w-full rounded-xl" />
+                    <div className="mt-4 min-w-0 rounded-2xl border border-border bg-surface sm:mt-6">
+                        <div className="flex min-h-11 items-center justify-between gap-3 px-4 py-2 sm:hidden">
+                            <div className="flex items-center gap-2">
+                                <Pulse className="h-4 w-4" />
+                                <Pulse className="h-4 w-32" />
                             </div>
+                            <Pulse className="h-4 w-4" />
+                        </div>
 
-                            {[0, 1].map(index => (
-                                <div key={index} className="min-w-0 space-y-1.5">
-                                    <Pulse className="h-5 w-20" />
+                        <div className="hidden p-4 sm:block">
+                            <div className="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-end">
+                                <div className="min-w-0 space-y-1.5 sm:col-span-2 xl:col-span-1">
+                                    <Pulse className="h-5 w-12" />
                                     <Pulse className="h-11 w-full rounded-xl" />
                                 </div>
-                            ))}
 
-                            <Pulse className="h-11 w-full rounded-xl sm:col-span-2 xl:col-span-1 xl:w-24" />
+                                {[0, 1].map(index => (
+                                    <div key={index} className="min-w-0 space-y-1.5">
+                                        <Pulse className="h-5 w-20" />
+                                        <Pulse className="h-11 w-full rounded-xl" />
+                                    </div>
+                                ))}
+
+                                <Pulse className="h-11 w-full rounded-xl sm:col-span-2 xl:col-span-1 xl:w-24" />
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <Pulse className="mt-4 h-5 w-24" />
+                    <Pulse className="mt-4 h-5 w-24" />
 
-                <div className="mt-6 space-y-4">
-                    {[0, 1, 2].map(index => (
-                        <PurchaseCardSkeleton key={index} />
-                    ))}
+                    <div className="mt-6 space-y-4">
+                        {[0, 1, 2].map(index => (
+                            <PurchaseCardSkeleton key={index} />
+                        ))}
+                    </div>
                 </div>
             </div>
         </main>
