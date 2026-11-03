@@ -11,6 +11,9 @@ import { getOrderRecords } from "@/lib/orders/get-order-records";
 import { serializeOrderRecord } from "@/lib/orders/serialize-order-record";
 import { AI_CARD_LIMIT, orderCard, type AiCardGroup } from "./ai-cards";
 import { ADVICE_TOOLS, runAdviceTool } from "./advice-tools";
+import { PRODUCT_PROFIT_TOOL, productProfitTool } from "./product-profit-tool";
+import { CalendarInputError, CONTENT_CALENDAR_TOOL, contentCalendarTool } from "./content-calendar-tool";
+import { POST_DRAFT_TOOL, PostDraftInputError, postDraftTool } from "./post-draft-tool";
 
 // ყველა ხელსაწყო მხოლოდ კითხულობს და აბრუნებს ჯამებს ან მოკლე სიებს.
 // ბიზნესი ყოველთვის სესიიდან მოდის და არასდროს მოდელის არგუმენტიდან.
@@ -38,6 +41,7 @@ const PERIODS = [
     "last_30_days",
     "this_year",
     "last_year",
+    "all_time",
     "custom",
 ] as const;
 
@@ -45,7 +49,13 @@ type Period = typeof PERIODS[number];
 type Range = { from: string; to: string };
 
 const PERIOD_DESCRIPTION =
-    "Calendar period in Tbilisi time. this_week starts on Monday, this_month on the 1st, this_year on January 1; all of them end today. Use custom with from/to for any other range.";
+    "Calendar period in Tbilisi time. this_week starts on Monday, this_month on the 1st, this_year on January 1; all of them end today. all_time covers everything up to today. Use custom with from/to for any other range.";
+
+const limitProperty = {
+    type: "integer",
+    minimum: 1,
+    description: "How many results to return. Set it whenever the user asks for a specific number (\"one product\" = 1, \"top 3\" = 3).",
+} as const;
 
 const periodProperties = {
     period: { type: "string", enum: PERIODS, description: PERIOD_DESCRIPTION },
@@ -84,8 +94,8 @@ const DATA_TOOLS: Anthropic.Tool[] = [
     },
     {
         name: "get_top_products",
-        description: "The 5 best-selling products in a period by quantity sold, with revenue.",
-        input_schema: { type: "object", properties: periodProperties, required: ["period"] },
+        description: "The best-selling products in a period by quantity sold (up to 5), with revenue. The app shows them to the user as product cards with photos, in this order.",
+        input_schema: { type: "object", properties: { ...periodProperties, limit: limitProperty }, required: ["period"] },
     },
     {
         name: "get_stock",
@@ -96,6 +106,7 @@ const DATA_TOOLS: Anthropic.Tool[] = [
             properties: {
                 filter: { type: "string", enum: ["low", "exhausted", "all"] },
                 query: { type: "string", description: "Optional product name search." },
+                limit: limitProperty,
             },
             required: ["filter"],
         },
@@ -111,6 +122,7 @@ const DATA_TOOLS: Anthropic.Tool[] = [
                 customer: { type: "string", description: "Part of the customer's first or last name." },
                 status: { type: "string", enum: ["PROCESSING", "SHIPPED", "COMPLETED", "CANCELED", "RETURNED"] },
                 ...periodProperties,
+                limit: limitProperty,
             },
         },
     },
@@ -128,14 +140,63 @@ const DATA_TOOLS: Anthropic.Tool[] = [
                     enum: ["orders-desc", "last-order-desc", "name-asc"],
                     description: "orders-desc = most completed orders first.",
                 },
+                limit: limitProperty,
             },
         },
     },
 ];
 
-export const AI_TOOLS: Anthropic.Tool[] = [...DATA_TOOLS, ...ADVICE_TOOLS];
+export const AI_TOOLS: Anthropic.Tool[] = [
+    ...DATA_TOOLS,
+    {
+        ...PRODUCT_PROFIT_TOOL,
+        input_schema: {
+            type: "object",
+            properties: {
+                ...periodProperties,
+                product: { type: "string", description: "Part of the product name, for example from the conversation." },
+                limit: limitProperty,
+            },
+            required: ["period"],
+        },
+    },
+    CONTENT_CALENDAR_TOOL,
+    POST_DRAFT_TOOL,
+    ...ADVICE_TOOLS,
+];
+
+// როცა მომხმარებელი კონკრეტულ რაოდენობას ითხოვს („ერთი პროდუქტი“), მეტი ბარათი არ ჩანს.
+function readLimit(input: Record<string, unknown>, max: number) {
+    const value = Number(input.limit);
+    return Number.isSafeInteger(value) && value >= 1 ? Math.min(value, max) : max;
+}
 
 class ToolInputError extends Error {}
+
+// ტოპ პროდუქტები ბარათებად, იმავე რიგით. ხელით დამატებულ (მარაგის გარეშე)
+// პროდუქტს ბარათი არ აქვს და მხოლოდ ტექსტში ჩანს.
+async function pushTopProductCards(
+    context: AiToolContext,
+    products: Array<{ key: string; name: string; quantity: string; revenue: string }>,
+) {
+    const ranked = products.flatMap((product, index) =>
+        product.key.startsWith("inventory:") ? [{ ...product, rank: index + 1, id: product.key.slice("inventory:".length) }] : []);
+    if (ranked.length === 0) return;
+
+    const page = await getInventoryPage(context.prisma, context.businessId, { ids: ranked.map((row) => row.id) }, ranked.length);
+    const items = ranked.flatMap((row) => page.products.filter((item) => item.id === row.id));
+    if (items.length === 0) return;
+
+    context.cards.push({
+        kind: "stock",
+        total: items.length,
+        items,
+        notes: Object.fromEntries(ranked.map((row) => [
+            row.id,
+            `#${row.rank} · გაიყიდა ${Number(row.quantity)} ცალი · შემოსავალი ${Number(row.revenue).toFixed(2)} ₾`,
+        ])),
+    });
+}
 
 function tbilisiToday(now: Date) {
     return new Date(now.getTime() + TBILISI_OFFSET).toISOString().slice(0, 10);
@@ -171,6 +232,7 @@ function resolveRange(period: unknown, from: unknown, to: unknown, now: Date): R
         case "last_30_days": return { from: shiftDays(today, -29), to: today };
         case "this_year": return { from: `${year}-01-01`, to: today };
         case "last_year": return { from: `${year - 1}-01-01`, to: `${year - 1}-12-31` };
+        case "all_time": return { from: "2000-01-01", to: today };
         case "custom":
             if (!isDate(from) || !isDate(to) || from > to) {
                 throw new ToolInputError("custom period needs valid from and to dates (YYYY-MM-DD, from <= to).");
@@ -294,7 +356,7 @@ async function findOrders(context: AiToolContext, input: Record<string, unknown>
             AND (${end}::timestamp IS NULL OR o."createdAt" < ${end}::timestamp)
         GROUP BY o.id
         ORDER BY o."createdAt" DESC, o.id DESC
-        LIMIT ${AI_CARD_LIMIT}
+        LIMIT ${readLimit(input, AI_CARD_LIMIT)}
     `;
 
     const records = await getOrderRecords(context.prisma, context.businessId, rows.map((row) => row.id), false);
@@ -302,7 +364,7 @@ async function findOrders(context: AiToolContext, input: Record<string, unknown>
         .map((row) => records.find((record) => record.id === row.id))
         .filter((record) => record !== undefined)
         .map((record) => orderCard(serializeOrderRecord(record, false)));
-    context.cards.push({ kind: "orders", total: rows[0]?.found ?? 0, items: cards });
+    context.cards.push({ kind: "orders", total: input.limit ? cards.length : rows[0]?.found ?? 0, items: cards });
 
     const detailed = rows.slice(0, 5);
     const ids = detailed.map((row) => row.id);
@@ -395,8 +457,10 @@ async function runTool(name: string, input: Record<string, unknown>, context: Ai
         case "get_top_products": {
             const range = resolveRange(input.period, input.from, input.to, now);
             const lists = await getHomeLists(businessId, range.from, range.to, "products");
+            lists.products = lists.products.slice(0, readLimit(input, 5));
+            await pushTopProductCards(context, lists.products);
             return {
-                range,
+                range: input.period === "all_time" ? "all_time" : range,
                 currency: "GEL",
                 products: lists.products.map((product) => ({
                     name: product.name,
@@ -408,8 +472,8 @@ async function runTool(name: string, input: Record<string, unknown>, context: Ai
         case "get_stock": {
             const filter = ["low", "exhausted", "all"].includes(String(input.filter)) ? String(input.filter) : "all";
             const query = typeof input.query === "string" ? input.query.slice(0, 60) : "";
-            const page = await getInventoryPage(context.prisma, businessId, { status: filter, q: query, sort: "quantity-asc" }, AI_CARD_LIMIT);
-            context.cards.push({ kind: "stock", total: page.totalProducts, items: page.products });
+            const page = await getInventoryPage(context.prisma, businessId, { status: filter, q: query, sort: "quantity-asc" }, readLimit(input, AI_CARD_LIMIT));
+            context.cards.push({ kind: "stock", total: input.limit ? page.products.length : page.totalProducts, items: page.products });
             return {
                 matching_variants: page.totalProducts,
                 low_variants_total: page.counts.low.species,
@@ -426,6 +490,25 @@ async function runTool(name: string, input: Record<string, unknown>, context: Ai
         }
         case "find_orders":
             return findOrders(context, input);
+        case "get_product_profit": {
+            const range = resolveRange(input.period, input.from, input.to, now);
+            const result = await productProfitTool(context, range, input, readLimit(input, AI_CARD_LIMIT));
+            return input.period === "all_time" ? { ...result, range: "all_time" } : result;
+        }
+        case "get_content_calendar":
+            try {
+                return await contentCalendarTool(context, input);
+            } catch (error) {
+                if (error instanceof CalendarInputError) throw new ToolInputError(error.message);
+                throw error;
+            }
+        case "prepare_post_draft":
+            try {
+                return postDraftTool(context, input);
+            } catch (error) {
+                if (error instanceof PostDraftInputError) throw new ToolInputError(error.message);
+                throw error;
+            }
         case "get_business_advice":
         case "get_purchase_list":
             return runAdviceTool(name, input, context);
@@ -434,7 +517,8 @@ async function runTool(name: string, input: Record<string, unknown>, context: Ai
             const filter = ["repeat", "top"].includes(String(input.filter)) ? String(input.filter) : "all";
             const sort = ["orders-desc", "last-order-desc", "name-asc"].includes(String(input.sort)) ? String(input.sort) : "orders-desc";
             const page = await getCustomersPage(context.prisma, businessId, { q: query, filter, sort });
-            context.cards.push({ kind: "customers", total: page.totalCount, items: page.customers });
+            page.customers = page.customers.slice(0, readLimit(input, page.customers.length));
+            context.cards.push({ kind: "customers", total: input.limit ? page.customers.length : page.totalCount, items: page.customers });
             // ტელეფონი და მისამართი მოდელს არ ეგზავნება — ისინი მხოლოდ ბარათზე ჩანს.
             return {
                 found: page.totalCount,

@@ -21,6 +21,9 @@ type Values = {
     customPlatform: string;
 };
 
+// ახალი ჩანაწერის წინასწარ შევსებული ველები (მაგ. მართეო AI-ის მონახაზიდან).
+export type ContentPrefill = Partial<Pick<Values, "title" | "description" | "type" | "scheduledDate" | "scheduledTime" | "platforms">>;
+
 function object(value: unknown): Record<string, unknown> | null {
     return value !== null &&
         typeof value === "object" &&
@@ -32,11 +35,13 @@ function object(value: unknown): Record<string, unknown> | null {
 export default function ContentForm({
     contentId,
     defaultDate,
+    prefill,
     onClose,
     onSaved,
 }: {
     contentId?: string;
     defaultDate: string;
+    prefill?: ContentPrefill;
     onClose: () => void;
     onSaved: (message: string) => void;
 }) {
@@ -57,6 +62,7 @@ export default function ContentForm({
         scheduledTime: "10:00",
         platforms: [],
         customPlatform: "",
+        ...(contentId ? {} : prefill),
     });
 
     const [version, setVersion] = useState("");

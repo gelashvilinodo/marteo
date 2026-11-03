@@ -5,6 +5,7 @@ import { getInventoryPage } from "@/lib/inventory/get-inventory-page";
 import { getPurchasePlan } from "@/lib/purchases/purchase-plan";
 import type { AiCardGroup } from "./ai-cards";
 import { getBusinessInsights, type BusinessInsights, type InsightTopic } from "./business-insights";
+import { getContentInsights, type ContentInsights } from "./content-insights";
 import type { AiToolContext } from "./marteo-ai-tools";
 
 export const ADVICE_TOPICS: InsightTopic[] = [
@@ -17,13 +18,14 @@ export const ADVICE_TOPICS: InsightTopic[] = [
     "customers",
     "operations",
     "timing",
+    "content",
 ];
 
 export const ADVICE_TOOLS: Anthropic.Tool[] = [
     {
         name: "get_business_advice",
         description:
-            "Data-based recommendations, all calculated by the app. Topics: restock = products selling fast that will run out (with suggested quantity for the next purchase, based on sales speed, stock, goods in transit and delivery time); idle_stock = products not sold for 60+ days and the money tied up in them; variants = which colors/sizes of a product sell best; margins = products with low or negative margin, plus products missing a cost; returns = products returned often; customers = repeat buyers who stopped ordering; operations = orders stuck in shipped status or completed but not fully paid; timing = which weekdays and hours bring the most orders; overview = the most important points from every topic. The app shows the related products, customers and orders as cards; restock cards have a button to add them to the purchase list.",
+            "Data-based recommendations, all calculated by the app. Topics: restock = products selling fast that will run out (with suggested quantity for the next purchase, based on sales speed, stock, goods in transit and delivery time); idle_stock = products not sold for 60+ days and the money tied up in them; variants = which colors/sizes of a product sell best; margins = products with low or negative margin, plus products missing a cost; returns = products returned often; customers = repeat buyers who stopped ordering; operations = orders stuck in shipped status or completed but not fully paid; timing = which weekdays and hours bring the most orders; content = the content calendar compared with sales: overdue posts (date passed, not done on every platform), peak order weekdays in the next 7 days with no post planned, and whether nothing is planned at all; overview = the most important points from every topic. The app shows the related products, customers and orders as cards; restock cards have a button to add them to the purchase list.",
         input_schema: {
             type: "object",
             properties: { topic: { type: "string", enum: ADVICE_TOPICS } },
@@ -48,6 +50,43 @@ function insightsFor(context: AiToolContext) {
         insightsCache.set(context, pending);
     }
     return pending;
+}
+
+const contentCache = new WeakMap<AiToolContext, Promise<ContentInsights>>();
+
+function contentInsightsFor(context: AiToolContext, insights: BusinessInsights) {
+    let pending = contentCache.get(context);
+    if (!pending) {
+        pending = getContentInsights(context.prisma, context.businessId, context.now, insights.timing);
+        contentCache.set(context, pending);
+    }
+    return pending;
+}
+
+async function contentFor(context: AiToolContext, insights: BusinessInsights, limit: number) {
+    const content = await contentInsightsFor(context, insights);
+    if (content.status === "unused") {
+        return { calendar_status: "unused", note: "The content calendar has not been used in the last 60 days; suggest it only if the user asks about posting." };
+    }
+
+    const rows = content.overdue.slice(0, limit);
+    if (rows.length > 0) {
+        context.cards.push({
+            kind: "content",
+            total: content.overdue.length,
+            items: rows.map((row) => row.card),
+            notes: Object.fromEntries(rows.map((row) => [row.card.id, row.note])),
+        });
+    }
+
+    return {
+        overdue_count: content.overdue.length,
+        overdue: rows.map((row) => ({ title: row.card.title, days_overdue: row.days, pending_platforms: row.pending })),
+        posts_next_7_days: content.upcoming,
+        nothing_planned_next_7_days: content.nothingPlanned,
+        peak_order_weekdays: content.peakWeekdays,
+        peak_days_without_post_next_7_days: content.uncoveredPeakDays,
+    };
 }
 
 function variant(item: { color: string | null; size: string | null }) {
@@ -205,7 +244,8 @@ function operationsFor(context: AiToolContext, insights: BusinessInsights, limit
 async function adviceTool(topic: InsightTopic, context: AiToolContext) {
     const insights = await insightsFor(context);
 
-    if (insights.data.status === "no_data") {
+    // კალენდარს გაყიდვების გარეშეც შეიძლება ჰქონდეს პოსტები, ამიტომ ის მაინც მოწმდება.
+    if (insights.data.status === "no_data" && topic !== "content") {
         return {
             data_status: "no_data",
             products_in_stock: 0,
@@ -223,6 +263,7 @@ async function adviceTool(topic: InsightTopic, context: AiToolContext) {
         case "operations": return operationsFor(context, insights, 20);
         case "variants": return { period_days: 90, products: insights.variants };
         case "timing": return { period_days: 90, ...insights.timing };
+        case "content": return contentFor(context, insights, 30);
         case "overview":
         default:
             return {
@@ -237,6 +278,7 @@ async function adviceTool(topic: InsightTopic, context: AiToolContext) {
                 customers: customersFor(context, insights, 3),
                 operations: operationsFor(context, insights, 3),
                 timing: { best_weekdays: insights.timing.weekdays.slice(0, 2), best_hours: insights.timing.bestHours },
+                content: await contentFor(context, insights, 3),
                 note: "Pick the 3-5 most important points. Each has its own topic for details.",
             };
     }

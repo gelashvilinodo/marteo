@@ -184,6 +184,7 @@ model User {
   createdOrders          Order[]                  @relation("OrderCreatedBy")
   verifications          VerificationToken[]
   sessions               Session[]
+  aiConversations        AiConversation[]
   emailChangeRequests    EmailChangeRequest[]
   phoneChangeRequests    PhoneChangeRequest[]
   passwordChangeRequests PasswordChangeRequest[]
@@ -243,6 +244,7 @@ model Business {
   inventoryItems           InventoryItem[]
   purchases                Purchase[]
   purchasePlanItems        PurchasePlanItem[]
+  aiConversations          AiConversation[]
   expenses                 Expense[]
   financialEntries         OrderFinancialEntry[]
   contentItems             ContentItem[]
@@ -590,6 +592,24 @@ model Purchase {
   @@unique([businessId, number])
   @@index([businessId])
   @@index([purchaseDate])
+}
+
+// მართეო AI-ის ჩათები: თითო მომხმარებელს თავისი, თითო ბიზნესში. 30 დღეში იშლება.
+model AiConversation {
+  id         String  @id
+  businessId String
+  userId     String
+  title      String?
+  messages   Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, userId, updatedAt])
+  @@index([updatedAt])
 }
 
 // შესაძენი სია: პროდუქტები, რომლებიც შემდეგ პარტიაში უნდა შევიძინოთ.

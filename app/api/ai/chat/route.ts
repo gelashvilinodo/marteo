@@ -8,7 +8,8 @@ import { AiChatError, runMarteoAiChat, type AiChatTurn } from "@/lib/ai/marteo-a
 import { hasBusinessFeature } from "@/lib/business/business-mode";
 
 const MAX_TURNS = 10;
-const MAX_TEXT = 2000;
+// AI-ის პასუხს შეიძლება პოსტის მონახაზის ტექსტიც ახლდეს.
+const MAX_TEXT = 6000;
 
 // მხოლოდ ბოლო რამდენიმე ტექსტური შეტყობინება; პირველი ყოველთვის მომხმარებლისაა.
 function readTurns(body: unknown): AiChatTurn[] | null {

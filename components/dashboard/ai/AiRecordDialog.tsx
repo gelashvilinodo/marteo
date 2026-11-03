@@ -8,7 +8,7 @@ import { Icon } from "@iconify/react";
 import type { OrderDetailEntry } from "@/lib/orders/get-orders-page";
 import type { CustomerEntry } from "@/lib/customers/get-customers-page";
 import type { InventoryProduct } from "@/components/dashboard/inventory/InventoryView";
-import { orderCard, type AiOrderCard } from "@/lib/ai/ai-cards";
+import { orderCard, type AiContentCard, type AiOrderCard, type AiPostDraft } from "@/lib/ai/ai-cards";
 import { refreshOrdersAfterMutation } from "@/lib/orders/refresh-orders-client";
 import { OrderDetailsBody } from "@/components/dashboard/orders/OrderDetailsBody";
 import { number } from "@/components/dashboard/orders/order-labels";
@@ -20,18 +20,23 @@ const OrderReturnButton = dynamic(() => import("@/components/dashboard/orders/Or
 const OrderDeleteButton = dynamic(() => import("@/components/dashboard/orders/OrderDeleteButton"), { ssr: false });
 const InventoryEditDialog = dynamic(() => import("@/components/dashboard/inventory/InventoryEditDialog"), { ssr: false });
 const InventoryDeleteDialog = dynamic(() => import("@/components/dashboard/inventory/InventoryDeleteDialog"), { ssr: false });
+const ContentDetailsDialog = dynamic(() => import("@/components/dashboard/calendar/ContentDetailsDialog"), { ssr: false });
+const ContentForm = dynamic(() => import("@/components/dashboard/calendar/ContentForm"), { ssr: false });
 const CustomerForm = dynamic(() => import("@/components/dashboard/customers/CustomerForm"), { ssr: false });
 
 export type AiRecordTarget =
     | { kind: "orders"; item: AiOrderCard }
     | { kind: "stock"; item: InventoryProduct }
-    | { kind: "customers"; item: CustomerEntry };
+    | { kind: "customers"; item: CustomerEntry }
+    | { kind: "content"; item: AiContentCard }
+    | { kind: "draft"; item: AiPostDraft };
 
 type Props = {
     target: AiRecordTarget;
     onClose: () => void;
     onOrderUpdated: (card: AiOrderCard) => void;
     onRemoved: (id: string) => void;
+    onDraftSaved: (id: string) => void;
 };
 
 // ფანჯარა იმავე გვერდზე იხსნება, ფონი იბლარება; შიგთავსი იგივეა, რაც
@@ -42,7 +47,11 @@ export default function AiRecordDialog(props: Props) {
             ? <OrderDialog {...props} card={props.target.item} />
             : props.target.kind === "stock"
                 ? <StockDialog {...props} product={props.target.item} />
-                : <CustomerDialog {...props} customer={props.target.item} />,
+                : props.target.kind === "content"
+                    ? <ContentDialog {...props} content={props.target.item} />
+                    : props.target.kind === "draft"
+                        ? <DraftDialog {...props} draft={props.target.item} />
+                        : <CustomerDialog {...props} customer={props.target.item} />,
         document.body,
     );
 }
@@ -269,5 +278,62 @@ function CustomerDialog({ customer, onClose, onRemoved }: Props & { customer: Cu
                 onSuccess={() => onRemoved(customer.id)}
             />
         </dialog>
+    );
+}
+
+// კალენდრის ფანჯრები უცვლელად: დეტალები, შესრულების მონიშვნა და რედაქტირება.
+function ContentDialog({ content, onClose }: Props & { content: AiContentCard }) {
+    const router = useRouter();
+    const [editing, setEditing] = useState(false);
+    // ფორმას საწყისი დღე სჭირდება; თარიღის გარეშე ჩანაწერზე — დღევანდელი.
+    const [date] = useState(() => new Date((content.scheduledAt ? Date.parse(content.scheduledAt) : Date.now()) + 4 * 60 * 60 * 1000)
+        .toISOString().slice(0, 10));
+
+    if (editing) {
+        return (
+            <ContentForm
+                contentId={content.id}
+                defaultDate={date}
+                onClose={onClose}
+                onSaved={() => {
+                    router.refresh();
+                    onClose();
+                }}
+            />
+        );
+    }
+
+    return (
+        <ContentDetailsDialog
+            contentId={content.id}
+            onClose={onClose}
+            onEdit={() => setEditing(true)}
+            onChanged={() => router.refresh()}
+        />
+    );
+}
+
+// მონახაზი კალენდრის ჩვეულ ფორმას ავსებს; ჩანაწერი მხოლოდ მომხმარებლის შენახვით იქმნება.
+function DraftDialog({ draft, onClose, onDraftSaved }: Props & { draft: AiPostDraft }) {
+    const router = useRouter();
+
+    return (
+        <ContentForm
+            defaultDate={draft.date}
+            prefill={{
+                title: draft.title,
+                description: draft.text,
+                type: draft.type,
+                scheduledDate: draft.date,
+                scheduledTime: draft.time,
+                platforms: draft.platforms,
+            }}
+            onClose={onClose}
+            onSaved={() => {
+                onDraftSaved(draft.id);
+                router.refresh();
+                onClose();
+            }}
+        />
     );
 }

@@ -18,6 +18,30 @@ export type AiOrderCard = {
     imageUrl: string | null;
 };
 
+export type AiContentState = "planned" | "today" | "partly_done" | "done" | "overdue" | "canceled";
+
+// კონტენტ-კალენდრის ჩანაწერი ბარათისთვის; დეტალები კალენდრის ფანჯარაში იტვირთება.
+export type AiContentCard = {
+    id: string;
+    title: string;
+    type: string;
+    customType: string | null;
+    scheduledAt: string | null;
+    state: AiContentState;
+    channels: Array<{ platform: string; customPlatform: string | null; done: boolean }>;
+};
+
+// AI-ის დაწერილი პოსტის მონახაზი: ბაზაში არ ინახება, ღილაკი კალენდრის ფორმას ავსებს.
+export type AiPostDraft = {
+    id: string;
+    title: string;
+    text: string;
+    type: string;
+    platforms: string[];
+    date: string;
+    time: string;
+};
+
 // notes: რჩევის მიზეზი ბარათზე (id → ტექსტი). restock: შემოთავაზებული რაოდენობა
 // შესაძენი სიისთვის. planned: უკვე სიაში მყოფი რაოდენობა.
 type CardExtras = { notes?: Record<string, string> };
@@ -33,7 +57,10 @@ export type AiCardGroup =
         restock?: Record<string, AiRestockSuggestion>;
         planned?: Record<string, number>;
     } & CardExtras)
-    | ({ kind: "customers"; total: number; items: CustomerEntry[] } & CardExtras);
+    | ({ kind: "customers"; total: number; items: CustomerEntry[] } & CardExtras)
+    | ({ kind: "content"; total: number; items: AiContentCard[] } & CardExtras)
+    // saved: კალენდარში უკვე დამატებული მონახაზები.
+    | ({ kind: "draft"; total: number; items: AiPostDraft[]; saved?: Record<string, boolean> } & CardExtras);
 
 export const AI_CARD_LIMIT = 30;
 

@@ -3,6 +3,7 @@ import "server-only";
 import type { createPrismaClient } from "@/lib/prisma";
 import { mergeCardGroups, type AiCardGroup } from "./ai-cards";
 import { getBusinessInsights } from "./business-insights";
+import { getContentInsights } from "./content-insights";
 
 type Client = ReturnType<typeof createPrismaClient>;
 
@@ -18,6 +19,7 @@ function count(value: number, word: string) {
 // ამიტომ ყოველ ჯერზე ერთნაირი და უფასოა.
 export async function buildWeeklyDigest(prisma: Client, businessId: string, now: Date, purchasePlan: boolean) {
     const insights = await getBusinessInsights(prisma, businessId, now);
+    const content = await getContentInsights(prisma, businessId, now, insights.timing);
     const lines: string[] = [];
     const cards: AiCardGroup[] = [];
 
@@ -82,9 +84,28 @@ export async function buildWeeklyDigest(prisma: Client, businessId: string, now:
         lines.push(`${count(insights.margins.length, "პროდუქტს")} 20%-ზე დაბალი მარჟა აქვს — შეამოწმე ფასები.`);
     }
 
+    // კალენდარი: ვადაგადაცილებული პოსტები და პიკის დღეები პოსტის გარეშე.
+    if (content.overdue.length > 0) {
+        const rows = content.overdue.slice(0, 3);
+        lines.push(`${count(content.overdue.length, "პოსტი")} ვადაგადაცილებულია კონტენტ-კალენდარში — გამოაქვეყნე ან გადაიტანე.`);
+        cards.push({
+            kind: "content",
+            total: rows.length,
+            items: rows.map((row) => row.card),
+            notes: Object.fromEntries(rows.map((row) => [row.card.id, row.note])),
+        });
+    }
+
+    if (content.uncoveredPeakDays.length > 0 && lines.length < 5) {
+        const days = content.uncoveredPeakDays.map((day) => `**${day.weekday}ს**`).join(" და ");
+        lines.push(`${days} ყველაზე მეტი შეკვეთა მოდის, ამ კვირაში კი ამ დღეს პოსტი არ გაქვს დაგეგმილი.`);
+    } else if (content.nothingPlanned && lines.length < 5) {
+        lines.push("მომდევნო 7 დღეში კონტენტ-კალენდარში არაფერი გაქვს დაგეგმილი.");
+    }
+
     const [bestDay] = insights.timing.weekdays;
     const [bestHours] = insights.timing.bestHours;
-    if (insights.timing.orders >= 20 && bestDay && bestHours && lines.length < 5) {
+    if (insights.timing.orders >= 20 && bestDay && bestHours && lines.length < 5 && content.uncoveredPeakDays.length === 0) {
         lines.push(`ყველაზე მეტი შეკვეთა მოდის **${bestDay.day}ს**, საათებიდან კი **${bestHours.hours}** — კარგი დროა პოსტისთვის.`);
     }
 

@@ -10,6 +10,8 @@ import { hasBusinessFeature } from "@/lib/business/business-mode";
 import { useAiAssistant, type AiAttachment, type AiMessage, type AiPurchaseTarget } from "./AiAssistantProvider";
 import AiPurchaseDraftCard from "./AiPurchaseDraftCard";
 import AiCards from "./AiCards";
+import AiHistoryList from "./AiHistoryList";
+import AiConversationLoader from "./AiConversationLoader";
 import { useKeyboardViewport } from "@/components/support/useKeyboardViewport";
 
 const ACCEPTED_EXTENSIONS = [".numbers", ".xlsx", ".csv"];
@@ -156,7 +158,11 @@ function subscribeDesktop(onChange: () => void) {
 }
 
 export default function AiAssistantPanel({ userName }: { userName: string }) {
-    const { open, unread, pending, draft, messages, openPanel, collapse, reset, setDraft, send, updateMessage } = useAiAssistant();
+    const {
+        open, unread, pending, draft, messages, openPanel, collapse, setDraft, send, updateMessage,
+        close: closePanel, newChat, showList, openConversation, deleteConversation,
+        view, history, title: chatTitle, conversationId, loadingConversation, historyError,
+    } = useAiAssistant();
     const mode = useBusinessMode();
     const manufacturing = hasBusinessFeature(mode, "manufacturing");
     const [file, setFile] = useState<File | null>(null);
@@ -314,12 +320,17 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
         }
     }
 
+    // X ფანჯარას ხურავს, ჩათი ისტორიაში რჩება; შემდეგ გახსნაზე ჩათების სია ჩანს.
     function close() {
-        if (messages.length > 0 && !window.confirm("მიმოწერა წაიშლება. დახურო მართეო AI?")) return;
-
         setFile(null);
         setFileError("");
-        reset();
+        closePanel();
+    }
+
+    function startNewChat() {
+        setFile(null);
+        setFileError("");
+        newChat();
     }
 
     function toggle() {
@@ -514,8 +525,22 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
         </>
     );
 
+    const headerButton = "inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white lg:h-8 lg:w-8";
+
     const headerActions = (
         <div className="flex items-center">
+            {open && view === "chat" && (history?.length ?? 0) > 0 && (
+                <button type="button" onClick={showList} aria-label="ჩათების ისტორია" title="ჩათების ისტორია" className={headerButton}>
+                    <Icon icon="solar:history-linear" className="h-[18px] w-[18px]" aria-hidden="true" />
+                </button>
+            )}
+
+            {open && view === "chat" && messages.length > 0 && (
+                <button type="button" onClick={startNewChat} aria-label="ახალი ჩათი" title="ახალი ჩათი" className={headerButton}>
+                    <Icon icon="solar:pen-new-square-linear" className="h-[18px] w-[18px]" aria-hidden="true" />
+                </button>
+            )}
+
             <button
                 type="button"
                 onClick={toggle}
@@ -530,24 +555,38 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
                 />
             </button>
 
-            {messages.length > 0 && (
-                <button
-                    type="button"
-                    onClick={close}
-                    aria-label="დახურვა და მიმოწერის წაშლა"
-                    title="დახურვა"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white lg:h-8 lg:w-8"
-                >
+            {open && (
+                <button type="button" onClick={close} aria-label="დახურვა" title="დახურვა" className={headerButton}>
                     <Icon icon="solar:close-square-linear" className="h-[18px] w-[18px]" aria-hidden="true" />
                 </button>
             )}
         </div>
     );
 
+    // ისტორიიდან ჩათის არჩევისთანავე სიის ნაცვლად ლოგოიანი ლოადერი ჩანს.
+    const body = loadingConversation ? (
+        <AiConversationLoader />
+    ) : view === "list" ? (
+        <AiHistoryList
+            history={history}
+            activeId={conversationId}
+            loading={loadingConversation}
+            error={historyError}
+            onOpen={(id) => void openConversation(id)}
+            onDelete={deleteConversation}
+            onNew={startNewChat}
+        />
+    ) : conversation;
+
     const title = (
         <>
             <Image src="/images/marteoAI.svg" alt="" width={22} height={22} className="h-[22px] w-[22px] rounded-md" />
-            <span className="truncate text-sm font-semibold text-white">მართეო AI</span>
+            <span className="flex min-w-0 flex-col leading-tight">
+                <span className="truncate text-sm font-semibold text-white">მართეო AI</span>
+                {open && (view === "list" || chatTitle) && (
+                    <span className="truncate text-[11px] text-slate-400">{view === "list" ? "ჩათების ისტორია" : chatTitle}</span>
+                )}
+            </span>
             {unread && <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-danger" />}
             {pending && !open && (
                 <span aria-hidden="true" className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-white/70 border-t-transparent motion-reduce:animate-none" />
@@ -586,7 +625,7 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
                 </header>
 
                 <div id="marteo-ai-body" inert={!open} className="flex min-h-0 flex-1 flex-col">
-                    {conversation}
+                    {body}
                 </div>
             </aside>
         );
@@ -630,7 +669,7 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
             </header>
 
             <div id="marteo-ai-body" className="flex min-h-0 flex-1 flex-col bg-surface">
-                {conversation}
+                {body}
             </div>
         </aside>
     );

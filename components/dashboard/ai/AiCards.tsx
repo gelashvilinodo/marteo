@@ -5,7 +5,9 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Icon } from "@iconify/react";
-import type { AiCardGroup, AiOrderCard, AiRestockSuggestion } from "@/lib/ai/ai-cards";
+import type { AiCardGroup, AiContentCard, AiContentState, AiOrderCard, AiPostDraft, AiRestockSuggestion } from "@/lib/ai/ai-cards";
+import { ContentTypeIcon, PlatformIcon } from "@/components/dashboard/calendar/ContentIcons";
+import { contentTypes } from "@/lib/content/content-options";
 import { addPlanItem } from "@/lib/purchases/purchase-plan-client";
 import type { CustomerEntry } from "@/lib/customers/get-customers-page";
 import type { InventoryProduct } from "@/components/dashboard/inventory/InventoryView";
@@ -21,6 +23,8 @@ const GROUPS = {
     orders: { more: "შეკვეთა", page: "/dashboard/orders", all: "ყველა შეკვეთა" },
     stock: { more: "პროდუქტი", page: "/dashboard/inventory", all: "მარაგების გვერდი" },
     customers: { more: "მომხმარებელი", page: "/dashboard/customers", all: "ყველა მომხმარებელი" },
+    content: { more: "პოსტი", page: "/dashboard/calendar", all: "კონტენტ-კალენდარი" },
+    draft: { more: "მონახაზი", page: "/dashboard/calendar", all: "კონტენტ-კალენდარი" },
 } as const;
 
 function money(value: string | null) {
@@ -232,6 +236,130 @@ function StockCard({ product, note, restock, planned, onPlanned, onOpen }: {
     );
 }
 
+const CONTENT_STATES: Record<AiContentState, { label: string; icon: string; tone: string }> = {
+    planned: { label: "დაგეგმილი", icon: "solar:calendar-linear", tone: "bg-accent/10 text-accent" },
+    today: { label: "დღეს", icon: "solar:bell-linear", tone: "bg-warning/10 text-warning" },
+    partly_done: { label: "ნაწილობრივ", icon: "solar:checklist-minimalistic-linear", tone: "bg-warning/10 text-warning" },
+    done: { label: "შესრულებული", icon: "solar:check-circle-linear", tone: "bg-success/10 text-success" },
+    overdue: { label: "ვადაგადაცილებული", icon: "solar:danger-triangle-linear", tone: "bg-danger/10 text-danger" },
+    canceled: { label: "გაუქმებული", icon: "solar:close-circle-linear", tone: "bg-border/60 text-text-secondary" },
+};
+
+function dateTime(value: string | null) {
+    if (!value) return "თარიღის გარეშე";
+
+    const local = new Date(Date.parse(value) + 4 * 60 * 60 * 1000);
+    const pad = (part: number) => String(part).padStart(2, "0");
+    return `${pad(local.getUTCDate())}.${pad(local.getUTCMonth() + 1)}.${local.getUTCFullYear()} · ${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())}`;
+}
+
+function ContentCard({ content, note, onOpen }: { content: AiContentCard; note?: string; onOpen: () => void }) {
+    const type = content.type === "OTHER" && content.customType
+        ? content.customType
+        : contentTypes.find((item) => item.value === content.type)?.label ?? content.type;
+
+    return (
+        <article className={cardClass}>
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-border bg-background [&>svg]:h-6 [&>svg]:w-6" aria-hidden="true">
+                <ContentTypeIcon type={content.type} />
+            </div>
+            <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                    <p className="line-clamp-2 min-w-0 break-words text-sm font-semibold leading-tight text-text-primary">{content.title}</p>
+                    <Pill {...CONTENT_STATES[content.state]} />
+                </div>
+                <p className="mt-0.5 truncate text-xs text-text-secondary">{dateTime(content.scheduledAt)} · {type}</p>
+                <div className="mt-2 flex items-end justify-between gap-2">
+                    <ul className="flex min-w-0 flex-wrap gap-1" aria-label="პლატფორმები">
+                        {content.channels.map((channel) => (
+                            <li
+                                key={channel.platform}
+                                title={`${channel.customPlatform || channel.platform}${channel.done ? " — შესრულებულია" : ""}`}
+                                className={`relative flex h-7 w-7 items-center justify-center rounded-lg ring-1 ring-inset ${channel.done ? "bg-success/10 ring-success/40" : "bg-background ring-border"}`}
+                            >
+                                <PlatformIcon platform={channel.platform} customPlatform={channel.customPlatform} className="h-4 w-4" />
+                                {channel.done && (
+                                    <Icon icon="solar:check-circle-bold" className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-surface text-success" aria-hidden="true" />
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                    <DetailsButton label={content.title} onClick={onOpen} />
+                </div>
+                <Note text={note} />
+            </div>
+        </article>
+    );
+}
+
+function draftDate(draft: AiPostDraft) {
+    const [year, month, day] = draft.date.split("-");
+    return `${day}.${month}.${year} · ${draft.time}`;
+}
+
+function DraftCard({ draft, note, saved, onAdd }: { draft: AiPostDraft; note?: string; saved?: boolean; onAdd: () => void }) {
+    const [expanded, setExpanded] = useState(false);
+    const type = contentTypes.find((item) => item.value === draft.type)?.label ?? draft.type;
+
+    return (
+        <article className="w-full rounded-2xl border border-border bg-surface p-3 shadow-sm">
+            <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-background [&>svg]:h-5 [&>svg]:w-5" aria-hidden="true">
+                    <ContentTypeIcon type={draft.type} />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                        <p className="line-clamp-2 min-w-0 break-words text-sm font-semibold leading-tight text-text-primary">{draft.title}</p>
+                        <Pill label="მონახაზი" icon="solar:pen-new-square-linear" tone="bg-accent/10 text-accent" />
+                    </div>
+                    <p className="mt-0.5 text-xs text-text-secondary">{draftDate(draft)} · {type}</p>
+                    <ul className="mt-1.5 flex flex-wrap gap-1" aria-label="პლატფორმები">
+                        {draft.platforms.map((platform) => (
+                            <li key={platform} title={platform} className="flex h-7 w-7 items-center justify-center rounded-lg bg-background ring-1 ring-inset ring-border">
+                                <PlatformIcon platform={platform} className="h-4 w-4" />
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
+
+            <div className="mt-3 rounded-xl bg-background p-3">
+                <p className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-text-primary ${expanded ? "" : "line-clamp-6"}`}>{draft.text}</p>
+                <button
+                    type="button"
+                    onClick={() => setExpanded((value) => !value)}
+                    className="mt-1 text-xs font-medium text-accent hover:underline"
+                >
+                    {expanded ? "ნაკლები" : "სრულად ნახვა"}
+                </button>
+            </div>
+
+            <Note text={note} />
+
+            {saved ? (
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-success/10 px-2.5 py-2 text-xs text-success">
+                    <span className="inline-flex items-center gap-1 font-medium">
+                        <Icon icon="solar:check-circle-bold" className="h-4 w-4" aria-hidden="true" />
+                        კალენდარში დამატებულია
+                    </span>
+                    <Link href="/dashboard/calendar" prefetch={false} className="font-medium underline-offset-2 hover:underline">
+                        კალენდრის ნახვა
+                    </Link>
+                </div>
+            ) : (
+                <button
+                    type="button"
+                    onClick={onAdd}
+                    className="mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-accent px-3 text-sm font-medium text-white transition hover:bg-accent-hover"
+                >
+                    <Icon icon="solar:calendar-add-linear" className="h-[18px] w-[18px]" aria-hidden="true" />
+                    კალენდარში დამატება
+                </button>
+            )}
+        </article>
+    );
+}
+
 function CustomerCard({ customer, note, onOpen }: { customer: CustomerEntry; note?: string; onOpen: () => void }) {
     const name = [customer.firstName, customer.lastName].filter(Boolean).join(" ") || "უსახელო მომხმარებელი";
     const initials = [customer.firstName, customer.lastName].map((part) => part?.trim()[0] ?? "").join("") || "?";
@@ -284,6 +412,18 @@ function CardGroup({ group, onOpen, onPlanned }: {
                     onOpen={() => onOpen({ kind: "stock", item })}
                 />
             ))}
+            {group.kind === "draft" && (visible as AiPostDraft[]).map((item) => (
+                <DraftCard
+                    key={item.id}
+                    draft={item}
+                    note={group.notes?.[item.id]}
+                    saved={group.saved?.[item.id]}
+                    onAdd={() => onOpen({ kind: "draft", item })}
+                />
+            ))}
+            {group.kind === "content" && (visible as AiContentCard[]).map((item) => (
+                <ContentCard key={item.id} content={item} note={group.notes?.[item.id]} onOpen={() => onOpen({ kind: "content", item })} />
+            ))}
             {group.kind === "customers" && (visible as CustomerEntry[]).map((item) => (
                 <CustomerCard key={item.id} customer={item} note={group.notes?.[item.id]} onOpen={() => onOpen({ kind: "customers", item })} />
             ))}
@@ -331,6 +471,12 @@ export default function AiCards({ groups, onChange }: {
             : group));
     }
 
+    function draftSaved(id: string) {
+        onChange(groups.map((group) => group.kind === "draft"
+            ? { ...group, saved: { ...group.saved, [id]: true } }
+            : group));
+    }
+
     function remove(id: string) {
         onChange(groups
             .map((group) => ({
@@ -352,6 +498,7 @@ export default function AiCards({ groups, onChange }: {
                     onClose={() => setTarget(null)}
                     onOrderUpdated={updateOrder}
                     onRemoved={remove}
+                    onDraftSaved={draftSaved}
                 />
             )}
         </div>

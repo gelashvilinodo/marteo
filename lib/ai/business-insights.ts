@@ -85,7 +85,8 @@ export type InsightTopic =
     | "returns"
     | "customers"
     | "operations"
-    | "timing";
+    | "timing"
+    | "content";
 
 const WEEKDAYS = ["ორშაბათი", "სამშაბათი", "ოთხშაბათი", "ხუთშაბათი", "პარასკევი", "შაბათი", "კვირა"];
 const RETURN_REASONS: Record<string, string> = { DEFECT: "წუნი", EXCHANGE: "გადაცვლა", OTHER: "სხვა მიზეზი" };
