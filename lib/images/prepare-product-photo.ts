@@ -78,7 +78,7 @@ async function prepare(
     const looksLikeImage =
         isDng ||
         original.type.startsWith("image/") ||
-        /\.(jpe?g|png|webp|heic|heif|avif|gif|bmp)$/i.test(
+        /\.(jpe?g|jfif|png|webp|heic|heif|avif|gif|bmp|tiff?|svg)$/i.test(
             original.name,
         );
 

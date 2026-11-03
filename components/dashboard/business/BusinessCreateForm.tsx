@@ -5,6 +5,7 @@ import BusinessModeChoice from "@/components/dashboard/business/BusinessModeChoi
 import type { BusinessMode } from "@/lib/business/business-mode";
 import { useState } from "react";
 import { Icon } from "@iconify/react";
+import { prepareAccountPhoto } from "@/lib/images/prepare-account-photo";
 
 import {
     authCardClass,
@@ -39,6 +40,7 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
     const [otherBusinessType, setOtherBusinessType] = useState("");
     const [logoPreview, setLogoPreview] = useState("");
     const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [preparingLogo, setPreparingLogo] = useState(false);
     const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -53,39 +55,37 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
         (businessType !== "სხვა" || otherBusinessType.trim().length > 0) &&
         acceptedTerms && !!mode;
 
-    const handleLogoChange = (
+    const handleLogoChange = async (
         event: React.ChangeEvent<HTMLInputElement>
     ) => {
         const file = event.target.files?.[0];
+        event.target.value = "";
 
-        if (!file) return;
-
-        const allowedTypes = [
-            "image/jpeg",
-            "image/png",
-            "image/webp",
-        ];
-
-        if (!allowedTypes.includes(file.type)) {
-            setError("ლოგო უნდა იყოს PNG, JPG ან WEBP ფორმატში.");
-            return;
-        }
-
-        if (file.size > 2 * 1024 * 1024) {
-            setError("ლოგოს მაქსიმალური ზომაა 2MB.");
-            return;
-        }
+        if (!file || preparingLogo) return;
 
         setError("");
+        setPreparingLogo(true);
 
-        setLogoFile(file);
+        try {
+            // Any photo format (iPhone HEIC included) is converted and shrunk
+            // in the browser before it is uploaded.
+            const prepared = await prepareAccountPhoto(file);
 
-        const previewUrl = URL.createObjectURL(file);
-        setLogoPreview(previewUrl);
+            setLogoFile(prepared);
+            setLogoPreview(URL.createObjectURL(prepared));
+        } catch (cause) {
+            setError(
+                cause instanceof Error
+                    ? cause.message
+                    : "ფოტო ვერ დამუშავდა. აირჩიე სხვა ფოტო."
+            );
+        } finally {
+            setPreparingLogo(false);
+        }
     };
 
     const handleSubmit = async () => {
-        if (!canSubmit || loading) return;
+        if (!canSubmit || loading || preparingLogo) return;
 
         setLoading(true);
         setError("");
@@ -322,7 +322,8 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
 
                                 <input
                                     type="file"
-                                    accept="image/png,image/jpeg,image/webp"
+                                    accept="image/*,.heic,.heif,.dng"
+                                    disabled={preparingLogo || loading}
                                     onChange={handleLogoChange}
                                     className="hidden"
                                 />
@@ -333,7 +334,7 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
                             </p>
 
                             <p className="mt-1 text-xs text-text-secondary">
-                                PNG, JPG ან WEBP - არასავალდებულო
+                                {preparingLogo ? "ფოტო მუშავდება…" : "ნებისმიერი ფოტო - არასავალდებულო"}
                             </p>
                         </div>
 
@@ -440,7 +441,7 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
                         <button
                             onClick={handleSubmit}
                             type="button"
-                            disabled={!canSubmit || loading}
+                            disabled={!canSubmit || loading || preparingLogo}
                             className={`mt-6 ${authPrimaryButtonClass}`}
                         >
                             {loading
