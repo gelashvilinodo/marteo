@@ -38,7 +38,10 @@ export type AdminBusinessFilters = {
     mode: "" | "IMPORT" | "MANUFACTURING" | "HYBRID";
     plan: "" | "FREE" | "START" | "BUSINESS" | "PRO" | "NONE";
     period: "" | typeof PERIODS[number];
+    billing: "" | typeof BILLING[number];
 };
+
+const BILLING = ["paying", "trial", "expiring", "lapsed"] as const;
 
 export function parseBusinessFilters(params: Params): AdminBusinessFilters {
     return {
@@ -46,6 +49,7 @@ export function parseBusinessFilters(params: Params): AdminBusinessFilters {
         mode: pick(one(params, "mode"), ["IMPORT", "MANUFACTURING", "HYBRID"] as const),
         plan: pick(one(params, "plan"), ["FREE", "START", "BUSINESS", "PRO", "NONE"] as const),
         period: pick(one(params, "period"), PERIODS),
+        billing: pick(one(params, "billing"), BILLING),
     };
 }
 
@@ -70,13 +74,22 @@ export function businessWhere(filters: AdminBusinessFilters): Sql {
     if (filters.plan === "NONE") clauses.push(sql`s.id IS NULL`);
     else if (filters.plan) clauses.push(sql`s.plan::text = ${filters.plan}`);
     if (filters.period) clauses.push(sql`b."createdAt" >= ${since(filters.period)}`);
+    if (filters.billing) {
+        const now = new Date();
+        const running = sql`(s."expiresAt" IS NULL OR s."expiresAt" > ${now})`;
+        if (filters.billing === "paying") clauses.push(sql`(s.plan <> 'FREE' AND s.status = 'ACTIVE' AND ${running})`);
+        if (filters.billing === "trial") clauses.push(sql`(s.status = 'TRIALING' AND ${running})`);
+        if (filters.billing === "expiring") clauses.push(sql`(s.status IN ('ACTIVE', 'TRIALING') AND s."expiresAt" > ${now} AND s."expiresAt" <= ${new Date(now.getTime() + 7 * 86400000)})`);
+        // Had a paid plan or a trial that ended and was not renewed.
+        if (filters.billing === "lapsed") clauses.push(sql`(s.plan <> 'FREE' AND s."canceledAt" IS NULL AND (s.status IN ('PAST_DUE', 'EXPIRED') OR (s.status IN ('ACTIVE', 'TRIALING') AND s."expiresAt" <= ${now})))`);
+    }
     return join(clauses, " AND ");
 }
 
 export type AdminBusinessRow = {
     id: string; name: string; mode: string; category: string; createdAt: Date;
     ownerEmail: string | null; members: number; orders: number;
-    plan: string | null; subscriptionStatus: string | null;
+    plan: string | null; subscriptionStatus: string | null; expiresAt: Date | null;
 };
 
 export async function getAdminBusinesses(page: number, filters: AdminBusinessFilters) {
@@ -92,10 +105,10 @@ export async function getAdminBusinesses(page: number, filters: AdminBusinessFil
                         WHERE m."businessId" = b.id AND m.role = 'OWNER' ORDER BY m."createdAt" LIMIT 1) AS "ownerEmail",
                     (SELECT count(*)::int FROM "BusinessMembership" m WHERE m."businessId" = b.id) AS members,
                     (SELECT count(*)::int FROM "Order" o WHERE o."businessId" = b.id AND o."deletedAt" IS NULL) AS orders,
-                    s.plan::text AS plan, s.status::text AS "subscriptionStatus"
+                    s.plan::text AS plan, s.status::text AS "subscriptionStatus", s."expiresAt"
                 FROM "Business" b LEFT JOIN "Subscription" s ON s."businessId" = b.id
                 WHERE ${where}
-                ORDER BY b."createdAt" DESC, b.id
+                ORDER BY ${filters.billing === "expiring" ? sql`s."expiresAt", b.id` : filters.billing === "lapsed" ? sql`s."expiresAt" DESC, b.id` : sql`b."createdAt" DESC, b.id`}
                 LIMIT ${ADMIN_PAGE_SIZE} OFFSET ${(page - 1) * ADMIN_PAGE_SIZE}
             `);
             return { total, rows };
@@ -166,6 +179,66 @@ export async function getAdminUsers(page: number, filters: AdminUserFilters) {
                 LIMIT ${ADMIN_PAGE_SIZE} OFFSET ${(page - 1) * ADMIN_PAGE_SIZE}
             `);
             return { total, rows };
+        });
+    } finally { await db.$disconnect(); }
+}
+
+export type AdminPaymentFilters = {
+    q: string;
+    method: "" | "BANK_TRANSFER" | "CASH" | "CARD" | "OTHER";
+    plan: "" | "START" | "BUSINESS" | "PRO";
+    period: "" | typeof PERIODS[number] | "365";
+    voided: "" | "only" | "include";
+};
+
+export function parsePaymentFilters(params: Params): AdminPaymentFilters {
+    return {
+        q: one(params, "q").slice(0, 100),
+        method: pick(one(params, "method"), ["BANK_TRANSFER", "CASH", "CARD", "OTHER"] as const),
+        plan: pick(one(params, "plan"), ["START", "BUSINESS", "PRO"] as const),
+        period: pick(one(params, "period"), [...PERIODS, "365"] as const),
+        voided: pick(one(params, "voided"), ["only", "include"] as const),
+    };
+}
+
+export function paymentWhere(filters: AdminPaymentFilters): Sql {
+    const clauses: Sql[] = [sql`TRUE`];
+    if (filters.q) clauses.push(sql`(coalesce(b.name, p."businessName") ILIKE ${likePattern(filters.q)} OR p.note ILIKE ${likePattern(filters.q)})`);
+    if (filters.method) clauses.push(sql`p.method::text = ${filters.method}`);
+    if (filters.plan) clauses.push(sql`p.plan::text = ${filters.plan}`);
+    if (filters.period) clauses.push(sql`p."paidAt" >= ${since(filters.period)}`);
+    if (filters.voided === "only") clauses.push(sql`p."voidedAt" IS NOT NULL`);
+    else if (filters.voided !== "include") clauses.push(sql`p."voidedAt" IS NULL`);
+    return join(clauses, " AND ");
+}
+
+export type AdminPaymentRow = {
+    id: string; businessId: string | null; businessName: string; plan: string; amount: number; method: string; months: number;
+    paidAt: Date; periodEnd: Date; note: string | null; voidedAt: Date | null; createdBy: string | null;
+};
+
+export async function getAdminPayments(page: number, filters: AdminPaymentFilters) {
+    if (!await getAdminUser()) throw new AdminAccessError();
+    const db = createPgReader();
+    try {
+        return await db.withReadTransaction(async tx => {
+            const where = paymentWhere(filters);
+            const [summary] = await tx.$queryRaw<{ total: number; amount: number }[]>(sql`
+                SELECT count(*)::int AS total, coalesce(sum(p.amount) FILTER (WHERE p."voidedAt" IS NULL), 0)::float AS amount
+                FROM "SubscriptionPayment" p LEFT JOIN "Business" b ON b.id = p."businessId" WHERE ${where}
+            `);
+            const rows = await tx.$queryRaw<AdminPaymentRow[]>(sql`
+                SELECT p.id, p."businessId", coalesce(b.name, p."businessName") AS "businessName", p.plan::text AS plan, p.amount::float AS amount,
+                    p.method::text AS method, p.months, p."paidAt", p."periodEnd", p.note, p."voidedAt",
+                    nullif(trim(coalesce(u."firstName", '') || ' ' || coalesce(u."lastName", '')), '') AS "createdBy"
+                FROM "SubscriptionPayment" p
+                LEFT JOIN "Business" b ON b.id = p."businessId"
+                LEFT JOIN "User" u ON u.id = p."createdById"
+                WHERE ${where}
+                ORDER BY p."paidAt" DESC, p."createdAt" DESC, p.id
+                LIMIT ${ADMIN_PAGE_SIZE} OFFSET ${(page - 1) * ADMIN_PAGE_SIZE}
+            `);
+            return { total: summary?.total ?? 0, amount: summary?.amount ?? 0, rows };
         });
     } finally { await db.$disconnect(); }
 }

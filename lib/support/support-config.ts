@@ -4,6 +4,9 @@ import { MARTEO_CONTACTS } from "@/lib/marteo-contacts";
 export const SUPPORT_MESSAGE_LIFETIME_MS = 24 * 60 * 60 * 1000;
 export const SUPPORT_MESSAGE_MAX_LENGTH = 2000;
 export const SUPPORT_POLL_MS = 3000;
+// The browser shrinks photos before sending, so real uploads stay well under this.
+export const SUPPORT_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+export const SUPPORT_IMAGE_LABEL = "📷 ფოტო";
 
 export const SUPPORT_WELCOME_TEXT = "გამარჯობა! 👋 მართეოს მხარდაჭერის გუნდი გისმენთ. რით შეგვიძლია დაგეხმაროთ?";
 
@@ -19,6 +22,7 @@ export type SupportMessageView = {
     id: string;
     sender: "USER" | "ADMIN";
     body: string;
+    imageUrl: string | null;
     createdAt: string;
     author: { name: string; avatarUrl: string | null } | null;
 };

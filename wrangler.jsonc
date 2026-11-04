@@ -13,7 +13,7 @@
     "run_worker_first": ["/_csp-static/*"]
   },
   "triggers": {
-    // Hourly cleanup of support chat messages older than 24 hours.
+    // Hourly: clean up support chat messages and photos older than 24 hours, and update expired subscriptions.
     "crons": ["0 * * * *"]
   },
   "observability": {

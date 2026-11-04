@@ -6,6 +6,7 @@ import { guardMutation } from "@/lib/security/mutation-request";
 import { rateLimitResponse, reserveLimits } from "@/lib/security/rate-limit";
 import { AiChatError, runMarteoAiChat, type AiChatTurn } from "@/lib/ai/marteo-ai-chat";
 import { hasBusinessFeature } from "@/lib/business/business-mode";
+import { finishAiUsage, startAiUsage, type AiUsageReservation } from "@/lib/ai/ai-usage";
 
 const MAX_TURNS = 10;
 // AI-ის პასუხს შეიძლება პოსტის მონახაზის ტექსტიც ახლდეს.
@@ -50,23 +51,27 @@ export const POST = guardMutation(async (request) => {
     }
 
     const prisma = createPrismaClient();
+    let usage: AiUsageReservation | null = null;
+    let failed = true;
 
     try {
         const businessId = context.membership.businessId;
 
         await reserveLimits(prisma, [
             { scope: "ai-chat-burst", identity: businessId, maximum: 20, seconds: 10 * 60 },
-            { scope: "ai-chat-month", identity: businessId, maximum: 500, seconds: 30 * 24 * 60 * 60 },
         ]);
+        // თვიური ლიმიტი პაკეტის მიხედვით; ადმინს შეუძლია ბიზნესს AI გამოურთოს.
+        usage = await startAiUsage(prisma, { businessId, businessName: context.membership.business.name, userId: context.user.id, kind: "CHAT" });
 
         const { text: reply, cards } = await runMarteoAiChat(turns, context.membership.business.name, {
             businessId,
             prisma,
             now: new Date(),
             purchasePlan: hasBusinessFeature(context.membership.business.mode, "imports"),
-        });
+        }, usage.meter);
 
-        return orderJson({ success: true, reply, cards });
+        failed = false;
+        return orderJson({ success: true, reply, cards, quota: usage.quota });
     } catch (error) {
         const limited = rateLimitResponse(error);
         if (limited) return limited;
@@ -78,6 +83,7 @@ export const POST = guardMutation(async (request) => {
         console.error("Marteo AI chat failed", error instanceof Error ? error.name : "UnknownError");
         return orderJson({ success: false, message: "მართეო AI დროებით მიუწვდომელია. სცადე ხელახლა." }, 500);
     } finally {
+        if (usage) await finishAiUsage(prisma, usage, failed);
         await prisma.$disconnect();
     }
 });

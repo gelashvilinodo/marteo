@@ -10,7 +10,7 @@ const BUCKET = "business-logos";
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
 const MAX_REQUEST_SIZE = MAX_FILE_SIZE + 64 * 1024;
 
-function getSecretKey(): string {
+export function getSecretKey(): string {
     let key: unknown;
 
     try {
@@ -34,7 +34,7 @@ function getSecretKey(): string {
     return key.trim();
 }
 
-function detectImage(bytes: Uint8Array) {
+export function detectImage(bytes: Uint8Array) {
     if (
         bytes.length >= 8 &&
         bytes[0] === 0x89 &&

@@ -104,28 +104,29 @@ export default function DashboardShell({
                 </div>
             </div>
 
-            <AiAssistantInset>
-                <DashboardHeader
-                    menuOpen={sidebarOpen}
-                    onMenuClick={() => setSidebarOpen((current) => !current)}
-                    businessName={businessName}
-                    businessLogoUrl={businessLogoUrl}
-                    businessId={businessId}
-                    businesses={businesses}
-                    userName={userName}
-                    userEmail={userEmail}
-                    isPlatformAdmin={isPlatformAdmin}
-                    isOwner={isOwner}
-                />
+            {/* AI პანელის შეკვეთის ბარათებიდანაც იხსნება რედაქტირება, ამიტომ პროვაიდერი პანელსაც მოიცავს. */}
+            <NewOrderProvider>
+                <AiAssistantInset>
+                    <DashboardHeader
+                        menuOpen={sidebarOpen}
+                        onMenuClick={() => setSidebarOpen((current) => !current)}
+                        businessName={businessName}
+                        businessLogoUrl={businessLogoUrl}
+                        businessId={businessId}
+                        businesses={businesses}
+                        userName={userName}
+                        userEmail={userEmail}
+                        isPlatformAdmin={isPlatformAdmin}
+                        isOwner={isOwner}
+                    />
 
-                <NewOrderProvider>
                     <PullToRefresh>{children}</PullToRefresh>
 
                     <DeferredNewOrderDrawer />
-                </NewOrderProvider>
-            </AiAssistantInset>
+                </AiAssistantInset>
 
-            {isOwner && <AiAssistantPanel userName={userName} />}
+                {isOwner && <AiAssistantPanel userName={userName} />}
+            </NewOrderProvider>
         </div></AiAssistantProvider></BusinessAccessContext></BusinessModeContext>
     );
 }

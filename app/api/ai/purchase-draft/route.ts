@@ -5,6 +5,7 @@ import { orderJson } from "@/lib/orders/order-http";
 import { createPrismaClient } from "@/lib/prisma";
 import { guardMutation } from "@/lib/security/mutation-request";
 import { rateLimitResponse, reserveLimits } from "@/lib/security/rate-limit";
+import { finishAiUsage, startAiUsage, type AiUsageReservation } from "@/lib/ai/ai-usage";
 import { AiChatError } from "@/lib/ai/marteo-ai-chat";
 import { createPurchaseDraft } from "@/lib/ai/purchase-draft";
 import type { AiSourceRow } from "@/lib/ai/purchase-draft-types";
@@ -55,18 +56,21 @@ export const POST = guardMutation(async (request) => {
     }
 
     const prisma = createPrismaClient();
+    let usage: AiUsageReservation | null = null;
+    let failed = true;
 
     try {
         const businessId = context.membership.businessId;
 
-        // ფაილიდან შესყიდვა თვიურ ლიმიტში ერთ კითხვად ითვლება.
         await reserveLimits(prisma, [
             { scope: "ai-purchase-burst", identity: businessId, maximum: 5, seconds: 10 * 60 },
-            { scope: "ai-chat-month", identity: businessId, maximum: 500, seconds: 30 * 24 * 60 * 60 },
         ]);
+        // ფაილიდან შესყიდვა თვიურ ლიმიტში ერთ კითხვად ითვლება.
+        usage = await startAiUsage(prisma, { businessId, businessName: context.membership.business.name, userId: context.user.id, kind: "PURCHASE_DRAFT" });
 
-        const draft = await createPurchaseDraft({ prisma, businessId, target, fileName, rows, photoCount });
-        return orderJson({ success: true, draft });
+        const draft = await createPurchaseDraft({ prisma, businessId, target, fileName, rows, photoCount, meter: usage.meter });
+        failed = false;
+        return orderJson({ success: true, draft, quota: usage.quota });
     } catch (error) {
         const limited = rateLimitResponse(error);
         if (limited) return limited;
@@ -78,6 +82,7 @@ export const POST = guardMutation(async (request) => {
         console.error("Marteo AI purchase draft failed", error instanceof Error ? error.name : "UnknownError");
         return orderJson({ success: false, message: "ფაილის დამუშავება ვერ მოხერხდა. სცადე ხელახლა." }, 500);
     } finally {
+        if (usage) await finishAiUsage(prisma, usage, failed);
         await prisma.$disconnect();
     }
 });

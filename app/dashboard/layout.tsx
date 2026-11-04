@@ -5,6 +5,8 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness, getUserBusinesses, hasFrozenMembership } from "@/lib/auth/current-business";
 import { getAdminUser } from "@/lib/admin/authorization";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import SystemBannerBar from "@/components/dashboard/SystemBannerBar";
+import { getActiveBanner } from "@/lib/system/active-banner";
 
 type DashboardLayoutProps = {
     children: ReactNode;
@@ -25,6 +27,8 @@ export default async function DashboardLayout({
         redirect(await hasFrozenMembership(user.id) ? "/business/frozen" : "/business/onboarding");
     }
 
+    const banner = await getActiveBanner();
+
     return (
         <DashboardShell
             isPlatformAdmin={Boolean(await getAdminUser())}
@@ -38,6 +42,7 @@ export default async function DashboardLayout({
             userName={user.firstName || ""}
             userEmail={user.email}
         >
+            {banner && <SystemBannerBar banner={banner} />}
             {children}
         </DashboardShell>
     );

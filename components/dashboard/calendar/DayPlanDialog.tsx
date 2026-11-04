@@ -3,7 +3,9 @@
 import { useEffect, useId, useRef } from "react";
 import { Icon } from "@iconify/react";
 import type { CalendarContent } from "@/lib/content/get-calendar-page";
+import { calendarLocalParts } from "@/lib/content/calendar-period";
 import PlatformBadge from "./PlatformBadge";
+import { calendarDialogClass } from "./dialog-style";
 
 export default function DayPlanDialog({
     day,
@@ -28,13 +30,7 @@ export default function DayPlanDialog({
     }, []);
 
     function time(value: string | null) {
-        if (!value) return "";
-
-        return new Date(
-            new Date(value).getTime() + 4 * 60 * 60 * 1000,
-        )
-            .toISOString()
-            .slice(11, 16);
+        return value ? calendarLocalParts(value).time : "";
     }
 
     return (
@@ -45,9 +41,9 @@ export default function DayPlanDialog({
                 event.preventDefault();
                 onClose();
             }}
-            className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-2xl border border-border bg-surface p-0 text-left text-text-primary backdrop:bg-black/40 backdrop:backdrop-blur-sm"
+            className={calendarDialogClass}
         >
-            <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-surface p-4">
                 <div>
                     <h2 id={titleId} className="font-semibold">
                         დღის გეგმა
@@ -138,7 +134,7 @@ export default function DayPlanDialog({
                 )}
             </div>
 
-            <div className="border-t border-border p-4">
+            <div className="sticky bottom-0 z-10 border-t border-border bg-surface p-4">
                 <button
                     type="button"
                     onClick={() => onNew(day)}

@@ -335,6 +335,22 @@ dialog:modal {
     both;
 }
 
+/* კალენდრის dialog-ი ტელეფონზე ქვემოდან ამოდის. */
+@keyframes calendar-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
+  .calendar-sheet[open] {
+    animation: calendar-sheet-up 280ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .calendar-body-enter-next,
   .calendar-body-exit-next,

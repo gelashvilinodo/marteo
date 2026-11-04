@@ -2,9 +2,10 @@ import { apiAccessDenied } from "@/lib/business/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { createPrismaClient } from "@/lib/prisma";
-import { guardMutation } from "@/lib/security/mutation-request";
 import { reserveLimits } from "@/lib/security/rate-limit";
-import { getBusinessThread, postBusinessMessage, readSupportText } from "@/lib/support/support-chat";
+import { getBusinessThread, postBusinessMessage } from "@/lib/support/support-chat";
+import { guardSupportPost, readSupportMessage } from "@/lib/support/support-images";
+import { SUPPORT_IMAGE_LABEL } from "@/lib/support/support-config";
 import { supportFailure, supportJson, supportUnauthorized } from "@/lib/support/support-http";
 import { notifyPlatformAdmin } from "@/lib/push/web-push";
 
@@ -32,12 +33,16 @@ async function post(request: Request) {
     const accessDenied = await apiAccessDenied("MEMBER", "edit"); if (accessDenied) return accessDenied;
     const member = await currentMember();
     if (!member) return supportUnauthorized();
-    const text = await request.json().then(readSupportText).catch(supportFailure);
-    if (text instanceof Response) return text;
+    const input = await readSupportMessage(request).catch(supportFailure);
+    if (input instanceof Response) return input;
+    const text = input.text || SUPPORT_IMAGE_LABEL;
     const prisma = createPrismaClient();
     try {
-        await reserveLimits(prisma, [{ scope: "support-message", identity: member.user.id, maximum: 20, seconds: 60 }]);
-        const result = await postBusinessMessage(prisma, member.businessId, member.user.id, text);
+        await reserveLimits(prisma, [
+            { scope: "support-message", identity: member.user.id, maximum: 20, seconds: 60 },
+            ...input.image ? [{ scope: "support-image", identity: member.user.id, maximum: 30, seconds: 3600 }] : [],
+        ]);
+        const result = await postBusinessMessage(prisma, member.businessId, member.user.id, input.text, input.image);
         await notifyPlatformAdmin(prisma, {
             title: result.businessName,
             body: text.length > 160 ? `${text.slice(0, 157)}…` : text,
@@ -50,4 +55,4 @@ async function post(request: Request) {
     } finally { await prisma.$disconnect(); }
 }
 
-export const POST = guardMutation(post, "json");
+export const POST = guardSupportPost(post);

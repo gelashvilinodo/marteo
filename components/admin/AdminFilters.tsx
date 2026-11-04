@@ -10,10 +10,11 @@ type AdminFiltersProps = {
     placeholder: string;
     values: Record<string, string>;
     selects: AdminFilterSelect[];
+    search?: boolean;
 };
 
 // Filters live in the URL, so a filtered list can be refreshed, shared or bookmarked.
-export default function AdminFilters({ placeholder, values, selects }: AdminFiltersProps) {
+export default function AdminFilters({ placeholder, values, selects, search = true }: AdminFiltersProps) {
     const router = useRouter();
     const pathname = usePathname();
     const [pending, startTransition] = useTransition();
@@ -40,12 +41,12 @@ export default function AdminFilters({ placeholder, values, selects }: AdminFilt
     const active = selects.some(select => values[select.name]) || Boolean(values.q);
 
     return <div className="mt-5 flex flex-col gap-2 xl:flex-row xl:items-center">
-        <label className="relative min-w-0 flex-1 xl:min-w-[260px]">
+        {search && <label className="relative min-w-0 flex-1 xl:min-w-[260px]">
             <span className="sr-only">ძებნა</span>
             <Icon icon={pending ? "svg-spinners:180-ring" : "solar:magnifer-linear"} className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" aria-hidden="true" />
             <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={placeholder} maxLength={100}
                 className="h-11 w-full rounded-xl border border-border bg-surface pl-9 pr-3 text-base text-text-primary outline-none transition placeholder:text-text-secondary focus:border-accent sm:text-sm" />
-        </label>
+        </label>}
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             {selects.map(select => <label key={select.name} className="min-w-0">
                 <span className="sr-only">{select.label}</span>

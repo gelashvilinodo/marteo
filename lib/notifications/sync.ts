@@ -6,7 +6,8 @@ type Tx = Pick<Prisma.TransactionClient, "$queryRaw" | "$executeRaw">;
 
 export const LOW_STOCK_THRESHOLD = 5; // Same rule as the inventory page "დაბალი მარაგი" filter.
 const STOCK_SUMMARY_AFTER = 3;
-const REMINDER_DAYS = 3;
+const REMINDER_DAYS = [7, 3, 1] as const;
+const ENDED_NOTICE_DAYS = 14;
 const TBILISI_DATE = (column: Prisma.Sql) => Prisma.sql`to_char((${column} AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Tbilisi', 'DD.MM.YYYY')`;
 
 /**
@@ -49,9 +50,13 @@ async function deliverCampaigns(tx: Tx, userId: string, now: Date) {
 }
 
 async function deliverSubscriptionReminders(tx: Tx, businessId: string, now: Date) {
-    const until = new Date(now.getTime() + REMINDER_DAYS * 86400000);
+    const until = new Date(now.getTime() + REMINDER_DAYS[0] * 86400000);
     const date = TBILISI_DATE(Prisma.sql`s."expiresAt"`);
-    // The expiry timestamp is part of the key: a renewed period gets its own reminder.
+    const plan = Prisma.raw(`coalesce(${planLabelCase("s.plan::text")}, s.plan::text)`);
+    // 7, 3 and 1 day(s) before: each stage once per period (the expiry timestamp is in the key, so a renewal starts over).
+    // The 3-day key keeps its original format, so reminders sent before the stages existed are not repeated.
+    const stage = Prisma.sql`CASE WHEN s."expiresAt" <= ${new Date(now.getTime() + REMINDER_DAYS[2] * 86400000)} THEN 1
+        WHEN s."expiresAt" <= ${new Date(now.getTime() + REMINDER_DAYS[1] * 86400000)} THEN 3 ELSE 7 END`;
     await tx.$executeRaw`
         INSERT INTO "Notification" (id, "userId", "businessId", kind, title, body, "actionLabel", "actionUrl", "dedupeKey", "deliverAt", "createdAt")
         SELECT gen_random_uuid()::text, m."userId", s."businessId",
@@ -59,10 +64,11 @@ async function deliverSubscriptionReminders(tx: Tx, businessId: string, now: Dat
             CASE WHEN s.status = 'TRIALING' THEN 'საცდელი პერიოდი მალე სრულდება' ELSE 'პაკეტის განახლების დროა' END,
             CASE WHEN s.status = 'TRIALING'
                 THEN 'შენი საცდელი პერიოდი სრულდება ' || ${date} || '-ს. აირჩიე პაკეტი, რომ ყველა ფუნქციით სარგებლობა უწყვეტად გააგრძელო.'
-                ELSE 'შენი ' || coalesce(${Prisma.raw(planLabelCase("s.plan::text"))}, s.plan::text) || ' პაკეტი იწურება ' || ${date} || '-ს. განაახლე, რომ მუშაობა არ შეგეფერხოს.'
+                ELSE 'შენი ' || ${plan} || ' პაკეტი იწურება ' || ${date} || '-ს. განაახლე, რომ მუშაობა არ შეგეფერხოს.'
             END,
             'პაკეტის ნახვა', '/dashboard/business-settings',
-            lower(s.status::text) || ':' || s.id || ':' || to_char(s."expiresAt", 'YYYYMMDDHH24MISS') || ':' || m."userId",
+            lower(s.status::text) || ':' || s.id || ':' || to_char(s."expiresAt", 'YYYYMMDDHH24MISS')
+                || CASE ${stage} WHEN 3 THEN '' ELSE ':d' || ${stage} END || ':' || m."userId",
             ${now}, ${now}
         FROM "Subscription" s JOIN "BusinessMembership" m ON m."businessId" = s."businessId"
             -- გადახდა მფლობელების საქმეა; თანამშრომელი სხვის გეგმაზე შეხსენებას არ იღებს.
@@ -70,6 +76,25 @@ async function deliverSubscriptionReminders(tx: Tx, businessId: string, now: Dat
         WHERE s."businessId" = ${businessId} AND s."canceledAt" IS NULL
           AND s."expiresAt" > ${now} AND s."expiresAt" <= ${until}
           AND (s.status = 'TRIALING' OR (s.status = 'ACTIVE' AND s.plan <> 'FREE'))
+        ON CONFLICT ("dedupeKey") DO NOTHING
+    `;
+    // After the end date: one notice that the business now works on FREE. Data is kept; only plan features stop.
+    // The hourly cron moves the status to PAST_DUE / EXPIRED, so all three count as "just ended".
+    await tx.$executeRaw`
+        INSERT INTO "Notification" (id, "userId", "businessId", kind, title, body, "actionLabel", "actionUrl", "dedupeKey", "deliverAt", "createdAt")
+        SELECT gen_random_uuid()::text, m."userId", s."businessId",
+            CASE WHEN s.status = 'TRIALING' THEN 'TRIAL_ENDING'::"NotificationKind" ELSE 'RENEWAL_REMINDER'::"NotificationKind" END,
+            CASE WHEN s.status = 'TRIALING' THEN 'საცდელი პერიოდი დასრულდა' ELSE 'პაკეტის ვადა ამოიწურა' END,
+            CASE WHEN s.status = 'TRIALING' THEN 'საცდელი პერიოდი დასრულდა ' || ${date} || '-ს.' ELSE 'შენი ' || ${plan} || ' პაკეტის ვადა ამოიწურა ' || ${date} || '-ს.' END
+                || ' ბიზნესი ახლა FREE პაკეტზეა, მონაცემები შენახულია. განაახლე, რომ ყველა ფუნქცია დაგიბრუნდეს.',
+            'პაკეტის ნახვა', '/dashboard/business-settings',
+            'ended:' || s.id || ':' || to_char(s."expiresAt", 'YYYYMMDDHH24MISS') || ':' || m."userId",
+            ${now}, ${now}
+        FROM "Subscription" s JOIN "BusinessMembership" m ON m."businessId" = s."businessId"
+            AND m.role = 'OWNER' AND m.status = 'ACTIVE'
+        WHERE s."businessId" = ${businessId} AND s."canceledAt" IS NULL AND s.plan <> 'FREE'
+          AND s."expiresAt" <= ${now} AND s."expiresAt" > ${new Date(now.getTime() - ENDED_NOTICE_DAYS * 86400000)}
+          AND s.status IN ('ACTIVE', 'TRIALING', 'PAST_DUE', 'EXPIRED')
         ON CONFLICT ("dedupeKey") DO NOTHING
     `;
 }

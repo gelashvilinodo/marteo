@@ -101,7 +101,7 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
         const busy = busyId === request.id;
         const what = request.kind === "DELETE_BUSINESS" ? "ბიზნესის წაშლა" : `გუნდიდან გაშვება: ${request.targetName ?? "წევრი"}`;
         return (
-            <li key={request.id} className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
+            <li key={request.id} className={`rounded-xl border p-3 text-sm ${request.kind === "DELETE_BUSINESS" ? "border-red-600/40 bg-red-600/5" : "border-warning/40 bg-warning/10"}`}>
                 <p className="font-medium text-text-primary">
                     {request.requestedByYou ? "შენ ითხოვე" : `${request.requestedByName} ითხოვს`}: {what}
                 </p>
@@ -112,7 +112,7 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
                             <button type="button" disabled={Boolean(busyId)}
                                 onClick={() => send(request.id, `/api/business/requests/${encodeURIComponent(request.id)}/vote`, "POST", { approve: true })
                                     .then(data => { if ((data as { deleted?: boolean } | null)?.deleted) window.location.assign("/dashboard"); })}
-                                className={`inline-flex min-h-9 items-center rounded-xl px-3 text-sm font-medium text-white disabled:opacity-50 ${request.kind === "DELETE_BUSINESS" ? "bg-danger" : "bg-success"}`}>
+                                className={`inline-flex min-h-9 items-center rounded-xl border px-3 text-sm font-medium disabled:opacity-50 ${request.kind === "DELETE_BUSINESS" ? "delete-button" : "border-success bg-success text-white"}`}>
                                 {busy ? "იგზავნება…" : "ვეთანხმები"}
                             </button>
                             <button type="button" disabled={Boolean(busyId)}

@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { createPrismaClient } from "@/lib/prisma";
 import { AiChatError, getAnthropicClient, MARTEO_AI_MODEL } from "./anthropic-client";
 import type { AiDraftItem, AiPurchaseDraft, AiSourceRow } from "./purchase-draft-types";
+import type { AiUsageMeter } from "./ai-usage";
 
 const MATERIAL_UNITS = ["PCS", "KG", "G", "L", "ML", "M", "CM", "MM", "M2", "M3"] as const;
 
@@ -195,6 +196,7 @@ export async function createPurchaseDraft(options: {
     fileName: string;
     rows: AiSourceRow[];
     photoCount: number;
+    meter?: AiUsageMeter;
 }): Promise<AiPurchaseDraft> {
     const { prisma, businessId, target, rows } = options;
 
@@ -253,6 +255,8 @@ export async function createPurchaseDraft(options: {
         }
         throw error;
     }
+
+    options.meter?.add(response.usage);
 
     if (response.stop_reason === "max_tokens") {
         throw new AiChatError("ფაილი ერთი ჯერისთვის ძალიან დიდია. დაყავი რამდენიმე ფაილად.", 422);

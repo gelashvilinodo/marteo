@@ -14,7 +14,8 @@ export default async function CalendarPage({
     searchParams: Promise<CalendarSearchParams>;
 }) {
     await requireDashboardSection("/dashboard/calendar");
-    if (!(await getCurrentUser())) redirect("/login");
+    const user = await getCurrentUser();
+    if (!user) redirect("/login");
 
     const membership = await getCurrentBusiness();
     if (!membership) redirect("/business/onboarding");
@@ -38,5 +39,5 @@ export default async function CalendarPage({
         }
     })();
 
-    return <CalendarView initialData={data} />;
+    return <CalendarView initialData={data} showTour={!user.seenTours.includes("calendar")} />;
 }

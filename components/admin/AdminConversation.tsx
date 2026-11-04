@@ -7,6 +7,10 @@ import SupportChat from "@/components/support/SupportChat";
 import SupportAvatar from "@/components/support/SupportAvatar";
 import TemplatePicker from "./TemplatePicker";
 import NotesPanel from "./NotesPanel";
+import AuditHistory from "./AuditHistory";
+import type { AuditEntry } from "@/lib/admin/actions";
+import { RISK_KINDS, type RiskSignal } from "@/lib/admin/risk-signals-config";
+import { PAYMENT_METHOD_LABELS } from "@/lib/admin/payment-period";
 import type { AdminNote } from "@/lib/admin/support-tools";
 import { BUSINESS_MODES, type BusinessMode } from "@/lib/business/business-mode";
 import { formatSupportCount, formatSupportDate, type SupportThreadView } from "@/lib/support/support-config";
@@ -25,6 +29,15 @@ export type BusinessProfile = {
     subscription: { plan: string; status: string; expiresAt: string | null } | null;
     counts: { orders: number; customers: number; products: number };
     lastOrderAt: string | null;
+    // Our own billing and usage data about the business, never its records.
+    account: {
+        plan: string;
+        signals: RiskSignal[];
+        ai: { used: number; limit: number; disabled: boolean; custom: boolean; monthCost: number };
+        lastPayment: { plan: string; amount: string; method: string; months: number; paidAt: string; periodEnd: string } | null;
+        paidTotal: string;
+        payments: number;
+    };
     members: { id: string; role: "OWNER" | "ADMIN" | "MEMBER"; name: string; email: string; phone: string; avatarUrl: string | null; joinedAt: string }[];
 };
 
@@ -44,8 +57,14 @@ function Row({ icon, label, children, href }: { icon: string; label: string; chi
     </div>;
 }
 
-function BusinessPanel({ profile, notes }: { profile: BusinessProfile; notes: AdminNote[] }) {
+function BusinessPanel({ profile, notes, history }: { profile: BusinessProfile; notes: AdminNote[]; history: AuditEntry[] }) {
     const mode = BUSINESS_MODES.find(item => item.value === profile.mode);
+    const { account } = profile;
+    const stored = profile.subscription;
+    const planText = !stored ? "FREE"
+        : account.plan !== stored.plan ? `${account.plan} · ${stored.plan} ${subscriptionStatus[stored.status] ?? stored.status}`
+        : `${account.plan} · ${subscriptionStatus[stored.status] ?? stored.status}`;
+    const aiShare = account.ai.limit > 0 ? Math.min(1, account.ai.used / account.ai.limit) : 1;
     const website = profile.website && /^https?:\/\//i.test(profile.website) ? profile.website : profile.website ? `https://${profile.website}` : null;
     return <div className="flex flex-col gap-3">
         <section className="rounded-3xl border border-border bg-surface p-5 text-center">
@@ -57,8 +76,14 @@ function BusinessPanel({ profile, notes }: { profile: BusinessProfile; notes: Ad
             <p className="mt-1 flex items-center justify-center gap-1.5 text-xs text-text-secondary">
                 {mode && <Icon icon={mode.icon} className="h-3.5 w-3.5" aria-hidden="true" />}{mode?.label ?? profile.mode}
                 <span aria-hidden="true">·</span>
-                {profile.subscription ? `${profile.subscription.plan} · ${subscriptionStatus[profile.subscription.status] ?? profile.subscription.status}` : "FREE"}
+                {planText}
             </p>
+            {account.signals.length > 0 && <ul className="mt-3 flex flex-col gap-1.5 text-left">
+                {account.signals.map(signal => <li key={signal.kind} className={`flex items-start gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-medium ${RISK_KINDS[signal.kind].tone}`}>
+                    <Icon icon={RISK_KINDS[signal.kind].icon} className="mt-px h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span>{RISK_KINDS[signal.kind].label}: {signal.detail}</span>
+                </li>)}
+            </ul>}
             <div className="mt-4 grid grid-cols-3 gap-2">
                 {([["შეკვეთა", profile.counts.orders], ["კლიენტი", profile.counts.customers], ["პროდუქტი", profile.counts.products]] as const).map(([label, value]) =>
                     <div key={label} className="rounded-2xl bg-background px-2 py-2.5">
@@ -66,6 +91,27 @@ function BusinessPanel({ profile, notes }: { profile: BusinessProfile; notes: Ad
                         <span className="block text-[10px] text-text-secondary">{label}</span>
                     </div>)}
             </div>
+        </section>
+
+        <section className="rounded-3xl border border-border bg-surface px-5 py-3">
+            <h3 className="pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">ანგარიში</h3>
+            <div className="py-2">
+                <p className="flex items-center justify-between text-[11px] text-text-secondary">
+                    <span>მართეო AI ამ თვეში{account.ai.custom ? " (ინდივიდუალური ლიმიტი)" : ""}</span>
+                    <span className="font-medium text-text-primary">{account.ai.disabled ? "გამორთულია" : `${formatSupportCount(account.ai.used)} / ${formatSupportCount(account.ai.limit)}`}</span>
+                </p>
+                {!account.ai.disabled && <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-background" role="presentation">
+                    <div className={`h-full rounded-full ${aiShare >= 1 ? "bg-danger" : aiShare >= 0.8 ? "bg-warning" : "bg-accent"}`} style={{ width: `${Math.round(aiShare * 100)}%` }} />
+                </div>}
+                <p className="mt-1 text-[11px] text-text-secondary">ხარჯი ამ თვეში ${account.ai.monthCost.toFixed(2)}</p>
+            </div>
+            <Row icon="solar:wallet-money-linear" label="ბოლო გადახდა">
+                {account.lastPayment
+                    ? `${account.lastPayment.amount} ₾ · ${account.lastPayment.plan} ${account.lastPayment.months} თვე · ${formatSupportDate(account.lastPayment.paidAt)} · ${PAYMENT_METHOD_LABELS[account.lastPayment.method] ?? account.lastPayment.method}`
+                    : "გადახდა ჯერ არ აღრიცხულა"}
+            </Row>
+            {account.lastPayment && <Row icon="solar:calendar-mark-linear" label="გადახდილი პერიოდი">{formatSupportDate(account.lastPayment.periodEnd)}-მდე</Row>}
+            {account.payments > 1 && <Row icon="solar:graph-up-linear" label="სულ გადაუხდია">{account.paidTotal} ₾ · {account.payments} გადახდა</Row>}
         </section>
 
         <section className="rounded-3xl border border-border bg-surface px-5 py-4">
@@ -101,10 +147,18 @@ function BusinessPanel({ profile, notes }: { profile: BusinessProfile; notes: Ad
                 </li>)}
             </ul>
         </section>
+
+        <section className="rounded-3xl border border-border bg-surface px-5 py-4">
+            <h3 className="flex items-center justify-between pb-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                ადმინის ბოლო ქმედებები
+                <Link href={`/admin/businesses/${profile.id}`} prefetch={false} className="text-[11px] font-medium normal-case tracking-normal text-accent hover:underline">ყველა</Link>
+            </h3>
+            <AuditHistory entries={history} />
+        </section>
     </div>;
 }
 
-export default function AdminConversation({ conversationId, initialStatus, profile, notes }: { conversationId: string; initialStatus: Status; profile: BusinessProfile; notes: AdminNote[] }) {
+export default function AdminConversation({ conversationId, initialStatus, profile, notes, history }: { conversationId: string; initialStatus: Status; profile: BusinessProfile; notes: AdminNote[]; history: AuditEntry[] }) {
     const [status, setStatus] = useState<Status>(initialStatus);
     const [saving, setSaving] = useState(false);
     const [infoOpen, setInfoOpen] = useState(false);
@@ -170,7 +224,7 @@ export default function AdminConversation({ conversationId, initialStatus, profi
             />
         </div>
 
-        <aside className="hidden min-h-0 overflow-y-auto xl:block"><BusinessPanel profile={profile} notes={notes} /></aside>
+        <aside className="hidden min-h-0 overflow-y-auto xl:block"><BusinessPanel profile={profile} notes={notes} history={history} /></aside>
 
         <div className={`fixed inset-0 z-50 xl:hidden ${infoOpen ? "pointer-events-auto" : "pointer-events-none"}`} inert={!infoOpen} role="dialog" aria-modal="true" aria-label="ბიზნესის ინფორმაცია">
             <button type="button" aria-label="დახურვა" onClick={() => setInfoOpen(false)} className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${infoOpen ? "opacity-100" : "opacity-0"}`} />
@@ -180,7 +234,7 @@ export default function AdminConversation({ conversationId, initialStatus, profi
                         <Icon icon="solar:close-circle-linear" className="h-6 w-6" aria-hidden="true" />
                     </button>
                 </div>
-                <BusinessPanel profile={profile} notes={notes} />
+                <BusinessPanel profile={profile} notes={notes} history={history} />
             </div>
         </div>
     </div>;

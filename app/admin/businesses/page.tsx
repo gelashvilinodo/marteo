@@ -5,6 +5,7 @@ import { AdminAccessError } from "@/lib/admin/overview";
 import { ADMIN_PAGE_SIZE, getAdminBusinesses, parseAdminPage, parseBusinessFilters } from "@/lib/admin/lists";
 import { BUSINESS_MODES } from "@/lib/business/business-mode";
 import { formatSupportCount, formatSupportDate } from "@/lib/support/support-config";
+import { SUBSCRIPTION_STATUS_LABELS } from "@/components/admin/AdminBadges";
 import AdminPagination from "@/components/admin/AdminPagination";
 import AdminFilters from "@/components/admin/AdminFilters";
 import ExportButton from "@/components/admin/ExportButton";
@@ -12,6 +13,10 @@ import ExportButton from "@/components/admin/ExportButton";
 const PLAN_OPTIONS = [
     { value: "FREE", label: "FREE" }, { value: "START", label: "START" },
     { value: "BUSINESS", label: "BUSINESS" }, { value: "PRO", label: "PRO" }, { value: "NONE", label: "პაკეტის გარეშე" },
+];
+const BILLING_OPTIONS = [
+    { value: "paying", label: "იხდის ახლა" }, { value: "trial", label: "საცდელზეა" },
+    { value: "expiring", label: "ვადა 7 დღეში იწურება" }, { value: "lapsed", label: "ვადა გაუვიდა" },
 ];
 const PERIOD_OPTIONS = [{ value: "7", label: "ბოლო 7 დღე" }, { value: "30", label: "ბოლო 30 დღე" }, { value: "90", label: "ბოლო 90 დღე" }];
 
@@ -25,12 +30,17 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
     });
     const filtered = Object.values(filters).some(Boolean);
     const modeLabel = (mode: string) => BUSINESS_MODES.find(item => item.value === mode)?.label ?? mode;
+    const now = new Date();
+    const planText = (row: (typeof rows)[number]) => row.plan
+        ? [row.plan, SUBSCRIPTION_STATUS_LABELS[row.subscriptionStatus ?? ""] ?? row.subscriptionStatus,
+            row.expiresAt && (row.expiresAt <= now ? `ვადა გავიდა ${formatSupportDate(row.expiresAt.toISOString())}` : `${formatSupportDate(row.expiresAt.toISOString())}-მდე`)].filter(Boolean).join(" · ")
+        : null;
 
     return <div className="mx-auto max-w-6xl">
         <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h1 className="text-2xl font-semibold text-text-primary">ბიზნესები</h1>
-                <p className="mt-1 text-sm text-text-secondary">{filtered ? "ნაპოვნია" : "სულ"} {formatSupportCount(total)} ბიზნესი · ახლიდან ძველისკენ</p>
+                <p className="mt-1 text-sm text-text-secondary">{filtered ? "ნაპოვნია" : "სულ"} {formatSupportCount(total)} ბიზნესი · {filters.billing === "expiring" ? "ვადის მიხედვით" : filters.billing === "lapsed" ? "ბოლოს ამოწურულიდან" : "ახლიდან ძველისკენ"}</p>
             </div>
             {total > 0 && <ExportButton kind="businesses" filename="marteo-businesses" />}
         </div>
@@ -38,6 +48,7 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
         <AdminFilters placeholder="სახელი, მეილი ან ტელეფონი (ბიზნესის ან წევრის)" values={filters} selects={[
             { name: "mode", label: "ყველა ტიპი", options: BUSINESS_MODES.map(mode => ({ value: mode.value, label: mode.label })) },
             { name: "plan", label: "ყველა პაკეტი", options: PLAN_OPTIONS },
+            { name: "billing", label: "ნებისმიერი გადახდა", options: BILLING_OPTIONS },
             { name: "period", label: "ნებისმიერ დროს", options: PERIOD_OPTIONS },
         ]} />
 
@@ -51,7 +62,7 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
                         <p className="mt-0.5 truncate text-xs text-text-secondary">{row.ownerEmail ?? "მფლობელი არ ჰყავს"}</p>
                         <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-secondary">
                             <span>{modeLabel(row.mode)}</span>
-                            <span>{row.plan ?? "პაკეტის გარეშე"}</span>
+                            <span>{planText(row) ?? "პაკეტის გარეშე"}</span>
                             <span>{formatSupportCount(row.orders)} შეკვეთა</span>
                             <span>{formatSupportDate(row.createdAt.toISOString())}</span>
                         </p>
@@ -75,7 +86,7 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
                         <td className="max-w-[220px] truncate px-4 py-3 text-text-secondary" title={row.ownerEmail ?? undefined}>{row.ownerEmail ?? "-"}</td>
                         <td className="px-4 py-3">{formatSupportCount(row.members)}</td>
                         <td className="px-4 py-3">{formatSupportCount(row.orders)}</td>
-                        <td className="px-4 py-3">{row.plan ? `${row.plan} · ${row.subscriptionStatus}` : "-"}</td>
+                        <td className="px-4 py-3">{planText(row) ?? "-"}</td>
                         <td className="px-4 py-3 text-text-secondary">{formatSupportDate(row.createdAt.toISOString())}</td>
                     </tr>)}
                 </tbody>

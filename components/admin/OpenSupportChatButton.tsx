@@ -4,7 +4,7 @@ import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function OpenSupportChatButton({ businessId, conversationId }: { businessId: string; conversationId: string | null }) {
+export default function OpenSupportChatButton({ businessId, conversationId, compact = false }: { businessId: string; conversationId: string | null; compact?: boolean }) {
     const router = useRouter();
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
@@ -28,8 +28,10 @@ export default function OpenSupportChatButton({ businessId, conversationId }: { 
 
     return <div>
         <button type="button" onClick={open} disabled={busy}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-hover disabled:opacity-60 sm:w-auto">
-            <Icon icon="solar:chat-round-dots-bold-duotone" className="h-5 w-5" aria-hidden="true" />
+            className={compact
+                ? "flex h-9 items-center justify-center gap-1.5 rounded-xl border border-border px-3 text-xs font-medium text-text-primary transition hover:border-accent/40 hover:text-accent disabled:opacity-60"
+                : "flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-hover disabled:opacity-60 sm:w-auto"}>
+            <Icon icon="solar:chat-round-dots-bold-duotone" className={compact ? "h-4 w-4" : "h-5 w-5"} aria-hidden="true" />
             {busy ? "იხსნება…" : conversationId ? "ჩათის გახსნა" : "ჩათის დაწყება"}
         </button>
         {error && <p role="alert" className="mt-1 text-xs text-danger">{error}</p>}

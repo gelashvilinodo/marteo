@@ -1,7 +1,8 @@
 import { getAdminUser } from "@/lib/admin/authorization";
 import { createPrismaClient } from "@/lib/prisma";
-import { guardMutation } from "@/lib/security/mutation-request";
-import { getAdminThread, postAdminMessage, readSupportText } from "@/lib/support/support-chat";
+import { getAdminThread, postAdminMessage } from "@/lib/support/support-chat";
+import { guardSupportPost, readSupportMessage } from "@/lib/support/support-images";
+import { SUPPORT_IMAGE_LABEL } from "@/lib/support/support-config";
 import { supportFailure, supportForbidden, supportJson } from "@/lib/support/support-http";
 import { runInBackground, sendPushToUsers } from "@/lib/push/web-push";
 
@@ -21,15 +22,16 @@ export async function GET(_request: Request, context: Context) {
 }
 
 export async function POST(request: Request, context: Context) {
-    return guardMutation(async guarded => {
+    return guardSupportPost(async guarded => {
         const admin = await getAdminUser();
         if (!admin) return supportForbidden();
         const { conversationId } = await context.params;
-        const text = await guarded.json().then(readSupportText).catch(supportFailure);
-        if (text instanceof Response) return text;
+        const input = await readSupportMessage(guarded).catch(supportFailure);
+        if (input instanceof Response) return input;
+        const text = input.text || SUPPORT_IMAGE_LABEL;
         const prisma = createPrismaClient();
         try {
-            const thread = await postAdminMessage(prisma, conversationId, admin.id, text);
+            const thread = await postAdminMessage(prisma, conversationId, admin.id, input.text, input.image);
             // Business members who enabled notifications get the reply on their device.
             const members = await prisma.businessMembership.findMany({
                 where: { business: { supportConversation: { id: conversationId } }, userId: { not: admin.id } },
@@ -46,5 +48,5 @@ export async function POST(request: Request, context: Context) {
         } catch (cause) {
             return supportFailure(cause);
         } finally { await prisma.$disconnect(); }
-    }, "json")(request);
+    })(request);
 }

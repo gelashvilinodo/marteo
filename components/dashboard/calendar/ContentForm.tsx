@@ -8,6 +8,7 @@ import {
 } from "@/lib/content/content-options";
 import { PlatformIcon } from "./ContentIcons";
 import DateTimeField from "@/components/dashboard/shared/DateTimeField";
+import { calendarDialogClass } from "./dialog-style";
 
 type Values = {
     title: string;
@@ -297,7 +298,7 @@ export default function ContentForm({
                 event.preventDefault();
                 close();
             }}
-            className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-2xl border border-border bg-surface p-0 text-left text-text-primary backdrop:bg-black/40 backdrop:backdrop-blur-sm"
+            className={calendarDialogClass}
         >
             <form
                 onSubmit={event => {
@@ -306,7 +307,7 @@ export default function ContentForm({
                 }}
                 className="space-y-4 p-5"
             >
-                <div className="flex items-center justify-between gap-3">
+                <div className="sticky top-0 z-10 -mx-5 -mt-5 flex items-center justify-between gap-3 border-b border-border bg-surface px-5 py-4">
                     <h2 id={headingId} className="text-lg font-semibold">
                         {contentId
                             ? "კონტენტის რედაქტირება"
@@ -545,7 +546,7 @@ export default function ContentForm({
                     </fieldset>
                 )}
 
-                <div className="flex justify-end gap-2">
+                <div className="sticky bottom-0 z-10 -mx-5 -mb-5 flex justify-end gap-2 border-t border-border bg-surface px-5 py-4">
                     <button
                         type="button"
                         disabled={busy}

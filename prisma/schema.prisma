@@ -201,6 +201,8 @@ model User {
   adminNotes             BusinessAdminNote[]
   notifications          Notification[]
   notificationCampaigns  NotificationCampaign[]
+  recordedPayments       SubscriptionPayment[]    @relation("SubscriptionPaymentCreatedBy")
+  voidedPayments         SubscriptionPayment[]    @relation("SubscriptionPaymentVoidedBy")
 }
 
 model Session {
@@ -265,6 +267,12 @@ model Business {
   adminNotes          BusinessAdminNote[]
   notifications       Notification[]
   stockAlerts         InventoryStockAlert[]
+  payments            SubscriptionPayment[]
+  aiUsage             AiUsage[]
+
+  // ადმინის გადაწყვეტილება: AI-ის გამორთვა ან პაკეტისგან განსხვავებული თვიური ლიმიტი.
+  aiDisabled     Boolean @default(false)
+  aiMonthlyLimit Int?
 }
 
 model BusinessMembership {
@@ -359,6 +367,42 @@ model Subscription {
   updatedAt  DateTime           @updatedAt
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+enum SubscriptionPaymentMethod {
+  BANK_TRANSFER
+  CASH
+  CARD
+  OTHER
+}
+
+// ადმინის მიერ ხელით აღრიცხული გადახდა. არ იშლება: შეცდომა გაუქმებით (voidedAt) სწორდება.
+// ბიზნესის წაშლის შემდეგაც რჩება შემოსავლის აღრიცხვისთვის, ამიტომ სახელიც ინახება.
+model SubscriptionPayment {
+  id           String                    @id @default(cuid())
+  businessId   String?
+  businessName String
+  plan         SubscriptionPlan
+  amount       Decimal                   @db.Decimal(12, 2)
+  method       SubscriptionPaymentMethod
+  months       Int
+  paidAt       DateTime
+  periodStart  DateTime
+  periodEnd    DateTime
+  note         String?
+  createdById  String?
+  voidedAt     DateTime?
+  voidedById   String?
+  voidReason   String?
+  createdAt    DateTime                  @default(now())
+
+  business  Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  createdBy User?     @relation("SubscriptionPaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  voidedBy  User?     @relation("SubscriptionPaymentVoidedBy", fields: [voidedById], references: [id], onDelete: SetNull)
+
+  @@index([businessId, paidAt])
+  @@index([paidAt])
+  @@index([periodStart, periodEnd])
 }
 
 model VerificationToken {
@@ -600,6 +644,37 @@ model Purchase {
 }
 
 // მართეო AI-ის ჩათები: თითო მომხმარებელს თავისი, თითო ბიზნესში. 30 დღეში იშლება.
+enum AiUsageKind {
+  CHAT
+  PURCHASE_DRAFT
+  TITLE
+}
+
+// ერთი ჩანაწერი ერთ მოქმედებაზე (კითხვა, ფაილი, სათაური): ტოკენები და სავარაუდო ღირებულება.
+// შინაარსი არ ინახება. counted ნიშნავს, რომ თვიურ ლიმიტში ითვლება.
+model AiUsage {
+  id               String      @id @default(cuid())
+  businessId       String?
+  businessName     String
+  userId           String?
+  kind             AiUsageKind
+  model            String
+  counted          Boolean
+  calls            Int         @default(0)
+  inputTokens      Int         @default(0)
+  outputTokens     Int         @default(0)
+  cacheReadTokens  Int         @default(0)
+  cacheWriteTokens Int         @default(0)
+  costUsd          Decimal     @default(0) @db.Decimal(12, 6)
+  failed           Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+
+  business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, createdAt])
+  @@index([createdAt])
+}
+
 model AiConversation {
   id         String  @id
   businessId String
@@ -1647,6 +1722,8 @@ model SupportMessage {
   sender         SupportSender
   senderUserId   String?
   body           String
+  // Private "support-images" storage object; removed together with the message.
+  imagePath      String?
   createdAt      DateTime            @default(now())
   conversation   SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   senderUser     User?               @relation(fields: [senderUserId], references: [id], onDelete: SetNull)
@@ -1706,4 +1783,46 @@ model BusinessAdminNote {
   admin      User?    @relation(fields: [adminId], references: [id], onDelete: SetNull)
 
   @@index([businessId, createdAt])
+}
+
+// სერვერის შეცდომები ჯგუფურად: ერთი ჩანაწერი ერთ სახეობაზე, მთვლელით.
+// შეცდომის ობიექტიდან მხოლოდ ტიპი ინახება (TypeError, P2002), შიგთავსი არა.
+model SystemError {
+  id          String    @id @default(cuid())
+  fingerprint String    @unique
+  source      String
+  message     String
+  route       String?
+  count       Int       @default(1)
+  firstAt     DateTime  @default(now())
+  lastAt      DateTime  @default(now())
+  resolvedAt  DateTime?
+
+  @@index([resolvedAt, lastAt])
+}
+
+// საათობრივი cron-ის თითოეული სამუშაოს ბოლო გაშვება.
+model SystemJob {
+  name           String    @id
+  lastStartedAt  DateTime?
+  lastFinishedAt DateTime?
+  lastOk         Boolean?
+  lastError      String?
+  lastResult     Int?
+  runs           Int       @default(0)
+  failures       Int       @default(0)
+}
+
+// ადმინის ბანერი ყველა მომხმარებლის დაშბორდზე (მაგ. ტექნიკური სამუშაოები).
+model SystemBanner {
+  id          String    @id @default(cuid())
+  message     String
+  tone        String    @default("INFO")
+  startsAt    DateTime
+  endsAt      DateTime?
+  canceledAt  DateTime?
+  createdById String?
+  createdAt   DateTime  @default(now())
+
+  @@index([startsAt])
 }

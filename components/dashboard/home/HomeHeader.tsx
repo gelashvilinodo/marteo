@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 const greetings = {
     morning: {
@@ -72,8 +72,10 @@ function GreetingIcon({ period }: { period: Period | null }) {
 
 export default function HomeHeader({
     firstName,
+    action,
 }: {
     firstName: string | null;
+    action?: ReactNode;
 }) {
     const name = firstName?.trim();
     const [period, setPeriod] = useState<Period | null>(null);
@@ -119,9 +121,12 @@ export default function HomeHeader({
 
     return (
         <header className="min-w-0">
-            <h1 className="text-2xl font-semibold text-text-primary">
-                მთავარი
-            </h1>
+            <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-semibold text-text-primary">
+                    მთავარი
+                </h1>
+                {action}
+            </div>
 
             <div className="mt-3 flex min-w-0 items-center gap-3">
                 <span

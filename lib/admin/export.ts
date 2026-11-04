@@ -2,7 +2,8 @@ import "server-only";
 import { sql } from "@prisma/client-runtime-utils";
 import { getAdminUser } from "./authorization";
 import { AdminAccessError } from "./overview";
-import { businessWhere, userWhere, type AdminBusinessFilters, type AdminUserFilters } from "./lists";
+import { businessWhere, paymentWhere, userWhere, type AdminBusinessFilters, type AdminPaymentFilters, type AdminUserFilters } from "./lists";
+import { PAYMENT_METHOD_LABELS } from "./payment-period";
 import { USER_STATUS_LABELS, SUBSCRIPTION_STATUS_LABELS } from "@/components/admin/AdminBadges";
 import { BUSINESS_MODES } from "@/lib/business/business-mode";
 import { createPgReader } from "@/lib/database/pg-reader";
@@ -20,7 +21,7 @@ type Row = Record<string, string | number>;
 
 export type ExportSheet = { sheet: string; rows: Row[]; widths: number[] };
 
-async function logExport(adminId: string, kind: "users" | "businesses", filters: object, count: number) {
+async function logExport(adminId: string, kind: "users" | "businesses" | "payments", filters: object, count: number) {
     const prisma = createPrismaClient();
     try {
         await prisma.adminAuditLog.create({
@@ -110,4 +111,36 @@ export async function exportBusinesses(filters: AdminBusinessFilters) {
     }));
     await logExport(admin.id, "businesses", filters, data.length);
     return { sheet: "ბიზნესები", rows: data, widths: [24, 12, 16, 26, 20, 28, 16, 9, 10, 10, 11, 14, 14, 13, 12, 13] } satisfies ExportSheet;
+}
+
+// For the accountant: one row per payment, amounts as numbers so Excel can sum them.
+export async function exportPayments(filters: AdminPaymentFilters) {
+    const admin = await getAdminUser();
+    if (!admin) throw new AdminAccessError();
+    const db = createPgReader();
+    const rows = await db.$queryRaw<{
+        businessName: string; plan: string; amount: number; method: string; months: number; paidAt: Date;
+        periodStart: Date; periodEnd: Date; note: string | null; voidedAt: Date | null; voidReason: string | null;
+    }[]>(sql`
+        SELECT coalesce(b.name, p."businessName") AS "businessName", p.plan::text AS plan, p.amount::float AS amount, p.method::text AS method,
+            p.months, p."paidAt", p."periodStart", p."periodEnd", p.note, p."voidedAt", p."voidReason"
+        FROM "SubscriptionPayment" p LEFT JOIN "Business" b ON b.id = p."businessId"
+        WHERE ${paymentWhere(filters)}
+        ORDER BY p."paidAt" DESC, p."createdAt" DESC, p.id
+        LIMIT ${EXPORT_LIMIT}
+    `).finally(() => db.$disconnect());
+    const data = rows.map(row => ({
+        "გადახდის თარიღი": day(row.paidAt),
+        "ბიზნესი": row.businessName,
+        "პაკეტი": row.plan,
+        "თანხა (₾)": row.amount,
+        "მეთოდი": PAYMENT_METHOD_LABELS[row.method] ?? row.method,
+        "თვე": row.months,
+        "პერიოდის დასაწყისი": day(row.periodStart),
+        "პერიოდის დასასრული": day(row.periodEnd),
+        "შენიშვნა": row.note ?? "",
+        "გაუქმებული": row.voidedAt ? `${day(row.voidedAt)} · ${row.voidReason ?? ""}` : "",
+    }));
+    await logExport(admin.id, "payments", filters, data.length);
+    return { sheet: "გადახდები", rows: data, widths: [14, 26, 10, 11, 12, 6, 14, 14, 30, 24] } satisfies ExportSheet;
 }

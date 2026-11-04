@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import type { CalendarContent } from "@/lib/content/get-calendar-page";
 import { contentTypes } from "@/lib/content/content-options";
 import PlatformBadge from "./PlatformBadge";
+import { calendarDialogClass } from "./dialog-style";
 
 type Detail = CalendarContent & {
     description: string | null;
@@ -15,6 +16,8 @@ type Operation = {
     method: "PATCH" | "DELETE";
     body: Record<string, unknown>;
     message: string;
+    // მონიშვნა ეკრანზე მაშინვე ჩანს; შეცდომისას წინა მდგომარეობა ბრუნდება.
+    optimistic?: (detail: Detail) => Detail;
 };
 
 function object(value: unknown): Record<string, unknown> | null {
@@ -138,6 +141,46 @@ export default function ContentDetailsDialog({
         onClose();
     }
 
+    function platformOperation(
+        current: Detail,
+        platform: string | null,
+        completed: boolean,
+    ): Operation {
+        const now = new Date().toISOString();
+
+        return {
+            method: "PATCH",
+            body: platform
+                ? { action: "platform", platform, completed, updatedAt: current.updatedAt }
+                : { action: "all-platforms", completed, updatedAt: current.updatedAt },
+            message: platform
+                ? completed
+                    ? "პლატფორმაზე შესრულება მოინიშნა."
+                    : "შესრულების მონიშვნა მოიხსნა."
+                : "ყველა პლატფორმაზე შესრულება მოინიშნა.",
+            optimistic: value => {
+                const channels = value.channels.map(channel =>
+                    platform === null || channel.platform === platform
+                        ? {
+                            ...channel,
+                            completedAt: completed
+                                ? channel.completedAt ?? now
+                                : null,
+                        }
+                        : channel,
+                );
+
+                return {
+                    ...value,
+                    channels,
+                    status: channels.every(channel => channel.completedAt !== null)
+                        ? "PUBLISHED"
+                        : "SCHEDULED",
+                };
+            },
+        };
+    }
+
     async function perform(operation: Operation) {
         if (running.current) return;
 
@@ -145,6 +188,11 @@ export default function ContentDetailsDialog({
         retry.current = operation;
         setBusy(true);
         setError("");
+
+        const previous = detail;
+        if (operation.optimistic && previous) {
+            setDetail(operation.optimistic(previous));
+        }
 
         try {
             const response = await fetch(
@@ -166,8 +214,17 @@ export default function ContentDetailsDialog({
                 setUncertain(false);
                 setConfirming(false);
 
+                const content = object(body.content);
+
                 if (operation.method === "DELETE") {
                     onClose();
+                } else if (
+                    content?.id === contentId &&
+                    Array.isArray(content.channels)
+                ) {
+                    setDetail(current =>
+                        current ? { ...current, ...(content as unknown as Detail) } : current,
+                    );
                 } else {
                     setAttempt(value => value + 1);
                 }
@@ -179,6 +236,7 @@ export default function ContentDetailsDialog({
             if (response.status >= 400 && response.status < 500) {
                 retry.current = null;
                 setUncertain(false);
+                if (operation.optimistic && previous) setDetail(previous);
             } else {
                 setUncertain(true);
             }
@@ -207,9 +265,9 @@ export default function ContentDetailsDialog({
                 event.preventDefault();
                 close();
             }}
-            className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-2xl border border-border bg-surface p-0 text-left text-text-primary backdrop:bg-black/40 backdrop:backdrop-blur-sm"
+            className={calendarDialogClass}
         >
-            <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-surface p-4">
                 <h2 id={headingId} className="font-semibold">
                     კონტენტის დეტალები
                 </h2>
@@ -238,7 +296,7 @@ export default function ContentDetailsDialog({
                 {error && (
                     <p
                         role="alert"
-                        className="rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-sm text-red-400"
+                        className="rounded-xl border border-red-600/30 bg-red-600/10 p-3 text-sm text-red-600"
                     >
                         {error}
                     </p>
@@ -286,9 +344,30 @@ export default function ContentDetailsDialog({
                         </div>
 
                         <div className="space-y-3 rounded-xl border border-border bg-background p-3">
-                            <p className="text-sm font-medium">
-                                პლატფორმების შესრულება
-                            </p>
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-sm font-medium">
+                                    პლატფორმების შესრულება
+                                </p>
+
+                                {detail.status !== "CANCELED" &&
+                                    detail.channels.length > 1 &&
+                                    detail.channels.some(channel => channel.completedAt === null) && (
+                                        <button
+                                            type="button"
+                                            disabled={busy || loading || uncertain}
+                                            onClick={() =>
+                                                void perform(platformOperation(detail, null, true))
+                                            }
+                                            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-success/30 bg-success/10 px-3 text-xs font-medium text-success disabled:opacity-50"
+                                        >
+                                            <Icon
+                                                icon="solar:checklist-minimalistic-linear"
+                                                className="h-4 w-4"
+                                            />
+                                            ყველა შესრულებულია
+                                        </button>
+                                    )}
+                            </div>
 
                             {detail.channels.map(channel => (
                                 <div key={channel.id}>
@@ -303,20 +382,11 @@ export default function ContentDetailsDialog({
                                             detail.status === "CANCELED"
                                         }
                                         onToggle={() =>
-                                            void perform({
-                                                method: "PATCH",
-                                                body: {
-                                                    action: "platform",
-                                                    platform: channel.platform,
-                                                    completed:
-                                                        channel.completedAt === null,
-                                                    updatedAt: detail.updatedAt,
-                                                },
-                                                message:
-                                                    channel.completedAt === null
-                                                        ? "პლატფორმაზე შესრულება მოინიშნა."
-                                                        : "შესრულების მონიშვნა მოიხსნა.",
-                                            })
+                                            void perform(platformOperation(
+                                                detail,
+                                                channel.platform,
+                                                channel.completedAt === null,
+                                            ))
                                         }
                                     />
 
@@ -369,7 +439,7 @@ export default function ContentDetailsDialog({
                             )}
 
                         {confirming ? (
-                            <div className="space-y-3 rounded-xl border border-red-400/20 bg-red-400/5 p-3">
+                            <div className="space-y-3 rounded-xl border border-red-600/30 bg-red-600/10 p-3">
                                 <p className="text-sm">
                                     წაიშალოს ეს კონტენტი და მისი პლატფორმების
                                     შესრულების ჩანაწერები?

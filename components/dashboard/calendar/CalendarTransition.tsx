@@ -6,13 +6,18 @@ import {
     useRef,
     useState,
     type ReactNode,
+    type Ref,
 } from "react";
 
 export default function CalendarTransition({
     position,
+    bodyRef,
+    dimmed = false,
     children,
 }: {
     position: string;
+    bodyRef?: Ref<HTMLDivElement>;
+    dimmed?: boolean;
     children: ReactNode;
 }) {
     const latestContent = useRef(children);
@@ -57,7 +62,11 @@ export default function CalendarTransition({
     const animated = transition.previous !== null;
 
     return (
-        <div className="relative min-h-0 flex-1 overflow-hidden">
+        <div
+            ref={bodyRef}
+            className={`relative min-h-0 flex-1 overflow-hidden transition-opacity duration-200 motion-reduce:transition-none ${dimmed ? "opacity-60" : ""
+                }`}
+        >
             {animated && (
                 <div
                     aria-hidden="true"
@@ -72,9 +81,11 @@ export default function CalendarTransition({
                 </div>
             )}
 
+            {/* absolute: დაფას lg+-ზე მხოლოდ min-height აქვს, რის გამოც h-full არ იმუშავებდა.
+                ტელეფონზე თვისა და კვირის დაფას სიმაღლე შიგთავსიდან მოდის, ამიტომ იქ static-ია. */}
             <div
                 key={position}
-                className={`flex h-full min-h-0 flex-col ${
+                className={`absolute inset-0 flex min-h-0 flex-col max-sm:static max-sm:h-full ${
                     animated
                         ? transition.direction === "next"
                             ? "calendar-body-enter-next"

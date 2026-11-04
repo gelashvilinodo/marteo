@@ -13,6 +13,7 @@ import AiCards from "./AiCards";
 import AiHistoryList from "./AiHistoryList";
 import AiConversationLoader from "./AiConversationLoader";
 import { useKeyboardViewport } from "@/components/support/useKeyboardViewport";
+import AiQuotaRing from "./AiQuotaRing";
 
 const ACCEPTED_EXTENSIONS = [".numbers", ".xlsx", ".csv"];
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
@@ -529,6 +530,8 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
 
     const headerActions = (
         <div className="flex items-center">
+            {open && <AiQuotaRing />}
+
             {open && view === "chat" && (history?.length ?? 0) > 0 && (
                 <button type="button" onClick={showList} aria-label="ჩათების ისტორია" title="ჩათების ისტორია" className={headerButton}>
                     <Icon icon="solar:history-linear" className="h-[18px] w-[18px]" aria-hidden="true" />

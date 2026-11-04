@@ -160,7 +160,7 @@ export default function OrderBulkStatusButtons({
             onCancel={event => { event.preventDefault(); if (!busy) setOpen(false); }}
             onClose={event => event.stopPropagation()}
             aria-label="გაგზავნილი შეკვეთების დასრულება"
-            className="m-auto max-h-[85dvh] w-[calc(100%_-_2rem)] max-w-2xl overflow-y-auto rounded-2xl border border-border bg-surface p-5 text-text-primary shadow-2xl backdrop:bg-black/30 backdrop:backdrop-blur-sm"
+            className="m-auto max-h-[85dvh] w-[calc(100%_-_2rem)] whitespace-normal break-words max-w-2xl overflow-y-auto rounded-2xl border border-border bg-surface p-5 text-text-primary shadow-2xl backdrop:bg-black/30 backdrop:backdrop-blur-sm"
         >
             <h2 className="flex items-center gap-2 text-lg font-semibold">
                 <Icon icon="solar:check-circle-linear" className="h-6 w-6 text-success" />

@@ -48,6 +48,31 @@ export function contentVersion(value: unknown) {
     return date;
 }
 
+// თარიღი და დრო საქართველოს დროით (UTC+4); კალენდარში გადატანაც ამას იყენებს.
+export function validateSchedule(raw: unknown) {
+    const body = contentBody(raw);
+    const scheduledDate = text(body.scheduledDate, "თარიღი");
+    const scheduledTime = text(body.scheduledTime, "დრო");
+
+    if (!validCalendarDate(scheduledDate)) {
+        fail("მიუთითე სწორი თარიღი.");
+    }
+
+    if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(scheduledTime)) {
+        fail("მიუთითე სწორი დრო.");
+    }
+
+    const scheduledAt = new Date(
+        `${scheduledDate}T${scheduledTime}:00+04:00`,
+    );
+
+    if (!Number.isFinite(scheduledAt.getTime())) {
+        fail("კონტენტის დაგეგმილი დრო არასწორია.");
+    }
+
+    return scheduledAt;
+}
+
 export function validateContent(raw: unknown) {
     const body = contentBody(raw);
     const title = text(body.title, "სათაური");
@@ -96,24 +121,7 @@ export function validateContent(raw: unknown) {
         fail("მიუთითე სხვა პლატფორმის დასახელება.");
     }
 
-    const scheduledDate = text(body.scheduledDate, "თარიღი");
-    const scheduledTime = text(body.scheduledTime, "დრო");
-
-    if (!validCalendarDate(scheduledDate)) {
-        fail("მიუთითე სწორი თარიღი.");
-    }
-
-    if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(scheduledTime)) {
-        fail("მიუთითე სწორი დრო.");
-    }
-
-    const scheduledAt = new Date(
-        `${scheduledDate}T${scheduledTime}:00+04:00`,
-    );
-
-    if (!Number.isFinite(scheduledAt.getTime())) {
-        fail("კონტენტის დაგეგმილი დრო არასწორია.");
-    }
+    const scheduledAt = validateSchedule(body);
 
     const link = text(body.materialUrl, "მასალის ბმული");
     let materialUrl: string | null = null;

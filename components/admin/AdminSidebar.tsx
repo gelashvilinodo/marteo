@@ -11,8 +11,12 @@ import LogoutButton from "@/components/auth/LogoutButton";
 
 const navigationItems = [
     { label: "მიმოხილვა", href: "/admin", icon: "solar:home-2-bold-duotone" },
+    { label: "ყურადღება", href: "/admin/attention", icon: "solar:danger-triangle-bold-duotone" },
     { label: "ბიზნესები", href: "/admin/businesses", icon: "solar:buildings-2-bold-duotone" },
     { label: "მომხმარებლები", href: "/admin/users", icon: "solar:users-group-rounded-bold-duotone" },
+    { label: "გადახდები", href: "/admin/payments", icon: "solar:wallet-money-bold-duotone" },
+    { label: "მართეო AI", href: "/admin/ai", icon: "solar:magic-stick-3-bold-duotone" },
+    { label: "სისტემა", href: "/admin/system", icon: "solar:server-square-bold-duotone" },
     { label: "შეტყობინებები", href: "/admin/notifications", icon: "solar:bell-bold-duotone" },
     { label: "დახმარება", href: "/admin/support", icon: "solar:chat-round-dots-bold-duotone" },
 ];

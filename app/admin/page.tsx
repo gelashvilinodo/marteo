@@ -5,17 +5,21 @@ import { AdminAccessError, getAdminOverview } from "@/lib/admin/overview";
 import { formatSupportCount, formatSupportTime } from "@/lib/support/support-config";
 import { getGrowthStats, parseGrowthRange } from "@/lib/admin/growth";
 import GrowthSection from "@/components/admin/GrowthSection";
+import { getRevenueStats } from "@/lib/admin/revenue";
+import RevenueSection from "@/components/admin/RevenueSection";
+import { getRiskSignals } from "@/lib/admin/risk-signals";
 
 type Card = { label: string; value: number; icon: string; tone: string; href?: string };
 
 export default async function AdminPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
     const range = parseGrowthRange((await searchParams).range);
-    const [data, growth] = await Promise.all([getAdminOverview(), getGrowthStats(range)]).catch(error => {
+    const [data, growth, revenue, risk] = await Promise.all([getAdminOverview(), getGrowthStats(range), getRevenueStats(), getRiskSignals("")]).catch(error => {
         if (error instanceof AdminAccessError) notFound();
         throw error;
     });
     const cards: Card[] = [
         { label: "ბიზნესები", value: data.totalBusinesses, icon: "solar:buildings-2-bold-duotone", tone: "bg-accent/12 text-accent", href: "/admin/businesses" },
+        { label: "ყურადღება სჭირდება", value: risk.total, icon: "solar:danger-triangle-bold-duotone", tone: "bg-warning/15 text-warning", href: "/admin/attention" },
         { label: "მომხმარებლები", value: data.users, icon: "solar:users-group-rounded-bold-duotone", tone: "bg-violet-500/12 text-violet-500", href: "/admin/users" },
         { label: "შეკვეთები", value: data.orders, icon: "solar:cart-large-2-bold-duotone", tone: "bg-success/12 text-success" },
         { label: "დაბეჭდილი ინვოისები", value: data.invoices, icon: "solar:printer-bold-duotone", tone: "bg-sky-500/12 text-sky-500" },
@@ -62,6 +66,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                     : <section key={card.label} className={className}>{content}</section>;
             })}
         </div>
+
+        <RevenueSection stats={revenue} />
 
         <GrowthSection stats={growth} range={range} />
 

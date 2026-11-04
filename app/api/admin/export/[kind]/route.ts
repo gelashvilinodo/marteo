@@ -1,6 +1,6 @@
 import { AdminAccessError } from "@/lib/admin/overview";
-import { exportBusinesses, exportUsers } from "@/lib/admin/export";
-import { parseBusinessFilters, parseUserFilters } from "@/lib/admin/lists";
+import { exportBusinesses, exportPayments, exportUsers } from "@/lib/admin/export";
+import { parseBusinessFilters, parsePaymentFilters, parseUserFilters } from "@/lib/admin/lists";
 import { adminJson } from "@/lib/admin/action-http";
 import { guardMutation } from "@/lib/security/mutation-request";
 
@@ -18,6 +18,7 @@ async function run(kind: string, params: Record<string, string>) {
     try {
         if (kind === "users") return adminJson({ success: true, ...await exportUsers(parseUserFilters(params)) });
         if (kind === "businesses") return adminJson({ success: true, ...await exportBusinesses(parseBusinessFilters(params)) });
+        if (kind === "payments") return adminJson({ success: true, ...await exportPayments(parsePaymentFilters(params)) });
         return adminJson({ success: false, message: "ექსპორტის ტიპი არასწორია." }, 404);
     } catch (cause) {
         if (cause instanceof AdminAccessError) return adminJson({ success: false, message: "წვდომა აკრძალულია." }, 403);

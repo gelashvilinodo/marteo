@@ -112,14 +112,32 @@ const DATA_TOOLS: Anthropic.Tool[] = [
         },
     },
     {
+        name: "get_stock_value",
+        description:
+            "How much money is in product stock now (not materials): cost_value = good units x purchase cost, sale_value = good units x sale price, and expected_profit when both are complete. Defective units are left out. When some costs or sale prices are missing, the total is null; then known_cost_value / known_sale_value cover only the variants that have them, and without_cost / without_sale_price name those variants (up to 20). query and category narrow it to matching products. show = missing_sale_price or missing_cost also shows those in-stock variants to the user as cards with photos and a details button, where the price can be filled in.",
+        input_schema: {
+            type: "object",
+            properties: {
+                query: { type: "string", description: "Optional product name search." },
+                category: { type: "string", description: "Optional exact category name." },
+                show: {
+                    type: "string",
+                    enum: ["missing_sale_price", "missing_cost"],
+                    description: "Use it when the user asks which products have no sale price or no cost.",
+                },
+            },
+        },
+    },
+    {
         name: "find_orders",
         description:
-            "Finds orders by order number, customer name, status and/or creation period, newest first. Returns found (the total count) and details of the 5 newest: status, payment status, date, customer, total and products (name, color, size, quantity, unit price, returned quantity). The app shows all found orders to the user as cards.",
+            "Finds orders by order number, customer name, product name, status and/or creation period, newest first. Returns found (the total count) and details of the 5 newest: status, payment status, date, customer, total and products (name, color, size, quantity, unit price, returned quantity). With product it also returns buyers: who bought that product (up to 20, canceled orders left out unless status is given) with their order count and quantity. The app shows all found orders to the user as cards.",
         input_schema: {
             type: "object",
             properties: {
                 number: { type: "integer", description: "Order number, without #." },
                 customer: { type: "string", description: "Part of the customer's first or last name." },
+                product: { type: "string", description: "Part of a product name, for example from the conversation. Use it for \"who bought this product\"." },
                 status: { type: "string", enum: ["PROCESSING", "SHIPPED", "COMPLETED", "CANCELED", "RETURNED"] },
                 ...periodProperties,
                 limit: limitProperty,
@@ -319,17 +337,72 @@ type OrderLineRow = {
     returned: string;
 };
 
+type BuyerRow = {
+    customer: string | null;
+    orders: number;
+    quantity: string;
+};
+
+// მარაგის ღირებულება იგივე გამოთვლით, რაც მარაგების გვერდზე: თვითღირებულება პარტიებიდან, ფასი ვარიანტიდან.
+async function stockValue(context: AiToolContext, input: Record<string, unknown>) {
+    const query = typeof input.query === "string" ? input.query.trim().slice(0, 60) : "";
+    const category = typeof input.category === "string" ? input.category.trim().slice(0, 60) : "";
+    const page = await getInventoryPage(context.prisma, context.businessId, { q: query, category }, 5000);
+    const inStock = page.products.filter((item) => item.goodStock > 0);
+
+    let costCents = 0;
+    let saleCents = 0;
+    let withoutCost = 0;
+    let withoutPrice = 0;
+    for (const item of inStock) {
+        if (item.goodStockValueCents === null) withoutCost++;
+        else costCents += Number(item.goodStockValueCents);
+        if (item.salePrice === null) withoutPrice++;
+        else saleCents += Math.round(Number(item.salePrice) * 100) * item.goodStock;
+    }
+
+    const noCost = inStock.filter((item) => item.goodStockValueCents === null);
+    const noPrice = inStock.filter((item) => item.salePrice === null);
+    const shown = input.show === "missing_cost" ? noCost : input.show === "missing_sale_price" ? noPrice : [];
+    if (shown.length > 0) {
+        const note = input.show === "missing_cost" ? "თვითღირებულება არ არის შევსებული" : "გასაყიდი ფასი არ არის მითითებული";
+        context.cards.push({
+            kind: "stock",
+            total: shown.length,
+            items: shown.slice(0, AI_CARD_LIMIT),
+            notes: Object.fromEntries(shown.slice(0, AI_CARD_LIMIT).map((item) => [item.id, note])),
+        });
+    }
+    const label = (item: typeof inStock[number]) => ({ name: item.name, color: item.color, size: item.size, in_stock: item.goodStock });
+
+    const money = (cents: number) => (cents / 100).toFixed(2);
+    const costComplete = withoutCost === 0;
+    const saleComplete = withoutPrice === 0;
+    return {
+        currency: "GEL",
+        variants_in_stock: inStock.length,
+        units_in_stock: inStock.reduce((sum, item) => sum + item.goodStock, 0),
+        cost_value: costComplete ? money(costCents) : null,
+        sale_value: saleComplete ? money(saleCents) : null,
+        expected_profit: costComplete && saleComplete ? money(saleCents - costCents) : null,
+        ...(costComplete ? {} : { known_cost_value: money(costCents), variants_without_cost: withoutCost, without_cost: noCost.slice(0, 20).map(label) }),
+        ...(saleComplete ? {} : { known_sale_value: money(saleCents), variants_without_sale_price: withoutPrice, without_sale_price: noPrice.slice(0, 20).map(label) }),
+        ...(page.totalProducts > page.products.length ? { note: `Only the first ${page.products.length} variants were counted.` } : {}),
+    };
+}
+
 async function findOrders(context: AiToolContext, input: Record<string, unknown>) {
     const number = Number.isSafeInteger(input.number) && Number(input.number) > 0 ? Number(input.number) : null;
     const customer = typeof input.customer === "string" ? input.customer.trim().slice(0, 60) : "";
+    const product = typeof input.product === "string" ? input.product.trim().slice(0, 60) : "";
     const status = typeof input.status === "string" && input.status in STATUS_LABELS ? input.status : "";
     const range = input.period ? resolveRange(input.period, input.from, input.to, context.now) : null;
     // createdAt UTC-ში ინახება დროის სარტყლის გარეშე; ISO სტრიქონი პირდაპირ ედრება.
     const start = range ? new Date(Date.parse(`${range.from}T00:00:00.000Z`) - TBILISI_OFFSET).toISOString() : null;
     const end = range ? new Date(Date.parse(`${range.to}T00:00:00.000Z`) + DAY - TBILISI_OFFSET).toISOString() : null;
 
-    if (number === null && !customer && !status && !range) {
-        throw new ToolInputError("Give an order number, a customer name, a status or a period.");
+    if (number === null && !customer && !product && !status && !range) {
+        throw new ToolInputError("Give an order number, a customer name, a product name, a status or a period.");
     }
 
     // დაბრუნებული რაოდენობები ჯამს აკლდება, როგორც მთავარ გვერდზე.
@@ -351,12 +424,34 @@ async function findOrders(context: AiToolContext, input: Record<string, unknown>
             AND o."deletedAt" IS NULL
             AND (${number}::int IS NULL OR o.number = ${number}::int)
             AND (${customer} = '' OR strpos(lower(CONCAT_WS(' ', o."recipientFirstName", o."recipientLastName")), lower(${customer})) > 0)
+            AND (${product} = '' OR EXISTS (
+                SELECT 1 FROM "OrderItem" pi
+                WHERE pi."orderId" = o.id AND pi."isActive" = TRUE AND strpos(lower(pi.name), lower(${product})) > 0
+            ))
             AND (${status} = '' OR o.status::text = ${status})
             AND (${start}::timestamp IS NULL OR o."createdAt" >= ${start}::timestamp)
             AND (${end}::timestamp IS NULL OR o."createdAt" < ${end}::timestamp)
         GROUP BY o.id
         ORDER BY o."createdAt" DESC, o.id DESC
         LIMIT ${readLimit(input, AI_CARD_LIMIT)}
+    `;
+
+    // ვინ იყიდა პროდუქტი — ყველა ნაპოვნი შეკვეთიდან, არა მხოლოდ ბარათებად ნაჩვენებიდან.
+    const buyers = !product ? [] : await context.prisma.$queryRaw<BuyerRow[]>`
+        SELECT NULLIF(TRIM(CONCAT_WS(' ', o."recipientFirstName", o."recipientLastName")), '') AS customer,
+            COUNT(DISTINCT o.id)::int AS orders, SUM(i.quantity)::text AS quantity
+        FROM "Order" o
+        JOIN "OrderItem" i ON i."orderId" = o.id AND i."isActive" = TRUE AND strpos(lower(i.name), lower(${product})) > 0
+        WHERE o."businessId" = ${context.businessId}
+            AND o."deletedAt" IS NULL
+            AND (${number}::int IS NULL OR o.number = ${number}::int)
+            AND (${customer} = '' OR strpos(lower(CONCAT_WS(' ', o."recipientFirstName", o."recipientLastName")), lower(${customer})) > 0)
+            AND ((${status} = '' AND o.status::text <> 'CANCELED') OR o.status::text = ${status})
+            AND (${start}::timestamp IS NULL OR o."createdAt" >= ${start}::timestamp)
+            AND (${end}::timestamp IS NULL OR o."createdAt" < ${end}::timestamp)
+        GROUP BY 1
+        ORDER BY 2 DESC, SUM(i.quantity) DESC, 1
+        LIMIT 20
     `;
 
     const records = await getOrderRecords(context.prisma, context.businessId, rows.map((row) => row.id), false);
@@ -390,6 +485,9 @@ async function findOrders(context: AiToolContext, input: Record<string, unknown>
         currency: "GEL",
         ...(range ? { range } : {}),
         found: rows[0]?.found ?? 0,
+        ...(product ? {
+            buyers: buyers.map((row) => ({ customer: row.customer, orders: row.orders, quantity: Number(row.quantity) })),
+        } : {}),
         orders: detailed.map((row) => ({
             number: row.number,
             date: tbilisiToday(row.createdAt),
@@ -490,6 +588,8 @@ async function runTool(name: string, input: Record<string, unknown>, context: Ai
         }
         case "find_orders":
             return findOrders(context, input);
+        case "get_stock_value":
+            return stockValue(context, input);
         case "get_product_profit": {
             const range = resolveRange(input.period, input.from, input.to, now);
             const result = await productProfitTool(context, range, input, readLimit(input, AI_CARD_LIMIT));

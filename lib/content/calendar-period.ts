@@ -8,10 +8,43 @@ export type CalendarSearchParams = Record<
 const DAY = 86400000;
 const GEORGIA_OFFSET = 4 * 60 * 60 * 1000;
 
+export const calendarMonths = [
+    "იანვარი", "თებერვალი", "მარტი", "აპრილი",
+    "მაისი", "ივნისი", "ივლისი", "აგვისტო",
+    "სექტემბერი", "ოქტომბერი", "ნოემბერი", "დეკემბერი",
+];
+
+export const calendarMonthsShort = [
+    "იან", "თებ", "მარ", "აპრ", "მაი", "ივნ",
+    "ივლ", "აგვ", "სექ", "ოქტ", "ნოე", "დეკ",
+];
+
+export const calendarWeekdays = ["ორშ", "სამ", "ოთხ", "ხუთ", "პარ", "შაბ", "კვი"];
+
 export function calendarToday(now = new Date()) {
     return new Date(now.getTime() + GEORGIA_OFFSET)
         .toISOString()
         .slice(0, 10);
+}
+
+// დაგეგმილი დრო საქართველოს დროით: დღე, საათი და დღის დაწყებიდან გასული წუთები.
+export function calendarLocalParts(value: string) {
+    const local = new Date(
+        new Date(value).getTime() + GEORGIA_OFFSET,
+    ).toISOString();
+
+    const time = local.slice(11, 16);
+
+    return {
+        day: local.slice(0, 10),
+        time,
+        minutes: Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5)),
+    };
+}
+
+// ორშაბათიდან დაწყებული კვირის დღის ინდექსი.
+export function calendarWeekdayIndex(value: string) {
+    return (new Date(`${value}T00:00:00.000Z`).getUTCDay() + 6) % 7;
 }
 
 export function validCalendarDate(value: string) {

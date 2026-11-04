@@ -12,6 +12,8 @@ import {
 import type { AiPurchaseDraft } from "@/lib/ai/purchase-draft-types";
 import type { AiCardGroup } from "@/lib/ai/ai-cards";
 import { readPurchaseFile } from "@/lib/ai/purchase-file-client";
+import type { AiQuota } from "@/lib/ai/ai-quota";
+import { announceAiQuota } from "./AiQuotaRing";
 import {
     deleteConversationRemote,
     fetchConversation,
@@ -410,7 +412,8 @@ export function AiAssistantProvider({ children, enabled = true }: { children: Re
                 body: JSON.stringify({ target, fileName: file.name, rows, photoCount }),
                 signal: controller.signal,
             });
-            const data = await response.json().catch(() => null) as { draft?: AiPurchaseDraft; message?: string } | null;
+            const data = await response.json().catch(() => null) as { draft?: AiPurchaseDraft; message?: string; quota?: AiQuota } | null;
+            announceAiQuota(data?.quota);
 
             if (!response.ok || !data?.draft) {
                 throw new Error(data?.message || "ფაილის დამუშავება ვერ მოხერხდა. სცადე ხელახლა.");
@@ -472,7 +475,8 @@ export function AiAssistantProvider({ children, enabled = true }: { children: Re
                 body: JSON.stringify({ messages: history }),
                 signal: controller.signal,
             });
-            const data = await response.json().catch(() => null) as { reply?: string; cards?: AiCardGroup[]; message?: string } | null;
+            const data = await response.json().catch(() => null) as { reply?: string; cards?: AiCardGroup[]; message?: string; quota?: AiQuota } | null;
+            announceAiQuota(data?.quota);
 
             if (response.ok && data?.reply) {
                 reply(data.reply, false, Array.isArray(data.cards) ? data.cards : undefined);

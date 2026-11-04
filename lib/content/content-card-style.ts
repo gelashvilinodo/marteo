@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { calendarLocalParts } from "./calendar-period";
 
 type StyledContent = {
     status: string;
@@ -19,28 +20,35 @@ const colors: Record<string, string[]> = {
     LINKEDIN: ["10, 102, 194"],
 };
 
-export function contentCardStyle(
-    item: StyledContent,
-    today: string,
-): CSSProperties {
+// პლატფორმის ერთი წარმომადგენლობითი ფერი (მრავალფეროვანი ლოგოსთვის შუა ფერი).
+export function contentPlatformColor(platform: string | undefined) {
+    const palette = colors[platform ?? "OTHER"] ?? colors.OTHER;
+    return `rgb(${palette[Math.floor(palette.length / 2)]})`;
+}
+
+export type ContentState = "planned" | "overdue" | "done" | "canceled";
+
+// ერთი წესი ბარათის ფერისთვის, სტატუსის წარწერისა და ფილტრისთვის.
+export function contentState(item: StyledContent, today: string): ContentState {
+    if (item.status === "CANCELED") return "canceled";
+
     const finished =
         item.channels.length > 0 &&
         item.channels.every(channel => channel.completedAt !== null);
 
-    const scheduledDay = item.scheduledAt
-        ? new Date(
-            new Date(item.scheduledAt).getTime() +
-            4 * 60 * 60 * 1000,
-        )
-            .toISOString()
-            .slice(0, 10)
-        : null;
+    if (finished) return "done";
 
-    const overdue =
-        item.status !== "CANCELED" &&
-        !finished &&
-        scheduledDay !== null &&
-        scheduledDay < today;
+    return item.scheduledAt &&
+        calendarLocalParts(item.scheduledAt).day < today
+        ? "overdue"
+        : "planned";
+}
+
+export function contentCardStyle(
+    item: StyledContent,
+    today: string,
+): CSSProperties {
+    const state = contentState(item, today);
 
     const palette = [
         ...new Set(
@@ -64,12 +72,10 @@ export function contentCardStyle(
                 })`
                 : undefined,
         borderColor:
-            item.status === "CANCELED"
-                ? undefined
-                : finished
-                    ? "var(--color-success)"
-                    : overdue
-                        ? "var(--color-danger)"
-                        : undefined,
+            state === "done"
+                ? "var(--color-success)"
+                : state === "overdue"
+                    ? "var(--color-danger)"
+                    : undefined,
     };
 }

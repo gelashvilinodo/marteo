@@ -41,10 +41,10 @@ export default function HomeView({
     const { access, canOpen } = useBusinessAccess();
     const tourSteps = useMemo(() => homeTourSteps(mode, canOpen, access.role === "OWNER"), [mode, canOpen, access.role]);
     const heading = (
-        <div className="flex min-w-0 items-start gap-2">
-            <HomeHeader firstName={firstName} />
-            <TourHelpButton onClick={tour.start} />
-        </div>
+        <HomeHeader
+            firstName={firstName}
+            action={<TourHelpButton onClick={tour.start} />}
+        />
     );
     const {
         data,

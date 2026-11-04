@@ -7,7 +7,7 @@ import { useState } from "react";
 type Sheet = { sheet: string; rows: Record<string, string | number>[]; widths: number[] };
 
 // Exports exactly what the list shows: the current search and filters are sent along.
-export default function ExportButton({ kind, filename }: { kind: "users" | "businesses"; filename: string }) {
+export default function ExportButton({ kind, filename }: { kind: "users" | "businesses" | "payments"; filename: string }) {
     const params = useSearchParams();
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");

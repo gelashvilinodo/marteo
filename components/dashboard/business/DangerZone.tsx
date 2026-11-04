@@ -4,14 +4,14 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 
 const inputClass =
-    "mt-2 block min-h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 py-2 text-base text-text-primary outline-none focus:border-danger";
+    "mt-2 block min-h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 py-2 text-base text-text-primary outline-none focus:border-red-600";
 
 // ბიზნესის წაშლა: სახელის და პაროლის დადასტურება, შემდეგ ყველა მფლობელის თანხმობა.
 export default function DangerZone({ businessName, ownerCount }: { businessName: string; ownerCount: number }) {
     const [open, setOpen] = useState(false);
     return (
-        <section className="min-w-0 rounded-2xl border-2 border-danger/50 bg-danger/5 p-4 sm:p-5">
-            <h2 className="flex items-center gap-2 font-semibold text-danger">
+        <section className="min-w-0 rounded-2xl border-2 border-red-600/40 bg-red-600/5 p-4 sm:p-5">
+            <h2 className="flex items-center gap-2 font-semibold text-red-600">
                 <Icon icon="solar:danger-triangle-linear" className="size-5 shrink-0" aria-hidden="true" />
                 სახიფათო ზონა
             </h2>
@@ -24,7 +24,7 @@ export default function DangerZone({ businessName, ownerCount }: { businessName:
                     </p>
                 </div>
                 <button type="button" onClick={() => setOpen(true)}
-                    className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-danger px-4 text-sm font-semibold text-danger hover:bg-danger/10">
+                    className="inline-flex min-h-11 shrink-0 items-center justify-center delete-action rounded-xl border px-4 text-sm font-semibold transition">
                     ბიზნესის წაშლა
                 </button>
             </div>
@@ -79,9 +79,9 @@ function DeleteDialog({ businessName, onClose }: { businessName: string; onClose
     return (
         <dialog ref={dialog} aria-labelledby={titleId} aria-busy={busy}
             onCancel={event => { event.preventDefault(); if (!busy) onClose(); }}
-            className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%_-_2rem)] max-w-md overflow-y-auto rounded-2xl border border-danger/50 bg-surface p-0 text-text-primary shadow-2xl backdrop:bg-black/40 backdrop:backdrop-blur-sm">
+            className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%_-_2rem)] max-w-md overflow-y-auto rounded-2xl border border-red-600/40 bg-surface p-0 text-text-primary shadow-2xl backdrop:bg-black/40 backdrop:backdrop-blur-sm">
             <form onSubmit={submit} noValidate className="space-y-4 p-4 sm:p-5">
-                <h2 id={titleId} className="flex items-center gap-2 font-semibold text-danger">
+                <h2 id={titleId} className="flex items-center gap-2 font-semibold text-red-600">
                     <Icon icon="solar:trash-bin-trash-linear" className="size-5 shrink-0" aria-hidden="true" />
                     ბიზნესის წაშლა
                 </h2>
@@ -96,14 +96,14 @@ function DeleteDialog({ businessName, onClose }: { businessName: string; onClose
                     შენი პაროლი
                     <input type="password" value={password} disabled={busy} autoComplete="current-password" onChange={event => { setPassword(event.target.value); setError(""); }} className={inputClass} />
                 </label>
-                {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+                {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
                 <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                     <button type="button" onClick={onClose} disabled={busy}
                         className="inline-flex min-h-10 items-center justify-center rounded-xl border border-border px-4 text-sm font-medium disabled:opacity-50">
                         გაუქმება
                     </button>
                     <button type="submit" disabled={busy || confirmName.trim() !== businessName.trim() || !password}
-                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-danger px-4 text-sm font-semibold text-white disabled:opacity-50">
+                        className="inline-flex min-h-10 items-center justify-center delete-button gap-2 rounded-xl border px-4 text-sm font-semibold disabled:opacity-50">
                         {busy && <Icon icon="solar:refresh-linear" className="size-4 animate-spin" aria-hidden="true" />}
                         სამუდამოდ წაშლა
                     </button>

@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { Prisma } from "@/generated/prisma/client";
 import type { createPrismaClient } from "@/lib/prisma";
 import { getAnthropicClient, MARTEO_AI_MODEL } from "./anthropic-client";
+import { AiUsageMeter, recordAiUsage } from "./ai-usage";
 import type { AiConversationSummary, StoredAiMessage } from "./ai-conversations-client";
 
 type Client = ReturnType<typeof createPrismaClient>;
@@ -135,6 +136,7 @@ export async function ensureConversationTitle(prisma: Client, owner: Owner, id: 
     if (!question) return null;
 
     let title = fallbackTitle(question);
+    const meter = new AiUsageMeter();
 
     try {
         const response = await getAnthropicClient().messages.create({
@@ -143,6 +145,7 @@ export async function ensureConversationTitle(prisma: Client, owner: Owner, id: 
             system: "Write a short Georgian title (2 to 5 words) for this chat in a business app. Reply with the title only: no quotes, no period, no emoji.",
             messages: [{ role: "user", content: `Question: ${question.slice(0, 500)}\nAnswer: ${answer.slice(0, 500)}` }],
         });
+        meter.add(response.usage);
         const text = response.content
             .filter((block): block is Anthropic.TextBlock => block.type === "text")
             .map((block) => block.text)
@@ -154,6 +157,7 @@ export async function ensureConversationTitle(prisma: Client, owner: Owner, id: 
     } catch (error) {
         console.error("Marteo AI title failed", error instanceof Error ? error.name : "UnknownError");
     }
+    await recordAiUsage(prisma, { businessId: owner.businessId, userId: owner.userId, kind: "TITLE", meter });
 
     await prisma.aiConversation.updateMany({ where: { id, ...owner, title: null }, data: { title } });
     return title;

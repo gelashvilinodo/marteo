@@ -20,7 +20,12 @@ export async function PATCH(request: Request, context: Context) {
         const body = contentBody(await readOrderBody(request));
         const { id } = await context.params;
 
-        if (body.action !== "edit" && body.action !== "platform") {
+        if (
+            body.action !== "edit" &&
+            body.action !== "platform" &&
+            body.action !== "all-platforms" &&
+            body.action !== "schedule"
+        ) {
             return orderJson(
                 { success: false, message: "მოქმედება არასწორია." },
                 422,

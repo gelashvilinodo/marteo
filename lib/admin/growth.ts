@@ -71,7 +71,10 @@ export async function getGrowthStats(range: GrowthRange): Promise<GrowthStats> {
                 FROM signals
             `;
             const plans = await tx.$queryRaw<GrowthStats["plans"]>`
-                SELECT coalesce(s.plan::text, 'NONE') AS plan, count(*)::int AS count
+                -- Effective plan, as readPlan sees it: an ended or unpaid plan counts as FREE.
+                SELECT CASE WHEN s.id IS NULL THEN 'NONE'
+                    WHEN s.status IN ('ACTIVE', 'TRIALING') AND (s."expiresAt" IS NULL OR s."expiresAt" > ${now}) THEN s.plan::text
+                    ELSE 'FREE' END AS plan, count(*)::int AS count
                 FROM "Business" b LEFT JOIN "Subscription" s ON s."businessId" = b.id
                 GROUP BY 1
             `;

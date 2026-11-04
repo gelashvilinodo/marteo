@@ -1,10 +1,12 @@
 "use client";
 
 import { Icon } from "@iconify/react";
+import { createPortal } from "react-dom";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import SupportAvatar, { MarteoAvatar } from "./SupportAvatar";
 import { playSupportChime } from "./support-sound";
 import { useKeyboardViewport } from "./useKeyboardViewport";
+import { compressSupportImage } from "./compress-image";
 import {
     SUPPORT_MESSAGE_MAX_LENGTH,
     SUPPORT_POLL_MS,
@@ -32,7 +34,9 @@ type SupportChatProps = {
     onThread?: (thread: SupportThreadView) => void;
 };
 
-type Pending = { key: string; body: string; createdAt: string; failed: boolean };
+type Attachment = { blob: Blob; previewUrl: string };
+
+type Pending = { key: string; body: string; image: Attachment | null; createdAt: string; failed: boolean };
 
 type Row =
     | { kind: "message"; key: string; message: SupportMessageView; animate: "in" | "out" | null }
@@ -59,12 +63,16 @@ export default function SupportChat({ viewer, endpoint, header, banner, composer
     const [draft, setDraft] = useState("");
     const [error, setError] = useState("");
     const [showNewPill, setShowNewPill] = useState(false);
+    const [attachment, setAttachment] = useState<Attachment | null>(null);
+    const [preparing, setPreparing] = useState(false);
+    const [viewing, setViewing] = useState<string | null>(null);
 
     const known = useRef<Set<string> | null>(null);
     const sending = useRef(0);
     const scroller = useRef<HTMLDivElement>(null);
     const keyboard = useKeyboardViewport();
     const input = useRef<HTMLTextAreaElement>(null);
+    const filePicker = useRef<HTMLInputElement>(null);
     const nearBottom = useRef(true);
     const forceScroll = useRef(false);
     const onThreadRef = useRef(onThread);
@@ -191,17 +199,55 @@ export default function SupportChat({ viewer, endpoint, header, banner, composer
         element.style.height = `${Math.min(element.scrollHeight, 140)}px`;
     };
 
+    // Picked or pasted photos are shrunk before they are shown or sent.
+    const attach = async (file: File) => {
+        setError("");
+        setPreparing(true);
+        try {
+            const blob = await compressSupportImage(file);
+            setAttachment(current => {
+                if (current) URL.revokeObjectURL(current.previewUrl);
+                return { blob, previewUrl: URL.createObjectURL(blob) };
+            });
+            input.current?.focus();
+        } catch (cause) {
+            setError(cause instanceof Error ? cause.message : "ფოტო ვერ დაემატა.");
+        } finally { setPreparing(false); }
+    };
+
+    const removeAttachment = () => {
+        setAttachment(current => {
+            if (current) URL.revokeObjectURL(current.previewUrl);
+            return null;
+        });
+    };
+
+    useEffect(() => {
+        if (!viewing) return;
+        const close = (event: KeyboardEvent) => { if (event.key === "Escape") setViewing(null); };
+        window.addEventListener("keydown", close);
+        return () => window.removeEventListener("keydown", close);
+    }, [viewing]);
+
     const deliver = async (item: Pending) => {
         sending.current += 1;
         try {
-            const response = await fetch(endpoint, {
+            let request: RequestInit = {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ text: item.body }),
-            });
+            };
+            if (item.image) {
+                const form = new FormData();
+                form.append("text", item.body);
+                form.append("file", item.image.blob, "photo.jpg");
+                request = { method: "POST", body: form };
+            }
+            const response = await fetch(endpoint, request);
             const data = await response.json().catch(() => ({})) as { thread?: SupportThreadView; message?: string };
             if (!response.ok || !data.thread) throw new Error(data.message || "შეტყობინება ვერ გაიგზავნა.");
             setPending(current => current.filter(entry => entry.key !== item.key));
+            if (item.image) URL.revokeObjectURL(item.image.previewUrl);
             apply(data.thread, "send");
         } catch (cause) {
             setPending(current => current.map(entry => entry.key === item.key ? { ...entry, failed: true } : entry));
@@ -211,9 +257,10 @@ export default function SupportChat({ viewer, endpoint, header, banner, composer
 
     const send = () => {
         const body = draft.trim();
-        if (!body || body.length > SUPPORT_MESSAGE_MAX_LENGTH) return;
-        const item: Pending = { key: `pending-${crypto.randomUUID()}`, body, createdAt: new Date().toISOString(), failed: false };
+        if ((!body && !attachment) || body.length > SUPPORT_MESSAGE_MAX_LENGTH || preparing) return;
+        const item: Pending = { key: `pending-${crypto.randomUUID()}`, body, image: attachment, createdAt: new Date().toISOString(), failed: false };
         setDraft("");
+        setAttachment(null);
         setError("");
         setPending(current => [...current, item]);
         forceScroll.current = true;
@@ -293,6 +340,7 @@ export default function SupportChat({ viewer, endpoint, header, banner, composer
                             : row.animate === "in" ? "support-message-in" : row.animate === "out" ? "support-message-out" : "";
                     const showName = viewer === "ADMIN" && !mine && groupStart && row.kind === "message" && row.message.author;
                     const failed = row.kind === "pending" && row.pending.failed;
+                    const imageUrl = row.kind === "message" ? row.message.imageUrl : row.kind === "pending" ? row.pending.image?.previewUrl ?? null : null;
 
                     return <Fragment key={row.key}>
                         {newDay && <li className="my-3 flex justify-center" aria-hidden="true">
@@ -302,14 +350,21 @@ export default function SupportChat({ viewer, endpoint, header, banner, composer
                             <span className={`w-8 shrink-0 ${groupEnd ? "" : "invisible"}`} aria-hidden={!groupEnd}>{groupEnd && avatarFor(row)}</span>
                             <div className={`flex min-w-0 max-w-[82%] flex-col sm:max-w-[70%] ${mine ? "items-end" : "items-start"}`}>
                                 {showName && <span className="mb-1 px-1 text-[11px] font-medium text-text-secondary">{row.message.author!.name}</span>}
-                                <div className={[
+                                {imageUrl && <button type="button" onClick={() => setViewing(imageUrl)} aria-label="ფოტოს გადიდება"
+                                    className={`overflow-hidden rounded-2xl border border-border bg-background ${body ? "mb-1" : ""} ${failed ? "opacity-60" : row.kind === "pending" ? "opacity-80" : ""}`}>
+                                    {/* eslint-disable-next-line @next/next/no-img-element -- private, short-lived photo behind an access-checked route */}
+                                    <img src={imageUrl} alt="გაგზავნილი ფოტო" loading="lazy"
+                                        onLoad={() => { const element = scroller.current; if (element && nearBottom.current) element.scrollTop = element.scrollHeight; }}
+                                        className="block max-h-72 w-auto max-w-full object-contain" />
+                                </button>}
+                                {body && <div className={[
                                     "whitespace-pre-wrap break-words px-3.5 py-2 text-[14px] leading-relaxed",
                                     mine
                                         ? `rounded-2xl bg-accent text-white ${groupEnd ? "rounded-br-md" : ""} ${failed ? "bg-danger/80" : ""} ${row.kind === "pending" && !failed ? "opacity-80" : ""}`
                                         : `rounded-2xl border border-border bg-background text-text-primary ${groupEnd ? "rounded-bl-md" : ""}`,
                                 ].join(" ")}>
                                     {body}
-                                </div>
+                                </div>}
                                 {groupEnd && <span className="mt-1 flex items-center gap-1 px-1 text-[10px] text-text-secondary">
                                     {formatSupportTime(createdAt)}
                                     {row.kind === "pending" && !failed && <><span aria-hidden="true">·</span> იგზავნება…</>}
@@ -342,8 +397,27 @@ export default function SupportChat({ viewer, endpoint, header, banner, composer
             {viewer === "USER" && thread?.status === "CLOSED" && <p className="mb-2 rounded-xl bg-background px-3 py-2 text-xs text-text-secondary">საუბარი დასრულებულია. ახალი შეტყობინება მას ხელახლა გახსნის.</p>}
             {loadError && <p className="mb-2 text-xs text-warning">კავშირი შეფერხდა - ვცდილობთ ხელახლა…</p>}
             {error && <p role="alert" className="mb-2 text-xs text-danger">{error}</p>}
+            {(attachment || preparing) && <div className="mb-2 flex items-center gap-2">
+                <div className="relative h-16 w-16 overflow-hidden rounded-xl border border-border bg-background">
+                    {attachment
+                        // eslint-disable-next-line @next/next/no-img-element -- local preview of the photo about to be sent
+                        ? <img src={attachment.previewUrl} alt="ასატვირთი ფოტო" className="h-full w-full object-cover" />
+                        : <span className="flex h-full w-full items-center justify-center"><Icon icon="svg-spinners:180-ring" className="h-5 w-5 text-text-secondary" aria-hidden="true" /></span>}
+                    {attachment && <button type="button" onClick={removeAttachment} aria-label="ფოტოს მოშორება"
+                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white">
+                        <Icon icon="solar:close-circle-linear" className="h-4 w-4" aria-hidden="true" />
+                    </button>}
+                </div>
+                <span className="text-xs text-text-secondary">{preparing ? "ფოტო მზადდება…" : "ფოტო გაიგზავნება შეტყობინებასთან ერთად"}</span>
+            </div>}
             <form className="flex items-end gap-2" onSubmit={event => { event.preventDefault(); send(); }}>
                 {composerTools?.(insert)}
+                <input ref={filePicker} type="file" accept="image/*" className="hidden" tabIndex={-1}
+                    onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void attach(file); }} />
+                <button type="button" onClick={() => filePicker.current?.click()} disabled={preparing} aria-label="ფოტოს დამატება" title="ფოტოს დამატება"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-secondary transition hover:bg-background hover:text-accent disabled:opacity-40">
+                    <Icon icon="solar:gallery-add-linear" className="h-6 w-6" aria-hidden="true" />
+                </button>
                 <label className="sr-only" htmlFor={`support-input-${viewer}`}>შეტყობინება</label>
                 <textarea
                     id={`support-input-${viewer}`}
@@ -353,6 +427,11 @@ export default function SupportChat({ viewer, endpoint, header, banner, composer
                     maxLength={SUPPORT_MESSAGE_MAX_LENGTH}
                     placeholder="დაწერე შეტყობინება…"
                     onChange={event => { setDraft(event.target.value); resize(); }}
+                    onPaste={event => {
+                        // A copied screenshot attaches straight from the clipboard.
+                        const file = Array.from(event.clipboardData.files).find(item => item.type.startsWith("image/"));
+                        if (file) { event.preventDefault(); void attach(file); }
+                    }}
                     onKeyDown={event => {
                         const touch = window.matchMedia("(pointer: coarse)").matches;
                         if (event.key === "Enter" && !event.shiftKey && !touch && !event.nativeEvent.isComposing) {
@@ -364,7 +443,7 @@ export default function SupportChat({ viewer, endpoint, header, banner, composer
                 />
                 <button
                     type="submit"
-                    disabled={!draft.trim()}
+                    disabled={(!draft.trim() && !attachment) || preparing}
                     aria-label="გაგზავნა"
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-white shadow-md shadow-accent/30 transition hover:bg-accent-hover active:scale-90 disabled:scale-95 disabled:opacity-40 disabled:shadow-none"
                 >
@@ -373,5 +452,16 @@ export default function SupportChat({ viewer, endpoint, header, banner, composer
             </form>
             {draft.length > SUPPORT_MESSAGE_MAX_LENGTH - 200 && <p className="mt-1 text-right text-[10px] text-text-secondary">{draft.length}/{SUPPORT_MESSAGE_MAX_LENGTH}</p>}
         </footer>
+
+        {/* Portaled so the chat's own layout never clips the full-screen view. */}
+        {viewing && createPortal(<div role="dialog" aria-modal="true" aria-label="ფოტო" onClick={() => setViewing(null)}
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 p-4">
+            <button type="button" onClick={() => setViewing(null)} aria-label="დახურვა"
+                className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20">
+                <Icon icon="solar:close-circle-linear" className="h-6 w-6" aria-hidden="true" />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element -- full-size view of a chat photo */}
+            <img src={viewing} alt="ფოტო" onClick={event => event.stopPropagation()} className="max-h-full max-w-full rounded-lg object-contain" />
+        </div>, document.body)}
     </section>;
 }
