@@ -6,7 +6,9 @@ type Tx = Pick<Prisma.TransactionClient, "$queryRaw" | "$executeRaw">;
 
 export const LOW_STOCK_THRESHOLD = 5; // Same rule as the inventory page "დაბალი მარაგი" filter.
 const STOCK_SUMMARY_AFTER = 3;
-const REMINDER_DAYS = [7, 3, 1] as const;
+// საცდელზე 2 დღით ადრე, ფასიან გეგმაზე 3 დღით ადრე.
+const TRIAL_REMINDER_DAYS = 2;
+const RENEWAL_REMINDER_DAYS = 3;
 const ENDED_NOTICE_DAYS = 14;
 const TBILISI_DATE = (column: Prisma.Sql) => Prisma.sql`to_char((${column} AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Tbilisi', 'DD.MM.YYYY')`;
 
@@ -49,52 +51,63 @@ async function deliverCampaigns(tx: Tx, userId: string, now: Date) {
     `;
 }
 
-async function deliverSubscriptionReminders(tx: Tx, businessId: string, now: Date) {
-    const until = new Date(now.getTime() + REMINDER_DAYS[0] * 86400000);
+/**
+ * გეგმის შეხსენებები მფლობელებს (აპში; მეილს და პუშს deliverNoticeChannels აგზავნის):
+ * საცდელი სრულდება 2 დღეში, ფასიანი გეგმა იწურება 3 დღეში (გაუქმებულზე — „სრულდება“),
+ * და ერთი შეტყობინება დასრულების შემდეგ. businessId = null — ყველა ბიზნესი (საათობრივი cron).
+ * გასაღებში ვადის დრო წერია, ამიტომ განახლების შემდეგ ახალი პერიოდი თავიდან იწყება.
+ */
+export async function deliverSubscriptionReminders(tx: Tx, businessId: string | null, now = new Date()) {
     const date = TBILISI_DATE(Prisma.sql`s."expiresAt"`);
     const plan = Prisma.raw(`coalesce(${planLabelCase("s.plan::text")}, s.plan::text)`);
-    // 7, 3 and 1 day(s) before: each stage once per period (the expiry timestamp is in the key, so a renewal starts over).
-    // The 3-day key keeps its original format, so reminders sent before the stages existed are not repeated.
-    const stage = Prisma.sql`CASE WHEN s."expiresAt" <= ${new Date(now.getTime() + REMINDER_DAYS[2] * 86400000)} THEN 1
-        WHEN s."expiresAt" <= ${new Date(now.getTime() + REMINDER_DAYS[1] * 86400000)} THEN 3 ELSE 7 END`;
+    const scope = businessId === null ? Prisma.sql`TRUE` : Prisma.sql`s."businessId" = ${businessId}`;
+    const exp = Prisma.sql`to_char(s."expiresAt", 'YYYYMMDDHH24MISS')`;
     await tx.$executeRaw`
         INSERT INTO "Notification" (id, "userId", "businessId", kind, title, body, "actionLabel", "actionUrl", "dedupeKey", "deliverAt", "createdAt")
         SELECT gen_random_uuid()::text, m."userId", s."businessId",
             CASE WHEN s.status = 'TRIALING' THEN 'TRIAL_ENDING'::"NotificationKind" ELSE 'RENEWAL_REMINDER'::"NotificationKind" END,
-            CASE WHEN s.status = 'TRIALING' THEN 'საცდელი პერიოდი მალე სრულდება' ELSE 'პაკეტის განახლების დროა' END,
+            CASE WHEN s.status = 'TRIALING' THEN 'საცდელი პერიოდი 2 დღეში სრულდება'
+                WHEN s."cancelAtPeriodEnd" THEN 'გაუქმებული გეგმა მალე სრულდება'
+                ELSE 'გეგმის ვადა მალე იწურება' END,
             CASE WHEN s.status = 'TRIALING'
-                THEN 'შენი საცდელი პერიოდი სრულდება ' || ${date} || '-ს. აირჩიე პაკეტი, რომ ყველა ფუნქციით სარგებლობა უწყვეტად გააგრძელო.'
-                ELSE 'შენი ' || ${plan} || ' პაკეტი იწურება ' || ${date} || '-ს. განაახლე, რომ მუშაობა არ შეგეფერხოს.'
+                THEN 'საცდელი პერიოდი სრულდება ' || ${date} || '-ს. აირჩიე გეგმა, რომ მუშაობა უწყვეტად გააგრძელო. მონაცემები არ იკარგება.'
+                WHEN s."cancelAtPeriodEnd"
+                THEN 'შენი ' || ${plan} || ' გეგმა ' || ${date} || '-ს სრულდება. გადაფიქრება ვადამდე შეგიძლია „პაკეტი და გადახდებიდან“.'
+                ELSE 'შენი ' || ${plan} || ' გეგმის ვადა ' || ${date} || '-ს იწურება. განაახლე, რომ მუშაობა არ შეფერხდეს.'
             END,
-            'პაკეტის ნახვა', '/dashboard/business-settings',
-            lower(s.status::text) || ':' || s.id || ':' || to_char(s."expiresAt", 'YYYYMMDDHH24MISS')
-                || CASE ${stage} WHEN 3 THEN '' ELSE ':d' || ${stage} END || ':' || m."userId",
+            CASE WHEN s.status = 'TRIALING' THEN 'გეგმის არჩევა' ELSE 'პაკეტი და გადახდები' END,
+            CASE WHEN s.status = 'TRIALING' THEN '/dashboard/plans' ELSE '/dashboard/billing' END,
+            CASE WHEN s.status = 'TRIALING' THEN 'trial-ending:' ELSE 'renewal:' END || s.id || ':' || ${exp} || ':' || m."userId",
             ${now}, ${now}
         FROM "Subscription" s JOIN "BusinessMembership" m ON m."businessId" = s."businessId"
             -- გადახდა მფლობელების საქმეა; თანამშრომელი სხვის გეგმაზე შეხსენებას არ იღებს.
             AND m.role = 'OWNER' AND m.status = 'ACTIVE'
-        WHERE s."businessId" = ${businessId} AND s."canceledAt" IS NULL
-          AND s."expiresAt" > ${now} AND s."expiresAt" <= ${until}
-          AND (s.status = 'TRIALING' OR (s.status = 'ACTIVE' AND s.plan <> 'FREE'))
+        WHERE ${scope} AND s."expiresAt" > ${now}
+          AND ((s.status = 'TRIALING' AND s."expiresAt" <= ${new Date(now.getTime() + TRIAL_REMINDER_DAYS * 86400000)})
+            OR (s.status = 'ACTIVE' AND s.plan <> 'FREE' AND s."expiresAt" <= ${new Date(now.getTime() + RENEWAL_REMINDER_DAYS * 86400000)}))
         ON CONFLICT ("dedupeKey") DO NOTHING
     `;
-    // After the end date: one notice that the business now works on FREE. Data is kept; only plan features stop.
-    // The hourly cron moves the status to PAST_DUE / EXPIRED, so all three count as "just ended".
+    // დასრულების შემდეგ: ერთი შეტყობინება, რომ ბიზნესი მხოლოდ ნახვის რეჟიმშია და მონაცემები შენახულია.
+    // საათობრივი cron სტატუსს PAST_DUE / EXPIRED / CANCELED-ზე გადაიყვანს, ამიტომ ყველა „ახლახან დასრულებულად“ ითვლება.
     await tx.$executeRaw`
         INSERT INTO "Notification" (id, "userId", "businessId", kind, title, body, "actionLabel", "actionUrl", "dedupeKey", "deliverAt", "createdAt")
         SELECT gen_random_uuid()::text, m."userId", s."businessId",
-            CASE WHEN s.status = 'TRIALING' THEN 'TRIAL_ENDING'::"NotificationKind" ELSE 'RENEWAL_REMINDER'::"NotificationKind" END,
-            CASE WHEN s.status = 'TRIALING' THEN 'საცდელი პერიოდი დასრულდა' ELSE 'პაკეტის ვადა ამოიწურა' END,
-            CASE WHEN s.status = 'TRIALING' THEN 'საცდელი პერიოდი დასრულდა ' || ${date} || '-ს.' ELSE 'შენი ' || ${plan} || ' პაკეტის ვადა ამოიწურა ' || ${date} || '-ს.' END
-                || ' ბიზნესი ახლა FREE პაკეტზეა, მონაცემები შენახულია. განაახლე, რომ ყველა ფუნქცია დაგიბრუნდეს.',
-            'პაკეტის ნახვა', '/dashboard/business-settings',
-            'ended:' || s.id || ':' || to_char(s."expiresAt", 'YYYYMMDDHH24MISS') || ':' || m."userId",
+            CASE WHEN s.plan = 'FREE' THEN 'TRIAL_ENDING'::"NotificationKind" ELSE 'RENEWAL_REMINDER'::"NotificationKind" END,
+            CASE WHEN s.plan = 'FREE' THEN 'საცდელი პერიოდი დასრულდა'
+                WHEN s.status = 'CANCELED' OR s."cancelAtPeriodEnd" THEN 'გაუქმებული გეგმა დასრულდა'
+                ELSE 'გეგმის ვადა ამოიწურა' END,
+            CASE WHEN s.plan = 'FREE' THEN 'საცდელი პერიოდი დასრულდა ' || ${date} || '-ს.'
+                ELSE 'შენი ' || ${plan} || ' გეგმა დასრულდა ' || ${date} || '-ს.' END
+                || ' ბიზნესი ახლა მხოლოდ ნახვის რეჟიმშია, მონაცემები შენახულია. აირჩიე გეგმა, რომ დამატება და ცვლილება დაგიბრუნდეს.',
+            'გეგმის არჩევა', '/dashboard/plans',
+            'ended:' || s.id || ':' || ${exp} || ':' || m."userId",
             ${now}, ${now}
         FROM "Subscription" s JOIN "BusinessMembership" m ON m."businessId" = s."businessId"
             AND m.role = 'OWNER' AND m.status = 'ACTIVE'
-        WHERE s."businessId" = ${businessId} AND s."canceledAt" IS NULL AND s.plan <> 'FREE'
+        WHERE ${scope}
           AND s."expiresAt" <= ${now} AND s."expiresAt" > ${new Date(now.getTime() - ENDED_NOTICE_DAYS * 86400000)}
-          AND s.status IN ('ACTIVE', 'TRIALING', 'PAST_DUE', 'EXPIRED')
+          AND (s.status IN ('ACTIVE', 'PAST_DUE', 'EXPIRED', 'CANCELED') AND s.plan <> 'FREE'
+            OR s.status IN ('TRIALING', 'EXPIRED') AND s.plan = 'FREE')
         ON CONFLICT ("dedupeKey") DO NOTHING
     `;
 }
@@ -193,8 +206,8 @@ export async function notifyPaymentConfirmed(tx: Tx, input: { businessId: string
     const plan = PLAN_LABELS[input.plan] ?? input.plan;
     await tx.$executeRaw`
         INSERT INTO "Notification" (id, "userId", "businessId", kind, title, body, "actionLabel", "actionUrl", "dedupeKey", "deliverAt", "createdAt")
-        SELECT gen_random_uuid()::text, m."userId", ${input.businessId}, 'PAYMENT_CONFIRMED', 'გადახდა დადასტურდა - მადლობა! 🎉',
-            ${`${plan} პაკეტი წარმატებით გააქტიურდა. მადლობა, რომ მართეოს ენდობი - წარმატებებს გისურვებთ!`},
+        SELECT gen_random_uuid()::text, m."userId", ${input.businessId}, 'PAYMENT_CONFIRMED', 'გადახდა დადასტურდა, მადლობა! 🎉',
+            ${`${plan} გეგმა გააქტიურდა. მადლობა, რომ მართეოს ენდობი, წარმატებებს გისურვებთ!`},
             'მთავარზე გადასვლა', '/dashboard', ${`payment:${input.paymentId}:`} || m."userId", ${now}, ${now}
         FROM "BusinessMembership" m WHERE m."businessId" = ${input.businessId} AND m.role = 'OWNER' AND m.status = 'ACTIVE'
         ON CONFLICT ("dedupeKey") DO NOTHING

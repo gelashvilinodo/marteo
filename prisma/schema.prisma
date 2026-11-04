@@ -1615,6 +1615,10 @@ enum NotificationKind {
   RENEWAL_REMINDER
   PAYMENT_CONFIRMED
   TEAM
+  PAYMENT_FAILED
+  PLAN_CHANGED
+  LIMIT_WARNING
+  SMS_LOW
 }
 
 enum NotificationPlanAudience {
@@ -1646,6 +1650,8 @@ model Notification {
   readAt          DateTime?
   /// Deleted by the user. The row stays so dedupeKey keeps it from being delivered again.
   deletedAt       DateTime?
+  /// გეგმის შეტყობინებები მეილითა და პუშითაც იგზავნება: გაგზავნის შემდეგ ივსება, რომ ორჯერ არ გაიგზავნოს.
+  channelsSentAt  DateTime?
   createdAt       DateTime         @default(now())
 
   user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)

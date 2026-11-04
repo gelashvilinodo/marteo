@@ -5,6 +5,7 @@ import { MAX_MONTHS, PAID_PLANS, PAYMENT_METHODS, paymentPeriod, toTbilisiDay, t
 import { enforceTeamLimits } from "@/lib/business/team-manage";
 import { applyPlanMode } from "@/lib/subscription/server";
 import { notifyPaymentConfirmed } from "@/lib/notifications/sync";
+import { queueNoticeChannels } from "@/lib/subscription/notices";
 
 const ID = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -80,7 +81,7 @@ export async function recordPayment(prisma: PrismaClient, adminId: string, busin
     const paidAt = readPaidAt(input.paidAt, now);
     const note = readNote(input.note);
 
-    return prisma.$transaction(async tx => {
+    const result = await prisma.$transaction(async tx => {
         await tx.$queryRaw`SELECT id FROM "Business" WHERE id = ${key} FOR UPDATE`;
         const business = await tx.business.findUnique({
             where: { id: key },
@@ -119,6 +120,9 @@ export async function recordPayment(prisma: PrismaClient, adminId: string, busin
         await notifyPaymentConfirmed(tx, { businessId: key, plan, paymentId: payment.id, now });
         return { message: `გადახდა აღირიცხა. ${plan} მოქმედებს ${toTbilisiDay(period.end)}-ის ჩათვლით.`, payments: await listPayments(tx, key) };
     });
+    // დადასტურება მფლობელებს მეილითა და პუშითაც.
+    void queueNoticeChannels(key);
+    return result;
 }
 
 /** Marks a payment as a mistake. The plan term is left as is: the admin corrects it in the plan editor if needed. */

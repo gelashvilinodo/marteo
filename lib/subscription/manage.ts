@@ -7,6 +7,8 @@ import { quotePlanChange, type CurrentPeriod } from "./plan-change";
 import { planStateFrom } from "./plan-state";
 import { isPaidTier, PLAN_ADJECTIVES, PLAN_LIMITS, type PaidTier } from "./plans";
 import { applyPlanMode } from "./server";
+import { notifyOwners } from "./notices";
+import { formatDay } from "@/components/plans/billing-format";
 
 type Tx = Prisma.TransactionClient;
 type Db = PrismaClient | Tx;
@@ -80,6 +82,13 @@ export async function cancelPlan(prisma: PrismaClient, userId: string, businessI
             where: { businessId }, data: { cancelAtPeriodEnd: true, canceledAt: new Date() }, select: subscriptionSelect,
         });
         await audit(tx, businessId, userId, before, after);
+        await notifyOwners(tx, {
+            businessId, kind: "PLAN_CHANGED", key: `canceled:${businessId}:${Date.now()}`,
+            title: "გეგმა გაუქმდა",
+            body: after.expiresAt
+                ? `გეგმა ${formatDay(after.expiresAt.toISOString())}-მდე ჩვეულებრივ იმუშავებს, მერე ბიზნესი მხოლოდ ნახვის რეჟიმში გადავა. გადაფიქრება ვადამდე შეგიძლია.`
+                : "გეგმა გაუქმდა. მონაცემები შენახულია.",
+        });
         return after.expiresAt
             ? "გეგმა გაუქმდა. ის გადახდილი პერიოდის ბოლომდე მოქმედებს."
             : "გეგმა გაუქმდა.";
@@ -95,6 +104,10 @@ export async function resumePlan(prisma: PrismaClient, userId: string, businessI
             where: { businessId }, data: { cancelAtPeriodEnd: false, canceledAt: null }, select: subscriptionSelect,
         });
         await audit(tx, businessId, userId, before, after);
+        await notifyOwners(tx, {
+            businessId, kind: "PLAN_CHANGED", key: `resumed:${businessId}:${Date.now()}`,
+            title: "გეგმა გაგრძელდა", body: "გაუქმება გადაიფიქრე: გეგმა ჩვეულებრივ გაგრძელდება.",
+        });
         return "გეგმა გაგრძელდა. შემდეგი გადახდა ჩვეულებრივ შესრულდება.";
     });
 }
@@ -189,6 +202,13 @@ export async function downgradePlan(prisma: PrismaClient, userId: string, busine
         await audit(tx, businessId, userId, before, after);
         await applyPlanMode(tx, businessId, target);
         await enforceTeamLimits(tx, businessId);
+        await notifyOwners(tx, {
+            businessId, kind: "PLAN_CHANGED", key: `downgraded:${businessId}:${Date.now()}`,
+            title: `გადახვედი ${PLAN_ADJECTIVES[target]} გეგმაზე`,
+            body: quote
+                ? `ახალი გეგმა ჩაირთო. დაუხარჯავი ნაშთი ${quote.days} დღეს ფარავს: გეგმა მოქმედებს ${formatDay(quote.expiresAt)}-მდე.`
+                : "ახალი გეგმა ჩაირთო. ფუნქციები, რომლებიც მასში არ შედის, დაიკეტა, მონაცემები კი შენახულია.",
+        });
         return quote
             ? `გადახვედი ${PLAN_ADJECTIVES[target]} გეგმაზე. ნაშთი ${quote.days} დღეს ფარავს.`
             : `გადახვედი ${PLAN_ADJECTIVES[target]} გეგმაზე.`;

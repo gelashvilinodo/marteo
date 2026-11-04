@@ -3,6 +3,7 @@ import "server-only";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { readUsagePeriod } from "@/lib/subscription/limits";
+import { notifyLimit, queueNoticeChannels } from "@/lib/subscription/notices";
 import { PLAN_LIMITS } from "@/lib/subscription/plans";
 import { AiChatError, MARTEO_AI_MODEL } from "./anthropic-client";
 import { AI_MONTHLY_LIMITS, formatResetDay, type AiQuota } from "./ai-quota";
@@ -92,7 +93,8 @@ function limitMessage(quota: AiQuota, files: boolean) {
  * Questions and purchase files have separate limits, except in the trial where both share the questions.
  */
 export async function startAiUsage(prisma: PrismaClient, input: { businessId: string; businessName: string; userId: string | null; kind: Exclude<Kind, "TITLE"> }): Promise<AiUsageReservation> {
-    return prisma.$transaction(async tx => {
+    let limitNotice = false;
+    const reservation = await prisma.$transaction(async tx => {
         await tx.$queryRaw`SELECT id FROM "Business" WHERE id = ${input.businessId} FOR UPDATE`;
         const quota = await getAiQuota(tx, input.businessId);
         if (quota.disabled) throw new AiChatError("მართეო AI ამ ბიზნესისთვის გამორთულია. დაგვიკავშირდი დახმარების ჩათში.", 403);
@@ -107,8 +109,15 @@ export async function startAiUsage(prisma: PrismaClient, input: { businessId: st
         const next = file
             ? { ...quota, files: { ...quota.files, used: quota.files.used + 1 } }
             : { ...quota, used: quota.used + 1, files: quota.files.shared ? { ...quota.files, used: quota.files.used + (input.kind === "PURCHASE_DRAFT" ? 1 : 0) } : quota.files };
+        // 80%/100%: მფლობელებს შეტყობინება (საცდელი ერთი პერიოდია და იგივე წესით ითვლება).
+        const period = await readUsagePeriod(tx, input.businessId);
+        limitNotice = file
+            ? await notifyLimit(tx, { businessId: input.businessId, what: "aiFiles", used: next.files.used, limit: next.files.limit, periodStart: period.start })
+            : await notifyLimit(tx, { businessId: input.businessId, what: "ai", used: next.used, limit: next.limit, periodStart: period.start });
         return { id: row.id, kind: input.kind, meter: new AiUsageMeter(), quota: next };
     });
+    if (limitNotice) void queueNoticeChannels(input.businessId);
+    return reservation;
 }
 
 /** Stores the final token counts. A failed action costs us tokens but not the user's limit; one that never reached the API leaves no row. */

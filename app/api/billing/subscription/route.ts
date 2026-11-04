@@ -4,6 +4,7 @@ import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
 import { createPrismaClient } from "@/lib/prisma";
 import { guardMutation } from "@/lib/security/mutation-request";
 import { cancelPlan, downgradePlan, PlanActionError, resumePlan } from "@/lib/subscription/manage";
+import { queueNoticeChannels } from "@/lib/subscription/notices";
 
 const json = (body: unknown, status = 200) => NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
 
@@ -20,6 +21,7 @@ async function post(request: Request) {
         else if (body?.action === "resume") message = await resumePlan(db, context.user.id, businessId);
         else if (body?.action === "downgrade") message = await downgradePlan(db, context.user.id, businessId, body.plan, { keep: body.keep, mode: body.mode });
         else return json({ success: false, message: "ქმედება არასწორია." }, 422);
+        void queueNoticeChannels(businessId);
         return json({ success: true, message });
     } catch (error) {
         if (error instanceof PlanActionError) return json({ success: false, message: error.message }, error.status);

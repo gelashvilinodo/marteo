@@ -4,6 +4,7 @@ import { featureMessage } from "./plan-access";
 import { LOCK_MESSAGES, planAllows, planStateFrom, type PlanState } from "./plan-state";
 import { currentMonthlyPeriod } from "./period";
 import { FEATURE_MIN_TIER, PLAN_LIMITS, type PaidTier, type PlanFeature } from "./plans";
+import { notifyLimit } from "./notices";
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -54,13 +55,14 @@ export async function countPeriodOrders(db: Db, businessId: string, since: Date)
 }
 
 // ახალი შეკვეთის წინ, ბიზნესის ჩაკეტილი სტრიქონის ქვეშ (ერთდროული შეკვეთები ლიმიტს ერთად ვერ გადალახავს).
+// true — ამ შეკვეთით ლიმიტის 80% ან 100% შეივსო და მფლობელებს შეტყობინება შეექმნათ.
 export async function assertOrderAllowed(tx: Prisma.TransactionClient, businessId: string, items: readonly { source: string; imageUrl: string | null }[]) {
     const { plan, start } = await readUsagePeriod(tx, businessId);
     if (plan.locked) throw new PlanLimitError(LOCK_MESSAGES[plan.lockReason ?? "NO_PLAN"], "PLAN_LOCKED");
     if (items.some(item => item.source !== "MANUAL")) requireFeature(plan, "stock");
     if (items.some(item => item.imageUrl)) requireFeature(plan, "orderPhotos");
     const limit = plan.tier ? PLAN_LIMITS[plan.tier].ordersPerPeriod : null;
-    if (limit === null) return;
+    if (limit === null) return false;
     const used = await countPeriodOrders(tx, businessId, start);
     if (used >= limit) {
         const next = plan.tier ? NEXT[plan.tier] ?? null : null;
@@ -69,4 +71,5 @@ export async function assertOrderAllowed(tx: Prisma.TransactionClient, businessI
             "PLAN_LIMIT", null, next,
         );
     }
+    return notifyLimit(tx, { businessId, what: "orders", used: used + 1, limit, periodStart: start });
 }

@@ -12,6 +12,8 @@ const EXEMPT_API = [
     "app/api/business/onboarding/", "app/api/business/switch/", "app/api/business/upload-logo/",
     // მოწვევის ბმული: წვდომას ტოკენი განსაზღვრავს.
     "app/api/invites/",
+    // საათობრივი cron: წვდომას CRON_SECRET განსაზღვრავს.
+    "app/api/cron/",
 ];
 
 function walk(dir, name) {

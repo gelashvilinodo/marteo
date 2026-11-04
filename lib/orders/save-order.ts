@@ -17,6 +17,7 @@ import { resolveOrderCustomer, createOrderItems } from "./order-stock";
 
 import { createPublicOrderToken } from "./create-public-order-token";
 import { assertOrderAllowed } from "@/lib/subscription/limits";
+import { queueNoticeChannels } from "@/lib/subscription/notices";
 
 function fail(message: string, status = 400): never {
     throw new OrderValidationError(message, status);
@@ -45,8 +46,9 @@ export async function saveOrder(raw: unknown) {
         }
 
         const businessId = membership.businessId;
+        let limitNotice = false;
 
-        return await prisma.$transaction(
+        const saved = await prisma.$transaction(
             async (tx) => {
                 // შესყიდვებიც იმავე ბიზნესის ბლოკირებას იყენებს.
                 // ერთდროული ცვლილებები თანმიმდევრულად შესრულდება.
@@ -93,7 +95,7 @@ export async function saveOrder(raw: unknown) {
                 }
 
                 // გეგმა: მხოლოდ ნახვის რეჟიმი, მარაგი/ფოტო გეგმაში და შეკვეთების პერიოდის ლიმიტი.
-                await assertOrderAllowed(tx, businessId, data.items);
+                limitNotice = await assertOrderAllowed(tx, businessId, data.items);
 
                 const inventoryIds = [
                     ...new Set(
@@ -204,6 +206,9 @@ export async function saveOrder(raw: unknown) {
                 timeout: 60000,
             },
         );
+        // ლიმიტის 80%/100%-ზე მფლობელებს მეილი და პუში მაშინვე ეგზავნებათ.
+        if (limitNotice) void queueNoticeChannels(businessId);
+        return saved;
     } finally {
         await prisma.$disconnect();
     }

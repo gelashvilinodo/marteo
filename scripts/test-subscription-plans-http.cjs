@@ -212,7 +212,40 @@ const DAY=86400000,at=days=>new Date(Date.now()+days*DAY).toISOString();
   assert.equal((await db.query('SELECT mode::text FROM "Business" WHERE id=$1',[businessId])).rows[0].mode,'MANUFACTURING');
   console.log('ok downgrade with member and direction choice');
 
-  console.log('PASS: subscription plan gating (trial, start, business, pro, past due, trial ended, no plan), mode limit, admin change, onboarding, plan changes, usage limits, SMS, periods, downgrade choices.');
+  // Notices. Owners only; the hourly cron route creates reminders for every business and sends e-mail/push.
+  const notices=async kind=>(await db.query('SELECT "dedupeKey" AS key,title,"channelsSentAt" AS sent FROM "Notification" WHERE "userId"=$1 AND kind=$2::"NotificationKind" ORDER BY "createdAt"',[ownerId,kind])).rows;
+  const cron=secret=>fetch(base+'/api/cron/subscription-notices',{method:'POST',headers:{authorization:'Bearer '+secret}});
+  assert.equal((await cron('wrong-secret-wrong-secret')).status,401,'cron needs the secret');
+  const runCron=async()=>{const res=await cron(process.env.CRON_SECRET);assert.equal(res.status,200,'cron route');};
+  // Orders: the 200th Start order of the period made the 100% notice (the test jumped past 80% at once).
+  let limitKeys=(await notices('LIMIT_WARNING')).map(n=>n.key);
+  assert.ok(limitKeys.some(key=>key.startsWith('limit:orders:')&&key.includes(':100:')),limitKeys.join());
+  // AI: the question that reaches 80% makes one notice (the limit check refuses before the model is called at 100%).
+  await period('BUSINESS');await db.query('DELETE FROM "AiUsage" WHERE "businessId"=$1',[businessId]);
+  await usage('CHAT',79);
+  const asked=await call(owner,'/api/ai/chat','POST',{messages:[{role:'user',text:'ok'}]});await asked.text();
+  limitKeys=(await notices('LIMIT_WARNING')).map(n=>n.key);
+  assert.ok(limitKeys.some(key=>key.startsWith('limit:ai:')&&key.includes(':80:')),limitKeys.join());
+  // Trial: one reminder 2 days before (not at 3), and one notice after it ends.
+  await setPlan('FREE','TRIALING',2.5);await runCron();assert.equal((await notices('TRIAL_ENDING')).length,0,'not 2.5 days before');
+  await setPlan('FREE','TRIALING',1.5);await runCron();await runCron();
+  let t=await notices('TRIAL_ENDING');assert.equal(t.length,1);assert.ok(t[0].key.startsWith('trial-ending:'));assert.ok(t[0].sent,'e-mail/push marked as handled');
+  await setPlan('FREE','TRIALING',-0.01);await runCron();
+  t=await notices('TRIAL_ENDING');assert.equal(t.length,2);assert.equal(t[1].title,'საცდელი პერიოდი დასრულდა');
+  // Paid: a reminder 3 days before the end.
+  await setPlan('PRO','ACTIVE',2);await runCron();
+  assert.ok((await notices('RENEWAL_REMINDER')).some(n=>n.key.startsWith('renewal:')));
+  // Owner actions and SMS running low.
+  await period('PRO');await act({action:'cancel'});
+  assert.ok((await notices('PLAN_CHANGED')).some(n=>n.title==='გეგმა გაუქმდა'));
+  await act({action:'resume'});
+  await db.query('UPDATE "Business" SET "smsEnabled"=true,"smsBalance"=21 WHERE id=$1',[businessId]);
+  await db.query(`INSERT INTO "SmsMessage" (id,"businessId",phone,source,status,"updatedAt") SELECT gen_random_uuid()::text,$1,'+995599000000','PLAN','SENT',now() FROM generate_series(1,500)`,[businessId]);
+  await ship();
+  const low=await notices('SMS_LOW');assert.equal(low.length,1);assert.equal(low[0].title,'დარჩა 20 SMS');
+  console.log('ok notices: cron reminders, trial ended, limits, plan changes, SMS low');
+
+  console.log('PASS: subscription plan gating (trial, start, business, pro, past due, trial ended, no plan), mode limit, admin change, onboarding, plan changes, usage limits, SMS, periods, downgrade choices, notices.');
  }finally{
   const owned=(await db.query('SELECT "businessId" FROM "BusinessMembership" WHERE "userId"=ANY($1::text[])',[userIds])).rows.map(r=>r.businessId);
   await db.query('DELETE FROM "AdminAuditLog" WHERE "targetId"=ANY($1::text[]) AND "createdAt">=$2',[owned,startedAt.toISOString()]);

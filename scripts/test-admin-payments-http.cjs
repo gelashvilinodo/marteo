@@ -74,16 +74,14 @@ require('pg').types.setTypeParser(1114,value=>new Date(value.replace(' ','T')+'Z
   r=await fetch(`${base}/api/admin/export/payments?q=${encodeURIComponent(tag)}`,{method:'POST',headers:{Cookie:'marteo_session='+adminToken,Origin:base}});data=await r.json();
   assert.equal(r.status,200,data.message);assert.equal(data.rows.length,2);assert.equal(typeof data.rows[0]['თანხა (₾)'],'number');
 
-  // Reminders: 7, 3 and 1 day stages, each once, owners only.
+  // Reminder: one notice 3 days before the end of a paid plan, once per period, owners only.
   const unread=()=>call('/api/notifications/unread',ownerToken);
   const keys=async()=>(await db.query('SELECT "dedupeKey" FROM "Notification" WHERE "userId"=$1 AND kind=\'RENEWAL_REMINDER\' ORDER BY "createdAt"',[ownerId])).rows.map(x=>x.dedupeKey);
   const setEnd=async(ms,status='ACTIVE')=>db.query('UPDATE "Subscription" SET "expiresAt"=$2,status=$3::"SubscriptionStatus" WHERE "businessId"=$1',[businessId,new Date(Date.now()+ms).toISOString(),status]);
-  await setEnd(5*DAY);assert.equal((await unread()).status,200);await unread();
-  let k=await keys();assert.equal(k.length,1);assert.ok(k[0].includes(':d7:'),k[0]);
-  await db.query('UPDATE "Subscription" SET "expiresAt"="expiresAt"-interval \'3 days\' WHERE "businessId"=$1',[businessId]);await unread();
-  k=await keys();assert.equal(k.length,2);assert.ok(!/:d\d:/.test(k[1]),'3-day key keeps old format');
-  await db.query('UPDATE "Subscription" SET "expiresAt"="expiresAt"-interval \'1 day 12 hours\' WHERE "businessId"=$1',[businessId]);await unread();await unread();
-  k=await keys();assert.equal(k.length,3);assert.ok(k[2].includes(':d1:'));
+  await setEnd(5*DAY);assert.equal((await unread()).status,200);
+  let k=await keys();assert.equal(k.length,0,'not yet 3 days before');
+  await setEnd(2*DAY);await unread();await unread();
+  k=await keys();assert.equal(k.length,1);assert.ok(k[0].startsWith('renewal:'),k[0]);
 
   // Expiry: cron moves ACTIVE -> PAST_DUE, then EXPIRED after 7 days; the owner gets one "ended" notice.
   await setEnd(-3600000);
@@ -101,7 +99,7 @@ require('pg').types.setTypeParser(1114,value=>new Date(value.replace(' ','T')+'Z
   // Trial ends straight to EXPIRED.
   await setEnd(-60000,'TRIALING');await expireSubscriptions(process.env.DIRECT_URL);assert.equal((await sub()).status,'EXPIRED');
 
-  console.log('PASS: payment validation/access, period continue/upgrade, void, audit, pages, filters, export, 7/3/1 reminders, ended notice, cron PAST_DUE/EXPIRED, trial expiry.');
+  console.log('PASS: payment validation/access, period continue/upgrade, void, audit, pages, filters, export, 3-day reminder, ended notice, cron PAST_DUE/EXPIRED, trial expiry.');
  }finally{
   // Payments survive business deletion by design, so the QA rows go first.
   await db.query('DELETE FROM "SubscriptionPayment" WHERE "businessId"=$1',[businessId]);

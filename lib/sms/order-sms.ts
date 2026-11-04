@@ -4,6 +4,7 @@ import { createPrismaClient } from "@/lib/prisma";
 import { runInBackground } from "@/lib/push/web-push";
 import { isAllowedSmsPhone, normalizePhone } from "@/lib/security/phone";
 import { readUsagePeriod } from "@/lib/subscription/limits";
+import { deliverNoticeChannels, notifyOwners } from "@/lib/subscription/notices";
 import { planAllows } from "@/lib/subscription/plan-state";
 import { PLAN_LIMITS } from "@/lib/subscription/plans";
 import { sendSms } from "./index";
@@ -62,7 +63,11 @@ const live = () => process.env.ORDER_SMS_LIVE === "1";
 type Reserved = { id: string; phone: string; message: string; source: "PLAN" | "PACK"; businessId: string };
 
 // ადგილის დაჯავშნა ბიზნესის ჩაკეტილი სტრიქონის ქვეშ: ჯერ გეგმის SMS, მერე ნაყიდი პაკეტი.
-async function reserve(prisma: PrismaClient, businessId: string, orderId: string): Promise<Reserved | null> {
+// დარჩენილი SMS-ის ამ რაოდენობაზე მფლობელები გაფრთხილებას იღებენ.
+const SMS_LOW_THRESHOLD = 20;
+
+// notice: ამ SMS-ით ნაშთი 20-ს ან 0-ს ჩამოსცდა და მფლობელებს შეტყობინება შეექმნათ.
+async function reserve(prisma: PrismaClient, businessId: string, orderId: string): Promise<{ reserved: Reserved; notice: boolean } | null> {
     return prisma.$transaction(async tx => {
         await tx.$queryRaw`SELECT id FROM "Business" WHERE id = ${businessId} FOR UPDATE`;
         const [usage, business, order] = await Promise.all([
@@ -89,7 +94,22 @@ async function reserve(prisma: PrismaClient, businessId: string, orderId: string
             data: { businessId, orderId, fulfillmentCycle: order.fulfillmentCycle, phone, source },
             select: { id: true },
         });
-        return { id: row.id, phone, source, businessId, message: shippedMessage(business.name) };
+        // დარჩა 20 ან ამოიწურა: მფლობელებს შეტყობინება (თითოჯერ თითო პერიოდში და თითო ახალ პაკეტზე).
+        const left = Math.max(usage.planIncluded - usage.planUsed - (source === "PLAN" ? 1 : 0), 0) + usage.balance - (source === "PACK" ? 1 : 0);
+        let notice = false;
+        if (left <= SMS_LOW_THRESHOLD) {
+            const period = await readUsagePeriod(tx, businessId);
+            notice = await notifyOwners(tx, {
+                businessId, kind: "SMS_LOW",
+                key: `sms-${left === 0 ? "empty" : "low"}:${businessId}:${period.start.toISOString()}:${usage.packsBought}`,
+                title: left === 0 ? "SMS ამოიწურა" : `დარჩა ${left} SMS`,
+                body: left === 0
+                    ? "მომხმარებლებს შეკვეთის გაგზავნის SMS აღარ ეგზავნებათ. შეიძინე SMS პაკეტი ბიზნესის პარამეტრებიდან."
+                    : "SMS მალე ამოიწურება. რომ მომხმარებლებს შეტყობინებები არ შეუწყდეს, შეიძინე SMS პაკეტი.",
+                actionLabel: "ბიზნესის პარამეტრები", actionUrl: "/dashboard/business-settings",
+            }) > 0;
+        }
+        return { reserved: { id: row.id, phone, source, businessId, message: shippedMessage(business.name) }, notice };
     });
 }
 
@@ -111,13 +131,17 @@ export async function sendShippedSms(businessId: string, orderIds: readonly stri
     if (!orderIds.length) return;
     const prisma = createPrismaClient();
     try {
+        let notice = false;
         for (const orderId of orderIds) {
-            const reserved = await reserve(prisma, businessId, orderId).catch(error => {
+            const result = await reserve(prisma, businessId, orderId).catch(error => {
                 console.error("Order SMS reserve failed", error instanceof Error ? error.name : "UnknownError");
                 return null;
             });
-            if (reserved) await deliver(prisma, reserved);
+            if (!result) continue;
+            notice ||= result.notice;
+            await deliver(prisma, result.reserved);
         }
+        if (notice) await deliverNoticeChannels(prisma, businessId).catch(() => console.error("SMS notice failed"));
     } finally {
         await prisma.$disconnect();
     }
