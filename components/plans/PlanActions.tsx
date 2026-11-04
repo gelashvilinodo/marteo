@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import type { PlanChangeQuote } from "@/lib/subscription/plan-change";
-import { PLAN_ADJECTIVES, type PaidTier } from "@/lib/subscription/plans";
+import { PLAN_ADJECTIVES, PLAN_LIMITS, type PaidTier } from "@/lib/subscription/plans";
 import { formatDay } from "./billing-format";
 
 async function send(body: Record<string, unknown>) {
@@ -31,7 +31,7 @@ function useAction(onDone: (message: string) => void) {
             setError(cause instanceof Error ? cause.message : "გეგმა ვერ შეიცვალა.");
         } finally { setBusy(false); }
     };
-    return { open, setOpen: (value: boolean) => { setError(""); setOpen(value); }, busy, error, run };
+    return { open, setOpen: (value: boolean) => { setError(""); setOpen(value); }, busy, error, run, fail: setError };
 }
 
 function Notice({ text }: { text: string }) {
@@ -69,19 +69,75 @@ export function CancelPlanButton({ canceled, expiresAt }: { canceled: boolean; e
     </div>;
 }
 
+type Member = { id: string; name: string; isYou: boolean };
+export type DowngradeTeam = { mode: string; coOwners: Member[]; staff: Member[] };
+
+// ლიმიტს გადაცილებული ჯგუფი: მფლობელი ნიშნავს, ვინ დარჩეს (თავიდან უძველესი წევრები და თავად).
+function initialKeep(team: DowngradeTeam, tier: PaidTier) {
+    const limits = PLAN_LIMITS[tier];
+    const pick = (group: Member[], limit: number) => {
+        const you = group.filter(member => member.isYou);
+        return [...you, ...group.filter(member => !member.isYou)].slice(0, limit).map(member => member.id);
+    };
+    return new Set([...pick(team.coOwners, limits.coOwners), ...pick(team.staff, limits.staff)]);
+}
+
+function MemberPicker({ title, group, limit, keep, toggle }: { title: string; group: Member[]; limit: number; keep: Set<string>; toggle: (id: string) => void }) {
+    if (group.length <= limit) return null;
+    const chosen = group.filter(member => keep.has(member.id)).length;
+    if (limit === 0) return <span className="mt-3 block rounded-xl bg-warning/10 p-3 text-text-primary">{title}: ახალ გეგმაში არ შედის, ამიტომ {group.length} წევრი გაიყინება. გეგმის აწევისას დაბრუნდებიან.</span>;
+    return <fieldset className="mt-3 rounded-xl border border-border p-3">
+        <legend className="px-1 text-sm font-medium text-text-primary">{title}: დარჩება {limit}, მონიშნულია {chosen}</legend>
+        <span className="block text-xs">დანარჩენები გაიყინება (არ წაიშლება) და გეგმის აწევისას დაბრუნდებიან.</span>
+        <span className="mt-2 flex flex-col gap-1.5">
+            {group.map(member => <label key={member.id} className="flex cursor-pointer items-center gap-2 text-text-primary">
+                <input type="checkbox" checked={keep.has(member.id)} disabled={member.isYou || (!keep.has(member.id) && chosen >= limit)}
+                    onChange={() => toggle(member.id)} className="h-4 w-4 accent-[var(--marteo-accent)]" />
+                {member.name}{member.isYou ? " (შენ)" : ""}
+            </label>)}
+        </span>
+    </fieldset>;
+}
+
 // დაბალ გეგმაზე გადასვლა: გადახდა არ სჭირდება, ნაშთი ახალი გეგმის დღეებად იქცევა.
-export function DowngradeButton({ tier, quote, className, children }: { tier: PaidTier; quote: PlanChangeQuote | null; className: string; children: ReactNode }) {
+// ლიმიტს გადაცილებული გუნდიდან მფლობელი ირჩევს, ვინ დარჩეს; „ორივე“ მიმართულებიდან Business-ზე —
+// იმპორტს ან წარმოებას.
+export function DowngradeButton({ tier, quote, team, className, children }: { tier: PaidTier; quote: PlanChangeQuote | null; team: DowngradeTeam; className: string; children: ReactNode }) {
     const router = useRouter();
     const action = useAction(() => { router.push("/dashboard/billing"); router.refresh(); });
+    const [keep, setKeep] = useState(() => initialKeep(team, tier));
+    const askMode = team.mode === "HYBRID" && tier === "BUSINESS";
+    const [mode, setMode] = useState<"IMPORT" | "MANUFACTURING" | "">("");
+    const limits = PLAN_LIMITS[tier];
+    const toggle = (id: string) => setKeep(current => {
+        const next = new Set(current);
+        if (next.has(id)) next.delete(id); else next.add(id);
+        return next;
+    });
+    const confirm = () => {
+        if (askMode && !mode) { action.fail("აირჩიე მიმართულება: იმპორტი ან წარმოება."); return; }
+        void action.run({ action: "downgrade", plan: tier, keep: [...keep], ...(askMode ? { mode } : {}) });
+    };
     return <>
-        <button type="button" onClick={() => action.setOpen(true)} className={className}>{children}</button>
+        <button type="button" onClick={() => { setKeep(initialKeep(team, tier)); action.setOpen(true); }} className={className}>{children}</button>
         <ConfirmDialog open={action.open} title={`გადასვლა ${PLAN_ADJECTIVES[tier]} გეგმაზე`} confirmLabel="გადასვლა" busy={action.busy} error={action.error}
-            onConfirm={() => void action.run({ action: "downgrade", plan: tier })} onClose={() => action.setOpen(false)}>
+            onConfirm={confirm} onClose={() => action.setOpen(false)}>
             <span className="block">ახალი გეგმა დღესვე ჩაირთვება და დამატებით არაფერს გადაიხდი.</span>
             {quote && <span className="mt-2 block">
                 დაუხარჯავი ნაშთი <b className="font-medium text-text-primary">{quote.credit.toFixed(2)} ₾</b> ახალ გეგმაზე {quote.days} დღეს ფარავს:
                 {" "}გეგმა იმოქმედებს <b className="font-medium text-text-primary">{formatDay(quote.expiresAt)}</b>-მდე.
             </span>}
+            {askMode && <fieldset className="mt-3 rounded-xl border border-border p-3">
+                <legend className="px-1 text-sm font-medium text-text-primary">რომელი მიმართულება დარჩეს?</legend>
+                <span className="block text-xs">ბიზნეს გეგმაში იმპორტი და წარმოება ერთად არ შედის. მეორე მიმართულების მონაცემები არ წაიშლება.</span>
+                <span className="mt-2 flex gap-4">
+                    {([["IMPORT", "იმპორტი"], ["MANUFACTURING", "წარმოება"]] as const).map(([value, label]) => <label key={value} className="flex cursor-pointer items-center gap-2 text-text-primary">
+                        <input type="radio" name="downgrade-mode" checked={mode === value} onChange={() => setMode(value)} className="h-4 w-4 accent-[var(--marteo-accent)]" />{label}
+                    </label>)}
+                </span>
+            </fieldset>}
+            <MemberPicker title="თანამფლობელები" group={team.coOwners} limit={limits.coOwners} keep={keep} toggle={toggle} />
+            <MemberPicker title="თანამშრომლები" group={team.staff} limit={limits.staff} keep={keep} toggle={toggle} />
             <span className="mt-2 block">ფუნქციები, რომლებიც ახალ გეგმაში არ შედის, დაიკეტება. მონაცემები არ წაიშლება.</span>
         </ConfirmDialog>
     </>;

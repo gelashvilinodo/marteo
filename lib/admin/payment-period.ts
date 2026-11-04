@@ -34,12 +34,12 @@ function addMonths(day: string, months: number) {
 }
 
 /**
- * A running period continues from its end: a trial of any plan, or a paid plan renewed on the same plan.
- * A plan change starts today, so an upgrade takes effect at once.
+ * A paid plan renewed on the same plan continues from its end. A plan change or a purchase during
+ * the trial starts today: the rest of the trial is dropped, as on the checkout page.
  */
 export function paymentPeriod(current: Current, plan: PaidPlan, months: number, now = new Date()) {
     const running = current?.expiresAt && current.expiresAt > now
-        && (current.status === "TRIALING" || (current.status === "ACTIVE" && current.plan === plan));
+        && current.status === "ACTIVE" && current.plan === plan;
     const start = running ? current!.expiresAt! : now;
     const end = endOfTbilisiDay(addMonths(toTbilisiDay(start), months));
     return { start, end, continues: Boolean(running) };

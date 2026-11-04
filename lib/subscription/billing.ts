@@ -2,6 +2,7 @@ import "server-only";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { getAiQuota } from "@/lib/ai/ai-usage";
 import { getSmsUsage, type SmsUsage } from "@/lib/sms/order-sms";
+import { readUsagePeriod } from "./limits";
 import { planStateFrom, type PlanState } from "./plan-state";
 import { discountedPrice, PLAN_LIMITS, PLAN_PRICES, type PaidTier } from "./plans";
 
@@ -34,6 +35,8 @@ export type BillingPayment = { id: string; plan: string; amount: string; paidAt:
 
 export type BillingOverview = {
     plan: PlanState;
+    // ლიმიტების მიმდინარე თვიური პერიოდი (გეგმის ვადა შეიძლება უფრო გრძელი იყოს).
+    period: { start: string; end: string | null };
     usage: {
         orders: { used: number; limit: number | null };
         ai: { used: number; limit: number };
@@ -54,7 +57,8 @@ export async function getBillingOverview(db: Db, userId: string, businessId: str
     });
     const plan = planStateFrom(row, now);
     const limits = plan.tier ? PLAN_LIMITS[plan.tier] : null;
-    const periodStart = row?.currentPeriodStart ?? row?.startedAt ?? now;
+    const period = await readUsagePeriod(db, businessId, now);
+    const periodStart = period.start;
     const [orders, ai, owners, staff, payments, prices, sms] = await Promise.all([
         db.order.count({ where: { businessId, imported: false, createdAt: { gte: periodStart } } }),
         getAiQuota(db, businessId, now),
@@ -71,6 +75,7 @@ export async function getBillingOverview(db: Db, userId: string, businessId: str
     ]);
     return {
         plan,
+        period: { start: period.start.toISOString(), end: period.end?.toISOString() ?? null },
         usage: {
             orders: { used: orders, limit: limits ? limits.ordersPerPeriod : 0 },
             ai: { used: ai.used, limit: ai.limit },

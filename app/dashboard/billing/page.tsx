@@ -19,7 +19,7 @@ export default async function BillingPage() {
     if (!user) redirect("/login");
     const prisma = createPrismaClient();
     try {
-        const { plan, usage, payments, prices } = await getBillingOverview(prisma, user.id, membership.businessId);
+        const { plan, period, usage, payments, prices } = await getBillingOverview(prisma, user.id, membership.businessId);
         const paid = plan.tier && isPaidTier(plan.tier) ? plan.tier : null;
         const monthly = paid ? prices[paid] : null;
         return (
@@ -118,7 +118,7 @@ export default async function BillingPage() {
                             <UsageMeter icon="solar:users-group-rounded-linear" label="თანამშრომლები" used={usage.team.staff} limit={usage.team.staffLimit} />
                         </div>
                         {usage.sms.balance > 0 && <p className="mt-3 text-sm text-text-secondary">ნაყიდი SMS: <b className="font-semibold text-text-primary">{usage.sms.balance}</b>{usage.sms.allowed ? "" : " (მიმდინარე გეგმაში SMS არ შედის, ნაშთი ინახება)"}</p>}
-                        {plan.periodStart && plan.expiresAt && <p className="mt-3 text-xs text-text-secondary">პერიოდი: {formatDay(plan.periodStart)} — {formatDay(plan.expiresAt)}. შეკვეთების და AI-ის ლიმიტი ახალ პერიოდში თავიდან იწყება.</p>}
+                        {!plan.locked && period.end && <p className="mt-3 text-xs text-text-secondary">პერიოდი: {formatDay(period.start)} — {formatDay(period.end)}. შეკვეთების და AI-ის ლიმიტი ახალ პერიოდში თავიდან იწყება.</p>}
                     </section>
 
                     <section aria-labelledby="payments" className="rounded-2xl border border-border bg-surface p-5">

@@ -11,7 +11,7 @@ import PlanComparison from "@/components/plans/PlanComparison";
 import { pricingFaq } from "@/components/plans/pricing-faq";
 import { daysLeft, planTitle } from "@/components/plans/billing-format";
 import { priceForBusiness } from "@/lib/subscription/billing";
-import { quoteForBusiness } from "@/lib/subscription/manage";
+import { quoteForBusiness, readDowngradeContext } from "@/lib/subscription/manage";
 import type { PlanChangeQuote } from "@/lib/subscription/plan-change";
 import { DowngradeButton } from "@/components/plans/PlanActions";
 import { PLAN_FINE_PRINT } from "@/lib/subscription/plan-catalog";
@@ -32,6 +32,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
     try {
         const prices = await priceForBusiness(prisma, user.id, membership.businessId);
         // მოქმედი ფასიანი გეგმიდან: იაფზე გადასვლა აქვე ხდება, ძვირზე — გადახდის გვერდზე სხვაობით.
+        const team = current ? await readDowngradeContext(prisma, membership.businessId, user.id) : null;
         const quotes = current ? Object.fromEntries(await Promise.all(PAID_TIERS.map(async tier =>
             [tier, (await quoteForBusiness(prisma, user.id, membership.businessId, tier)).quote] as const))) as Record<PaidTier, PlanChangeQuote> : null;
         const discounted = Object.values(prices).some(price => price.discounted);
@@ -62,7 +63,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
                         return <div className="space-y-2">
                             {price.discounted && <p className="text-sm text-success">ამ ბიზნესზე: <b className="font-semibold">{price.price} ₾</b> <span className="text-text-secondary line-through">{price.full} ₾</span></p>}
                             {quote?.kind === "downgrade"
-                                ? <DowngradeButton tier={card.tier} quote={quote} className={buttonClass}>გადასვლა {PLAN_ONTO[card.tier]}</DowngradeButton>
+                                ? <DowngradeButton tier={card.tier} quote={quote} team={team!} className={buttonClass}>გადასვლა {PLAN_ONTO[card.tier]}</DowngradeButton>
                                 : <Link href={`/dashboard/plans/checkout?plan=${card.tier.toLowerCase()}`} className={buttonClass}>
                                     {quote?.kind === "upgrade" ? `გადასვლა ${PLAN_ONTO[card.tier]}` : `აირჩიე ${PLAN_LABELS[card.tier]}`}<Icon icon="solar:arrow-right-linear" className="h-4 w-4" aria-hidden="true" />
                                 </Link>}

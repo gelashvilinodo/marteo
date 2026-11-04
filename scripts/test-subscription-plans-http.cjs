@@ -182,13 +182,44 @@ const DAY=86400000,at=days=>new Date(Date.now()+days*DAY).toISOString();
   assert.equal(await code(owner,'/api/business/sms','PATCH',{enabled:true}),'PLAN_FEATURE');
   console.log('ok SMS on shipping: plan SMS, packs, switch, plan rules');
 
-  console.log('PASS: subscription plan gating (trial, start, business, pro, past due, trial ended, no plan), mode limit, admin change, onboarding, plan changes, usage limits, SMS.');
+  // Limits restart every month of a longer paid term (e.g. 3 months recorded at once).
+  await db.query('UPDATE "Subscription" SET plan=\'PRO\',status=\'ACTIVE\',"currentPeriodStart"=$2,"expiresAt"=$3 WHERE "businessId"=$1',[businessId,at(-45),at(45)]);
+  await db.query('DELETE FROM "AiUsage" WHERE "businessId"=$1',[businessId]);
+  await usage('CHAT',3,-20);await usage('CHAT',2,-5);
+  q=await quota();assert.equal(q.used,2,'only this month of the term counts');
+  // An admin-recorded payment for a new plan starts a new period today.
+  const pay=await call(admin,`/api/admin/businesses/${businessId}/payments`,'POST',{plan:'BUSINESS',amount:'39',method:'CASH',months:1,paidAt:new Date().toISOString().slice(0,10)});
+  assert.equal(pay.status,200,JSON.stringify(await pay.clone().json()));
+  const paid=(await db.query('SELECT plan,"currentPeriodStart" FROM "Subscription" WHERE "businessId"=$1',[businessId])).rows[0];
+  assert.equal(paid.plan,'BUSINESS');assert.ok(Date.now()-paid.currentPeriodStart<120000,'period starts today');
+  console.log('ok monthly periods and admin payment period');
+
+  // Downgrade: the owner picks who stays and which direction remains.
+  const staffIds=[];
+  for(let i=0;i<6;i++){
+   const id=`${tag}-staff${i}`;staffIds.push(id);userIds.push(id);
+   await db.query('INSERT INTO "User" (id,email,phone,password,status,"updatedAt") VALUES ($1,$2,$3,\'x\',\'ACTIVE\',now())',[id,id+'@example.invalid','+000'+id]);
+   await db.query('INSERT INTO "BusinessMembership" (id,"userId","businessId",role,permissions,"createdAt","updatedAt") VALUES ($1,$2,$3,\'MEMBER\',ARRAY[\'ORDERS\']::"BusinessPermission"[],$4,now())',[id+'-m',id,businessId,at(-10+i)]);
+  }
+  await period('PRO');await db.query('UPDATE "Business" SET mode=\'HYBRID\' WHERE id=$1',[businessId]);
+  const down=body=>act({action:'downgrade',plan:'BUSINESS',...body});
+  r=await down({mode:'MANUFACTURING'});assert.equal(r.status,422,'must choose who stays');
+  const keep=staffIds.slice(1).map(id=>id+'-m'); // freeze the earliest-added one on purpose
+  r=await down({keep});assert.equal(r.status,422,'must choose the direction');
+  r=await down({keep,mode:'MANUFACTURING'});assert.equal(r.status,200,r.data.message);
+  const statuses=Object.fromEntries((await db.query('SELECT id,status::text FROM "BusinessMembership" WHERE id=ANY($1::text[])',[staffIds.map(id=>id+'-m')])).rows.map(row=>[row.id,row.status]));
+  assert.equal(statuses[staffIds[0]+'-m'],'FROZEN');assert.ok(keep.every(id=>statuses[id]==='ACTIVE'),'chosen members stay active');
+  assert.equal((await db.query('SELECT mode::text FROM "Business" WHERE id=$1',[businessId])).rows[0].mode,'MANUFACTURING');
+  console.log('ok downgrade with member and direction choice');
+
+  console.log('PASS: subscription plan gating (trial, start, business, pro, past due, trial ended, no plan), mode limit, admin change, onboarding, plan changes, usage limits, SMS, periods, downgrade choices.');
  }finally{
   const owned=(await db.query('SELECT "businessId" FROM "BusinessMembership" WHERE "userId"=ANY($1::text[])',[userIds])).rows.map(r=>r.businessId);
   await db.query('DELETE FROM "AdminAuditLog" WHERE "targetId"=ANY($1::text[]) AND "createdAt">=$2',[owned,startedAt.toISOString()]);
   await db.query('DELETE FROM "SecurityRateBucket" WHERE identity=ANY($1::text[])',[userIds]).catch(()=>{});
   if(sessionIds.length)await db.query('DELETE FROM "Session" WHERE id=ANY($1::text[])',[sessionIds]);
   if(owned.length)await db.query('DELETE FROM "AiUsage" WHERE "businessId"=ANY($1::text[])',[owned]);
+  if(owned.length)await db.query('DELETE FROM "SubscriptionPayment" WHERE "businessId"=ANY($1::text[])',[owned]);
   if(owned.length)await db.query('DELETE FROM "Business" WHERE id=ANY($1::text[])',[owned]);
   await db.query('DELETE FROM "User" WHERE id=ANY($1::text[])',[userIds]);
   const left=(await db.query('SELECT (SELECT count(*) FROM "Business" WHERE id=ANY($1::text[]))+(SELECT count(*) FROM "User" WHERE id=ANY($2::text[])) AS n',[owned,userIds])).rows[0].n;

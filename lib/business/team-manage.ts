@@ -66,7 +66,8 @@ function pushNotices(notices: Notice[]) {
 
 // გეგმის ლიმიტის მიღმა დარჩენილი წევრები იყინება: ბოლოს დამატებული პირველი.
 // ადგილის გათავისუფლებისას ჯერ ყველაზე ადრე დამატებული იღვიძებს.
-// დამფუძნებელი (პირველი მფლობელი) არასოდეს იყინება.
+// დამფუძნებელი (პირველი მფლობელი) არასოდეს იყინება. აქტიური წევრები გაყინულებზე წინ დგანან,
+// ასე რომ გეგმის დაწევისას მფლობელის არჩევანი (ვინ დარჩეს) აქ არ იცვლება.
 export async function enforceTeamLimits(tx: Tx, businessId: string) {
     const limits = TEAM_LIMITS[await readPlan(tx, businessId, new Date())];
     const members = await tx.businessMembership.findMany({
@@ -74,9 +75,10 @@ export async function enforceTeamLimits(tx: Tx, businessId: string) {
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         select: { id: true, role: true, status: true },
     });
+    const activeFirst = <T extends { status: string }>(list: T[]) => [...list.filter(member => member.status === "ACTIVE"), ...list.filter(member => member.status !== "ACTIVE")];
     const owners = members.filter(member => member.role === "OWNER");
-    const coOwners = owners.slice(1);
-    const staff = members.filter(member => member.role !== "OWNER");
+    const coOwners = activeFirst(owners.slice(1));
+    const staff = activeFirst(members.filter(member => member.role !== "OWNER"));
     const wanted = new Map<string, "ACTIVE" | "FROZEN">();
     if (owners[0]) wanted.set(owners[0].id, "ACTIVE");
     coOwners.forEach((member, index) => wanted.set(member.id, index < limits.coOwners ? "ACTIVE" : "FROZEN"));

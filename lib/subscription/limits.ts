@@ -2,6 +2,7 @@ import "server-only";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { featureMessage } from "./plan-access";
 import { LOCK_MESSAGES, planAllows, planStateFrom, type PlanState } from "./plan-state";
+import { currentMonthlyPeriod } from "./period";
 import { FEATURE_MIN_TIER, PLAN_LIMITS, type PaidTier, type PlanFeature } from "./plans";
 
 type Db = PrismaClient | Prisma.TransactionClient;
@@ -29,12 +30,14 @@ export class PlanLimitError extends Error {
 
 export const usagePeriodSelect = { plan: true, status: true, expiresAt: true, currentPeriodStart: true, cancelAtPeriodEnd: true, startedAt: true } as const;
 
-// მიმდინარე პერიოდი ლიმიტებისთვის: გადახდის თარიღიდან (საცდელში — საცდელის დასაწყისიდან).
+// მიმდინარე პერიოდი ლიმიტებისთვის: გადახდის თარიღიდან ყოველთვიურად (საცდელი ერთი პერიოდია).
 export async function readUsagePeriod(db: Db, businessId: string, now = new Date()) {
     const row = await db.subscription.findUnique({ where: { businessId }, select: usagePeriodSelect });
     const plan = planStateFrom(row, now);
-    const start = row?.currentPeriodStart ?? row?.startedAt ?? now;
-    return { plan, start, end: row?.expiresAt ?? null };
+    const anchor = row?.currentPeriodStart ?? row?.startedAt ?? now;
+    if (plan.tier === "TRIAL" || !row) return { plan, start: anchor, end: row?.expiresAt ?? null };
+    const { start, end } = currentMonthlyPeriod(anchor, row.expiresAt, now);
+    return { plan, start, end };
 }
 
 export function requireFeature(plan: PlanState, feature: PlanFeature) {

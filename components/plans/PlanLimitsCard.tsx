@@ -5,8 +5,8 @@ import { formatDay, planTitle } from "./billing-format";
 import UsageMeter from "./UsageMeter";
 
 // ბიზნესის პარამეტრებში: გეგმა და ლიმიტების ხაზოვანი მრიცხველები. დეტალები „პაკეტი და გადახდებშია“.
-export default function PlanLimitsCard({ overview }: { overview: Pick<BillingOverview, "plan" | "usage"> }) {
-    const { plan, usage } = overview;
+export default function PlanLimitsCard({ overview }: { overview: Pick<BillingOverview, "plan" | "usage" | "period"> }) {
+    const { plan, usage, period } = overview;
     return <section aria-labelledby="plan-limits" className="min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
@@ -14,7 +14,7 @@ export default function PlanLimitsCard({ overview }: { overview: Pick<BillingOve
                     <Icon icon="solar:crown-linear" className="size-5 shrink-0 text-accent" aria-hidden="true" />{planTitle(plan)}
                 </h2>
                 <p className="mt-1 text-sm text-text-secondary">
-                    {plan.locked ? "ბიზნესი მხოლოდ ნახვის რეჟიმშია." : plan.expiresAt ? `ლიმიტები ${formatDay(plan.expiresAt)}-მდე.` : "ლიმიტები მიმდინარე პერიოდში."}
+                    {plan.locked ? "ბიზნესი მხოლოდ ნახვის რეჟიმშია." : period.end ? `ლიმიტები განახლდება: ${formatDay(period.end)}.` : "ლიმიტები მიმდინარე პერიოდში."}
                 </p>
             </div>
             <Link href="/dashboard/billing" className="inline-flex min-h-10 items-center gap-1.5 text-sm font-medium text-accent hover:underline">

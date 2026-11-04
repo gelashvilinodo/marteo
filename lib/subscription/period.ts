@@ -7,3 +7,17 @@ export function addBillingMonths(anchor: Date, months: number) {
     result.setUTCFullYear(year, month, Math.min(day, lastDay));
     return result;
 }
+
+// მიმდინარე თვიური პერიოდი ლიმიტებისთვის. რამდენიმე თვის გადახდისას (ადმინის ჩაწერილი 3/6/12 თვე)
+// ან ვადის გაგრძელებისას ათვლა ყოველ თვეს თავიდან იწყება, ოღონდ გეგმის ვადას არ სცდება.
+export function currentMonthlyPeriod(anchor: Date, expiresAt: Date | null, now = new Date()) {
+    let start = anchor;
+    for (let months = 1; months <= 240; months++) {
+        const next = addBillingMonths(anchor, months);
+        if (next > now || (expiresAt && next >= expiresAt)) break;
+        start = next;
+    }
+    const monthEnd = addBillingMonths(start, 1);
+    const end = expiresAt && expiresAt < monthEnd ? expiresAt : monthEnd;
+    return { start, end };
+}

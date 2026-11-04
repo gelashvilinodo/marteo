@@ -3,6 +3,7 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { AdminActionError } from "./actions";
 import { MAX_MONTHS, PAID_PLANS, PAYMENT_METHODS, paymentPeriod, toTbilisiDay, type PaidPlan, type PaymentMethod } from "./payment-period";
 import { enforceTeamLimits } from "@/lib/business/team-manage";
+import { applyPlanMode } from "@/lib/subscription/server";
 import { notifyPaymentConfirmed } from "@/lib/notifications/sync";
 
 const ID = /^[A-Za-z0-9_-]{1,64}$/;
@@ -95,12 +96,18 @@ export async function recordPayment(prisma: PrismaClient, adminId: string, busin
             },
             select: { id: true },
         });
+        // ახალი გეგმა (ან განახლება ვადის გასვლის შემდეგ) ლიმიტების ახალ პერიოდს იწყებს;
+        // იმავე გეგმის წინასწარი განახლება ათვლის თარიღს არ ცვლის.
         const after = await tx.subscription.upsert({
             where: { businessId: key },
-            create: { businessId: key, plan, status: "ACTIVE", expiresAt: period.end, startedAt: now },
-            update: { plan, status: "ACTIVE", expiresAt: period.end, canceledAt: null },
+            create: { businessId: key, plan, status: "ACTIVE", expiresAt: period.end, startedAt: now, currentPeriodStart: period.start },
+            update: {
+                plan, status: "ACTIVE", expiresAt: period.end, canceledAt: null, cancelAtPeriodEnd: false,
+                ...(period.continues ? {} : { currentPeriodStart: period.start }),
+            },
             select: { plan: true, status: true, expiresAt: true },
         });
+        await applyPlanMode(tx, key, plan);
         await tx.adminAuditLog.create({
             data: {
                 adminId, action: "payment", targetType: "BUSINESS", targetId: key,
