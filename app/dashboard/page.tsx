@@ -61,6 +61,7 @@ async function DashboardContent({
             firstName={user.firstName}
             businessId={membership.businessId}
             initialData={{ summary, lists, trend, expenses }}
+            showTour={!user.seenTours.includes("home")}
         />
     );
 }

@@ -85,6 +85,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
             <InventoryView
                 data={data}
                 movements={movements}
+                showTour={!user.seenTours.includes("inventory")}
             />
         );
     } finally {

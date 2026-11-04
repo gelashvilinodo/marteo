@@ -322,6 +322,7 @@ export default function FinancialMovements({
     return (
         <section
             id="orders-list"
+            data-tour="analytics-movements"
             aria-busy={pending}
             className="min-w-0 overflow-hidden rounded-2xl border border-border bg-surface scroll-mt-24"
         >

@@ -88,7 +88,7 @@ export default function ExpenseBreakdown({
     );
 
     return (
-        <section className="flex min-w-0 flex-col rounded-2xl border border-border bg-surface p-4 sm:p-5">
+        <section data-tour="analytics-expenses" className="flex min-w-0 flex-col rounded-2xl border border-border bg-surface p-4 sm:p-5">
             <h2 className="flex items-center gap-2 font-semibold text-text-primary">
                 <Icon
                     icon="solar:pie-chart-2-linear"

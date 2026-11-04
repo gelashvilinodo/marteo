@@ -6,7 +6,7 @@ import { getMaterialSnapshot } from "@/lib/material-purchases/snapshot";
 import MaterialPurchasesView from "@/components/dashboard/material-purchases/MaterialPurchasesView";
 export default async function MaterialPurchasesPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}) {
     await requireDashboardSection("/dashboard/material-purchases");
-    if(!await getCurrentUser())redirect('/login');
+    const user=await getCurrentUser();if(!user)redirect('/login');
     const m=await getCurrentBusiness();if(!m)redirect('/business/onboarding');
-    return <MaterialPurchasesView initialSnapshot={await getMaterialSnapshot(m.businessId,await searchParams)}/>;
+    return <MaterialPurchasesView initialSnapshot={await getMaterialSnapshot(m.businessId,await searchParams)} showTour={!user.seenTours.includes('material-purchases')}/>;
 }

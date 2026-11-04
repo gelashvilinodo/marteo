@@ -9,11 +9,13 @@ export default function AnalyticsPeriodForm({
     from,
     to,
     action,
+    titleAction,
 }: {
     period: OrdersPeriod;
     from: string;
     to: string;
     action?: ReactNode;
+    titleAction?: ReactNode;
 }) {
     return (
         <RoutePeriodFilter
@@ -23,6 +25,7 @@ export default function AnalyticsPeriodForm({
             from={from}
             to={to}
             action={action}
+            titleAction={titleAction}
         />
     );
 }

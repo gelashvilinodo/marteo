@@ -16,6 +16,7 @@ export default function RoutePeriodFilter({
     from,
     to,
     action,
+    titleAction,
 }: {
     route: "/dashboard/analytics" | "/dashboard/statistics";
     title: string;
@@ -23,6 +24,8 @@ export default function RoutePeriodFilter({
     from: string;
     to: string;
     action?: ReactNode;
+    // სათაურის გვერდით, მაგ. გვერდის გაცნობის ღილაკი.
+    titleAction?: ReactNode;
 }) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -31,9 +34,12 @@ export default function RoutePeriodFilter({
     return (
         <PeriodFilter
             heading={
-                <h1 className="text-2xl font-semibold text-text-primary">
-                    {title}
-                </h1>
+                <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold text-text-primary">
+                        {title}
+                    </h1>
+                    {titleAction}
+                </div>
             }
             action={action}
             value={period}

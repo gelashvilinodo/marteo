@@ -205,6 +205,7 @@ export default function ReceivePurchaseButton({
         <>
             <button
                 type="button"
+                data-tour="receive-purchase"
                 onClick={openDialog}
                 className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-success px-4 text-sm font-medium text-white transition hover:bg-success-hover sm:w-auto"
             >

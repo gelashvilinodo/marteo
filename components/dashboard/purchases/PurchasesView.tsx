@@ -15,11 +15,16 @@ import PaginationLink from "./PaginationLink";
 import Image from "next/image";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
+import GuidedTour from "@/components/tour/GuidedTour";
+import TourHelpButton from "@/components/tour/TourHelpButton";
+import { useTour } from "@/components/tour/useTour";
+import { purchasesTourSteps } from "./purchases-tour";
 function displayMoney(value: string) {
   const [integer, decimal] = value.split(".");
   return `${integer.replace(/\B(?=(\d{3})+(?!\d))/g, " ")}.${decimal} ₾`;
 }
-export default function PurchasesView({ initialSnapshot }: { initialSnapshot: PurchasesSnapshot }) {
+export default function PurchasesView({ initialSnapshot, showTour = false }: { initialSnapshot: PurchasesSnapshot; showTour?: boolean }) {
+  const tour = useTour("purchases", showTour);
   const canEditPurchases = useBusinessAccess().can("PURCHASES", "edit");
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [previous, setPrevious] = useState(initialSnapshot);
@@ -99,15 +104,19 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
 
   return (
     <main className="p-4 sm:p-6 lg:p-8">
+      <GuidedTour steps={purchasesTourSteps} open={tour.open} onClose={tour.close} />
       <div className="mx-auto max-w-7xl">
         <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <h1 className="text-2xl font-semibold text-text-primary">
-            შესყიდვები
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold text-text-primary">
+              შესყიდვები
+            </h1>
+            <TourHelpButton onClick={tour.start} />
+          </div>
 
           <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
             {canEditPurchases && (
-            <div className="order-1 min-w-0 sm:order-2">
+            <div data-tour="new-purchase" className="order-1 min-w-0 sm:order-2">
               <NewPurchasePanel
                 inventoryOptions={inventoryOptions}
                 attributeOptions={attributeOptions}
@@ -120,6 +129,7 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
 
         {!isArchive && <PurchasePlanSection inventoryOptions={inventoryOptions} />}
 
+        <div data-tour="purchases-filters">
         <PurchaseFiltersDisclosure
           key={`${query}|${from}|${to}|${filterError}`}
           defaultOpen={hasFilters || Boolean(filterError)}
@@ -219,6 +229,7 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
             )}
           </form>
         </PurchaseFiltersDisclosure>
+        </div>
 
         {error && <p role="alert" className="mt-4 text-sm text-danger">{error} <button type="button" className="underline" onClick={() => window.dispatchEvent(new Event(PURCHASES_CHANGED, { cancelable: true }))}>სიის განახლება</button></p>}
         <p className="mt-4 min-h-5 text-sm text-text-secondary">
@@ -235,6 +246,7 @@ export default function PurchasesView({ initialSnapshot }: { initialSnapshot: Pu
         {listLoading && <PurchasesListSkeleton />}
 
         <div
+          data-tour="purchases-list"
           aria-busy={listLoading}
           className={listLoading ? "hidden" : "mt-6 space-y-4"}
         >

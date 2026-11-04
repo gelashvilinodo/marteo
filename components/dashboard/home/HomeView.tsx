@@ -17,16 +17,35 @@ import {
 } from "./useHomeData";
 
 import ExpenseBreakdown from "@/components/dashboard/analytics/ExpenseBreakdown";
+import { useMemo } from "react";
+import GuidedTour from "@/components/tour/GuidedTour";
+import TourHelpButton from "@/components/tour/TourHelpButton";
+import { useTour } from "@/components/tour/useTour";
+import { useBusinessAccess } from "@/components/dashboard/business/BusinessAccessContext";
+import { useBusinessMode } from "@/components/dashboard/business/BusinessModeContext";
+import { homeTourSteps } from "./home-tour";
 
 export default function HomeView({
     firstName,
     businessId,
     initialData,
+    showTour = false,
 }: {
     firstName: string | null;
     businessId: string;
     initialData: HomeData;
+    showTour?: boolean;
 }) {
+    const tour = useTour("home", showTour);
+    const mode = useBusinessMode();
+    const { access, canOpen } = useBusinessAccess();
+    const tourSteps = useMemo(() => homeTourSteps(mode, canOpen, access.role === "OWNER"), [mode, canOpen, access.role]);
+    const heading = (
+        <div className="flex min-w-0 items-start gap-2">
+            <HomeHeader firstName={firstName} />
+            <TourHelpButton onClick={tour.start} />
+        </div>
+    );
     const {
         data,
         pending,
@@ -39,9 +58,10 @@ export default function HomeView({
 
     return (
         <main className="min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+            <GuidedTour steps={tourSteps} open={tour.open} onClose={tour.close} />
             {summary.isNewBusiness ? (
                 <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <HomeHeader firstName={firstName} />
+                    {heading}
 
                     <div className="min-w-0 [&>button]:w-full sm:[&>button]:w-auto">
                         <NewOrderButton />
@@ -49,7 +69,7 @@ export default function HomeView({
                 </div>
             ) : (
                 <PeriodFilter
-                    heading={<HomeHeader firstName={firstName} />}
+                    heading={heading}
                     action={<NewOrderButton />}
                     value={summary.period}
                     from={summary.from}

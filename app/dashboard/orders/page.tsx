@@ -22,7 +22,7 @@ export default async function OrdersPage({ searchParams }: {
     const client = createPgReader();
     try {
         const data = await getOrdersPgPage(client, membership.businessId, await searchParams);
-        return <OrdersView data={await hideCostsIfNeeded(data)} />;
+        return <OrdersView data={await hideCostsIfNeeded(data)} showTour={!user.seenTours.includes("orders")} />;
     } finally {
         await client.$disconnect();
     }

@@ -14,6 +14,10 @@ import LatestInventoryMovements, {
     type InventoryMovementEntry,
 } from "@/components/dashboard/inventory/LatestInventoryMovements";
 import StocktakeButton from "./stocktake/StocktakeButton";
+import GuidedTour from "@/components/tour/GuidedTour";
+import TourHelpButton from "@/components/tour/TourHelpButton";
+import { useTour } from "@/components/tour/useTour";
+import { inventoryTourSteps } from "./inventory-tour";
 import InventoryProductsSkeleton from "./InventoryProductsSkeleton";
 
 export type InventoryProduct = {
@@ -87,10 +91,13 @@ function formatQuantity(value: number) {
 export default function InventoryView({
     data,
     movements,
+    showTour = false,
 }: {
     data: InventoryPageData;
     movements: InventoryMovementEntry[];
+    showTour?: boolean;
 }) {
+    const tour = useTour("inventory", showTour);
     const router = useRouter();
     const [pending, startTransition] = useTransition();
     const productionChanged = useRef(false);
@@ -163,10 +170,12 @@ export default function InventoryView({
     return (
         <main className="min-w-0 p-4 sm:p-6 lg:p-8">
             <div className="mx-auto min-w-0 max-w-7xl">
-                <div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-2xl font-semibold text-text-primary">მარაგები</h1><StocktakeButton kind="products"/></div>
+                <GuidedTour steps={inventoryTourSteps} open={tour.open} onClose={tour.close} />
+                <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><h1 className="text-2xl font-semibold text-text-primary">მარაგები</h1><TourHelpButton onClick={tour.start} /></div><StocktakeButton kind="products"/></div>
 
                 <div
                     aria-label="მარაგის ფილტრები"
+                    data-tour="inventory-cards"
                     className="mt-6 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4"
                 >
                     {cards.map((card) => (
@@ -219,6 +228,7 @@ export default function InventoryView({
                 <div className="mt-6 grid min-w-0 grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
                     <section
                         id="inventory-products"
+                        data-tour="inventory-products"
                         aria-busy={pending}
                         className="min-w-0 scroll-mt-20 rounded-2xl border border-border bg-surface"
                     >
@@ -243,7 +253,7 @@ export default function InventoryView({
                             </span>
                         </div>
 
-                        <div className="px-3 pb-4 sm:px-4">
+                        <div data-tour="inventory-filters" className="px-3 pb-4 sm:px-4">
                             <InventoryFiltersDisclosure
                                 defaultOpen={false}
                                 hasFilters={hasFilters}
@@ -452,9 +462,9 @@ export default function InventoryView({
                     </section>
 
                     <div className="min-w-0 space-y-4">
-                        <InventoryChart data={data.chart} />
+                        <div data-tour="inventory-chart"><InventoryChart data={data.chart} /></div>
 
-                        <LatestInventoryMovements movements={movements} />
+                        <div data-tour="inventory-movements"><LatestInventoryMovements movements={movements} /></div>
                     </div>
                 </div>
             </div>

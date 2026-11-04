@@ -122,7 +122,7 @@ export default function PurchasePlanSection({ inventoryOptions }: { inventoryOpt
     }
 
     return (
-        <section id="purchase-plan" aria-labelledby="purchase-plan-title" className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-surface">
+        <section id="purchase-plan" data-tour="purchase-plan" aria-labelledby="purchase-plan-title" className="mt-6 scroll-mt-24 rounded-2xl border border-border bg-surface">
             <button
                 type="button"
                 onClick={() => setOpen((value) => !value)}

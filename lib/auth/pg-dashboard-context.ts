@@ -8,7 +8,7 @@ import { ACTIVE_BUSINESS_COOKIE } from "./active-business";
 
 type Row = {
     expiresAt: Date; status: string; id: string; email: string;
-    firstName: string | null; lastName: string | null; phone: string | null;
+    firstName: string | null; lastName: string | null; phone: string | null; seenTours: string[];
     businessMode: BusinessMode | null; businessId: string | null; businessName: string | null; logoUrl: string | null;
     role: string | null; permissions: string[] | null; readOnly: boolean | null; membershipStatus: string | null;
 };
@@ -24,7 +24,7 @@ export const getPgDashboardContext = cache(async () => {
     try {
         const [row] = await client.$queryRaw<Row[]>`
             SELECT s."expiresAt", u.status::text AS status, u.id, u.email,
-                u."firstName", u."lastName", u.phone,
+                u."firstName", u."lastName", u.phone, u."seenTours",
                 m."businessId", b.name AS "businessName", b."logoUrl", b.mode AS "businessMode",
                 m.role::text AS role, m.permissions::text[] AS permissions, m."readOnly", m.status::text AS "membershipStatus"
             FROM "Session" s JOIN "User" u ON u.id = s."userId"
@@ -44,7 +44,7 @@ export const getPgDashboardContext = cache(async () => {
         if (row.status !== "ACTIVE") return null;
         return {
             user: { id: row.id, email: row.email, firstName: row.firstName,
-                lastName: row.lastName, phone: row.phone, status: "ACTIVE" as const },
+                lastName: row.lastName, phone: row.phone, seenTours: row.seenTours, status: "ACTIVE" as const },
             membership: row.businessId && row.businessName !== null ? {
                 businessId: row.businessId,
                 access: { role: row.role ?? "MEMBER", permissions: row.permissions ?? [],

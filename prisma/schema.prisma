@@ -180,6 +180,7 @@ model User {
 
   emailVerifiedAt DateTime?
   phoneVerifiedAt DateTime?
+  seenTours       String[]  @default([])
 
   memberships            BusinessMembership[]
   invitedMemberships     BusinessMembership[]     @relation("MembershipInvitedBy")
@@ -1471,6 +1472,9 @@ model ProductionOutput {
   costShare       Decimal            @db.Decimal(5, 2)
   totalCost       Decimal            @db.Decimal(18, 2)
   salePrice       Decimal?           @db.Decimal(12, 2)
+  // ფასის წესი; null ნიშნავს, რომ არსებული პროდუქტის ფასი არ იცვლება.
+  pricingMethod   PricingMethod?
+  pricingValue    Decimal?           @db.Decimal(12, 2)
   production      Production         @relation(fields: [productionId], references: [id], onDelete: Cascade)
   inventoryItem   InventoryItem?     @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   stockLot        InventoryStockLot? @relation(fields: [stockLotId], references: [id], onDelete: Restrict)

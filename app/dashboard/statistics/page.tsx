@@ -25,7 +25,8 @@ export default async function StatisticsPage({
     searchParams: Promise<StatisticsSearchParams>;
 }) {
     await requireDashboardSection("/dashboard/statistics");
-    if (!(await getCurrentUser())) redirect("/login");
+    const user = await getCurrentUser();
+    if (!user) redirect("/login");
 
     const membership = await getCurrentBusiness();
 
@@ -128,6 +129,7 @@ export default async function StatisticsPage({
                         period={summary.period}
                         from={summary.from}
                         to={summary.to}
+                        showTour={!user.seenTours.includes("statistics")}
                     />
 
                     <p className="text-xs text-text-secondary">
@@ -141,7 +143,7 @@ export default async function StatisticsPage({
                     )}
                 </div>
 
-                <div className="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-4">
+                <div data-tour="statistics-cards" className="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-4">
                     {cards.map(card => (
                         <section key={card.title} className={panel}>
                             <div className="flex items-start gap-3">
@@ -179,7 +181,7 @@ export default async function StatisticsPage({
                 />
 
                 <div className="grid min-w-0 gap-4 lg:grid-cols-2">
-                    <section className={panel}>
+                    <section data-tour="statistics-top-products" className={panel}>
                         <h2 className="flex items-center gap-2 font-semibold text-text-primary">
                             <Icon
                                 icon="solar:box-linear"
@@ -247,7 +249,7 @@ export default async function StatisticsPage({
                         </div>
                     </section>
 
-                    <section className={panel}>
+                    <section data-tour="statistics-top-customers" className={panel}>
                         <h2 className="flex items-center gap-2 font-semibold text-text-primary">
                             <Icon
                                 icon="solar:users-group-rounded-linear"
@@ -324,7 +326,7 @@ export default async function StatisticsPage({
                     </section>
                 </div>
 
-                <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                <div data-tour="statistics-returns" className="grid min-w-0 gap-4 sm:grid-cols-2">
                     {[
                         {
                             title: "მიღებული დაბრუნებები",

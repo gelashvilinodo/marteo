@@ -17,6 +17,10 @@ import CustomerDeleteButton from "./CustomerDeleteButton";
 import CustomerDetails, { formatDate } from "./CustomerDetails";
 import { createPortal } from "react-dom";
 import CustomersListSkeleton from "./CustomersListSkeleton";
+import GuidedTour from "@/components/tour/GuidedTour";
+import TourHelpButton from "@/components/tour/TourHelpButton";
+import { useTour } from "@/components/tour/useTour";
+import { customersTourSteps } from "./customers-tour";
 
 const inputClass =
     "h-11 w-full min-w-0 rounded-xl border border-border " +
@@ -52,9 +56,12 @@ const filters = [
 
 export default function CustomersView({
     data: initialData,
+    showTour = false,
 }: {
     data: CustomersPageData;
+    showTour?: boolean;
 }) {
+    const tour = useTour("customers", showTour);
     const canEdit = useBusinessAccess().can("ORDERS", "edit");
     const router = useRouter();
     const [routePending, startTransition] = useTransition();
@@ -195,6 +202,7 @@ export default function CustomersView({
 
     return (
         <main className="min-w-0 p-4 sm:p-6 lg:p-8">
+            <GuidedTour steps={customersTourSteps} open={tour.open} onClose={tour.close} />
             <div className="mx-auto min-w-0 max-w-7xl space-y-5">
                 {refreshError && <p role="alert" className="text-sm text-danger">{refreshError} <button type="button" className="underline" disabled={pending} onClick={() => window.dispatchEvent(new Event(CUSTOMERS_CHANGED, { cancelable: true }))}>სიის განახლება</button></p>}
                 <CustomersPeriodSelect
@@ -203,13 +211,17 @@ export default function CustomersView({
                     to={data.to}
                     pending={pending}
                     heading={
-                        <h1 className="text-2xl font-semibold text-text-primary">
-                            მომხმარებლები
-                        </h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-2xl font-semibold text-text-primary">
+                                მომხმარებლები
+                            </h1>
+                            <TourHelpButton onClick={tour.start} />
+                        </div>
                     }
                     action={canEdit &&
                         <button
                             type="button"
+                            data-tour="new-customer"
                             onClick={() => setFormCustomer(null)}
                             className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-success px-4 text-sm font-semibold text-white"
                         >
@@ -223,7 +235,7 @@ export default function CustomersView({
                     onChange={values => navigate(values)}
                 />
 
-                <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                <div data-tour="customer-cards" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
                     {filters.map(([id, title, icon, tone], index) => (
                         <button
                             key={id}
@@ -281,6 +293,7 @@ export default function CustomersView({
                             </span>
                         </h2>
 
+                        <div data-tour="customer-filters">
                         <InventoryFiltersDisclosure
                             hasFilters={Boolean(
                                 data.query ||
@@ -375,6 +388,7 @@ export default function CustomersView({
                                 </button>
                             </form>
                         </InventoryFiltersDisclosure>
+                        </div>
 
                         <p className="mt-3 text-xs text-text-secondary">
                             შეკვეთების სტატისტიკა: {periodLabel}
@@ -389,6 +403,7 @@ export default function CustomersView({
                     <div className="flex flex-wrap items-center gap-2 border-t border-border p-3">
                         <button
                             type="button"
+                            data-tour="customer-select"
                             disabled={pending}
                             onClick={() => {
                                 setSelectionMode((current) => !current);
@@ -435,8 +450,7 @@ export default function CustomersView({
                     {pending ? (
                         <CustomersListSkeleton />
                     ) : (
-                        <>
-
+                        <div data-tour="customer-list">
                             <table className="w-full table-fixed text-left text-xs sm:text-sm">
                                 <thead className="sticky top-16 z-10 bg-background text-text-secondary">
                                     <tr>
@@ -551,7 +565,7 @@ export default function CustomersView({
                                     მომხმარებლები ვერ მოიძებნა.
                                 </p>
                             )}
-                        </>
+                        </div>
                     )}
 
                     <OrdersPagination

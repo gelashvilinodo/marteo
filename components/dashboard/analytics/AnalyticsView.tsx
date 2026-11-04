@@ -11,10 +11,15 @@ import FinancialTrend from "./FinancialTrend";
 import ExpenseBreakdown from "./ExpenseBreakdown";
 import MissingCostsButton from "@/components/dashboard/costs/MissingCostsButton";
 import NewExpenseButton from "./NewExpenseButton";
+import GuidedTour from "@/components/tour/GuidedTour";
+import TourHelpButton from "@/components/tour/TourHelpButton";
+import { useTour } from "@/components/tour/useTour";
+import { analyticsTourSteps } from "./analytics-tour";
 
 function displayDate(value: string) { return value.split("-").reverse().join("."); }
 
-export default function AnalyticsView({ initialSnapshot, businessId }: { initialSnapshot: AnalyticsSnapshot; businessId: string }) {
+export default function AnalyticsView({ initialSnapshot, businessId, showTour = false }: { initialSnapshot: AnalyticsSnapshot; businessId: string; showTour?: boolean }) {
+    const tour = useTour("analytics", showTour);
     const [snapshot, setSnapshot] = useState(initialSnapshot);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState("");
@@ -118,6 +123,7 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
 
     return (
         <main className="min-w-0 p-4 sm:p-6 lg:p-8">
+            <GuidedTour steps={analyticsTourSteps} open={tour.open} onClose={tour.close} />
             <div className="mx-auto min-w-0 max-w-7xl space-y-5">
                 <div className="space-y-3">
                     <AnalyticsPeriodForm
@@ -125,8 +131,9 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
                         period={data.period}
                         from={data.from}
                         to={data.to}
+                        titleAction={<TourHelpButton onClick={tour.start} />}
                         action={
-                            <div className="flex flex-wrap gap-2"><Link href={`/print/accountant?from=${data.from}&to=${data.to}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-surface px-3 text-sm"><Icon icon="solar:document-text-linear" className="h-5 w-5 text-accent"/>ბიზნესის ანგარიში</Link><NewExpenseButton businessId={businessId} /></div>
+                            <div className="flex flex-wrap gap-2"><Link data-tour="business-report" href={`/print/accountant?from=${data.from}&to=${data.to}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-surface px-3 text-sm"><Icon icon="solar:document-text-linear" className="h-5 w-5 text-accent"/>ბიზნესის ანგარიში</Link><div data-tour="add-expense"><NewExpenseButton businessId={businessId} /></div></div>
                         }
                     />
 
@@ -144,7 +151,7 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
 
                 {refreshing && <p role="status" className="text-sm text-text-secondary">ანალიტიკა ახლდება…</p>}
                 {error && <p role="alert" className="text-sm text-danger">{error} <button type="button" className="underline" onClick={() => window.dispatchEvent(new Event(ANALYTICS_CHANGED, { cancelable: true }))}>ხელახლა განახლება</button></p>}
-                <div aria-busy={refreshing} className="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-5">
+                <div data-tour="analytics-cards" aria-busy={refreshing} className="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-5">
                     {cards.map(card => (
                         <section
                             key={card.title}
@@ -246,7 +253,7 @@ export default function AnalyticsView({ initialSnapshot, businessId }: { initial
                     </section>
                 )}
 
-                <div className="grid min-w-0 gap-4 2xl:grid-cols-2">
+                <div data-tour="analytics-balances" className="grid min-w-0 gap-4 2xl:grid-cols-2">
                     <section className="@container min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">
                         <h2 className="flex items-center gap-2 font-semibold text-text-primary">
                             <Icon

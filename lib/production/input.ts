@@ -3,6 +3,29 @@ import { MaterialError, text, validDate } from '@/lib/material-purchases/input';
 export { MaterialError as ProductionError } from '@/lib/material-purchases/input';
 type Decimal=InstanceType<typeof Prisma.Decimal>;
 const optional=(v:unknown,max:number)=>text(v??'',max);
+export const PRICING_METHODS=['MANUAL','FIXED_PROFIT','MARKUP_PERCENT','MARGIN_PERCENT'] as const;
+export type ProductionPricingMethod=(typeof PRICING_METHODS)[number];
+// KEEP: მარაგიდან არჩეული პროდუქტის ფასი არ იცვლება (ბაზაში pricingMethod=null).
+function readPricing(o:Record<string,unknown>,inventoryItemId:string|null){
+    const raw=o.pricingMethod??'MANUAL';
+    if(raw==='KEEP'){if(!inventoryItemId)throw new MaterialError('ფასის შენარჩუნება მხოლოდ მარაგიდან არჩეულ პროდუქტზეა შესაძლებელი.');return {pricingMethod:null,pricingValue:null};}
+    if(!PRICING_METHODS.includes(raw as ProductionPricingMethod))throw new MaterialError('ფასის წესი არასწორია.');
+    const method=raw as ProductionPricingMethod,source=o.pricingValue??(method==='MANUAL'?o.salePrice:undefined);
+    if(method==='MANUAL'&&(source===''||source==null))return {pricingMethod:method,pricingValue:null};
+    const value=amount(source,method==='MANUAL'?'გასაყიდი ფასი':method==='FIXED_PROFIT'?'მოგება':method==='MARKUP_PERCENT'?'ფასნამატი':'მარჟა');
+    if(method==='MARGIN_PERCENT'&&value.gte(100))throw new MaterialError('მარჟა 100%-ზე ნაკლები უნდა იყოს.');
+    return {pricingMethod:method,pricingValue:value};
+}
+// იგივე ფორმულები, რაც იმპორტის შესყიდვებში; ფასი ერთეულის თვითღირებულებას ეყრდნობა.
+export function salePriceFor(method:ProductionPricingMethod|null,value:Decimal|null,unitCost:Decimal|null){
+    if(!method||!value)return null;
+    if(method==='MANUAL')return value;
+    if(!unitCost)return null;
+    const price=method==='FIXED_PROFIT'?unitCost.plus(value):method==='MARKUP_PERCENT'?unitCost.mul(value.div(100).plus(1)):unitCost.div(new Prisma.Decimal(1).minus(value.div(100)));
+    const rounded=price.toDecimalPlaces(2,Prisma.Decimal.ROUND_HALF_UP);
+    if(rounded.gte('10000000000'))throw new MaterialError('გასაყიდი ფასი ზედმეტად დიდია.');
+    return rounded;
+}
 export function amount(v:unknown,label:string,precision=2){
     const s=typeof v==='string'?v.trim().replace(',','.') : '';
     if(!new RegExp(precision===0?'^\\d{1,8}$':`^\\d{1,8}(\\.\\d{1,${precision}})?$`).test(s))throw new MaterialError(`${label}: მიუთითე სწორი არაუარყოფითი რიცხვი.`);
@@ -24,7 +47,7 @@ export function readProduction(raw:unknown){
         const rowKey=text(o.rowKey,100,true);if(!/^[\w-]{10,100}$/.test(rowKey))throw new MaterialError('პროდუქტის კოდი არასწორია.');
         const name=optional(o.name,200),category=optional(o.category,150),inventoryItemId=optional(o.inventoryItemId,100)||null;
         if(r.status==='COMPLETED'&&(!quantity||(!inventoryItemId&&(!name||!category))))throw new MaterialError('დასრულებისთვის მიუთითე პროდუქტის სახელი, კატეგორია და რაოდენობა.');
-        return {rowKey,inventoryItemId,name,category,brand:optional(o.brand,150),description:optional(o.description,3000),color:optional(o.color,150),size:optional(o.size,150),quantity,costShare:share,salePrice:o.salePrice===''||o.salePrice==null?null:amount(o.salePrice,'გასაყიდი ფასი')};
+        return {rowKey,inventoryItemId,name,category,brand:optional(o.brand,150),description:optional(o.description,3000),color:optional(o.color,150),size:optional(o.size,150),quantity,costShare:share,...readPricing(o,inventoryItemId)};
     });
     if(new Set(outputs.map(o=>o.rowKey)).size!==outputs.length)throw new MaterialError('პროდუქტის კოდი განმეორებულია.');
     if(r.status==='COMPLETED'&&(!outputs.length||!outputs.reduce((s,o)=>s.plus(o.costShare),new Prisma.Decimal(0)).equals(100)))throw new MaterialError('პროდუქტების ხარჯის წილები ჯამში 100% უნდა იყოს.');

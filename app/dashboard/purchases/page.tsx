@@ -6,7 +6,8 @@ import { getPurchasesSnapshot, type PurchasesSearchParams } from "@/lib/purchase
 import PurchasesView from "@/components/dashboard/purchases/PurchasesView";
 export default async function PurchasesPage({ searchParams }: { searchParams: Promise<PurchasesSearchParams> }) {
     await requireDashboardSection("/dashboard/purchases");
-  if (!(await getCurrentUser())) redirect("/login");
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
   const membership = await getCurrentBusiness();
   if (!membership) redirect("/business/onboarding");
   const snapshot = await getPurchasesSnapshot(membership.businessId, await searchParams);
@@ -19,5 +20,5 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
     if (snapshot.currentPage > 1) params.set("page", String(snapshot.currentPage));
     redirect(`/dashboard/purchases${params.size ? `?${params}` : ""}`);
   }
-  return <PurchasesView initialSnapshot={snapshot} />;
+  return <PurchasesView initialSnapshot={snapshot} showTour={!user.seenTours.includes("purchases")} />;
 }

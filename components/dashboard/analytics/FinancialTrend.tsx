@@ -126,6 +126,7 @@ export default function FinancialTrend({
 
     return (
         <section
+            data-tour="analytics-trend"
             aria-busy={trend.loading}
             className="min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5"
         >

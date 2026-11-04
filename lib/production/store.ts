@@ -1,7 +1,7 @@
 import 'server-only';
 import { createHash } from 'node:crypto';
 import { Prisma } from '@/generated/prisma/client';
-import { materialCost, outputCosts, ProductionError, type ProductionInput } from './input';
+import { materialCost, outputCosts, salePriceFor, ProductionError, type ProductionInput } from './input';
 import { createInventorySkuAllocator } from '@/lib/purchases/create-inventory-sku';
 import { lockBusiness } from '@/lib/material-purchases/store';
 type Tx=Prisma.TransactionClient;
@@ -58,18 +58,21 @@ export async function saveProduction(tx:Tx,businessId:string,userId:string,input
     for(let index=0;index<input.outputs.length;index++){
         const output=input.outputs[index],previous=old?.outputs.find(o=>o.rowKey===output.rowKey),inventory=output.inventoryItemId?inventories.find(i=>i.id===output.inventoryItemId):null;
         if(previous?.stockLotId&&input.status==='COMPLETED'&&previous.inventoryItemId!==output.inventoryItemId)throw new ProductionError('დასრულებული წარმოების პროდუქტის ჩანაცვლებისთვის დაამატე ახალი პროდუქტი და ამოიღე ძველი.',409);
-        const metadata=inventory?{name:inventory.product.name,category:inventory.product.category,brand:inventory.product.brand,description:inventory.product.description,color:inventory.color,size:inventory.size,imageUrl:inventory.imageUrl,salePrice:inventory.salePrice}:{name:output.name,category:output.category||null,brand:output.brand||null,description:output.description||null,color:output.color||null,size:output.size||null,imageUrl:images.get(output.rowKey)??(removedImages.has(output.rowKey)?null:previous?.imageUrl??null),salePrice:output.salePrice};
+        const metadata=inventory?{name:inventory.product.name,category:inventory.product.category,brand:inventory.product.brand,description:inventory.product.description,color:inventory.color,size:inventory.size,imageUrl:inventory.imageUrl,salePrice:inventory.salePrice}:{name:output.name,category:output.category||null,brand:output.brand||null,description:output.description||null,color:output.color||null,size:output.size||null,imageUrl:images.get(output.rowKey)??(removedImages.has(output.rowKey)?null:previous?.imageUrl??null),salePrice:null as Prisma.Decimal|null};
         let inventoryId=output.inventoryItemId,stockLotId:string|null=null;
         const cost=costs[index]??new Prisma.Decimal(0);
+        // ფასის ბაზა: დასრულებისას მარაგში დარჩენილი ერთეულის თვითღირებულება, თორემ წარმოების ერთეულის ღირებულება.
+        let unitCost=output.quantity?cost.div(output.quantity):null;
         if(input.status==='COMPLETED'){
             let existingLot=stockLots.find(l=>l.id===previous?.stockLotId);
-            if(!inventoryId){const product=await tx.product.create({data:{businessId,name:metadata.name,brand:metadata.brand,category:metadata.category,description:metadata.description}});const created=await tx.inventoryItem.create({data:{businessId,productId:product.id,sku:nextSku(),color:metadata.color,size:metadata.size,imageUrl:metadata.imageUrl,salePrice:metadata.salePrice,pricingMethod:metadata.salePrice===null?null:'MANUAL',pricingValue:metadata.salePrice}});inventoryId=created.id;}
+            if(!inventoryId){const product=await tx.product.create({data:{businessId,name:metadata.name,brand:metadata.brand,category:metadata.category,description:metadata.description}});const created=await tx.inventoryItem.create({data:{businessId,productId:product.id,sku:nextSku(),color:metadata.color,size:metadata.size,imageUrl:metadata.imageUrl}});inventoryId=created.id;}
             if(existingLot){
                 if(existingLot.remainingDefectiveQuantity||existingLot.writtenOffDefectiveQuantity)throw new ProductionError('ამ პროდუქტის დეფექტური ნაშთი ცალკე შეიცვალა. ჯერ შეათანხმე მარაგის მონაცემები.',409);
                 const consumedQuantity=previous!.quantity-existingLot.remainingQuantity,consumedCost=previous!.totalCost.minus(existingLot.remainingCost??0),remainingQuantity=output.quantity-consumedQuantity,remainingCost=cost.minus(consumedCost);
                 if(consumedCost.lt(0)||remainingQuantity<0||remainingCost.lt(0)||(remainingQuantity===0&&!remainingCost.isZero()))throw new ProductionError('ცვლილება უკვე გამოყენებული პროდუქტის რაოდენობას ან ღირებულებას ეწინააღმდეგება. გაყიდული ნაწილის ისტორიული თვითღირებულება უცვლელი რჩება.',409);
                 const delta=remainingQuantity-existingLot.remainingQuantity;
                 await tx.inventoryStockLot.update({where:{id:existingLot.id},data:{quantity:output.quantity,remainingQuantity,remainingCost,unitCost:remainingQuantity?remainingCost.div(remainingQuantity).toDecimalPlaces(2):0}});
+                if(remainingQuantity)unitCost=remainingCost.div(remainingQuantity);
                 await tx.inventoryItem.update({where:{id:inventoryId},data:{currentStock:{increment:delta}}});stockLotId=existingLot.id;
                 if(delta)await tx.inventoryMovement.create({data:{inventoryItemId:inventoryId,type:delta>0?'ADJUSTMENT_IN':'ADJUSTMENT_OUT',quantity:Math.abs(delta),note:`წარმოების #${production.number} შესწორება`}});
             }else{
@@ -78,7 +81,9 @@ export async function saveProduction(tx:Tx,businessId:string,userId:string,input
                 await tx.inventoryMovement.create({data:{inventoryItemId:inventoryId,type:'ADJUSTMENT_IN',quantity:output.quantity,note:`წარმოება #${production.number}`}});
             }
         }
-        const data={...metadata,productionId:production.id,rowKey:output.rowKey,active:true,inventoryItemId:inventoryId,stockLotId,quantity:output.quantity,costShare:output.costShare,totalCost:cost};
+        const price=salePriceFor(output.pricingMethod,output.pricingValue,unitCost);
+        if(input.status==='COMPLETED'&&inventoryId&&output.pricingMethod)await tx.inventoryItem.update({where:{id:inventoryId},data:{salePrice:price,pricingMethod:price===null?null:output.pricingMethod,pricingValue:price===null?null:output.pricingValue}});
+        const data={...metadata,salePrice:output.pricingMethod?price:inventory?.salePrice??null,pricingMethod:output.pricingMethod,pricingValue:output.pricingValue,productionId:production.id,rowKey:output.rowKey,active:true,inventoryItemId:inventoryId,stockLotId,quantity:output.quantity,costShare:output.costShare,totalCost:cost};
         await tx.productionOutput.upsert({where:{productionId_rowKey:{productionId:production.id,rowKey:output.rowKey}},create:data,update:data});
     }
     await tx.productionRequest.create({data:{businessId,requestId:input.requestId,inputHash:fingerprint,productionId:production.id}});

@@ -34,7 +34,7 @@ export default async function CustomersPage({
             await searchParams,
         );
 
-        return <CustomersView data={data} />;
+        return <CustomersView data={data} showTour={!user.seenTours.includes("customers")} />;
     } finally {
         await prisma.$disconnect();
     }

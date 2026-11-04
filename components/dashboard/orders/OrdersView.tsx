@@ -28,6 +28,10 @@ const OrderReturnButton = dynamic(() => import("./OrderReturnButton"), { ssr: fa
 const OrderDeleteButton = dynamic(() => import("./OrderDeleteButton"), { ssr: false });
 import { OrderDetailsBody, Status, number, payments, recipient, date } from "./OrderDetailsBody";
 import { orderCards as cards } from "./order-labels";
+import GuidedTour from "@/components/tour/GuidedTour";
+import TourHelpButton from "@/components/tour/TourHelpButton";
+import { useTour } from "@/components/tour/useTour";
+import { ordersTourSteps } from "./orders-tour";
 
 
 
@@ -35,12 +39,16 @@ export default function OrdersView({
     data: initialData,
     basePath = "/dashboard/orders",
     listEndpoint = "/api/orders/list",
+    showTour = false,
 }: {
     data: OrdersPageData;
     basePath?: string;
     listEndpoint?: string;
+    // პირველ შესვლაზე გაცნობითი ტური თავისით ირთვება.
+    showTour?: boolean;
 }) {
     const [data, setData] = useState(initialData);
+    const tour = useTour("orders", showTour);
 
     useEffect(() => {
         setData(initialData);
@@ -390,15 +398,19 @@ export default function OrdersView({
     }
 
     return <main className="min-w-0 p-4 sm:p-6 lg:p-8">
+        <GuidedTour steps={ordersTourSteps} open={tour.open} onClose={tour.close} />
         <div className="mx-auto min-w-0 max-w-7xl">
             <PeriodFilter
                 heading={
-                    <h1 className="text-2xl font-semibold text-text-primary">
-                        შეკვეთები
-                    </h1>
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-2xl font-semibold text-text-primary">
+                            შეკვეთები
+                        </h1>
+                        <TourHelpButton onClick={tour.start} />
+                    </div>
                 }
                 action={
-                    <NewOrderButton className="!bg-success !text-white hover:!bg-success-hover" />
+                    <NewOrderButton tourId="new-order" className="!bg-success !text-white hover:!bg-success-hover" />
                 }
                 value={data.period}
                 from={data.from}
@@ -418,7 +430,7 @@ export default function OrdersView({
             />
             <p className="mt-3 text-xs text-text-secondary">პერიოდი: {data.from.split("-").reverse().join(".")} - {data.to.split("-").reverse().join(".")}</p>
             {data.periodError && <p role="alert" className="mt-2 text-sm text-danger">{data.periodError}</p>}
-            <div className="mt-6 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
+            <div data-tour="order-status-cards" className="mt-6 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
                 {cards.map((card) => (
                     <button
                         key={card.id}
@@ -483,7 +495,7 @@ export default function OrdersView({
                     </button>
                 ))}
             </div>
-            <section id="orders-list" aria-busy={pending} className="mt-6 min-w-0 scroll-mt-20 rounded-2xl border border-border bg-surface">
+            <section id="orders-list" data-tour="orders-list" aria-busy={pending} className="mt-6 min-w-0 scroll-mt-20 rounded-2xl border border-border bg-surface">
                 <div className="flex items-center gap-2 p-4">
                     <Icon icon="solar:clipboard-list-linear" className="h-5 w-5 text-accent" />
                     <h2 className="font-semibold text-text-primary">შეკვეთების სია</h2>
@@ -495,7 +507,7 @@ export default function OrdersView({
                     data.filter !== "all" ||
                     data.payment !== "all" ||
                     data.sort !== "date-desc") && (
-                        <div className="px-3 pb-4 sm:px-4">
+                        <div data-tour="orders-filters" className="px-3 pb-4 sm:px-4">
                             <InventoryFiltersDisclosure defaultOpen={false} hasFilters={Boolean(data.query || data.filter !== "all" || data.payment !== "all" || data.sort !== "date-desc")}>
                                 <form key={`${data.query}-${data.filter}-${data.payment}-${data.sort}`} className="grid min-w-0 grid-cols-1 gap-3 border-t border-border p-3 sm:grid-cols-2 xl:grid-cols-4 sm:p-4" onSubmit={event => {
                                     event.preventDefault();
@@ -539,6 +551,7 @@ export default function OrdersView({
                         {data.orders.length > 0 && (
                             <button
                                 type="button"
+                                data-tour="orders-select"
                                 disabled={pending}
                                 onClick={() => {
                                     setSelectionMode(current => !current);

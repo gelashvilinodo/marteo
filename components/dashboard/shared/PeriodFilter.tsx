@@ -113,7 +113,7 @@ export default function PeriodFilter<T extends string>({
                     </div>
                 )}
 
-                <div className="relative order-2 w-full min-w-0 @min-[32rem]:order-1 @min-[32rem]:w-56 @min-[32rem]:shrink-0">
+                <div data-tour="period-filter" className="relative order-2 w-full min-w-0 @min-[32rem]:order-1 @min-[32rem]:w-56 @min-[32rem]:shrink-0">
                     <label htmlFor={selectId} className="sr-only">
                         პერიოდის არჩევა
                     </label>

@@ -8,9 +8,10 @@ import AnalyticsView from "@/components/dashboard/analytics/AnalyticsView";
 
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<AnalyticsSearchParams> }) {
     await requireDashboardSection("/dashboard/analytics");
-    if (!(await getCurrentUser())) redirect("/login");
+    const user = await getCurrentUser();
+    if (!user) redirect("/login");
     const membership = await getCurrentBusiness();
     if (!membership) redirect("/business/onboarding");
     const snapshot = await getAnalyticsSnapshot(membership.businessId, await searchParams);
-    return <AnalyticsView key={`${snapshot.data.period}-${snapshot.data.from}-${snapshot.data.to}`} initialSnapshot={snapshot} businessId={membership.businessId} />;
+    return <AnalyticsView key={`${snapshot.data.period}-${snapshot.data.from}-${snapshot.data.to}`} initialSnapshot={snapshot} businessId={membership.businessId} showTour={!user.seenTours.includes("analytics")} />;
 }

@@ -92,7 +92,7 @@ export default function StatisticsCharts({
 
     return (
         <div className="grid min-w-0 gap-4 lg:grid-cols-2">
-            <section className={panel}>
+            <section data-tour="statistics-orders-chart" className={panel}>
                 <h2 className="flex items-center gap-2 font-semibold text-text-primary">
                     <Icon
                         icon="solar:chart-2-linear"
@@ -220,7 +220,7 @@ export default function StatisticsCharts({
                 </p>
             </section>
 
-            <section className={`${panel} flex flex-col`}>
+            <section data-tour="statistics-payments-chart" className={`${panel} flex flex-col`}>
                 <h2 className="flex items-center gap-2 font-semibold text-text-primary">
                     <Icon
                         icon="solar:pie-chart-2-linear"
