@@ -36,6 +36,8 @@ export type BillingOverview = {
     usage: {
         orders: { used: number; limit: number | null };
         ai: { used: number; limit: number };
+        // null: ულიმიტო; shared: საცდელში ფაილი კითხვებში ითვლება.
+        aiFiles: { used: number; limit: number | null; shared: boolean };
         team: { coOwners: number; staff: number; coOwnersLimit: number; staffLimit: number };
     };
     payments: BillingPayment[];
@@ -69,6 +71,7 @@ export async function getBillingOverview(db: Db, userId: string, businessId: str
         usage: {
             orders: { used: orders, limit: limits ? limits.ordersPerPeriod : 0 },
             ai: { used: ai.used, limit: ai.limit },
+            aiFiles: ai.files,
             team: { coOwners: Math.max(0, owners - 1), staff, coOwnersLimit: limits?.coOwners ?? 0, staffLimit: limits?.staff ?? 0 },
         },
         payments: payments.map(payment => ({

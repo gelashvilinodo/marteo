@@ -1,6 +1,7 @@
 import { apiAccessDenied } from "@/lib/business/access";
 import { saveOrder } from "@/lib/orders/save-order";
 import { OrderValidationError } from "@/lib/orders/validate-order";
+import { PlanLimitError } from "@/lib/subscription/limits";
 
 function errorResponse(message: string, status: number) {
     return Response.json(
@@ -73,6 +74,7 @@ export async function POST(request: Request) {
             },
         );
     } catch (error: unknown) {
+        if (error instanceof PlanLimitError) return error.toResponse();
         if (error instanceof OrderValidationError) {
             return errorResponse(
                 error.message,

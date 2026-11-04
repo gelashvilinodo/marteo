@@ -11,6 +11,8 @@ import TeamSection from "@/components/dashboard/business/TeamSection";
 import DangerZone from "@/components/dashboard/business/DangerZone";
 import { getTeamSnapshot } from "@/lib/business/team-server";
 import { enforceTeamLimitsFor } from "@/lib/business/team-manage";
+import { getBillingOverview } from "@/lib/subscription/billing";
+import PlanLimitsCard from "@/components/plans/PlanLimitsCard";
 
 export default async function BusinessSettingsPage() {
     await requireDashboardSection("/dashboard/business-settings");
@@ -61,7 +63,10 @@ export default async function BusinessSettingsPage() {
         if (!business) redirect("/business/onboarding");
 
         await enforceTeamLimitsFor(prisma, [business.id]);
-        const team = await getTeamSnapshot(prisma, business.id, user.id);
+        const [team, overview] = await Promise.all([
+            getTeamSnapshot(prisma, business.id, user.id),
+            getBillingOverview(prisma, user.id, business.id),
+        ]);
 
         return (
             <main className="min-w-0 p-4 sm:p-6 lg:p-8">
@@ -76,6 +81,7 @@ export default async function BusinessSettingsPage() {
                             updatedAt: business.updatedAt.toISOString(),
                         }}
                     />
+                    <PlanLimitsCard overview={overview} />
                     <TeamSection initialTeam={team} businessMode={business.mode} />
                     <AppearanceSettings />
 

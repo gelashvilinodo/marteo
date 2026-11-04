@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { AI_MONTHLY_LIMITS, AI_QUOTA_WARN_SHARE, formatResetDay, type AiQuota } from "@/lib/ai/ai-quota";
+import { PLAN_ADJECTIVES } from "@/lib/subscription/plans";
 
 // The provider sends the fresh numbers after every answer; without detail the ring reloads them.
 export const AI_QUOTA_EVENT = "marteo-ai-quota";
@@ -12,8 +13,7 @@ export function announceAiQuota(quota?: AiQuota) {
     window.dispatchEvent(new CustomEvent(AI_QUOTA_EVENT, { detail: quota }));
 }
 
-// დროებით პარამეტრებზე მიდის; პაკეტების გვერდის აწყობისას სწორ ადგილზე გადავიყვანთ.
-const UPGRADE_HREF = "/dashboard/business-settings";
+const UPGRADE_HREF = "/dashboard/plans";
 
 // Start-ს AI არ აქვს, ამიტომ ყველა დაბალი გეგმიდან შემდეგი ნაბიჯი Business-ია.
 const NEXT_PLAN: Record<string, "BUSINESS" | "PRO"> = { FREE: "BUSINESS", TRIAL: "BUSINESS", START: "BUSINESS", BUSINESS: "PRO" };
@@ -93,16 +93,25 @@ export default function AiQuotaRing() {
                         <p className="text-sm text-text-primary">მართეო AI ამ ბიზნესისთვის გამორთულია. დეტალებისთვის მოგვწერე დახმარების ჩათში.</p>
                     ) : (
                         <>
-                            <p className="text-sm text-text-primary">ამ თვეში დარჩა: <b className="font-semibold">{left}</b> / {quota.limit}</p>
-                            <p className="mt-0.5 text-xs text-text-secondary">განახლდება {formatResetDay(quota.resetsAt)} · კითხვა და ფაილიდან შესყიდვა თითო ერთეულად ითვლება.</p>
+                            <p className="text-sm text-text-primary">{quota.trial ? "საცდელში დარჩა" : "ამ პერიოდში დარჩა"}: <b className="font-semibold">{left}</b> / {quota.limit}</p>
+                            <p className="mt-0.5 text-xs text-text-secondary">
+                                {quota.trial
+                                    ? "საცდელში ფაილიდან შესყიდვაც ერთ კითხვად ითვლება."
+                                    : quota.resetsAt ? `განახლდება ${formatResetDay(quota.resetsAt)}.` : "კითხვების ლიმიტი."}
+                            </p>
+                            {!quota.files.shared && quota.files.limit !== 0 && (
+                                <p className="mt-2 border-t border-border pt-2 text-xs text-text-primary">
+                                    შესყიდვა ფაილიდან: <b className="font-semibold">{quota.files.limit === null ? `${quota.files.used} · ულიმიტო` : `${Math.max(quota.files.limit - quota.files.used, 0)} / ${quota.files.limit}`}</b>{quota.files.limit === null ? "" : " დარჩა"}
+                                </p>
+                            )}
                             {upgrade && (
                                 <div className="mt-3 rounded-lg bg-accent/10 p-2.5">
                                     <p className="text-xs text-text-primary">
-                                        {empty ? "ლიმიტი ამოიწურა." : "ლიმიტი იწურება."} {upgrade.plan} პაკეტზე თვეში {upgrade.limit} კითხვაა.
+                                        {empty ? "ლიმიტი ამოიწურა." : "ლიმიტი იწურება."} {PLAN_ADJECTIVES[upgrade.plan]} გეგმაში თვეში {upgrade.limit} კითხვაა.
                                     </p>
                                     <Link href={UPGRADE_HREF} prefetch={false} onClick={() => setOpen(false)}
                                         className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-white transition hover:bg-accent-hover">
-                                        <Icon icon="solar:crown-linear" className="h-4 w-4" aria-hidden="true" /> პაკეტის ამაღლება
+                                        <Icon icon="solar:crown-linear" className="h-4 w-4" aria-hidden="true" /> გეგმის ამაღლება
                                     </Link>
                                 </div>
                             )}

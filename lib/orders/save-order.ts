@@ -16,6 +16,7 @@ import { paymentState } from "./order-rules";
 import { resolveOrderCustomer, createOrderItems } from "./order-stock";
 
 import { createPublicOrderToken } from "./create-public-order-token";
+import { assertOrderAllowed } from "@/lib/subscription/limits";
 
 function fail(message: string, status = 400): never {
     throw new OrderValidationError(message, status);
@@ -90,6 +91,9 @@ export async function saveOrder(raw: unknown) {
                         alreadySaved: true,
                     };
                 }
+
+                // გეგმა: მხოლოდ ნახვის რეჟიმი, მარაგი/ფოტო გეგმაში და შეკვეთების პერიოდის ლიმიტი.
+                await assertOrderAllowed(tx, businessId, data.items);
 
                 const inventoryIds = [
                     ...new Set(

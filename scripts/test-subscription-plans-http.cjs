@@ -120,12 +120,43 @@ const DAY=86400000,at=days=>new Date(Date.now()+days*DAY).toISOString();
   assert.ok(history>=4,'owner changes are in the admin history');
   console.log('ok downgrade, upgrade quote, cancel, resume, expiry');
 
-  console.log('PASS: subscription plan gating (trial, start, business, pro, past due, trial ended, no plan), mode limit, admin change, onboarding, plan changes.');
+  // Order limit: Start has 200 orders per period; deleted orders still count, imported ones do not.
+  const order=(items=[{source:'MANUAL',condition:'GOOD',quantity:1,name:'QA',unitPrice:'10'}])=>call(owner,'/api/orders','POST',{clientRequestId:randomUUID(),status:'PROCESSING',paymentMethod:'CASH',recipientPhone:'599123456',courierFee:'0',paidAmount:'0',items});
+  const orderCode=async res=>res.status===402?(await res.json()).code:res.status;
+  await period('START');
+  await db.query('UPDATE "Business" SET "nextOrderNumber"=1000 WHERE id=$1',[businessId]);
+  await db.query(`INSERT INTO "Order" (id,"businessId",number,"recipientPhone","deletedAt","updatedAt") SELECT $1||g,$2,g,'599000000',CASE WHEN g=1 THEN now() END,now() FROM generate_series(1,199) g`,[tag+'-o',businessId]);
+  await db.query(`INSERT INTO "Order" (id,"businessId",number,"recipientPhone",imported,"updatedAt") SELECT $1||g,$2,g+500,'599000000',true,now() FROM generate_series(1,20) g`,[tag+'-i',businessId]);
+  assert.equal(await orderCode(await order([{source:'INVENTORY',condition:'GOOD',quantity:1,name:'QA',unitPrice:'10',inventoryItemId:'missing'}])),'PLAN_FEATURE','stock in an order needs Business');
+  const last=await order();assert.equal(last.status,201,JSON.stringify(await last.clone().json()));
+  assert.equal(await orderCode(await order()),'PLAN_LIMIT','201st order of the period is refused');
+  await period('BUSINESS');
+  assert.equal((await order()).status,201,'Business has 500');
+  console.log('ok order limit, stock and photo rules');
+
+  // AI: Business has 100 questions and 5 purchase files per period, counted separately.
+  const usage=(kind,n,days=-1)=>db.query(`INSERT INTO "AiUsage" (id,"businessId","businessName",kind,model,counted,"createdAt") SELECT gen_random_uuid()::text,$1,'QA',$2,'qa',true,$4 FROM generate_series(1,$3)`,[businessId,kind,n,at(days)]);
+  const quota=async()=>(await (await call(owner,'/api/ai/quota')).json()).quota;
+  await usage('CHAT',30,-20); // before this period: not counted
+  await usage('CHAT',100);await usage('PURCHASE_DRAFT',5);
+  let q=await quota();assert.deepEqual([q.used,q.limit,q.files.used,q.files.limit,q.files.shared],[100,100,5,5,false]);
+  const draft=await call(owner,'/api/ai/purchase-draft','POST',{target:'products',fileName:'qa.csv',rows:[{row:1,cells:['name','qty','price']},{row:2,cells:['Bag','2','10']}],photoCount:0});
+  const draftData=await draft.json();assert.equal(draft.status,429);assert.match(draftData.message,/ფაილიდან შესყიდვის ლიმიტი ამოიწურა \(5\/5\)/);
+  const chat=await call(owner,'/api/ai/chat','POST',{messages:[{role:'user',text:'test'}]});
+  assert.equal(chat.status,429);
+  // Pro: 500 questions, unlimited files. Trial: 20 in total, files included.
+  await period('PRO');q=await quota();assert.deepEqual([q.limit,q.files.limit],[500,null]);
+  await db.query('UPDATE "Subscription" SET plan=\'FREE\',status=\'TRIALING\' WHERE "businessId"=$1',[businessId]);
+  q=await quota();assert.deepEqual([q.used,q.limit,q.files.shared,q.trial],[105,20,true,true]);
+  console.log('ok AI questions and files per plan period');
+
+  console.log('PASS: subscription plan gating (trial, start, business, pro, past due, trial ended, no plan), mode limit, admin change, onboarding, plan changes, usage limits.');
  }finally{
   const owned=(await db.query('SELECT "businessId" FROM "BusinessMembership" WHERE "userId"=ANY($1::text[])',[userIds])).rows.map(r=>r.businessId);
   await db.query('DELETE FROM "AdminAuditLog" WHERE "targetId"=ANY($1::text[]) AND "createdAt">=$2',[owned,startedAt.toISOString()]);
   await db.query('DELETE FROM "SecurityRateBucket" WHERE identity=ANY($1::text[])',[userIds]).catch(()=>{});
   if(sessionIds.length)await db.query('DELETE FROM "Session" WHERE id=ANY($1::text[])',[sessionIds]);
+  if(owned.length)await db.query('DELETE FROM "AiUsage" WHERE "businessId"=ANY($1::text[])',[owned]);
   if(owned.length)await db.query('DELETE FROM "Business" WHERE id=ANY($1::text[])',[owned]);
   await db.query('DELETE FROM "User" WHERE id=ANY($1::text[])',[userIds]);
   const left=(await db.query('SELECT (SELECT count(*) FROM "Business" WHERE id=ANY($1::text[]))+(SELECT count(*) FROM "User" WHERE id=ANY($2::text[])) AS n',[owned,userIds])).rows[0].n;

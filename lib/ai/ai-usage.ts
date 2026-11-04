@@ -2,9 +2,10 @@ import "server-only";
 
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
-import { readPlanState } from "@/lib/subscription/server";
+import { readUsagePeriod } from "@/lib/subscription/limits";
+import { PLAN_LIMITS } from "@/lib/subscription/plans";
 import { AiChatError, MARTEO_AI_MODEL } from "./anthropic-client";
-import { AI_MONTHLY_LIMITS, formatResetDay, nextTbilisiMonthStart, tbilisiMonthStart, type AiQuota } from "./ai-quota";
+import { AI_MONTHLY_LIMITS, formatResetDay, type AiQuota } from "./ai-quota";
 
 type Db = PrismaClient | Prisma.TransactionClient;
 type Kind = "CHAT" | "PURCHASE_DRAFT" | "TITLE";
@@ -45,44 +46,68 @@ export class AiUsageMeter {
     }
 }
 
-function monthLimit(plan: string, override: number | null) {
+function questionLimit(plan: string, override: number | null) {
     return override ?? AI_MONTHLY_LIMITS[plan as keyof typeof AI_MONTHLY_LIMITS] ?? AI_MONTHLY_LIMITS.FREE;
 }
 
+// ლიმიტი გადახდის პერიოდზეა: ახალ პერიოდში (ახალი გადახდა ან გეგმის შეცვლა) ნულდება.
+// მხოლოდ მოქმედი გეგმა: დაბლოკილ ბიზნესს (ვადაგასული, გადაუხდელი) AI-ის ლიმიტი 0-ია.
 export async function getAiQuota(db: Db, businessId: string, now = new Date()): Promise<AiQuota> {
-    // მხოლოდ მოქმედი გეგმა: დაბლოკილ ბიზნესს (ვადაგასული, გადაუხდელი) AI-ის ლიმიტი 0-ია.
-    const [business, plan, used] = await Promise.all([
+    const [business, period] = await Promise.all([
         db.business.findUnique({ where: { id: businessId }, select: { aiDisabled: true, aiMonthlyLimit: true } }),
-        readPlanState(db, businessId, now).then(state => state.tier ?? "FREE"),
-        db.aiUsage.count({ where: { businessId, counted: true, createdAt: { gte: tbilisiMonthStart(now) } } }),
+        readUsagePeriod(db, businessId, now),
+    ]);
+    const plan = period.plan.tier ?? "FREE";
+    const limits = period.plan.tier ? PLAN_LIMITS[period.plan.tier] : null;
+    const shared = limits?.aiFilesAreQuestions ?? false;
+    const since = { gte: period.start };
+    const [chats, files] = await Promise.all([
+        db.aiUsage.count({ where: { businessId, counted: true, kind: "CHAT", createdAt: since } }),
+        db.aiUsage.count({ where: { businessId, counted: true, kind: "PURCHASE_DRAFT", createdAt: since } }),
     ]);
     return {
-        plan, used, disabled: business?.aiDisabled ?? false,
-        limit: monthLimit(plan, business?.aiMonthlyLimit ?? null),
+        plan, disabled: business?.aiDisabled ?? false,
+        used: shared ? chats + files : chats,
+        limit: questionLimit(plan, business?.aiMonthlyLimit ?? null),
         custom: business?.aiMonthlyLimit != null,
-        resetsAt: nextTbilisiMonthStart(now).toISOString(),
+        resetsAt: period.end?.toISOString() ?? null,
+        trial: plan === "TRIAL",
+        files: { used: files, limit: limits ? limits.aiFiles : 0, shared },
     };
 }
 
 export type AiUsageReservation = { id: string; kind: Kind; meter: AiUsageMeter; quota: AiQuota };
 
+function limitMessage(quota: AiQuota, files: boolean) {
+    const [used, limit] = files ? [quota.files.used, quota.files.limit ?? 0] : [quota.used, quota.limit];
+    const what = files ? "ფაილიდან შესყიდვის" : "AI-ის";
+    if (quota.trial) return `საცდელი პერიოდის ${limit} AI კითხვა ამოიწურა. მეტისთვის აირჩიე გეგმა.`;
+    const reset = quota.resetsAt ? ` ლიმიტი განახლდება ${formatResetDay(quota.resetsAt)}.` : "";
+    return `ამ პერიოდის ${what} ლიმიტი ამოიწურა (${used}/${limit}).${reset}`;
+}
+
 /**
- * Checks the switch and the monthly limit and books a slot before the model is called,
+ * Checks the switch and the plan's limit and books a slot before the model is called,
  * under a business row lock so parallel requests cannot pass the limit together.
+ * Questions and purchase files have separate limits, except in the trial where both share the questions.
  */
 export async function startAiUsage(prisma: PrismaClient, input: { businessId: string; businessName: string; userId: string | null; kind: Exclude<Kind, "TITLE"> }): Promise<AiUsageReservation> {
     return prisma.$transaction(async tx => {
         await tx.$queryRaw`SELECT id FROM "Business" WHERE id = ${input.businessId} FOR UPDATE`;
         const quota = await getAiQuota(tx, input.businessId);
         if (quota.disabled) throw new AiChatError("მართეო AI ამ ბიზნესისთვის გამორთულია. დაგვიკავშირდი დახმარების ჩათში.", 403);
-        if (quota.used >= quota.limit) {
-            throw new AiChatError(`ამ თვის AI ლიმიტი ამოიწურა (${quota.limit}/${quota.limit}). ლიმიტი განახლდება ${formatResetDay(quota.resetsAt)}.`, 429);
+        const file = input.kind === "PURCHASE_DRAFT" && !quota.files.shared;
+        if (file ? quota.files.limit !== null && quota.files.used >= quota.files.limit : quota.used >= quota.limit) {
+            throw new AiChatError(limitMessage(quota, file), 429);
         }
         const row = await tx.aiUsage.create({
             data: { businessId: input.businessId, businessName: input.businessName, userId: input.userId, kind: input.kind, model: MARTEO_AI_MODEL, counted: true },
             select: { id: true },
         });
-        return { id: row.id, kind: input.kind, meter: new AiUsageMeter(), quota: { ...quota, used: quota.used + 1 } };
+        const next = file
+            ? { ...quota, files: { ...quota.files, used: quota.files.used + 1 } }
+            : { ...quota, used: quota.used + 1, files: quota.files.shared ? { ...quota.files, used: quota.files.used + (input.kind === "PURCHASE_DRAFT" ? 1 : 0) } : quota.files };
+        return { id: row.id, kind: input.kind, meter: new AiUsageMeter(), quota: next };
     });
 }
 

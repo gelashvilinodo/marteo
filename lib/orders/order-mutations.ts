@@ -22,6 +22,7 @@ import {
     resolveHistoricalOrderPayment,
 } from "./resolve-historical-order-payment";
 import { findActiveMembership } from "@/lib/auth/active-business";
+import { readUsagePeriod, requireFeature } from "@/lib/subscription/limits";
 
 export type MutationKind =
     | "edit"
@@ -124,6 +125,11 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                     fail("ამ შეკვეთაზე გამოიყენე გადაცვლის შესაბამისი მოქმედება.", 409);
                 }
                 const data = validateOrder({ ...object(body.order), clientRequestId: requestId, status: order.status }, "edit");
+                // გეგმაში მარაგი ან ფოტო თუ არ შედის, ძველი პროდუქტები რჩება, ახლის დამატება კი არ შეიძლება.
+                const plan = (await readUsagePeriod(tx, businessId)).plan;
+                const isNew = (item: { orderItemId?: string }) => !item.orderItemId || !order.items.some(existing => existing.id === item.orderItemId);
+                if (data.items.some(item => item.source !== "MANUAL" && isNew(item))) requireFeature(plan, "stock");
+                if (data.items.some(item => item.imageUrl && !order.items.some(existing => existing.imageUrl === item.imageUrl))) requireFeature(plan, "orderPhotos");
                 // ვინც თვითღირებულებას ვერ ხედავს, ფორმიდან ცარიელს აგზავნის: არსებული ხარჯი უცვლელი რჩება.
                 if (!canSeeCosts(membership)) {
                     for (const item of data.items) {

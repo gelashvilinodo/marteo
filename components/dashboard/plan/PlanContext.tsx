@@ -8,7 +8,8 @@ import PlanUpgradeDialog from "./PlanUpgradeDialog";
 
 // რატომ გაიხსნა გეგმის ფანჯარა: კონკრეტული ფუნქცია ან ბიზნესი მხოლოდ ნახვის რეჟიმშია.
 // tier: რომელ გეგმაზე გადასვლაა საჭირო, თუ ფუნქცია უკვე ღიაა და მისი ლიმიტია ამოწურული (მაგ. გუნდი Business-ზე).
-export type UpgradeRequest = { feature?: PlanFeature | null; message?: string; tier?: PaidTier };
+// title: ლიმიტის ამოწურვისას (შეკვეთები, AI) ფუნქციის სახელის ნაცვლად.
+export type UpgradeRequest = { feature?: PlanFeature | null; message?: string; tier?: PaidTier; title?: string };
 
 type PlanValue = {
     plan: PlanState | null;
@@ -83,8 +84,10 @@ export function PlanProvider({ plan, isOwner, businessId, children }: { plan: Pl
             const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
             if (response.status === 402 && method !== "GET") {
                 response.clone().json().then((raw: unknown) => {
-                    const data = raw as { code?: string; feature?: string | null; message?: string } | null;
-                    if (data?.code === "PLAN_LOCKED" || data?.code === "PLAN_FEATURE") {
+                    const data = raw as { code?: string; feature?: string | null; message?: string; requiredTier?: PaidTier | null } | null;
+                    if (data?.code === "PLAN_LIMIT") {
+                        setRequest({ title: "გეგმის ლიმიტი ამოიწურა", message: data.message, tier: data.requiredTier ?? undefined });
+                    } else if (data?.code === "PLAN_LOCKED" || data?.code === "PLAN_FEATURE") {
                         setRequest({ feature: isFeature(data.feature ?? null) ? data.feature as PlanFeature : null, message: data.message });
                     }
                 }).catch(() => {});

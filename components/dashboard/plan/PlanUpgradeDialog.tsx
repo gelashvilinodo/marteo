@@ -32,6 +32,7 @@ const LOCK_TITLES: Record<string, string> = {
 };
 
 function texts(request: UpgradeRequest, plan: PlanState) {
+    if (request.title && !plan.locked) return { title: request.title, text: request.message ?? "" };
     if (request.feature && !plan.locked) {
         const tier = request.tier ?? FEATURE_MIN_TIER[request.feature];
         return {
@@ -61,7 +62,7 @@ export default function PlanUpgradeDialog({ request, plan, isOwner, onClose }: {
     }, [request]);
 
     const content = request ? texts(request, plan) : null;
-    const focus = request?.feature && !plan.locked ? request.tier ?? FEATURE_MIN_TIER[request.feature] : null;
+    const focus = plan.locked || !request ? null : request.tier ?? (request.feature ? FEATURE_MIN_TIER[request.feature] : null);
 
     return <dialog ref={ref} onClose={onClose} aria-labelledby="plan-dialog-title"
         className={`m-auto max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-2xl border border-border bg-background p-0 text-text-primary shadow-2xl backdrop:bg-[var(--marteo-overlay)] backdrop:backdrop-blur-sm ${isOwner ? "w-[min(1040px,calc(100vw-2rem))]" : "w-[min(420px,calc(100vw-2rem))]"}`}>

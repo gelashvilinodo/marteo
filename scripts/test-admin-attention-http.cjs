@@ -52,7 +52,7 @@ const DAY=86400000,at=days=>new Date(Date.now()+days*DAY).toISOString();
    [expiring.name]:['პაკეტი იწურება: START იწურება 3 დღეში'],
    [inactive.name]:['ფასიანი, მაგრამ არააქტიური: შეკვეთა ჯერ არ აქვს'],
    [onboarding.name]:['პირველი შეკვეთა არ აქვს: დარეგისტრირდა 5 დღის წინ'],
-   [aiLimit.name]:['AI ლიმიტი ამოიწურა: ამ თვეში 1/1'],
+   [aiLimit.name]:['AI ლიმიტი ამოიწურა: ამ პერიოდში 1/1'],
   };
   for(const [name,labels] of Object.entries(expect)){
    const text=row(html,name);assert.ok(text,`${name} listed`);

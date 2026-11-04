@@ -9,20 +9,9 @@ import { getBillingOverview } from "@/lib/subscription/billing";
 import { PLAN_ADJECTIVES, PLAN_LABELS, REFUND_WINDOW_DAYS, isPaidTier } from "@/lib/subscription/plans";
 import { daysLeft, formatDay, LOCK_LABELS, PAYMENT_METHOD_LABELS, planTitle } from "@/components/plans/billing-format";
 import { CancelPlanButton } from "@/components/plans/PlanActions";
+import UsageMeter from "@/components/plans/UsageMeter";
 
 export const metadata = { title: "პაკეტი და გადახდები | MARTEO", robots: { index: false, follow: false } };
-
-function Meter({ icon, label, used, limit, unit = "" }: { icon: string; label: string; used: number; limit: number | null; unit?: string }) {
-    const share = limit ? Math.min(1, used / limit) : 0;
-    return <div className="rounded-xl bg-background p-4">
-        <p className="flex items-center gap-2 text-sm text-text-secondary"><Icon icon={icon} className="h-5 w-5 shrink-0 text-accent" aria-hidden="true" />{label}</p>
-        <p className="mt-2 text-lg font-semibold text-text-primary">{limit === null ? `${used}${unit} · ულიმიტო` : `${used} / ${limit}${unit}`}</p>
-        {limit !== null && limit > 0 && <div className="mt-3 h-2 overflow-hidden rounded-full bg-border/60" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={limit} aria-valuenow={used}>
-            <div className={`h-full rounded-full ${share >= 1 ? "bg-danger" : share >= 0.8 ? "bg-warning" : "bg-accent"}`} style={{ width: `${Math.round(share * 100)}%` }} />
-        </div>}
-        {limit === 0 && <p className="mt-2 text-xs text-text-secondary">ამ გეგმაში არ შედის.</p>}
-    </div>;
-}
 
 export default async function BillingPage() {
     const membership = await requireDashboardSection("/dashboard/billing");
@@ -120,12 +109,14 @@ export default async function BillingPage() {
                         <h2 id="usage" className="flex items-center gap-2 font-semibold text-text-primary">
                             <Icon icon="solar:chart-square-bold-duotone" className="h-5 w-5 text-accent" aria-hidden="true" />გამოყენება ამ პერიოდში
                         </h2>
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            <Meter icon="solar:bag-4-linear" label="შეკვეთები" used={usage.orders.used} limit={usage.orders.limit} />
-                            <Meter icon="solar:magic-stick-3-linear" label="მართეო AI" used={usage.ai.used} limit={usage.ai.limit} />
-                            <Meter icon="solar:user-id-linear" label="თანამფლობელები" used={usage.team.coOwners} limit={usage.team.coOwnersLimit} />
-                            <Meter icon="solar:users-group-rounded-linear" label="თანამშრომლები" used={usage.team.staff} limit={usage.team.staffLimit} />
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                            <UsageMeter icon="solar:bag-4-linear" label="შეკვეთები" used={usage.orders.used} limit={usage.orders.limit} />
+                            <UsageMeter icon="solar:magic-stick-3-linear" label={plan.tier === "TRIAL" ? "მართეო AI (საცდელში სულ)" : "მართეო AI კითხვები"} used={usage.ai.used} limit={usage.ai.limit} />
+                            {!usage.aiFiles.shared && <UsageMeter icon="solar:document-add-linear" label="შესყიდვა ფაილიდან" used={usage.aiFiles.used} limit={usage.aiFiles.limit} />}
+                            <UsageMeter icon="solar:user-id-linear" label="თანამფლობელები" used={usage.team.coOwners} limit={usage.team.coOwnersLimit} />
+                            <UsageMeter icon="solar:users-group-rounded-linear" label="თანამშრომლები" used={usage.team.staff} limit={usage.team.staffLimit} />
                         </div>
+                        {plan.periodStart && plan.expiresAt && <p className="mt-3 text-xs text-text-secondary">პერიოდი: {formatDay(plan.periodStart)} — {formatDay(plan.expiresAt)}. შეკვეთების და AI-ის ლიმიტი ახალ პერიოდში თავიდან იწყება.</p>}
                     </section>
 
                     <section aria-labelledby="payments" className="rounded-2xl border border-border bg-surface p-5">

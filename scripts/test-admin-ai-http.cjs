@@ -47,9 +47,11 @@ const callModel=process.env.AI_QA_SKIP_MODEL!=='1';
   // A title and a failed request never count.
   await db.query(`INSERT INTO "AiUsage" (id,"businessId","businessName",kind,model,counted,failed) VALUES (gen_random_uuid()::text,$1,$2,'TITLE','claude-haiku-5-5',false,false),(gen_random_uuid()::text,$1,$2,'CHAT','claude-haiku-5-5',false,true)`,[businessId,name]);
   q=await quota();assert.equal(q.used,100);
+  // Purchase files have their own limit (Business: 5 per period): fill it too.
+  await db.query(`INSERT INTO "AiUsage" (id,"businessId","businessName",kind,model,counted) SELECT gen_random_uuid()::text,$1,$2,'PURCHASE_DRAFT','claude-haiku-5-5',true FROM generate_series(1,5)`,[businessId,name]);
   const before=(await rows()).length;
   let r=await ask();let d=await r.json();assert.equal(r.status,429);assert.match(d.message,/ლიმიტი ამოიწურა \(100\/100\)/);
-  r=await file();d=await r.json();assert.equal(r.status,429,d.message);
+  r=await file();d=await r.json();assert.equal(r.status,429,d.message);assert.match(d.message,/ფაილიდან შესყიდვის ლიმიტი ამოიწურა/);
   assert.equal((await rows()).length,before,'refused requests leave no row');
 
   // Admin: validation and access.

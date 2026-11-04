@@ -1,7 +1,7 @@
 // Shared by the server (limit checks) and the AI panel (the remaining-uses ring).
 import { PLAN_LIMITS } from "@/lib/subscription/plans";
 
-// Questions per calendar month in Tbilisi; the plan's own numbers live in lib/subscription/plans.ts.
+// Questions per payment period (the trial counts as one period); the plan's own numbers live in lib/subscription/plans.ts.
 // Chat titles do not count. FREE means no plan at all.
 export const AI_MONTHLY_LIMITS = {
     FREE: 0,
@@ -14,7 +14,13 @@ export const AI_MONTHLY_LIMITS = {
 // The ring turns to the upgrade offer once this share of the limit is used.
 export const AI_QUOTA_WARN_SHARE = 0.8;
 
-export type AiQuota = { plan: string; used: number; limit: number; disabled: boolean; custom: boolean; resetsAt: string };
+// used/limit — კითხვები. files — შესყიდვა ფაილიდან, ცალკე მრიცხველით (limit null = ულიმიტო);
+// საცდელში ფაილი კითხვებში ითვლება და files.shared = true. resetsAt — გადახდის პერიოდის ბოლო
+// (ლიმიტი ახალ პერიოდში ნულდება); საცდელში ის საცდელის დასასრულია და აღარ ნულდება.
+export type AiQuota = {
+    plan: string; used: number; limit: number; disabled: boolean; custom: boolean; resetsAt: string | null; trial: boolean;
+    files: { used: number; limit: number | null; shared: boolean };
+};
 
 const tbilisiMonth = (date: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tbilisi", year: "numeric", month: "2-digit" }).format(date);
 
