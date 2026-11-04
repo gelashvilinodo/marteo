@@ -119,7 +119,7 @@ export async function cancelBanner(prisma: PrismaClient, adminId: string, banner
 // Global log of admin actions: what was done, by whom and to which account or business.
 export const AUDIT_GROUPS = {
     users: { label: "მომხმარებლები", actions: ["verify-email", "verify-phone", "suspend", "unsuspend", "end-sessions", "send-password-reset"] },
-    billing: { label: "პაკეტი და გადახდები", actions: ["subscription", "subscription-auto", "payment", "payment-void"] },
+    billing: { label: "პაკეტი და გადახდები", actions: ["subscription", "subscription-auto", "subscription-user", "payment", "payment-void"] },
     ai: { label: "მართეო AI", actions: ["ai-settings"] },
     exports: { label: "ექსპორტი", actions: ["export-users", "export-businesses", "export-payments"] },
     system: { label: "სისტემა", actions: ["banner-create", "banner-cancel", "errors-resolve"] },

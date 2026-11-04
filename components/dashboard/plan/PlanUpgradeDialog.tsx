@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
 import PlanCards from "@/components/plans/PlanCards";
 import { PLAN_FINE_PRINT } from "@/lib/subscription/plan-catalog";
 import type { PlanState } from "@/lib/subscription/plan-state";
-import { FEATURE_MIN_TIER, PLAN_LABELS, type PlanFeature } from "@/lib/subscription/plans";
+import { FEATURE_MIN_TIER, PLAN_ADJECTIVES, type PlanFeature } from "@/lib/subscription/plans";
 import PlanCrown from "./PlanCrown";
 import type { UpgradeRequest } from "./PlanContext";
 
@@ -36,7 +36,7 @@ function texts(request: UpgradeRequest, plan: PlanState) {
         const tier = request.tier ?? FEATURE_MIN_TIER[request.feature];
         return {
             title: FEATURE_LABELS[request.feature],
-            text: request.message ?? (tier === "PRO" ? "ეს ფუნქცია მხოლოდ PRO გეგმაშია." : `ეს ფუნქცია ხელმისაწვდომია ${PLAN_LABELS[tier]} გეგმიდან.`),
+            text: request.message ?? (tier === "PRO" ? "ეს ფუნქცია მხოლოდ PRO გეგმაშია." : `ეს ფუნქცია ხელმისაწვდომია ${PLAN_ADJECTIVES[tier]} გეგმიდან.`),
         };
     }
     return {

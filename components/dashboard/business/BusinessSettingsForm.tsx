@@ -493,7 +493,7 @@ export default function BusinessSettingsForm({
                         </span>
                     </label>
                 </div>
-                <div className="mt-5"><BusinessModeChoice value={mode} onChange={value=>{setMode(value);setNotice('');}} locked={lockedModes} onLocked={value=>openUpgrade(value==='HYBRID'?{feature:'hybridMode'}:{feature:'stock',message:'წარმოება ხელმისაწვდომია ბიზნესი გეგმიდან.'})}/><p className="mt-2 text-xs leading-5 text-text-secondary">მიმართულების შეცვლა მონაცემებს არ შლის. შესაბამისი გვერდები არჩეული მიმართულებით გამოჩნდება.</p></div>
+                <div className="mt-5"><BusinessModeChoice value={mode} onChange={value=>{setMode(value);setNotice('');}} locked={lockedModes} onLocked={value=>openUpgrade(value==='HYBRID'?{feature:'hybridMode'}:{feature:'stock',message:'წარმოება ხელმისაწვდომია ბიზნეს გეგმიდან.'})}/><p className="mt-2 text-xs leading-5 text-text-secondary">მიმართულების შეცვლა მონაცემებს არ შლის. შესაბამისი გვერდები არჩეული მიმართულებით გამოჩნდება.</p></div>
             </fieldset>
 
             <div

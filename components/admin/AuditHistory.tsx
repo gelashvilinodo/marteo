@@ -13,6 +13,7 @@ export const AUDIT_ACTIONS: Record<string, { label: string; icon: string }> = {
     unsuspend: { label: "ანგარიში აღდგა", icon: "solar:lock-keyhole-unlocked-linear" },
     subscription: { label: "პაკეტი შეიცვალა", icon: "solar:tag-price-linear" },
     "subscription-auto": { label: "პაკეტის სტატუსი შეიცვალა ვადის გამო", icon: "solar:clock-circle-linear" },
+    "subscription-user": { label: "მფლობელმა შეცვალა პაკეტი", icon: "solar:user-check-linear" },
     payment: { label: "გადახდა აღირიცხა", icon: "solar:wallet-money-linear" },
     "payment-void": { label: "გადახდა გაუქმდა", icon: "solar:close-circle-linear" },
     "ai-settings": { label: "AI-ის პარამეტრები შეიცვალა", icon: "solar:magic-stick-3-linear" },
@@ -37,7 +38,7 @@ function subscriptionText(value: Plain) {
 function detail(entry: AuditEntry) {
     const before = entry.before as Plain;
     const after = entry.after as Plain;
-    if (entry.action === "subscription" || entry.action === "subscription-auto") return `${subscriptionText(before)} → ${subscriptionText(after)}`;
+    if (entry.action === "subscription" || entry.action === "subscription-auto" || entry.action === "subscription-user") return `${subscriptionText(before)} → ${subscriptionText(after)}`;
     if (entry.action === "payment") return `${money(after?.amount)} · ${after?.months} თვე · ${subscriptionText(after)}`;
     if (entry.action.startsWith("export-")) return after?.rows !== undefined ? `${after.rows} ჩანაწერი` : "";
     if (entry.action === "banner-create") return typeof after?.message === "string" ? after.message : "";
@@ -73,7 +74,7 @@ export default function AuditHistory({ entries, targets }: { entries: AuditEntry
                             : <span className="text-text-secondary">{target.label}</span>}</>}
                     </p>
                     {text && <p className="break-words text-xs text-text-secondary">{text}</p>}
-                    <p className="mt-0.5 text-[11px] text-text-secondary">{formatSupportDate(entry.createdAt)}, {formatSupportTime(entry.createdAt)} · {entry.adminName ?? (entry.action === "subscription-auto" ? "ავტომატურად" : "წაშლილი ადმინი")}</p>
+                    <p className="mt-0.5 text-[11px] text-text-secondary">{formatSupportDate(entry.createdAt)}, {formatSupportTime(entry.createdAt)} · {entry.adminName ?? (entry.action === "subscription-auto" ? "ავტომატურად" : entry.action === "subscription-user" ? "მფლობელი" : "წაშლილი ადმინი")}</p>
                 </div>
             </li>;
         })}

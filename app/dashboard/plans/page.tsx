@@ -11,8 +11,11 @@ import PlanComparison from "@/components/plans/PlanComparison";
 import { pricingFaq } from "@/components/plans/pricing-faq";
 import { daysLeft, planTitle } from "@/components/plans/billing-format";
 import { priceForBusiness } from "@/lib/subscription/billing";
+import { quoteForBusiness } from "@/lib/subscription/manage";
+import type { PlanChangeQuote } from "@/lib/subscription/plan-change";
+import { DowngradeButton } from "@/components/plans/PlanActions";
 import { PLAN_FINE_PRINT } from "@/lib/subscription/plan-catalog";
-import { isPaidTier, PAID_TIERS, PLAN_LABELS, type PaidTier } from "@/lib/subscription/plans";
+import { isPaidTier, PAID_TIERS, PLAN_LABELS, PLAN_ONTO, type PaidTier } from "@/lib/subscription/plans";
 
 export const metadata = { title: "გეგმები | MARTEO", robots: { index: false, follow: false } };
 
@@ -28,6 +31,9 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
     const prisma = createPrismaClient();
     try {
         const prices = await priceForBusiness(prisma, user.id, membership.businessId);
+        // მოქმედი ფასიანი გეგმიდან: იაფზე გადასვლა აქვე ხდება, ძვირზე — გადახდის გვერდზე სხვაობით.
+        const quotes = current ? Object.fromEntries(await Promise.all(PAID_TIERS.map(async tier =>
+            [tier, (await quoteForBusiness(prisma, user.id, membership.businessId, tier)).quote] as const))) as Record<PaidTier, PlanChangeQuote> : null;
         const discounted = Object.values(prices).some(price => price.discounted);
         return (
             <main className="min-w-0 p-4 sm:p-6 lg:p-8">
@@ -51,12 +57,17 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
                         const price = prices[card.tier];
                         if (card.tier === current) return <span className="inline-flex min-h-11 items-center justify-center rounded-xl border border-success/30 bg-success/10 px-4 text-sm font-semibold text-success">შენი მიმდინარე გეგმა</span>;
                         const primary = (focus ?? "PRO") === card.tier;
+                        const buttonClass = `inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition ${primary ? "bg-accent text-white hover:bg-accent-hover" : "border border-border bg-background text-text-primary hover:border-accent/40 hover:text-accent"}`;
+                        const quote = quotes?.[card.tier] ?? null;
                         return <div className="space-y-2">
                             {price.discounted && <p className="text-sm text-success">ამ ბიზნესზე: <b className="font-semibold">{price.price} ₾</b> <span className="text-text-secondary line-through">{price.full} ₾</span></p>}
-                            <Link href={`/dashboard/plans/checkout?plan=${card.tier.toLowerCase()}`}
-                                className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition ${primary ? "bg-accent text-white hover:bg-accent-hover" : "border border-border bg-background text-text-primary hover:border-accent/40 hover:text-accent"}`}>
-                                აირჩიე {PLAN_LABELS[card.tier]}<Icon icon="solar:arrow-right-linear" className="h-4 w-4" aria-hidden="true" />
-                            </Link>
+                            {quote?.kind === "downgrade"
+                                ? <DowngradeButton tier={card.tier} quote={quote} className={buttonClass}>გადასვლა {PLAN_ONTO[card.tier]}</DowngradeButton>
+                                : <Link href={`/dashboard/plans/checkout?plan=${card.tier.toLowerCase()}`} className={buttonClass}>
+                                    {quote?.kind === "upgrade" ? `გადასვლა ${PLAN_ONTO[card.tier]}` : `აირჩიე ${PLAN_LABELS[card.tier]}`}<Icon icon="solar:arrow-right-linear" className="h-4 w-4" aria-hidden="true" />
+                                </Link>}
+                            {quote?.kind === "upgrade" && quote.credit > 0 && <p className="text-xs text-text-secondary">დღეს გადაიხდი {quote.amountDue.toFixed(2)} ₾ (ნაშთი {quote.credit.toFixed(2)} ₾ ჩაითვლება)</p>}
+                            {quote?.kind === "downgrade" && <p className="text-xs text-text-secondary">ნაშთი {quote.days} დღეს ფარავს, გადახდა არ სჭირდება</p>}
                         </div>;
                     }} />
                     <p className="text-center text-sm text-text-secondary">{PLAN_FINE_PRINT}</p>

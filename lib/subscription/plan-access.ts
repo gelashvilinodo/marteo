@@ -2,7 +2,7 @@
 // ამიტომ ცალკე როუტებს ეს ფაილი პირდაპირ არ სჭირდებათ. კლიენტზეც გამოიყენება.
 import type { AccessLevel, BusinessPermission, SectionNeed } from "@/lib/business/permissions";
 import { LOCK_MESSAGES, planAllows, type PlanState } from "./plan-state";
-import { FEATURE_MIN_TIER, PLAN_LABELS, type PaidTier, type PlanFeature } from "./plans";
+import { FEATURE_MIN_TIER, PLAN_ADJECTIVES, type PaidTier, type PlanFeature } from "./plans";
 
 export type PlanCheck = {
     // ფუნქცია, რომელიც როუტს სჭირდება (უფლების გარდა).
@@ -31,7 +31,7 @@ export function featureMessage(feature: PlanFeature) {
     const tier = FEATURE_MIN_TIER[feature];
     return tier === "PRO"
         ? "ეს ფუნქცია მხოლოდ PRO გეგმაშია."
-        : `ეს ფუნქცია ხელმისაწვდომია ${PLAN_LABELS[tier]} გეგმიდან.`;
+        : `ეს ფუნქცია ხელმისაწვდომია ${PLAN_ADJECTIVES[tier]} გეგმიდან.`;
 }
 
 export function planDenial(plan: PlanState | null | undefined, need: SectionNeed, level: AccessLevel, check: PlanCheck = {}): PlanDenial | null {

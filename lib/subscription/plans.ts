@@ -18,6 +18,13 @@ export const REFUND_WINDOW_DAYS = 3;
 export const PLAN_LABELS: Record<PlanTier, string> = {
     TRIAL: "საცდელი", START: "სტარტი", BUSINESS: "ბიზნესი", PRO: "PRO",
 };
+// სიტყვა „გეგმის“ წინ (ბიზნეს გეგმა, სტარტ გეგმიდან) და „-ზე“ ფორმა (გადასვლა ბიზნესზე).
+export const PLAN_ADJECTIVES: Record<PlanTier, string> = {
+    TRIAL: "საცდელ", START: "სტარტ", BUSINESS: "ბიზნეს", PRO: "PRO",
+};
+export const PLAN_ONTO: Record<PlanTier, string> = {
+    TRIAL: "საცდელზე", START: "სტარტზე", BUSINESS: "ბიზნესზე", PRO: "PRO-ზე",
+};
 
 // ლარი, თვეში. ფასში შედის ბანკის საკომისიო.
 export const PLAN_PRICES: Record<PaidTier, number> = { START: 19, BUSINESS: 39, PRO: 79 };

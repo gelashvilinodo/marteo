@@ -90,7 +90,37 @@ const DAY=86400000,at=days=>new Date(Date.now()+days*DAY).toISOString();
   assert.ok(Math.abs(firstSub.expiresAt-Date.now()-14*DAY)<60000);
   console.log('ok onboarding trial and extra business rule');
 
-  console.log('PASS: subscription plan gating (trial, start, business, pro, past due, trial ended, no plan), mode limit, admin change, onboarding.');
+  // Mid-period changes: half of a 30-day period is left.
+  const period=(plan,status='ACTIVE')=>db.query('UPDATE "Subscription" SET plan=$2,status=$3,"currentPeriodStart"=$4,"expiresAt"=$5,"cancelAtPeriodEnd"=false,"canceledAt"=NULL WHERE "businessId"=$1',[businessId,plan,status,at(-15),at(15)]);
+  const sub=async()=>(await db.query('SELECT plan,status,"expiresAt","cancelAtPeriodEnd" FROM "Subscription" WHERE "businessId"=$1',[businessId])).rows[0];
+  const act=async body=>{const res=await call(owner,'/api/billing/subscription','POST',body);return {status:res.status,data:await res.json()}};
+  const daysFromNow=date=>Math.round((date-Date.now())/DAY);
+  // Pro → Start: 79/2 = 39.50 ₾ covers 39.50 / (19/30) = 62 days.
+  await period('PRO');
+  let r=await act({action:'downgrade',plan:'START'});assert.equal(r.status,200,r.data.message);
+  let s=await sub();assert.equal(s.plan,'START');assert.equal(daysFromNow(s.expiresAt),62);
+  // Business → Pro is an upgrade: it needs payment and the checkout shows 79 − 19.50 = 59.50.
+  await period('BUSINESS');
+  r=await act({action:'downgrade',plan:'PRO'});assert.equal(r.status,409);
+  const checkout=(await (await call(owner,'/dashboard/plans/checkout?plan=pro')).text()).replaceAll('<!-- -->','');
+  assert.ok(checkout.includes('59.50')&&checkout.includes('19.50'),'upgrade amount and credit shown');
+  // Cancel keeps the plan until the end; resume undoes it; the cron turns an expired canceled plan into CANCELED.
+  r=await act({action:'cancel'});assert.equal(r.status,200,r.data.message);assert.equal((await sub()).cancelAtPeriodEnd,true);
+  assert.equal((await act({action:'cancel'})).status,409);
+  r=await act({action:'resume'});assert.equal(r.status,200);assert.equal((await sub()).cancelAtPeriodEnd,false);
+  await act({action:'cancel'});
+  await db.query('UPDATE "Subscription" SET "expiresAt"=$2 WHERE "businessId"=$1',[businessId,at(-0.01)]);
+  const {expireSubscriptions}=await import('../lib/billing/expire-subscriptions.mjs');
+  await expireSubscriptions(process.env.DIRECT_URL);
+  s=await sub();assert.equal(s.status,'CANCELED');assert.equal(s.cancelAtPeriodEnd,false);
+  // A trial has nothing to cancel.
+  await setPlan('FREE','TRIALING',5);
+  assert.equal((await act({action:'cancel'})).status,409);
+  const history=(await db.query('SELECT count(*)::int AS n FROM "AdminAuditLog" WHERE "targetId"=$1 AND action=\'subscription-user\'',[businessId])).rows[0].n;
+  assert.ok(history>=4,'owner changes are in the admin history');
+  console.log('ok downgrade, upgrade quote, cancel, resume, expiry');
+
+  console.log('PASS: subscription plan gating (trial, start, business, pro, past due, trial ended, no plan), mode limit, admin change, onboarding, plan changes.');
  }finally{
   const owned=(await db.query('SELECT "businessId" FROM "BusinessMembership" WHERE "userId"=ANY($1::text[])',[userIds])).rows.map(r=>r.businessId);
   await db.query('DELETE FROM "AdminAuditLog" WHERE "targetId"=ANY($1::text[]) AND "createdAt">=$2',[owned,startedAt.toISOString()]);

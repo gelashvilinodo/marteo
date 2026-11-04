@@ -7,9 +7,8 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
 import CheckoutConsent from "@/components/plans/CheckoutConsent";
 import { daysLeft, formatDay } from "@/components/plans/billing-format";
-import { priceForBusiness } from "@/lib/subscription/billing";
+import { quoteForBusiness } from "@/lib/subscription/manage";
 import { planCard } from "@/lib/subscription/plan-catalog";
-import { addBillingMonths } from "@/lib/subscription/period";
 import { PAID_TIERS, REFUND_WINDOW_DAYS, type PaidTier } from "@/lib/subscription/plans";
 
 export const metadata = { title: "გადახდა | MARTEO", robots: { index: false, follow: false } };
@@ -26,12 +25,13 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
     if (plan.tier === tier) redirect("/dashboard/billing");
     const prisma = createPrismaClient();
     try {
-        const price = (await priceForBusiness(prisma, user.id, membership.businessId))[tier];
+        const { quote, price } = await quoteForBusiness(prisma, user.id, membership.businessId, tier);
+        // დაბალ გეგმაზე გადასვლა გადახდას არ საჭიროებს და გეგმების გვერდზე ხდება.
+        if (quote.kind === "downgrade") redirect(`/dashboard/plans?plan=${tier.toLowerCase()}`);
         const card = planCard(tier);
-        const now = new Date();
-        const nextCharge = addBillingMonths(now, 1).toISOString();
+        const nextCharge = quote.expiresAt;
         const trialDays = plan.tier === "TRIAL" && plan.expiresAt ? daysLeft(plan.expiresAt) : 0;
-        const amount = price.price.toFixed(2);
+        const amount = quote.amountDue.toFixed(2);
         return (
             <main className="min-w-0 p-4 sm:p-6 lg:p-8">
                 <div className="mx-auto w-full max-w-4xl space-y-5">
@@ -53,10 +53,11 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                             <dl className="mt-4 space-y-3 text-sm">
                                 <div className="flex justify-between gap-3"><dt className="text-text-secondary">თვიური ფასი</dt><dd className="text-text-primary">{price.full.toFixed(2)} ₾</dd></div>
                                 {price.discounted && <div className="flex justify-between gap-3 text-success"><dt>დამატებითი ბიზნესის ფასდაკლება</dt><dd>−{(price.full - price.price).toFixed(2)} ₾</dd></div>}
+                                {quote.credit > 0 && <div className="flex justify-between gap-3 text-success"><dt>დაუხარჯავი ნაშთი მიმდინარე გეგმიდან</dt><dd>−{quote.credit.toFixed(2)} ₾</dd></div>}
                                 <div className="flex justify-between gap-3 border-t border-border pt-3 text-base font-semibold"><dt className="text-text-primary">დღეს გადასახდელი</dt><dd className="text-text-primary">{amount} ₾</dd></div>
                                 <div className="flex justify-between gap-3"><dt className="text-text-secondary">შემდეგი გადახდა</dt><dd className="text-text-primary">{formatDay(nextCharge)}</dd></div>
                             </dl>
-                            <p className="mt-3 text-xs text-text-secondary">ფასში შედის ბანკის საკომისიო.</p>
+                            <p className="mt-3 text-xs text-text-secondary">ფასში შედის ბანკის საკომისიო.{quote.kind === "upgrade" ? ` ახალი გეგმა დღესვე ჩაირთვება, შემდეგი გადახდა კი ${price.price.toFixed(2)} ₾ იქნება.` : ""}</p>
                             {trialDays > 0 && <p className="mt-4 flex items-start gap-2 rounded-xl bg-warning/10 p-3 text-sm leading-6 text-text-primary">
                                 <Icon icon="solar:info-circle-linear" className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
                                 საცდელი პერიოდის დარჩენილი {trialDays} დღე გაუქმდება და გეგმა დღესვე დაიწყება.

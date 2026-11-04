@@ -8,6 +8,8 @@ type ConfirmDialogProps = {
     title: string;
     children: ReactNode;
     confirmLabel: string;
+    // დახურვის ღილაკის ტექსტი, როცა თავად ქმედებაა „გაუქმება“.
+    cancelLabel?: string;
     danger?: boolean;
     busy?: boolean;
     error?: string;
@@ -16,7 +18,7 @@ type ConfirmDialogProps = {
 };
 
 // Native <dialog>: focus trapping, Escape and backdrop dismissal come from the browser.
-export default function ConfirmDialog({ open, title, children, confirmLabel, danger, busy, error, onConfirm, onClose }: ConfirmDialogProps) {
+export default function ConfirmDialog({ open, title, children, confirmLabel, cancelLabel = "გაუქმება", danger, busy, error, onConfirm, onClose }: ConfirmDialogProps) {
     const ref = useRef<HTMLDialogElement>(null);
     useEffect(() => {
         const dialog = ref.current;
@@ -39,7 +41,7 @@ export default function ConfirmDialog({ open, title, children, confirmLabel, dan
             </div>
             {error && <p role="alert" className="mt-3 rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>}
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button type="button" onClick={onClose} disabled={busy} className="h-11 rounded-xl border border-border px-4 text-sm font-medium transition hover:bg-background disabled:opacity-60">გაუქმება</button>
+                <button type="button" onClick={onClose} disabled={busy} className="h-11 rounded-xl border border-border px-4 text-sm font-medium transition hover:bg-background disabled:opacity-60">{cancelLabel}</button>
                 <button type="button" onClick={onConfirm} disabled={busy}
                     className={`h-11 rounded-xl px-4 text-sm font-semibold text-white transition disabled:opacity-60 ${danger ? "bg-danger hover:opacity-90" : "bg-accent hover:bg-accent-hover"}`}>
                     {busy ? "სრულდება…" : confirmLabel}

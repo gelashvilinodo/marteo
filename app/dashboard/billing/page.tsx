@@ -6,8 +6,9 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
 import { getBillingOverview } from "@/lib/subscription/billing";
-import { PLAN_LABELS, REFUND_WINDOW_DAYS, isPaidTier } from "@/lib/subscription/plans";
+import { PLAN_ADJECTIVES, PLAN_LABELS, REFUND_WINDOW_DAYS, isPaidTier } from "@/lib/subscription/plans";
 import { daysLeft, formatDay, LOCK_LABELS, PAYMENT_METHOD_LABELS, planTitle } from "@/components/plans/billing-format";
+import { CancelPlanButton } from "@/components/plans/PlanActions";
 
 export const metadata = { title: "პაკეტი და გადახდები | MARTEO", robots: { index: false, follow: false } };
 
@@ -81,11 +82,20 @@ export default async function BillingPage() {
                                 ბიზნესი მხოლოდ ნახვის რეჟიმშია. მონაცემები შენახულია. დამატებისა და ცვლილებისთვის აირჩიე გეგმა.
                             </p>}
 
-                            <div className="mt-5 flex flex-wrap gap-2">
-                                <Link href="/dashboard/plans" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-hover">
+                            <div className="mt-5 flex flex-wrap items-start gap-2">
+                                {/* დაბლოკილი ფასიანი გეგმა ერთი დაჭერით ნახლდება; სხვა შემთხვევაში გეგმების გვერდი იხსნება. */}
+                                {plan.locked && plan.lastPaidTier
+                                    ? <Link href={`/dashboard/plans/checkout?plan=${plan.lastPaidTier.toLowerCase()}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-hover">
+                                        <Icon icon="solar:restart-bold" className="h-4 w-4" aria-hidden="true" />{PLAN_ADJECTIVES[plan.lastPaidTier]} გეგმის განახლება
+                                    </Link>
+                                    : null}
+                                <Link href="/dashboard/plans" className={plan.locked && plan.lastPaidTier
+                                    ? "inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium text-text-primary transition hover:border-accent/40 hover:text-accent"
+                                    : "inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-hover"}>
                                     <Icon icon="solar:crown-bold" className="h-4 w-4" aria-hidden="true" />
                                     {plan.locked || plan.tier === "TRIAL" ? "აირჩიე გეგმა" : "გეგმის შეცვლა"}
                                 </Link>
+                                {paid && <CancelPlanButton canceled={plan.cancelAtPeriodEnd} expiresAt={plan.expiresAt} />}
                             </div>
                         </section>
 

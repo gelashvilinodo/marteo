@@ -1,6 +1,6 @@
 // თარიღები და სტატუსები გეგმის გვერდებისთვის. Intl-ს ყველა ბრაუზერში ქართული თვეები არ აქვს, ამიტომ ხელითაა.
 import type { PlanState } from "@/lib/subscription/plan-state";
-import { PLAN_LABELS } from "@/lib/subscription/plans";
+import { PLAN_ADJECTIVES } from "@/lib/subscription/plans";
 
 const MONTHS = ["იან.", "თებ.", "მარ.", "აპრ.", "მაი.", "ივნ.", "ივლ.", "აგვ.", "სექ.", "ოქტ.", "ნოე.", "დეკ."];
 
@@ -22,8 +22,8 @@ export const LOCK_LABELS: Record<string, string> = {
 };
 
 export function planTitle(plan: PlanState) {
-    if (plan.tier) return plan.tier === "TRIAL" ? "საცდელი პერიოდი" : `${PLAN_LABELS[plan.tier]} გეგმა`;
-    return plan.lastPaidTier ? `${PLAN_LABELS[plan.lastPaidTier]} გეგმა` : "გეგმა არ არის არჩეული";
+    if (plan.tier) return plan.tier === "TRIAL" ? "საცდელი პერიოდი" : `${PLAN_ADJECTIVES[plan.tier]} გეგმა`;
+    return plan.lastPaidTier ? `${PLAN_ADJECTIVES[plan.lastPaidTier]} გეგმა` : "გეგმა არ არის არჩეული";
 }
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
