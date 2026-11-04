@@ -7,8 +7,7 @@ import FaqAccordion from "@/components/landing/FaqAccordion";
 import PlanCards from "@/components/plans/PlanCards";
 import PlanComparison from "@/components/plans/PlanComparison";
 import { pricingFaq } from "@/components/plans/pricing-faq";
-import { PLAN_FINE_PRINT, SMS_PACKS, TRIAL_PITCH } from "@/lib/subscription/plan-catalog";
-import { discountedPrice } from "@/lib/subscription/plans";
+import { PLAN_FINE_PRINT, TRIAL_PITCH } from "@/lib/subscription/plan-catalog";
 
 export const metadata = {
     title: "ფასები - MARTEO",
@@ -75,31 +74,6 @@ export default function PricingPage() {
                 <section aria-labelledby="compare-title" className="mt-20">
                     <h2 id="compare-title" className="text-center text-2xl font-bold text-text-primary sm:text-3xl">გეგმების სრული შედარება</h2>
                     <div className="mt-10"><PlanComparison /></div>
-                </section>
-
-                <section aria-label="დამატებითი შესაძლებლობები" className="mt-20 grid gap-4 lg:grid-cols-2">
-                    <div className="rounded-2xl border border-border bg-surface p-6">
-                        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-success/10 text-success"><Icon icon="solar:buildings-2-bold-duotone" className="h-6 w-6" aria-hidden="true" /></span>
-                        <h3 className="mt-4 text-lg font-semibold text-text-primary">რამდენიმე ბიზნესი, ერთი ანგარიში</h3>
-                        <p className="mt-2 text-sm leading-relaxed text-text-secondary">ბიზნეს ან PRO გეგმით ყოველი დამატებითი ბიზნესი 25%-ით იაფია. გადართვა ერთი დაჭერით, პროფილის მენიუდან.</p>
-                        <ul className="mt-5 grid grid-cols-3 gap-2 text-center">
-                            {(["START", "BUSINESS", "PRO"] as const).map(tier => <li key={tier} className="rounded-xl bg-background p-3">
-                                <span className="block text-xs text-text-secondary">{tier === "START" ? "სტარტი" : tier === "BUSINESS" ? "ბიზნესი" : "PRO"}</span>
-                                <span className="mt-1 block font-semibold text-text-primary">{discountedPrice(tier)} ₾</span>
-                            </li>)}
-                        </ul>
-                    </div>
-                    <div className="rounded-2xl border border-border bg-surface p-6">
-                        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/10 text-accent"><Icon icon="solar:chat-round-line-bold-duotone" className="h-6 w-6" aria-hidden="true" /></span>
-                        <h3 className="mt-4 text-lg font-semibold text-text-primary">SMS მომხმარებელთან</h3>
-                        <p className="mt-2 text-sm leading-relaxed text-text-secondary">შეკვეთის გაგზავნისას მომხმარებელს ავტომატურად ეგზავნება SMS შენი ბიზნესის სახელით. PRO-ში 500 SMS თვეში შედის, დამატებით კი პაკეტს ყიდულობ.</p>
-                        <ul className="mt-5 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
-                            {SMS_PACKS.map(pack => <li key={pack.count} className="rounded-xl bg-background p-3">
-                                <span className="block font-semibold text-text-primary">{pack.count} SMS</span>
-                                <span className="mt-1 block text-xs text-text-secondary">{pack.price} ₾</span>
-                            </li>)}
-                        </ul>
-                    </div>
                 </section>
 
                 <section aria-label="კითხვები ფასებზე" className="mx-auto mt-20 max-w-3xl">

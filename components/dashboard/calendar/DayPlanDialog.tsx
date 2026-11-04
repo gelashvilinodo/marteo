@@ -5,7 +5,7 @@ import { Icon } from "@iconify/react";
 import type { CalendarContent } from "@/lib/content/get-calendar-page";
 import { calendarLocalParts } from "@/lib/content/calendar-period";
 import PlatformBadge from "./PlatformBadge";
-import { calendarDialogClass } from "./dialog-style";
+import { calendarDialogClass, sheetBottomPad } from "./dialog-style";
 
 export default function DayPlanDialog({
     day,
@@ -134,7 +134,7 @@ export default function DayPlanDialog({
                 )}
             </div>
 
-            <div className="sticky bottom-0 z-10 border-t border-border bg-surface p-4">
+            <div className={`sticky bottom-0 z-10 border-t border-border bg-surface p-4 ${sheetBottomPad}`}>
                 <button
                     type="button"
                     onClick={() => onNew(day)}

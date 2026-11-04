@@ -8,7 +8,7 @@ import {
 } from "@/lib/content/content-options";
 import { PlatformIcon } from "./ContentIcons";
 import DateTimeField from "@/components/dashboard/shared/DateTimeField";
-import { calendarDialogClass } from "./dialog-style";
+import { calendarDialogClass, sheetBottomPad } from "./dialog-style";
 
 type Values = {
     title: string;
@@ -546,7 +546,7 @@ export default function ContentForm({
                     </fieldset>
                 )}
 
-                <div className="sticky bottom-0 z-10 -mx-5 -mb-5 flex justify-end gap-2 border-t border-border bg-surface px-5 py-4">
+                <div className={`sticky bottom-0 z-10 -mx-5 -mb-5 flex justify-end gap-2 border-t border-border bg-surface px-5 py-4 ${sheetBottomPad}`}>
                     <button
                         type="button"
                         disabled={busy}

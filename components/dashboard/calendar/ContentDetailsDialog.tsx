@@ -505,6 +505,8 @@ export default function ContentDetailsDialog({
                     </>
                 )}
             </div>
+            {/* ღილაკები iPhone-ის ქვედა ზოლს არ ეფარება. */}
+            <div aria-hidden="true" className="max-sm:h-[env(safe-area-inset-bottom)]" />
         </dialog>
     );
 }

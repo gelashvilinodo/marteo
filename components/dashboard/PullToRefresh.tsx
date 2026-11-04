@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
+import { hapticTap } from "@/lib/ui/haptic";
 
 // რამდენი პიქსელი უნდა ჩამოიწიოს, რომ წრე შეიკრას.
 const THRESHOLD = 72;
@@ -84,8 +85,9 @@ export default function PullToRefresh({ children }: { children: ReactNode }) {
 
             const next = Math.min(MAX_PULL, distance * 0.5);
 
+            // წრე შეიკრა: მსუბუქი ვიბრაცია, როგორც iPhone-ის ჩვეულებრივ განახლებაზე.
             if (pullRef.current < THRESHOLD && next >= THRESHOLD) {
-                navigator.vibrate?.(10);
+                hapticTap();
             }
 
             setPullDistance(next, "pulling");
