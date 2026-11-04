@@ -178,6 +178,7 @@ export async function createImportedManualOrder(input: {
     const saved = await tx.order.create({
         data: {
             businessId,
+            imported: true,
             customerId,
             number: business.nextOrderNumber,
             clientRequestId,

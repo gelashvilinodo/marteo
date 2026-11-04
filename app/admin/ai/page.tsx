@@ -72,7 +72,7 @@ export default async function AdminAiPage() {
                             <span className="text-text-secondary"><b className="font-semibold text-text-primary">{usd(row.cost)}</b> · {formatSupportCount(row.requests)}</span>
                         </li>)}
                     </ul>}
-                <p className="mt-3 text-xs leading-5 text-text-secondary">თვიური ლიმიტი: FREE {AI_MONTHLY_LIMITS.FREE}, START {AI_MONTHLY_LIMITS.START}, BUSINESS {AI_MONTHLY_LIMITS.BUSINESS}, PRO {AI_MONTHLY_LIMITS.PRO}. სათაურები ლიმიტში არ ითვლება.</p>
+                <p className="mt-3 text-xs leading-5 text-text-secondary">თვიური ლიმიტი: საცდელი {AI_MONTHLY_LIMITS.TRIAL}, START {AI_MONTHLY_LIMITS.START}, BUSINESS {AI_MONTHLY_LIMITS.BUSINESS}, PRO {AI_MONTHLY_LIMITS.PRO}. სათაურები ლიმიტში არ ითვლება.</p>
             </Card>
         </div>
 

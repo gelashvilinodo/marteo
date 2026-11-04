@@ -1,19 +1,22 @@
 // გუნდის (თანამფლობელები და თანამშრომლები) საერთო მონაცემები.
 // კლიენტზეც გამოიყენება, ამიტომ აქ სერვერის კოდი არ უნდა იყოს.
+import { PLAN_LIMITS } from "@/lib/subscription/plans";
 import type { BusinessPermission } from "./permissions";
 
 export const INVITE_LIFETIME_HOURS = 12;
 export const INVITE_MAX_RESENDS = 3;
 export const INVITE_RESEND_COOLDOWN_SECONDS = 120;
 
-export type TeamPlan = "FREE" | "START" | "BUSINESS" | "PRO";
+// FREE: გეგმა არასდროს ყოფილა. დაბლოკილი ბიზნესი ბოლო ფასიანი გეგმის ლიმიტს ინარჩუნებს.
+export type TeamPlan = "FREE" | "TRIAL" | "START" | "BUSINESS" | "PRO";
 
-// თანამფლობელი = მფლობელის გარდა დამატებული OWNER. ლიმიტები ერთ ადგილასაა.
+// თანამფლობელი = მფლობელის გარდა დამატებული OWNER. ლიმიტები lib/subscription/plans.ts-შია.
 export const TEAM_LIMITS: Record<TeamPlan, { coOwners: number; staff: number }> = {
     FREE: { coOwners: 0, staff: 0 },
-    START: { coOwners: 1, staff: 2 },
-    BUSINESS: { coOwners: 2, staff: 5 },
-    PRO: { coOwners: 3, staff: 15 },
+    TRIAL: { coOwners: PLAN_LIMITS.TRIAL.coOwners, staff: PLAN_LIMITS.TRIAL.staff },
+    START: { coOwners: PLAN_LIMITS.START.coOwners, staff: PLAN_LIMITS.START.staff },
+    BUSINESS: { coOwners: PLAN_LIMITS.BUSINESS.coOwners, staff: PLAN_LIMITS.BUSINESS.staff },
+    PRO: { coOwners: PLAN_LIMITS.PRO.coOwners, staff: PLAN_LIMITS.PRO.staff },
 };
 
 export const PERMISSION_OPTIONS: ReadonlyArray<{

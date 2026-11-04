@@ -34,6 +34,7 @@ export default async function DashboardLayout({
             isPlatformAdmin={Boolean(await getAdminUser())}
             isOwner={membership.access.role === "OWNER"}
             access={membership.access}
+            plan={membership.plan}
             businessMode={membership.business.mode}
             businessName={membership.business.name}
             businessLogoUrl={membership.business.logoUrl}

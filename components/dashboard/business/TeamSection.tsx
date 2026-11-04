@@ -9,6 +9,8 @@ import type { BusinessPermission } from "@/lib/business/permissions";
 import { PERMISSION_OPTIONS, type TeamInvite, type TeamMember, type TeamRequestView, type TeamSnapshot } from "@/lib/business/team";
 import InviteMemberDialog from "./InviteMemberDialog";
 import EditMemberDialog from "./EditMemberDialog";
+import { usePlan } from "@/components/dashboard/plan/PlanContext";
+import { CornerCrown } from "@/components/dashboard/plan/PlanCrown";
 
 type ApiResponse = { success?: boolean; message?: string; team?: TeamSnapshot };
 
@@ -41,6 +43,7 @@ function RoleBadge({ children, tone = "neutral" }: { children: React.ReactNode; 
 export default function TeamSection({ initialTeam, businessMode }: { initialTeam: TeamSnapshot; businessMode: BusinessMode }) {
     const [team, setTeam] = useState(initialTeam);
     const [inviting, setInviting] = useState(false);
+    const { allows, guard, openUpgrade } = usePlan();
     const [busyId, setBusyId] = useState("");
     const [confirmCancel, setConfirmCancel] = useState("");
     const [confirmRemove, setConfirmRemove] = useState("");
@@ -133,7 +136,8 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
             </li>
         );
     }
-    const canInvite = team.used.coOwners < team.limits.coOwners || team.used.staff < team.limits.staff;
+    const teamAllowed = allows("team");
+    const canInvite = teamAllowed && (team.used.coOwners < team.limits.coOwners || team.used.staff < team.limits.staff);
 
     async function act(invite: TeamInvite, action: "resend" | "cancel") {
         if (busyId) return;
@@ -292,11 +296,21 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
                         თანამფლობელები {team.used.coOwners}/{team.limits.coOwners} · თანამშრომლები {team.used.staff}/{team.limits.staff}
                     </p>
                 </div>
-                <button type="button" onClick={() => setInviting(true)} disabled={!canInvite}
-                    className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-success px-4 text-sm font-semibold text-white disabled:opacity-50">
-                    <Icon icon="solar:user-plus-linear" className="size-5" aria-hidden="true" />
-                    წევრის დამატება
-                </button>
+                {canInvite
+                    ? <button type="button" onClick={() => setInviting(true)}
+                        className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-success px-4 text-sm font-semibold text-white">
+                        <Icon icon="solar:user-plus-linear" className="size-5" aria-hidden="true" />
+                        წევრის დამატება
+                    </button>
+                    // ლიმიტი შევსებულია ან გეგმაში გუნდი არ არის: გვირგვინი აჩვენებს, რომელ გეგმაზე იხსნება.
+                    : <button type="button" onClick={() => teamAllowed
+                            ? openUpgrade({ feature: "team", tier: "PRO", message: "მეტი წევრისთვის საჭიროა PRO გეგმა: 5 თანამფლობელი და 15 თანამშრომელი." })
+                            : guard("team")}
+                        className="relative inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold text-text-secondary">
+                        <Icon icon="solar:user-plus-linear" className="size-5" aria-hidden="true" />
+                        წევრის დამატება
+                        <CornerCrown feature="team" pro={teamAllowed} />
+                    </button>}
             </div>
 
             {!canInvite && (

@@ -4,6 +4,9 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { createPrismaClient } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
+import { featureMessage } from "@/lib/subscription/plan-access";
+import { allowedModes } from "@/lib/subscription/plans";
+import { readPlanState } from "@/lib/subscription/server";
 
 import {
     BusinessSettingsError,
@@ -215,7 +218,8 @@ async function readBody(request: Request): Promise<unknown> {
 }
 
 export async function GET() {
-    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
+    // მხოლოდ ნახვის რეჟიმშიც იხსნება: პარამეტრებიდან ხდება გეგმის არჩევა.
+    const accessDenied = await apiAccessDenied("OWNER", "edit", { allowLocked: true }); if (accessDenied) return accessDenied;
     try {
         const context = await getContext();
         const prisma = createPrismaClient();
@@ -284,6 +288,17 @@ export async function PATCH(request: Request) {
                     // დაკარგული პასუხის შემდეგ იმავე მონაცემებით
                     // გამეორება დამატებით ცვლილებას არ შექმნის.
                     if (unchanged) return current;
+
+                    if (current.mode !== input.mode) {
+                        const plan = await readPlanState(tx, context.businessId);
+                        if (!plan.tier || !allowedModes(plan.tier).includes(input.mode)) {
+                            throw new BusinessSettingsError(
+                                featureMessage(input.mode === "HYBRID" ? "hybridMode" : "stock"),
+                                402,
+                                "mode",
+                            );
+                        }
+                    }
 
                     if (
                         current.updatedAt.getTime() !==

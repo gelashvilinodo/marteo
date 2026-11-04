@@ -8,7 +8,7 @@ import { withAiHistory } from "@/lib/ai/ai-conversations-http";
 type Context = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, { params }: Context) {
-    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("OWNER", "edit", { feature: "ai" }); if (accessDenied) return accessDenied;
     const { id } = await params;
 
     return guardMutation(async () => withAiHistory(async (prisma, owner) => {

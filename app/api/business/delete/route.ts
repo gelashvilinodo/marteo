@@ -10,7 +10,7 @@ import { rateLimitResponse, reserveLimits } from "@/lib/security/rate-limit";
 
 // წაშლა იწყება სახელით და პაროლით; სხვა მფლობელების თანხმობამდე არაფერი იშლება.
 async function post(request: Request) {
-    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("OWNER", "edit", { allowLocked: true }); if (accessDenied) return accessDenied;
     const context = (await getPgDashboardContext())!;
     const body = ((await request.json().catch(() => null)) ?? {}) as Record<string, unknown>;
     const db = createPrismaClient();

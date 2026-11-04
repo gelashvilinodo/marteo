@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 // AI პანელის მრიცხველისთვის: ამ თვეში გამოყენებული და ლიმიტი.
 export async function GET() {
-    const accessDenied = await apiAccessDenied("OWNER", "view"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("OWNER", "view", { feature: "ai" }); if (accessDenied) return accessDenied;
     const context = await getPgDashboardContext();
     if (!context?.membership) return orderJson({ success: false, message: "ბიზნესი ვერ მოიძებნა." }, 403);
     const prisma = createPrismaClient();

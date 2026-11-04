@@ -3,6 +3,9 @@ import useTransientNotice from '@/components/shared/useTransientNotice';
 
 import Image from "next/image";
 import BusinessModeChoice from "./BusinessModeChoice";
+import { usePlan } from "@/components/dashboard/plan/PlanContext";
+import { BUSINESS_MODES } from "@/lib/business/business-mode";
+import { allowedModes } from "@/lib/subscription/plans";
 import type { BusinessMode } from "@/lib/business/business-mode";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -31,6 +34,9 @@ export default function BusinessSettingsForm({
     const router = useRouter();
 
     const [mode,setMode]=useState<BusinessMode>(initialBusiness.mode);
+    // გეგმაში არშემავალი მიმართულება გვირგვინით ჩანს (Start: მხოლოდ იმპორტი, Business: არა „ორივე“).
+    const { plan, openUpgrade } = usePlan();
+    const lockedModes = plan?.tier ? BUSINESS_MODES.map(item => item.value).filter(value => !allowedModes(plan.tier!).includes(value)) : [];
     const [saved, setSaved] = useState(initialBusiness);
     const [name, setName] = useState(initialBusiness.name);
     const [phone, setPhone] = useState(
@@ -487,7 +493,7 @@ export default function BusinessSettingsForm({
                         </span>
                     </label>
                 </div>
-                <div className="mt-5"><BusinessModeChoice value={mode} onChange={value=>{setMode(value);setNotice('');}}/><p className="mt-2 text-xs leading-5 text-text-secondary">მიმართულების შეცვლა მონაცემებს არ შლის. შესაბამისი გვერდები არჩეული მიმართულებით გამოჩნდება.</p></div>
+                <div className="mt-5"><BusinessModeChoice value={mode} onChange={value=>{setMode(value);setNotice('');}} locked={lockedModes} onLocked={value=>openUpgrade(value==='HYBRID'?{feature:'hybridMode'}:{feature:'stock',message:'წარმოება ხელმისაწვდომია ბიზნესი გეგმიდან.'})}/><p className="mt-2 text-xs leading-5 text-text-secondary">მიმართულების შეცვლა მონაცემებს არ შლის. შესაბამისი გვერდები არჩეული მიმართულებით გამოჩნდება.</p></div>
             </fieldset>
 
             <div

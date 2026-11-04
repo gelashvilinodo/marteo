@@ -19,6 +19,8 @@ const callModel=process.env.AI_QA_SKIP_MODEL!=='1';
   await db.query('INSERT INTO "User" (id,email,phone,password,status,"emailVerifiedAt","phoneVerifiedAt","updatedAt") VALUES ($1,$2,$3,$4,\'ACTIVE\',now(),now(),now())',[ownerId,tag+'@example.invalid','+000'+tag,'disabled-qa-password']);
   await db.query('INSERT INTO "Business" (id,name,"updatedAt") VALUES ($1,$2,now())',[businessId,name]);
   await db.query('INSERT INTO "BusinessMembership" (id,"userId","businessId",role,"updatedAt") VALUES ($1,$2,$3,\'OWNER\',now())',[tag+'-m',ownerId,businessId]);
+  // AI needs an active plan; Business has 100 questions a month.
+  await db.query('INSERT INTO "Subscription" (id,"businessId",plan,status,"expiresAt","updatedAt") VALUES ($1,$2,\'BUSINESS\',\'ACTIVE\',$3,now())',[tag+'-s',businessId,new Date(Date.now()+30*86400000).toISOString()]);
   async function session(userId){const token=randomBytes(32).toString('hex'),id=randomUUID();sessionIds.push(id);await db.query('INSERT INTO "Session" (id,"userId","tokenHash","expiresAt","updatedAt") VALUES ($1,$2,$3,$4,now())',[id,userId,createHash('sha256').update(token).digest('hex'),new Date(Date.now()+86400000).toISOString()]);return token}
   const adminToken=await session(admins[0].id),ownerToken=await session(ownerId);
   const call=(p,token,body,method)=>fetch(base+p,{method:method||(body?'POST':'GET'),redirect:'manual',headers:{Cookie:'marteo_session='+token,...(body?{'Content-Type':'application/json',Origin:base}:{})},body:body?JSON.stringify(body):undefined});
@@ -28,8 +30,8 @@ const callModel=process.env.AI_QA_SKIP_MODEL!=='1';
   const file=()=>call('/api/ai/purchase-draft',ownerToken,{target:'products',fileName:'qa.csv',rows:[{row:1,cells:['name','qty','price']},{row:2,cells:['Bag','2','10']}],photoCount:0});
   const setAi=(body,token=adminToken)=>call(`/api/admin/businesses/${businessId}/ai`,token,body,'PUT');
 
-  // FREE (no subscription) starts at 0 / 30.
-  let q=await quota();assert.equal(q.plan,'FREE');assert.equal(q.used,0);assert.equal(q.limit,30);assert.equal(q.disabled,false);
+  // Business starts at 0 / 100.
+  let q=await quota();assert.equal(q.plan,'BUSINESS');assert.equal(q.used,0);assert.equal(q.limit,100);assert.equal(q.disabled,false);
 
   if(callModel){
    const r=await ask();const d=await r.json();assert.equal(r.status,200,d.message);assert.ok(d.reply);assert.equal(d.quota.used,1);
@@ -41,12 +43,12 @@ const callModel=process.env.AI_QA_SKIP_MODEL!=='1';
 
   // Fill the month: the next question and file are refused before the model is called.
   const used=(await quota()).used;
-  await db.query(`INSERT INTO "AiUsage" (id,"businessId","businessName",kind,model,counted) SELECT gen_random_uuid()::text,$1,$2,'CHAT','claude-haiku-5-5',true FROM generate_series(1,$3)`,[businessId,name,30-used]);
+  await db.query(`INSERT INTO "AiUsage" (id,"businessId","businessName",kind,model,counted) SELECT gen_random_uuid()::text,$1,$2,'CHAT','claude-haiku-5-5',true FROM generate_series(1,$3)`,[businessId,name,100-used]);
   // A title and a failed request never count.
   await db.query(`INSERT INTO "AiUsage" (id,"businessId","businessName",kind,model,counted,failed) VALUES (gen_random_uuid()::text,$1,$2,'TITLE','claude-haiku-5-5',false,false),(gen_random_uuid()::text,$1,$2,'CHAT','claude-haiku-5-5',false,true)`,[businessId,name]);
-  q=await quota();assert.equal(q.used,30);
+  q=await quota();assert.equal(q.used,100);
   const before=(await rows()).length;
-  let r=await ask();let d=await r.json();assert.equal(r.status,429);assert.match(d.message,/ლიმიტი ამოიწურა \(30\/30\)/);
+  let r=await ask();let d=await r.json();assert.equal(r.status,429);assert.match(d.message,/ლიმიტი ამოიწურა \(100\/100\)/);
   r=await file();d=await r.json();assert.equal(r.status,429,d.message);
   assert.equal((await rows()).length,before,'refused requests leave no row');
 
@@ -54,14 +56,14 @@ const callModel=process.env.AI_QA_SKIP_MODEL!=='1';
   r=await setAi({disabled:false,monthlyLimit:-1});d=await r.json();assert.equal(r.status,422,JSON.stringify(d));
   assert.equal((await setAi({disabled:'yes',monthlyLimit:null})).status,422);
   assert.equal((await setAi({disabled:false,monthlyLimit:null})).status,409,'no change');
-  assert.equal((await setAi({disabled:false,monthlyLimit:40},ownerToken)).status,403);
+  assert.equal((await setAi({disabled:false,monthlyLimit:140},ownerToken)).status,403);
 
   // Custom limit lifts the cap.
-  r=await setAi({disabled:false,monthlyLimit:40});d=await r.json();assert.equal(r.status,200,d.message);assert.equal(d.ai.limit,40);assert.equal(d.ai.custom,true);
-  q=await quota();assert.equal(q.limit,40);assert.equal(q.custom,true);
+  r=await setAi({disabled:false,monthlyLimit:140});d=await r.json();assert.equal(r.status,200,d.message);assert.equal(d.ai.limit,140);assert.equal(d.ai.custom,true);
+  q=await quota();assert.equal(q.limit,140);assert.equal(q.custom,true);
 
   // Switched off: refused with its own message, ring shows disabled.
-  r=await setAi({disabled:true,monthlyLimit:40});assert.equal(r.status,200);
+  r=await setAi({disabled:true,monthlyLimit:140});assert.equal(r.status,200);
   q=await quota();assert.equal(q.disabled,true);
   r=await ask();d=await r.json();assert.equal(r.status,403);assert.match(d.message,/გამორთულია/);
   r=await file();assert.equal(r.status,403);
@@ -69,11 +71,11 @@ const callModel=process.env.AI_QA_SKIP_MODEL!=='1';
 
   // Back to the plan's limit.
   r=await setAi({disabled:false,monthlyLimit:null});assert.equal(r.status,200);
-  q=await quota();assert.equal(q.limit,30);assert.equal(q.custom,false);assert.equal(q.disabled,false);
+  q=await quota();assert.equal(q.limit,100);assert.equal(q.custom,false);assert.equal(q.disabled,false);
 
   // Paid plan raises the limit.
-  await db.query('INSERT INTO "Subscription" (id,"businessId",plan,status,"expiresAt","updatedAt") VALUES ($1,$2,\'PRO\',\'ACTIVE\',$3,now())',[tag+'-s',businessId,new Date(Date.now()+30*86400000).toISOString()]);
-  q=await quota();assert.equal(q.plan,'PRO');assert.equal(q.limit,1500);
+  await db.query('UPDATE "Subscription" SET plan=\'PRO\' WHERE id=$1',[tag+'-s']);
+  q=await quota();assert.equal(q.plan,'PRO');assert.equal(q.limit,500);
 
   // Admin pages.
   const page=async p=>{const res=await call(p,adminToken);assert.equal(res.status,200,p);return (await res.text()).replaceAll('<!-- -->','')};

@@ -6,7 +6,10 @@ import { rateLimitResponse, reserveLimits } from "@/lib/security/rate-limit";
 
 import { createPrismaClient } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
-import { activeBusinessCookieOptions, ACTIVE_BUSINESS_COOKIE, findActiveMembership } from "@/lib/auth/active-business";
+import { activeBusinessCookieOptions, ACTIVE_BUSINESS_COOKIE } from "@/lib/auth/active-business";
+import { featureMessage } from "@/lib/subscription/plan-access";
+import { planAllows, planStateFrom } from "@/lib/subscription/plan-state";
+import { TRIAL_DAYS } from "@/lib/subscription/plans";
 
 async function post(request: Request) {
   try {
@@ -80,27 +83,27 @@ async function post(request: Request) {
 
     await reserveLimits(prisma, [{ scope: "business-create", identity: user.id, maximum: 10, seconds: 24 * 60 * 60 }]);
 
-    // An additional business starts on the plan of a business the user owns
-    // (the open one first); the first business starts on FREE. A business where
-    // the user is only staff is someone else's subscription and never passes on.
-    const activeMembership = await findActiveMembership(prisma, user.id);
-    const currentMembership = activeMembership?.role === "OWNER"
-      ? activeMembership
-      : await prisma.businessMembership.findFirst({
-          where: { userId: user.id, role: "OWNER", status: "ACTIVE" },
-          orderBy: [{ createdAt: "asc" }, { businessId: "asc" }],
-          select: { businessId: true },
-        });
-    const currentSubscription = currentMembership
-      ? await prisma.subscription.findUnique({
-          where: { businessId: currentMembership.businessId },
-          select: { plan: true, status: true, expiresAt: true },
-        })
-      : null;
-    const inheritsPlan =
-      currentSubscription?.status === "ACTIVE" || currentSubscription?.status === "TRIALING";
+    // The first business a user creates gets the 14-day trial (once per user). Later businesses
+    // start without a plan and wait for payment, and only an owner of an active Business or Pro
+    // plan may add one. A business where the user is only staff never counts.
+    const ownedSubscriptions = await prisma.subscription.findMany({
+      where: { business: { memberships: { some: { userId: user.id, role: "OWNER", status: "ACTIVE" } } } },
+      select: { plan: true, status: true, expiresAt: true, currentPeriodStart: true, cancelAtPeriodEnd: true },
+    });
+    if (ownedSubscriptions.length > 0 && !ownedSubscriptions.some(row => planAllows(planStateFrom(row), "extraBusiness"))) {
+      return NextResponse.json(
+        { error: featureMessage("extraBusiness"), code: "PLAN_FEATURE", feature: "extraBusiness", requiredTier: "BUSINESS" },
+        { status: 402 }
+      );
+    }
 
     const result = await prisma.$transaction(async (tx) => {
+      const now = new Date();
+      const trial = (await tx.user.updateMany({
+        where: { id: user.id, trialUsedAt: null },
+        data: { trialUsedAt: now },
+      })).count === 1;
+
       const business = await tx.business.create({
         data: {
           name,
@@ -119,12 +122,15 @@ async function post(request: Request) {
       });
 
       const subscription = await tx.subscription.create({
-        data: {
-          businessId: business.id,
-          plan: inheritsPlan ? currentSubscription.plan : "FREE",
-          status: inheritsPlan ? currentSubscription.status : "ACTIVE",
-          expiresAt: inheritsPlan ? currentSubscription.expiresAt : null,
-        },
+        data: trial
+          ? {
+              businessId: business.id,
+              plan: "FREE",
+              status: "TRIALING",
+              currentPeriodStart: now,
+              expiresAt: new Date(now.getTime() + TRIAL_DAYS * 86_400_000),
+            }
+          : { businessId: business.id, plan: "FREE", status: "ACTIVE" },
       });
 
       return {

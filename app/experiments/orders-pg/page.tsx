@@ -10,6 +10,8 @@ import { getOrdersPgPage } from "@/lib/orders/get-orders-pg-page";
 import type { OrdersSearchParams } from "@/lib/orders/get-orders-page";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import OrdersView from "@/components/dashboard/orders/OrdersView";
+import { getPgDashboardContext } from "@/lib/auth/pg-dashboard-context";
+import { planStateFrom } from "@/lib/subscription/plan-state";
 
 type Context = { mode:BusinessMode; expiresAt: Date; status: string; firstName: string | null; email: string; businessId: string | null; name: string; logoUrl: string | null };
 export default async function OrdersPgExperiment({ searchParams }: { searchParams: Promise<OrdersSearchParams> }) {
@@ -36,7 +38,7 @@ export default async function OrdersPgExperiment({ searchParams }: { searchParam
         if (context.status !== "ACTIVE") redirect("/login");
         if (!context.businessId) redirect("/business/onboarding");
         const data = await getOrdersPgPage(client, context.businessId, await searchParams);
-        return <DashboardShell businessMode={context.mode} businessName={context.name} businessLogoUrl={context.logoUrl} businessId={context.businessId} businesses={[]} userName={context.firstName || ""} userEmail={context.email} isOwner={access.role === "OWNER"} access={access}>
+        return <DashboardShell businessMode={context.mode} businessName={context.name} businessLogoUrl={context.logoUrl} businessId={context.businessId} businesses={[]} userName={context.firstName || ""} userEmail={context.email} isOwner={access.role === "OWNER"} access={access} plan={(await getPgDashboardContext())?.membership?.plan ?? planStateFrom(null)}>
             <OrdersView data={await hideCostsIfNeeded(data)} basePath="/experiments/orders-pg" listEndpoint="/api/orders/list-pg" />
         </DashboardShell>;
     } finally { await client.$disconnect(); }

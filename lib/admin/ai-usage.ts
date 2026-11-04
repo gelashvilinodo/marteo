@@ -19,9 +19,10 @@ export type AiUsageStats = {
 
 const DAYS = 30;
 
-// Same rule as readPlan: an ended or unpaid plan counts as FREE.
+// Same rule as readPlan: an ended or unpaid plan counts as FREE; a running trial has its own limit.
 const effectiveLimit = sql`coalesce(b."aiMonthlyLimit", CASE
-    WHEN s.status IN ('ACTIVE', 'TRIALING') AND (s."expiresAt" IS NULL OR s."expiresAt" > now() AT TIME ZONE 'UTC') THEN
+    WHEN s.status = 'TRIALING' AND (s."expiresAt" IS NULL OR s."expiresAt" > now() AT TIME ZONE 'UTC') THEN ${AI_MONTHLY_LIMITS.TRIAL}::int
+    WHEN s.status = 'ACTIVE' AND (s."expiresAt" IS NULL OR s."expiresAt" > now() AT TIME ZONE 'UTC') THEN
         CASE s.plan::text WHEN 'START' THEN ${AI_MONTHLY_LIMITS.START}::int WHEN 'BUSINESS' THEN ${AI_MONTHLY_LIMITS.BUSINESS}::int
             WHEN 'PRO' THEN ${AI_MONTHLY_LIMITS.PRO}::int ELSE ${AI_MONTHLY_LIMITS.FREE}::int END
     ELSE ${AI_MONTHLY_LIMITS.FREE}::int END)`;

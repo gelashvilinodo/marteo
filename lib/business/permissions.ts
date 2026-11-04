@@ -1,5 +1,7 @@
 // ბიზნესის წევრის უფლებები. ეს ფაილი კლიენტზეც გამოიყენება, ამიტომ აქ
 // მხოლოდ სუფთა ლოგიკაა. სერვერის შემოწმება lib/business/access.ts-შია.
+import { LOCKED_OPEN_SECTIONS, planAllows, type PlanState } from "@/lib/subscription/plan-state";
+import type { PlanFeature } from "@/lib/subscription/plans";
 export const BUSINESS_PERMISSIONS = ["ORDERS", "INVENTORY", "PURCHASES", "PRODUCTION", "CONTENT", "FINANCE"] as const;
 export type BusinessPermission = typeof BUSINESS_PERMISSIONS[number];
 export type AccessLevel = "view" | "edit";
@@ -42,20 +44,24 @@ export type SectionNeed = BusinessPermission | readonly BusinessPermission[] | "
 
 // დაშბორდის განყოფილებები და მათი საჭირო უფლება (ნახვისთვის). თანმიმდევრობა
 // განსაზღვრავს, სად გადავიდეს თანამშრომელი, რომელსაც საწყის გვერდზე წვდომა არ აქვს.
-export const DASHBOARD_SECTIONS: ReadonlyArray<{ path: string; need: SectionNeed }> = [
+// feature: გეგმის ფუნქცია, რომლის გარეშეც განყოფილება საიდბარზე გვირგვინით იკეტება.
+export const DASHBOARD_SECTIONS: ReadonlyArray<{ path: string; need: SectionNeed; feature?: PlanFeature }> = [
     { path: "/dashboard", need: "FINANCE" },
     { path: "/dashboard/orders", need: "ORDERS" },
     { path: "/dashboard/customers", need: "ORDERS" },
-    { path: "/dashboard/inventory", need: ["INVENTORY", "PURCHASES"] },
-    { path: "/dashboard/purchases", need: "PURCHASES" },
-    { path: "/dashboard/material-purchases", need: "PURCHASES" },
-    { path: "/dashboard/material-inventory", need: ["INVENTORY", "PURCHASES", "PRODUCTION"] },
-    { path: "/dashboard/production", need: "PRODUCTION" },
+    { path: "/dashboard/inventory", need: ["INVENTORY", "PURCHASES"], feature: "stock" },
+    { path: "/dashboard/purchases", need: "PURCHASES", feature: "stock" },
+    { path: "/dashboard/material-purchases", need: "PURCHASES", feature: "stock" },
+    { path: "/dashboard/material-inventory", need: ["INVENTORY", "PURCHASES", "PRODUCTION"], feature: "stock" },
+    { path: "/dashboard/production", need: "PRODUCTION", feature: "stock" },
     { path: "/dashboard/calendar", need: "CONTENT" },
     { path: "/dashboard/analytics", need: "FINANCE" },
     { path: "/dashboard/statistics", need: "FINANCE" },
-    { path: "/dashboard/import", need: "OWNER" },
+    { path: "/dashboard/import", need: "OWNER", feature: "fileImport" },
     { path: "/dashboard/business-settings", need: "OWNER" },
+    // გეგმა და გადახდა მხოლოდ მფლობელისთვისაა; თანამშრომელი ფასებს და გადახდებს ვერ ხედავს.
+    { path: "/dashboard/billing", need: "OWNER" },
+    { path: "/dashboard/plans", need: "OWNER" },
     { path: "/dashboard/notifications", need: "MEMBER" },
     { path: "/dashboard/help", need: "MEMBER" },
     { path: "/dashboard/profile", need: "MEMBER" },
@@ -79,4 +85,14 @@ export function canSeeCosts(access: BusinessAccess | null | undefined) {
 // უცნობი გზა მხოლოდ მფლობელისთვისაა, რომ ახალი განყოფილება შემთხვევით არ გაიხსნას.
 export function sectionNeed(path: string): SectionNeed {
     return DASHBOARD_SECTIONS.find(section => section.path === path)?.need ?? "OWNER";
+}
+
+// რატომ არის განყოფილება გეგმით დაკეტილი: "locked" — ბიზნესი მხოლოდ ნახვის რეჟიმშია,
+// ფუნქციის სახელი — მიმდინარე გეგმაში ეს ფუნქცია არ შედის. null — ღიაა.
+export function sectionPlanBlock(path: string, plan: PlanState | null | undefined): "locked" | PlanFeature | null {
+    if (!plan) return null;
+    const section = DASHBOARD_SECTIONS.find(item => item.path === path);
+    if (plan.locked) return LOCKED_OPEN_SECTIONS.includes(path) ? null : "locked";
+    if (section?.feature && !planAllows(plan, section.feature)) return section.feature;
+    return null;
 }

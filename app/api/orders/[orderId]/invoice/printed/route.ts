@@ -9,7 +9,7 @@ function json(data: unknown, status = 200) {
 }
 
 export async function POST(request: Request, context: { params: Promise<{ orderId: string }> }) {
-    const accessDenied = await apiAccessDenied("ORDERS", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("ORDERS", "edit", { allowLocked: true }); if (accessDenied) return accessDenied;
     let prisma: ReturnType<typeof createPrismaClient> | undefined;
     try {
         if (request.headers.get("origin") !== new URL(request.url).origin) {

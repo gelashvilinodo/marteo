@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 // ბრაუზერი ამას კვირაში ერთხელ ითხოვს; ლიმიტი მხოლოდ ზედმეტ გამოძახებას აჩერებს.
 export async function GET() {
-    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("OWNER", "edit", { feature: "ai" }); if (accessDenied) return accessDenied;
     const context = await getPgDashboardContext();
 
     if (!context) return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);

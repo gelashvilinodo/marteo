@@ -14,6 +14,8 @@ import AiHistoryList from "./AiHistoryList";
 import AiConversationLoader from "./AiConversationLoader";
 import { useKeyboardViewport } from "@/components/support/useKeyboardViewport";
 import AiQuotaRing from "./AiQuotaRing";
+import { usePlan } from "@/components/dashboard/plan/PlanContext";
+import PlanCrown from "@/components/dashboard/plan/PlanCrown";
 
 const ACCEPTED_EXTENSIONS = [".numbers", ".xlsx", ".csv"];
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
@@ -159,6 +161,7 @@ function subscribeDesktop(onChange: () => void) {
 }
 
 export default function AiAssistantPanel({ userName }: { userName: string }) {
+    const aiAllowed = usePlan().allows("ai");
     const {
         open, unread, pending, draft, messages, openPanel, collapse, setDraft, send, updateMessage,
         close: closePanel, newChat, showList, openConversation, deleteConversation,
@@ -591,6 +594,7 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
                 )}
             </span>
             {unread && <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-danger" />}
+            {!aiAllowed && <PlanCrown feature="ai" onDark className="h-4 w-4" />}
             {pending && !open && (
                 <span aria-hidden="true" className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-white/70 border-t-transparent motion-reduce:animate-none" />
             )}

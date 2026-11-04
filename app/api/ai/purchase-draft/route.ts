@@ -29,7 +29,7 @@ function readRows(value: unknown): AiSourceRow[] | null {
 }
 
 export const POST = guardMutation(async (request) => {
-    const accessDenied = await apiAccessDenied("PURCHASES", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("PURCHASES", "edit", { feature: "aiFiles" }); if (accessDenied) return accessDenied;
     const context = await getPgDashboardContext();
 
     if (!context) {

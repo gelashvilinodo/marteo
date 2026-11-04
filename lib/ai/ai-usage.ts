@@ -2,7 +2,7 @@ import "server-only";
 
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
-import { readPlan } from "@/lib/business/team-server";
+import { readPlanState } from "@/lib/subscription/server";
 import { AiChatError, MARTEO_AI_MODEL } from "./anthropic-client";
 import { AI_MONTHLY_LIMITS, formatResetDay, nextTbilisiMonthStart, tbilisiMonthStart, type AiQuota } from "./ai-quota";
 
@@ -50,9 +50,10 @@ function monthLimit(plan: string, override: number | null) {
 }
 
 export async function getAiQuota(db: Db, businessId: string, now = new Date()): Promise<AiQuota> {
+    // მხოლოდ მოქმედი გეგმა: დაბლოკილ ბიზნესს (ვადაგასული, გადაუხდელი) AI-ის ლიმიტი 0-ია.
     const [business, plan, used] = await Promise.all([
         db.business.findUnique({ where: { id: businessId }, select: { aiDisabled: true, aiMonthlyLimit: true } }),
-        readPlan(db, businessId, now),
+        readPlanState(db, businessId, now).then(state => state.tier ?? "FREE"),
         db.aiUsage.count({ where: { businessId, counted: true, createdAt: { gte: tbilisiMonthStart(now) } } }),
     ]);
     return {

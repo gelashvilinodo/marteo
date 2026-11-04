@@ -15,11 +15,11 @@ export function announceAiQuota(quota?: AiQuota) {
 // დროებით პარამეტრებზე მიდის; პაკეტების გვერდის აწყობისას სწორ ადგილზე გადავიყვანთ.
 const UPGRADE_HREF = "/dashboard/business-settings";
 
-const PLAN_ORDER = ["FREE", "START", "BUSINESS", "PRO"] as const;
+// Start-ს AI არ აქვს, ამიტომ ყველა დაბალი გეგმიდან შემდეგი ნაბიჯი Business-ია.
+const NEXT_PLAN: Record<string, "BUSINESS" | "PRO"> = { FREE: "BUSINESS", TRIAL: "BUSINESS", START: "BUSINESS", BUSINESS: "PRO" };
 
 function nextPlan(plan: string) {
-    const index = PLAN_ORDER.indexOf(plan as typeof PLAN_ORDER[number]);
-    const next = PLAN_ORDER[index + 1];
+    const next = NEXT_PLAN[plan];
     return next ? { plan: next, limit: AI_MONTHLY_LIMITS[next] } : null;
 }
 

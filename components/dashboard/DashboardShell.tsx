@@ -16,6 +16,9 @@ import DeferredNewOrderDrawer from "@/components/dashboard/orders/DeferredNewOrd
 import PullToRefresh from "@/components/dashboard/PullToRefresh";
 import { AiAssistantInset, AiAssistantProvider } from "@/components/dashboard/ai/AiAssistantProvider";
 import AiAssistantPanel from "@/components/dashboard/ai/AiAssistantPanel";
+import { PlanProvider } from "@/components/dashboard/plan/PlanContext";
+import PlanLockBanner from "@/components/dashboard/plan/PlanLockBanner";
+import type { PlanState } from "@/lib/subscription/plan-state";
 
 type DashboardShellProps = {
     children: React.ReactNode;
@@ -29,6 +32,7 @@ type DashboardShellProps = {
     isPlatformAdmin?: boolean;
     isOwner?: boolean;
     access: BusinessAccess;
+    plan: PlanState;
 };
 
 export default function DashboardShell({
@@ -43,6 +47,7 @@ export default function DashboardShell({
     isPlatformAdmin = false,
     isOwner = true,
     access,
+    plan,
 }: DashboardShellProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const supportUnread = useSupportUnread("/api/support/unread", usePathname());
@@ -62,7 +67,7 @@ export default function DashboardShell({
     }, [sidebarOpen]);
 
     return (
-        <BusinessModeContext value={businessMode}><BusinessAccessContext value={access}><AiAssistantProvider enabled={isOwner}><div className="min-h-screen bg-background lg:flex">
+        <BusinessModeContext value={businessMode}><BusinessAccessContext value={access}><PlanProvider plan={plan} isOwner={isOwner} businessId={businessId}><AiAssistantProvider enabled={isOwner}><div className="min-h-screen bg-background lg:flex">
             <DashboardSidebar mode={businessMode} supportUnread={supportUnread} />
 
             <div
@@ -120,6 +125,7 @@ export default function DashboardShell({
                         isOwner={isOwner}
                     />
 
+                    <PlanLockBanner />
                     <PullToRefresh>{children}</PullToRefresh>
 
                     <DeferredNewOrderDrawer />
@@ -127,6 +133,6 @@ export default function DashboardShell({
 
                 {isOwner && <AiAssistantPanel userName={userName} />}
             </NewOrderProvider>
-        </div></AiAssistantProvider></BusinessAccessContext></BusinessModeContext>
+        </div></AiAssistantProvider></PlanProvider></BusinessAccessContext></BusinessModeContext>
     );
 }

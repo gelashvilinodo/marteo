@@ -1,6 +1,6 @@
 import { requireDashboardSection } from "@/lib/business/access";
+import PlanGatedLink from "@/components/dashboard/plan/PlanGatedLink";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
@@ -102,12 +102,13 @@ export default async function BusinessSettingsPage() {
                             მარაგები და ძველი შეკვეთები ფაილიდან.
                         </p>
 
-                        <Link
+                        <PlanGatedLink
                             href="/dashboard/import"
+                            feature="fileImport"
                             className="mt-4 inline-flex min-h-11 max-w-full items-center justify-center rounded-xl border border-border px-4 py-2 text-center text-sm font-medium text-text-primary transition-colors hover:bg-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         >
                             იმპორტზე გადასვლა
-                        </Link>
+                        </PlanGatedLink>
                     </section>
 
                     <section className="min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">
@@ -134,12 +135,13 @@ export default async function BusinessSettingsPage() {
                             შორის გადართვა პროფილის მენიუდან შეგიძლია.
                         </p>
 
-                        <Link
+                        <PlanGatedLink
                             href="/business/new"
+                            feature="extraBusiness"
                             className="mt-4 inline-flex min-h-11 max-w-full items-center justify-center rounded-xl border border-border px-4 py-2 text-center text-sm font-medium text-text-primary transition-colors hover:bg-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         >
                             ბიზნესის დამატება
-                        </Link>
+                        </PlanGatedLink>
                     </section>
 
                     <DangerZone

@@ -8,6 +8,8 @@ import { Icon } from "@iconify/react";
 import { useNewOrder } from "./NewOrderProvider";
 import OrderProductEditor from "./OrderProductEditor";
 import OrderInventoryPicker from "./OrderInventoryPicker";
+import { usePlan } from "@/components/dashboard/plan/PlanContext";
+import { CornerCrown } from "@/components/dashboard/plan/PlanCrown";
 import OrderInvoiceButton from "./OrderInvoiceButton";
 import { useOrderLeaveGuard } from "./useOrderLeaveGuard";
 import {
@@ -59,6 +61,9 @@ export default function NewOrderDrawer() {
         useState<PendingOrderSave | null>(null);
     const [error, setError] = useState("");
     const [pickerOpen, setPickerOpen] = useState(false);
+    // გეგმაში მარაგი არ შედის: არჩევის ღილაკი გვირგვინით რჩება.
+    const { allows, guard } = usePlan();
+    const stockAllowed = allows("stock");
     const [closing, setClosing] = useState(false);
     const [customerInfo, setCustomerInfo] = useState("");
     const [customerBusy, setCustomerBusy] = useState(false);
@@ -620,7 +625,9 @@ export default function NewOrderDrawer() {
                     </section>
                     <div className="grid min-w-0 grid-cols-1 items-start gap-3 lg:flex-1 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:gap-4">
                         <section className="flex min-h-0 min-w-0 flex-col rounded-2xl border border-border bg-surface lg:self-stretch">
-                            <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border p-3 sm:p-4"><h3 className="flex items-center gap-2 text-sm font-semibold"><Icon icon="solar:box-linear" className="h-5 w-5 text-accent" />პროდუქტები <span className="font-normal text-text-secondary">{draft.items.length}</span></h3><div className="flex flex-wrap gap-2"><button type="button" onClick={() => setPickerOpen(true)} disabled={productsLocked} className="inline-flex h-10 items-center gap-2 rounded-xl border border-success/40 px-3 text-xs font-semibold text-success"><Icon icon="solar:box-linear" className="h-4 w-4" />მარაგიდან არჩევა</button><button type="button" onClick={addManual} disabled={productsLocked} className="inline-flex h-10 items-center gap-2 rounded-xl bg-success px-3 text-xs font-semibold text-white"><Icon icon="solar:add-circle-linear" className="h-4 w-4" />ხელით დამატება</button></div></div>
+                            <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border p-3 sm:p-4"><h3 className="flex items-center gap-2 text-sm font-semibold"><Icon icon="solar:box-linear" className="h-5 w-5 text-accent" />პროდუქტები <span className="font-normal text-text-secondary">{draft.items.length}</span></h3><div className="flex flex-wrap gap-2">{stockAllowed
+    ? <button type="button" onClick={() => setPickerOpen(true)} disabled={productsLocked} className="inline-flex h-10 items-center gap-2 rounded-xl border border-success/40 px-3 text-xs font-semibold text-success"><Icon icon="solar:box-linear" className="h-4 w-4" />მარაგიდან არჩევა</button>
+    : <button type="button" onClick={() => guard("stock")} aria-label="მარაგიდან არჩევა — ხელმისაწვდომია ბიზნეს გეგმიდან" className="relative inline-flex h-10 items-center gap-2 rounded-xl border border-border px-3 text-xs font-semibold text-text-secondary"><Icon icon="solar:box-linear" className="h-4 w-4" />მარაგიდან არჩევა<CornerCrown feature="stock" /></button>}<button type="button" onClick={addManual} disabled={productsLocked} className="inline-flex h-10 items-center gap-2 rounded-xl bg-success px-3 text-xs font-semibold text-white"><Icon icon="solar:add-circle-linear" className="h-4 w-4" />ხელით დამატება</button></div></div>
                             <div
                                 ref={productList}
                                 className={`min-w-0 space-y-3 p-3 sm:p-4 lg:flex-1 ${draft.items.length === 0

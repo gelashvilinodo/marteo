@@ -8,7 +8,7 @@ import { ProductImageError, uploadProductImage } from "@/lib/purchases/product-i
 import { findActiveMembership } from "@/lib/auth/active-business";
 
 export async function POST(request: Request) {
-    const accessDenied = await apiAccessDenied("ORDERS", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("ORDERS", "edit", { feature: "orderPhotos" }); if (accessDenied) return accessDenied;
     try {
         if (request.headers.get("origin") !== new URL(request.url).origin) {
             throw new OrderValidationError("მოთხოვნის წყარო დაუშვებელია.", 403);

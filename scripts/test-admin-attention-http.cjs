@@ -72,7 +72,7 @@ const DAY=86400000,at=days=>new Date(Date.now()+days*DAY).toISOString();
 
   // Support chat side panel: signals, AI use, last payment, admin actions.
   html=await page(`/admin/support/${tag}-c`);
-  for(const t of ['ანგარიში','გადახდა არ შემოსულა: PRO დასრულდა 2 დღის წინ','FREE · PRO გადაუხდელი','მართეო AI ამ თვეში','0 / 30','79.50 ₾ · PRO 1 თვე','ადმინის ბოლო ქმედებები','AI-ის პარამეტრები შეიცვალა'])assert.ok(html.includes(t),t);
+  for(const t of ['ანგარიში','გადახდა არ შემოსულა: PRO დასრულდა 2 დღის წინ','FREE · PRO გადაუხდელი','მართეო AI ამ თვეში','0 / 0','79.50 ₾ · PRO 1 თვე','ადმინის ბოლო ქმედებები','AI-ის პარამეტრები შეიცვალა'])assert.ok(html.includes(t),t);
 
   console.log('PASS: risk signals (lapsed, trial ended, expiring, inactive, onboarding, AI limit), exclusions, filters, overview card, admin-only, chat account panel.');
  }finally{

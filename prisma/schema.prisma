@@ -181,6 +181,8 @@ model User {
   emailVerifiedAt DateTime?
   phoneVerifiedAt DateTime?
   seenTours       String[]  @default([])
+  // 14-დღიანი საცდელი ერთ მომხმარებელს ერთხელ ეძლევა.
+  trialUsedAt     DateTime?
 
   memberships            BusinessMembership[]
   invitedMemberships     BusinessMembership[]     @relation("MembershipInvitedBy")
@@ -356,15 +358,19 @@ model BusinessConsentVote {
 }
 
 model Subscription {
-  id         String             @id @default(cuid())
-  businessId String             @unique
-  plan       SubscriptionPlan   @default(FREE)
-  status     SubscriptionStatus @default(ACTIVE)
-  startedAt  DateTime           @default(now())
-  expiresAt  DateTime?
-  canceledAt DateTime?
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
+  id                 String             @id @default(cuid())
+  businessId         String             @unique
+  plan               SubscriptionPlan   @default(FREE)
+  status             SubscriptionStatus @default(ACTIVE)
+  startedAt          DateTime           @default(now())
+  expiresAt          DateTime?
+  canceledAt         DateTime?
+  // მიმდინარე გადახდის პერიოდის დასაწყისი: შეკვეთების და AI-ის ლიმიტი აქედან ითვლება.
+  currentPeriodStart DateTime?
+  // მომხმარებელმა გააუქმა: გეგმა გადახდილი პერიოდის ბოლომდე მოქმედებს.
+  cancelAtPeriodEnd  Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }
@@ -452,6 +458,8 @@ model Order {
   deletedAt            DateTime?
   publicAccessToken    String?   @unique
   analyticsPendingCost Boolean   @default(false)
+  // ფაილიდან იმპორტირებული შეკვეთა გეგმის თვიურ ლიმიტში არ ითვლება.
+  imported             Boolean   @default(false)
   createdById          String?
   createdBy            User?     @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 

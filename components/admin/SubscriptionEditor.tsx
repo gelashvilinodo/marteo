@@ -5,8 +5,17 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ConfirmDialog from "./ConfirmDialog";
 import { SUBSCRIPTION_STATUS_LABELS as STATUS_LABELS } from "./AdminBadges";
+import { LOCK_MESSAGES, planStateFrom } from "@/lib/subscription/plan-state";
+import { PLAN_LABELS } from "@/lib/subscription/plans";
 
 const PLAN_OPTIONS = ["FREE", "START", "BUSINESS", "PRO"] as const;
+const PLAN_OPTION_LABELS: Record<string, string> = { FREE: "FREE (გეგმის გარეშე)", START: "START", BUSINESS: "BUSINESS", PRO: "PRO" };
+
+// რას ხედავს მომხმარებელი ამ ჩანაწერით: მოქმედი გეგმა ან მხოლოდ ნახვის რეჟიმის მიზეზი.
+function effective(plan: string, status: string, day: string) {
+    const state = planStateFrom({ plan, status, expiresAt: day ? new Date(`${day}T23:59:59+04:00`) : null });
+    return state.tier ? `მოქმედებს: ${PLAN_LABELS[state.tier]}` : `მხოლოდ ნახვის რეჟიმი — ${LOCK_MESSAGES[state.lockReason ?? "NO_PLAN"].split(".")[0]}`;
+}
 
 type Current = { plan: string | null; status: string | null; expiresAt: string | null };
 
@@ -44,8 +53,13 @@ export default function SubscriptionEditor({ businessId, current }: { businessId
     // Extensions continue from the current end date if it is still in the future.
     const base = expires && expires > today() ? expires : today();
 
+    const paid = (tier: string) => () => { setPlan(tier); setStatus("ACTIVE"); setExpires(shift(today(), { months: 1 })); };
     const quick = [
-        { label: "საცდელი 14 დღე", apply: () => { setStatus("TRIALING"); setExpires(shift(today(), { days: 14 })); } },
+        { label: "საცდელი 14 დღე", apply: () => { setPlan("FREE"); setStatus("TRIALING"); setExpires(shift(today(), { days: 14 })); } },
+        { label: "START 1 თვე", apply: paid("START") },
+        { label: "BUSINESS 1 თვე", apply: paid("BUSINESS") },
+        { label: "PRO 1 თვე", apply: paid("PRO") },
+        { label: "გადახდა ვერ შესრულდა", apply: () => setStatus("PAST_DUE") },
         { label: "+1 თვე", apply: () => { setStatus("ACTIVE"); setExpires(shift(base, { months: 1 })); } },
         { label: "+1 წელი", apply: () => { setStatus("ACTIVE"); setExpires(shift(base, { months: 12 })); } },
         { label: "უვადო", apply: () => setExpires("") },
@@ -79,7 +93,7 @@ export default function SubscriptionEditor({ businessId, current }: { businessId
         <div className="grid gap-3 sm:grid-cols-3">
             <label className="text-xs text-text-secondary">პაკეტი
                 <select value={plan} onChange={event => { setNotice(""); setPlan(event.target.value); }} className={`mt-1 ${field}`}>
-                    {PLAN_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                    {PLAN_OPTIONS.map(option => <option key={option} value={option}>{PLAN_OPTION_LABELS[option]}</option>)}
                 </select>
             </label>
             <label className="text-xs text-text-secondary">სტატუსი
@@ -96,7 +110,7 @@ export default function SubscriptionEditor({ businessId, current }: { businessId
                 className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text-primary transition hover:border-accent/40 hover:bg-background">{item.label}</button>)}
         </div>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-text-secondary">{expires ? `ვადა: ${readable(expires)}` : "ვადა არ არის მითითებული (უვადო)"}</p>
+            <p className="text-xs text-text-secondary">{expires ? `ვადა: ${readable(expires)}` : "ვადა არ არის მითითებული (უვადო)"} · {effective(plan, status, expires)}</p>
             <div className="flex gap-2">
                 {changed && <button type="button" onClick={() => { setPlan(current.plan ?? "FREE"); setStatus(current.status ?? "ACTIVE"); setExpires(initialDay); }}
                     className="h-11 flex-1 rounded-xl border border-border px-4 text-sm font-medium transition hover:bg-background sm:flex-none">დაბრუნება</button>}

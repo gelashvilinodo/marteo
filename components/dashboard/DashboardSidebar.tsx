@@ -6,6 +6,9 @@ import { useId, useState } from "react";
 import { usePathname } from "next/navigation";
 import usePurchasePlanCount from "@/components/dashboard/purchases/usePurchasePlanCount";
 import { useBusinessAccess } from "@/components/dashboard/business/BusinessAccessContext";
+import { usePlan } from "@/components/dashboard/plan/PlanContext";
+import PlanCrown from "@/components/dashboard/plan/PlanCrown";
+import { sectionPlanBlock } from "@/lib/business/permissions";
 import { Icon } from "@iconify/react";
 import Image from "next/image";
 
@@ -16,61 +19,51 @@ const navigationItems = [
         label: "მთავარი",
         href: "/dashboard",
         icon: "solar:home-2-bold-duotone",
-        locked: false,
     },
     {
         label: "შეკვეთები",
         href: "/dashboard/orders",
         icon: "solar:clipboard-list-bold-duotone",
-        locked: false,
     },
     {
         label: "შესყიდვები",
         href: "/dashboard/purchases",
         icon: "solar:cart-large-2-bold-duotone",
-        locked: false,
     },
     {
         label: "შესყიდვები - მასალები",
         href: "/dashboard/material-purchases",
         icon: "",
-        locked: false,
     },
     {
         label: "წარმოება",
         href: "/dashboard/production",
         icon: "solar:structure-bold-duotone",
-        locked: false,
     },
     {
         label: "მომხმარებლები",
         href: "/dashboard/customers",
         icon: "solar:users-group-rounded-bold-duotone",
-        locked: false,
     },
     {
         label: "მარაგები",
         href: "/dashboard/inventory",
         icon: "solar:box-bold-duotone",
-        locked: false,
     },
     {
         label: "ანალიტიკა",
         href: "/dashboard/analytics",
         icon: "solar:chart-2-bold-duotone",
-        locked: false,
     },
     {
         label: "სტატისტიკა",
         href: "/dashboard/statistics",
         icon: "solar:graph-up-bold-duotone",
-        locked: false,
     },
     {
         label: "კონტენტ-კალენდარი",
         href: "/dashboard/calendar",
         icon: "solar:calendar-bold-duotone",
-        locked: false,
     },
 
 ];
@@ -122,6 +115,7 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps) {
     const pathname = usePathname();
     const { can, canOpen } = useBusinessAccess();
+    const { plan, openUpgrade } = usePlan();
     const planCount = usePurchasePlanCount(hasBusinessFeature(mode, "imports") && can(["PURCHASES", "INVENTORY"]));
     // თანამშრომელი მხოლოდ იმ განყოფილებებს ხედავს, რომლებზეც წვდომა აქვს.
     const allowedPurchaseLinks = purchaseLinks.filter(link => canOpen(link.href));
@@ -212,46 +206,37 @@ export default function DashboardSidebar({
                                 ? pathname === "/dashboard"
                                 : pathname.startsWith(item.href);
 
-                        if(item.href === "/dashboard/purchases" && mode==='HYBRID') {
+                        if(item.href === "/dashboard/purchases" && mode==='HYBRID' && !sectionPlanBlock(item.href, plan)) {
                             if(!allowedPurchaseLinks.length) return null;
                             return <SidebarGroup key={pathname+item.href} label="შესყიდვები" icon="solar:cart-large-2-bold-duotone" links={allowedPurchaseLinks} pathname={pathname} onSelect={onSelect} badges={{"/dashboard/purchases":planCount}}/>;
                         }
                         if(item.href === "/dashboard/material-purchases" && mode==='HYBRID') return null;
                         if(item.href === "/dashboard/purchases" && !hasBusinessFeature(mode,"imports")) return null;
                         if(["/dashboard/material-purchases","/dashboard/production"].includes(item.href) && !hasBusinessFeature(mode,"manufacturing")) return null;
-                        if (item.href === "/dashboard/inventory" && hasBusinessFeature(mode,"manufacturing")) {
+                        if (item.href === "/dashboard/inventory" && hasBusinessFeature(mode,"manufacturing") && !sectionPlanBlock(item.href, plan)) {
                             if(!allowedInventoryLinks.length) return null;
                             return <SidebarGroup key={pathname + item.href} label="მარაგები" icon="solar:box-bold-duotone" links={allowedInventoryLinks} pathname={pathname} onSelect={onSelect}/>;
                         }
 
                         if (!canOpen(item.href)) return null;
 
-                        if (item.locked) {
+                        // გეგმით დაკეტილი გვერდი ჩანს გვირგვინით, მაგრამ არ იხსნება: დაჭერით გეგმის ფანჯარა ამოდის.
+                        const planBlock = sectionPlanBlock(item.href, plan);
+                        if (planBlock) {
                             return (
-                                <div
+                                <button
                                     key={item.href}
-                                    className="flex h-12 cursor-not-allowed items-center gap-3 rounded-2xl px-4 text-slate-500 opacity-60"
+                                    type="button"
+                                    onClick={() => { onSelect?.(); openUpgrade({ feature: planBlock === "locked" ? null : planBlock }); }}
+                                    aria-label={`${item.label} — დაკეტილია გეგმით`}
+                                    className="sidebar-navigation-link mr-4 flex h-[52px] shrink-0 items-center gap-3 rounded-2xl px-4 text-left text-sm font-medium text-slate-400 transition-all duration-200 hover:bg-white/5 hover:text-slate-200"
                                 >
-                                    <Icon
-                                        icon={item.icon}
-                                        className="h-5 w-5 shrink-0"
-                                    />
-
-                                    <span className="text-sm font-medium">
-                                        {item.href==="/dashboard/material-purchases"&&mode==="MANUFACTURING"?"შესყიდვები":item.label}
+                                    {item.icon ? <Icon icon={item.icon} className="h-5 w-5 shrink-0 opacity-70" /> : <span aria-hidden="true" className="h-5 w-5 shrink-0" />}
+                                    <span>{item.href==="/dashboard/material-purchases"&&mode==="MANUFACTURING"?"შესყიდვები":item.label}</span>
+                                    <span className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-white/10">
+                                        <PlanCrown feature={planBlock === "locked" ? null : planBlock} onDark className="h-3.5 w-3.5" />
                                     </span>
-
-                                    <div className="ml-auto flex items-center gap-1 rounded-full bg-white/10 px-2 py-1">
-                                        <Icon
-                                            icon="solar:lock-keyhole-bold"
-                                            className="h-3.5 w-3.5"
-                                        />
-
-                                        <span className="text-[10px] font-semibold uppercase">
-                                            PRO
-                                        </span>
-                                    </div>
-                                </div>
+                                </button>
                             );
                         }
 

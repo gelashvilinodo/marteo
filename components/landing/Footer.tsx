@@ -22,7 +22,7 @@ const columns = [
         links: [
             { label: "ფუნქციები", href: "/#features" },
             { label: "როგორ მუშაობს", href: "/#how-it-works" },
-            { label: "ფასები", href: "/#pricing" },
+            { label: "ფასები", href: "/pricing" },
             { label: "რეგისტრაცია", href: "/register" },
             { label: "შესვლა", href: "/login" },
         ],

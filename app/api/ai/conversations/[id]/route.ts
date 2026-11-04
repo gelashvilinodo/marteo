@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Context) {
-    const accessDenied = await apiAccessDenied("OWNER", "view"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("OWNER", "view", { feature: "ai" }); if (accessDenied) return accessDenied;
     const { id } = await params;
 
     return withAiHistory(async (prisma, owner) =>
@@ -23,7 +23,7 @@ export async function GET(_request: Request, { params }: Context) {
 }
 
 export async function PUT(request: Request, { params }: Context) {
-    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("OWNER", "edit", { feature: "ai" }); if (accessDenied) return accessDenied;
     const { id } = await params;
 
     return guardMutation(async (guarded) => {
@@ -38,7 +38,7 @@ export async function PUT(request: Request, { params }: Context) {
 }
 
 export async function DELETE(request: Request, { params }: Context) {
-    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("OWNER", "edit", { feature: "ai" }); if (accessDenied) return accessDenied;
     const { id } = await params;
 
     return guardMutation(async () => withAiHistory(async (prisma, owner) => {

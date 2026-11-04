@@ -11,7 +11,7 @@ import { guardMutation } from "@/lib/security/mutation-request";
 type RouteContext = { params: Promise<{ requestId: string }> };
 
 export async function POST(request: Request, context: RouteContext) {
-    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("OWNER", "edit", { allowLocked: true }); if (accessDenied) return accessDenied;
     const { requestId } = await context.params;
     return guardMutation(async checked => {
         const body = ((await checked.json().catch(() => null)) ?? {}) as { approve?: unknown };

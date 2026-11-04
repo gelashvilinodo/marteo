@@ -17,7 +17,7 @@ function json(data: unknown, status = 200) {
 }
 
 export async function GET(request: Request) {
-    const accessDenied = await apiAccessDenied("ORDERS", "view"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("ORDERS", "view", { feature: "stock" }); if (accessDenied) return accessDenied;
     let reader: ReturnType<typeof createPgReader> | undefined;
 
     try {

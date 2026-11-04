@@ -15,11 +15,15 @@ import GuidedTour from "@/components/tour/GuidedTour";
 import TourHelpButton from "@/components/tour/TourHelpButton";
 import { useTour } from "@/components/tour/useTour";
 import { analyticsTourSteps } from "./analytics-tour";
+import { usePlan } from "@/components/dashboard/plan/PlanContext";
+import { CornerCrown } from "@/components/dashboard/plan/PlanCrown";
 
 function displayDate(value: string) { return value.split("-").reverse().join("."); }
 
 export default function AnalyticsView({ initialSnapshot, businessId, showTour = false }: { initialSnapshot: AnalyticsSnapshot; businessId: string; showTour?: boolean }) {
     const tour = useTour("analytics", showTour);
+    const { allows, guard } = usePlan();
+    const reportsAllowed = allows("reports");
     const [snapshot, setSnapshot] = useState(initialSnapshot);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState("");
@@ -133,7 +137,9 @@ export default function AnalyticsView({ initialSnapshot, businessId, showTour = 
                         to={data.to}
                         titleAction={<TourHelpButton onClick={tour.start} />}
                         action={
-                            <div className="flex flex-wrap gap-2"><Link data-tour="business-report" href={`/print/accountant?from=${data.from}&to=${data.to}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-surface px-3 text-sm"><Icon icon="solar:document-text-linear" className="h-5 w-5 text-accent"/>ბიზნესის ანგარიში</Link><div data-tour="add-expense"><NewExpenseButton businessId={businessId} /></div></div>
+                            <div className="flex flex-wrap gap-2">{reportsAllowed
+                                ? <Link data-tour="business-report" href={`/print/accountant?from=${data.from}&to=${data.to}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-surface px-3 text-sm"><Icon icon="solar:document-text-linear" className="h-5 w-5 text-accent"/>ბიზნესის ანგარიში</Link>
+                                : <button type="button" data-tour="business-report" onClick={() => guard("reports")} className="relative inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-surface px-3 text-sm text-text-secondary"><Icon icon="solar:document-text-linear" className="h-5 w-5"/>ბიზნესის ანგარიში<CornerCrown feature="reports" /></button>}<div data-tour="add-expense"><NewExpenseButton businessId={businessId} /></div></div>
                         }
                     />
 

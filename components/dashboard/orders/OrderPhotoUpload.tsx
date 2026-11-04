@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { prepareProductPhoto } from "@/lib/images/prepare-product-photo";
+import { usePlan } from "@/components/dashboard/plan/PlanContext";
+import { CornerCrown } from "@/components/dashboard/plan/PlanCrown";
 
 export default function OrderPhotoUpload({
     imageUrl,
@@ -20,6 +22,8 @@ export default function OrderPhotoUpload({
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
     const [stage, setStage] = useState("");
+    const { allows, guard } = usePlan();
+    const photosAllowed = allows("orderPhotos");
     useEffect(() => {
         mounted.current = true;
         return () => { mounted.current = false; controller.current?.abort(); };
@@ -78,10 +82,17 @@ export default function OrderPhotoUpload({
         />
         <div className="flex flex-wrap items-center gap-2">
             {busy && <button type="button" onClick={() => controller.current?.abort()} className="min-h-10 px-2 text-xs text-text-secondary underline">ატვირთვის შეწყვეტა</button>}
-            <button type="button" disabled={busy} onClick={() => input.current?.click()} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-accent/30 px-3 text-sm text-accent disabled:opacity-50">
-                <Icon icon={busy ? "solar:refresh-linear" : "solar:camera-add-linear"} className={`h-5 w-5 ${busy ? "animate-spin" : ""}`} />
-                {busy ? stage : imageUrl ? "ფოტოს შეცვლა" : "ფოტოს დამატება"}
-            </button>
+            {photosAllowed
+                ? <button type="button" disabled={busy} onClick={() => input.current?.click()} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-accent/30 px-3 text-sm text-accent disabled:opacity-50">
+                    <Icon icon={busy ? "solar:refresh-linear" : "solar:camera-add-linear"} className={`h-5 w-5 ${busy ? "animate-spin" : ""}`} />
+                    {busy ? stage : imageUrl ? "ფოტოს შეცვლა" : "ფოტოს დამატება"}
+                </button>
+                // გეგმაში ფოტო არ შედის: ღილაკი ჩანს გვირგვინით და გეგმის ფანჯარას ხსნის.
+                : <button type="button" onClick={() => guard("orderPhotos")} aria-label="ფოტოს დამატება — ხელმისაწვდომია ბიზნეს გეგმიდან" className="relative inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-3 text-sm text-text-secondary">
+                    <Icon icon="solar:camera-add-linear" className="h-5 w-5" />
+                    ფოტოს დამატება
+                    <CornerCrown feature="orderPhotos" />
+                </button>}
             {imageUrl && !busy && <button type="button" onClick={() => { onChange(null); setError(""); }} className="min-h-10 px-2 text-xs text-danger">ფოტოს მოხსნა</button>}
         </div>
         {error && <p role="alert" className="mt-2 text-xs text-danger">{error}</p>}

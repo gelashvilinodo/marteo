@@ -1,4 +1,6 @@
 import "server-only";
+import { readPlanState } from "@/lib/subscription/server";
+import { teamTier } from "@/lib/subscription/plan-state";
 import { createHash, randomBytes } from "node:crypto";
 import { Resend } from "resend";
 import type { createPrismaClient } from "@/lib/prisma";
@@ -40,15 +42,11 @@ function newInviteToken() {
 
 const inviteExpiry = (now: Date) => new Date(now.getTime() + INVITE_LIFETIME_HOURS * 3600_000);
 
-// ვადაგასული ან გაუქმებული გამოწერა ლიმიტებს FREE-ზე აბრუნებს.
+// გუნდის ლიმიტის გეგმა. დაბლოკილი ბიზნესი (ვადაგასული, გადაუხდელი) ბოლო ფასიანი გეგმის ლიმიტს
+// ინარჩუნებს, რომ წევრები არ გაიყინოს: ისინიც მხოლოდ ნახვის რეჟიმში არიან. დაბლოკილში ახალი
+// მოწვევა მაინც არ შეიძლება, რადგან ცვლილებებს წვდომის ფენა კეტავს.
 export async function readPlan(db: Reader, businessId: string, now: Date): Promise<TeamPlan> {
-    const subscription = await db.subscription.findUnique({
-        where: { businessId },
-        select: { plan: true, status: true, expiresAt: true },
-    });
-    if (!subscription || !["ACTIVE", "TRIALING"].includes(subscription.status)) return "FREE";
-    if (subscription.expiresAt && subscription.expiresAt <= now) return "FREE";
-    return subscription.plan;
+    return teamTier(await readPlanState(db, businessId, now)) ?? "FREE";
 }
 
 // დაკავებული ადგილები: აქტიური წევრები და ჯერ არ ვადაგასული მოწვევები.

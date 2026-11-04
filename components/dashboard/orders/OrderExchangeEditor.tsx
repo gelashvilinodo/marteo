@@ -17,6 +17,8 @@ import {
     type OrderFormItem,
 } from "@/lib/orders/order-form";
 import OrderInventoryPicker from "./OrderInventoryPicker";
+import { usePlan } from "@/components/dashboard/plan/PlanContext";
+import { CornerCrown } from "@/components/dashboard/plan/PlanCrown";
 import OrderProductEditor from "./OrderProductEditor";
 
 type Order = Awaited<ReturnType<typeof getOrder>>;
@@ -41,6 +43,7 @@ export default function OrderExchangeEditor({
 }) {
     const [open, setOpen] = useState(false);
     const [picker, setPicker] = useState(false);
+    const { allows, guard } = usePlan();
     const [items, setItems] = useState<OrderFormItem[]>([]);
     const [error, setError] = useState("");
     const uploading = items.some(item => item.uploadPending);
@@ -121,7 +124,9 @@ export default function OrderExchangeEditor({
         <fieldset disabled={blocked} className="min-w-0 space-y-3 disabled:opacity-60">
             <legend className="mb-2 text-sm font-semibold">ახალი ნივთები</legend>
             <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => setPicker(true)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-success/40 px-3 text-sm text-success"><Icon icon="solar:box-linear" className="h-5 w-5" />მარაგიდან არჩევა</button>
+                {allows("stock")
+                    ? <button type="button" onClick={() => setPicker(true)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-success/40 px-3 text-sm text-success"><Icon icon="solar:box-linear" className="h-5 w-5" />მარაგიდან არჩევა</button>
+                    : <button type="button" onClick={() => guard("stock")} aria-label="მარაგიდან არჩევა — ხელმისაწვდომია ბიზნეს გეგმიდან" className="relative inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm text-text-secondary"><Icon icon="solar:box-linear" className="h-5 w-5" />მარაგიდან არჩევა<CornerCrown feature="stock" /></button>}
                 <button type="button" onClick={() => { setItems(current => [...current, manualOrderItem()]); onDirty(); }} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm"><Icon icon="solar:add-circle-linear" className="h-5 w-5" />ხელით დამატება</button>
             </div>
             {items.map((item, index) => <OrderProductEditor

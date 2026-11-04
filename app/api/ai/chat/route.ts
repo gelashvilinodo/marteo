@@ -33,7 +33,7 @@ function readTurns(body: unknown): AiChatTurn[] | null {
 }
 
 export const POST = guardMutation(async (request) => {
-    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("OWNER", "edit", { feature: "ai" }); if (accessDenied) return accessDenied;
     const context = await getPgDashboardContext();
 
     if (!context) {

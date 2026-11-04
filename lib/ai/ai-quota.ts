@@ -1,7 +1,15 @@
 // Shared by the server (limit checks) and the AI panel (the remaining-uses ring).
+import { PLAN_LIMITS } from "@/lib/subscription/plans";
 
-// Questions plus purchase files per calendar month in Tbilisi. Chat titles do not count.
-export const AI_MONTHLY_LIMITS = { FREE: 30, START: 200, BUSINESS: 500, PRO: 1500 } as const;
+// Questions per calendar month in Tbilisi; the plan's own numbers live in lib/subscription/plans.ts.
+// Chat titles do not count. FREE means no plan at all.
+export const AI_MONTHLY_LIMITS = {
+    FREE: 0,
+    TRIAL: PLAN_LIMITS.TRIAL.aiQuestions,
+    START: PLAN_LIMITS.START.aiQuestions,
+    BUSINESS: PLAN_LIMITS.BUSINESS.aiQuestions,
+    PRO: PLAN_LIMITS.PRO.aiQuestions,
+} as const;
 
 // The ring turns to the upgrade offer once this share of the limit is used.
 export const AI_QUOTA_WARN_SHARE = 0.8;

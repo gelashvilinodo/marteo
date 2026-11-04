@@ -151,6 +151,7 @@ export default function DashboardHeader({
             {
                 label: "პაკეტი და გადახდები",
                 icon: "solar:wallet-bold-duotone",
+                href: "/dashboard/billing",
             },
         ] : [
             {

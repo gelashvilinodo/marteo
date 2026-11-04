@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ messageId: string }> };
 
 export async function GET(_request: Request, context: Context) {
-    const accessDenied = await apiAccessDenied("MEMBER", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("MEMBER", "edit", { allowLocked: true }); if (accessDenied) return accessDenied;
     const current = await getCurrentBusiness();
     const { messageId } = await context.params;
     const prisma = createPrismaClient();

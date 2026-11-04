@@ -4,6 +4,8 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { hashEmailChangeValue } from "@/lib/profile/email-change";
 import { PASSWORD_RESET_LIFETIME_MS, sendPasswordResetEmail } from "@/lib/auth/send-password-reset-email";
 import { enforceTeamLimits } from "@/lib/business/team-manage";
+import { planStateFrom } from "@/lib/subscription/plan-state";
+import { applyPlanMode } from "@/lib/subscription/server";
 
 export class AdminActionError extends Error {
     constructor(message: string, public status = 422) {
@@ -132,6 +134,7 @@ export async function runUserAction(prisma: PrismaClient, adminId: string, userI
     return message;
 }
 
+// FREE ნიშნავს გეგმის გარეშე; საცდელი არის სტატუსი TRIALING (გეგმის ველი მაშინ არ მოქმედებს).
 export const PLANS = ["FREE", "START", "BUSINESS", "PRO"] as const;
 export const SUBSCRIPTION_STATUSES = ["ACTIVE", "TRIALING", "CANCELED", "EXPIRED", "PAST_DUE"] as const;
 
@@ -171,14 +174,18 @@ export async function updateSubscription(prisma: PrismaClient, adminId: string, 
         const before = business.subscription;
         const now = new Date();
         const canceledAt = status === "CANCELED" ? before?.canceledAt ?? now : null;
+        // ახალი გეგმა ან სტატუსი ახალ პერიოდს იწყებს: შეკვეთების და AI-ის ლიმიტი აქედან ითვლება.
+        const newPeriod = before?.plan !== plan || before?.status !== status;
         const after = await tx.subscription.upsert({
             where: { businessId },
-            create: { businessId, plan, status, expiresAt, canceledAt, startedAt: now },
-            update: { plan, status, expiresAt, canceledAt },
+            create: { businessId, plan, status, expiresAt, canceledAt, startedAt: now, currentPeriodStart: now },
+            update: { plan, status, expiresAt, canceledAt, ...(newPeriod ? { currentPeriodStart: now, cancelAtPeriodEnd: false } : {}) },
             select: { plan: true, status: true, expiresAt: true },
         });
         if (JSON.stringify(subscriptionView(before)) === JSON.stringify(subscriptionView(after))) throw new AdminActionError("ცვლილება არ არის.", 409);
         await audit(tx, adminId, "subscription", "BUSINESS", businessId, subscriptionView(before), subscriptionView(after));
+        // Start-ზე მხოლოდ იმპორტი რჩება, Business-ზე „ორივე“ იმპორტზე გადადის.
+        await applyPlanMode(tx, businessId, planStateFrom(after, now).tier);
         // გეგმის შემცირებისას ლიმიტს გადაცილებული წევრები იყინება, გაზრდისას იღვიძებს.
         await enforceTeamLimits(tx, businessId);
         return "პაკეტი განახლდა.";

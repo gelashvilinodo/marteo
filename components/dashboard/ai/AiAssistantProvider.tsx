@@ -14,6 +14,7 @@ import type { AiCardGroup } from "@/lib/ai/ai-cards";
 import { readPurchaseFile } from "@/lib/ai/purchase-file-client";
 import type { AiQuota } from "@/lib/ai/ai-quota";
 import { announceAiQuota } from "./AiQuotaRing";
+import { usePlan } from "@/components/dashboard/plan/PlanContext";
 import {
     deleteConversationRemote,
     fetchConversation,
@@ -277,6 +278,8 @@ function storable(messages: AiMessage[]): StoredAiMessage[] {
 export function AiAssistantProvider({ children, enabled = true }: { children: React.ReactNode; enabled?: boolean }) {
     const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
     const request = useRef<AbortController | null>(null);
+    // გეგმაში AI არ არის (ან ბიზნესი მხოლოდ ნახვის რეჟიმშია): პანელის ნაცვლად გეგმის ფანჯარა იხსნება.
+    const { guard } = usePlan();
     const messagesRef = useRef(state.messages);
 
     useEffect(() => {
@@ -528,7 +531,7 @@ export function AiAssistantProvider({ children, enabled = true }: { children: Re
 
     const value = useMemo<AiAssistantValue>(() => ({
         ...state,
-        openPanel: () => dispatch({ type: "open" }),
+        openPanel: () => { if (guard("ai")) dispatch({ type: "open" }); },
         collapse: () => dispatch({ type: "collapse" }),
         close: () => dispatch({ type: "close" }),
         reset,
@@ -544,7 +547,7 @@ export function AiAssistantProvider({ children, enabled = true }: { children: Re
         updateMessage: (id, patch) => dispatch({ type: "update", id, patch }),
         addAssistantMessage: (message) =>
             dispatch({ type: "add", message: { ...message, id: crypto.randomUUID(), role: "assistant" } }),
-    }), [state, reset, send, stopRequest, openConversation, deleteConversation]);
+    }), [state, reset, send, stopRequest, openConversation, deleteConversation, guard]);
 
     return <AiAssistantContext value={value}>{children}</AiAssistantContext>;
 }

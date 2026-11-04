@@ -17,7 +17,7 @@ function json(data: unknown, status = 200) {
 }
 
 export async function POST(request: Request) {
-    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("OWNER", "edit", { feature: "fileImport" }); if (accessDenied) return accessDenied;
     try {
         const user = await getCurrentUser();
 
@@ -177,7 +177,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("OWNER", "edit", { feature: "fileImport" }); if (accessDenied) return accessDenied;
     try {
         const user = await getCurrentUser();
 

@@ -4,6 +4,7 @@ import { createHash } from "crypto";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { createPgReader } from "@/lib/database/pg-reader";
+import { planStateFrom } from "@/lib/subscription/plan-state";
 import { ACTIVE_BUSINESS_COOKIE } from "./active-business";
 
 type Row = {
@@ -11,6 +12,7 @@ type Row = {
     firstName: string | null; lastName: string | null; phone: string | null; seenTours: string[];
     businessMode: BusinessMode | null; businessId: string | null; businessName: string | null; logoUrl: string | null;
     role: string | null; permissions: string[] | null; readOnly: boolean | null; membershipStatus: string | null;
+    subPlan: string | null; subStatus: string | null; subExpiresAt: Date | null; subPeriodStart: Date | null; subCancelAtPeriodEnd: boolean | null;
 };
 
 // React cache deduplicates only within this render/request, never across users.
@@ -26,7 +28,9 @@ export const getPgDashboardContext = cache(async () => {
             SELECT s."expiresAt", u.status::text AS status, u.id, u.email,
                 u."firstName", u."lastName", u.phone, u."seenTours",
                 m."businessId", b.name AS "businessName", b."logoUrl", b.mode AS "businessMode",
-                m.role::text AS role, m.permissions::text[] AS permissions, m."readOnly", m.status::text AS "membershipStatus"
+                m.role::text AS role, m.permissions::text[] AS permissions, m."readOnly", m.status::text AS "membershipStatus",
+                sub.plan::text AS "subPlan", sub.status::text AS "subStatus", sub."expiresAt" AS "subExpiresAt",
+                sub."currentPeriodStart" AS "subPeriodStart", sub."cancelAtPeriodEnd" AS "subCancelAtPeriodEnd"
             FROM "Session" s JOIN "User" u ON u.id = s."userId"
             LEFT JOIN LATERAL (
                 SELECT "businessId", role, permissions, "readOnly", "status" FROM "BusinessMembership"
@@ -34,6 +38,7 @@ export const getPgDashboardContext = cache(async () => {
                 ORDER BY ("businessId" = ${preferred}) DESC, "createdAt" ASC, "businessId" ASC LIMIT 1
             ) m ON true
             LEFT JOIN "Business" b ON b.id = m."businessId"
+            LEFT JOIN "Subscription" sub ON sub."businessId" = m."businessId"
             WHERE s."tokenHash" = ${tokenHash} LIMIT 1
         `;
         if (!row) return null;
@@ -50,6 +55,10 @@ export const getPgDashboardContext = cache(async () => {
                 access: { role: row.role ?? "MEMBER", permissions: row.permissions ?? [],
                     readOnly: row.readOnly ?? true, status: row.membershipStatus ?? "FROZEN" },
                 business: { mode: row.businessMode ?? "IMPORT", id: row.businessId, name: row.businessName, logoUrl: row.logoUrl },
+                plan: planStateFrom(row.subPlan && row.subStatus ? {
+                    plan: row.subPlan, status: row.subStatus, expiresAt: row.subExpiresAt,
+                    currentPeriodStart: row.subPeriodStart, cancelAtPeriodEnd: row.subCancelAtPeriodEnd,
+                } : null),
             } : null,
         };
     } finally { await client.$disconnect(); }

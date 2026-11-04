@@ -8,7 +8,7 @@ import { authPrimaryButtonClass } from "@/components/auth/AuthShell";
 
 const navigation = [
   { label: "მთავარი", href: "/", icon: "solar:home-2-bold-duotone" },
-  { label: "ფასები", href: "#pricing", icon: "solar:tag-price-bold-duotone" },
+  { label: "ფასები", href: "/pricing", icon: "solar:tag-price-bold-duotone" },
   { label: "ინფორმაცია", href: "/information", icon: "solar:info-circle-bold-duotone" },
 ];
 

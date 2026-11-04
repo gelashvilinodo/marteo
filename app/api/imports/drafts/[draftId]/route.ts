@@ -32,7 +32,7 @@ export async function GET(
     _request: Request,
     context: { params: Promise<{ draftId: string }> },
 ) {
-    const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
+    const accessDenied = await apiAccessDenied("OWNER", "edit", { feature: "fileImport" }); if (accessDenied) return accessDenied;
     try {
         const user = await getCurrentUser();
 

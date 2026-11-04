@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import type { getOrder } from "@/lib/orders/get-order";
+import { usePlan } from "@/components/dashboard/plan/PlanContext";
 
 type EditableOrder = Awaited<ReturnType<typeof getOrder>>;
 
@@ -31,12 +32,15 @@ export function NewOrderProvider({
     children,
 }: NewOrderProviderProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const { guard } = usePlan();
     const [drawerActivated, setDrawerActivated] = useState(false);
     const [sessionHeld, setSessionHeld] = useState(false);
     const [editingOrder, setEditingOrder] =
         useState<EditableOrder | null>(null);
 
+    // მხოლოდ ნახვის რეჟიმში ფორმა არ იხსნება: შევსებულ შეკვეთას სერვერი მაინც უარყოფდა.
     function openNewOrder() {
+        if (!guard()) return;
         if (!isOpen && !sessionHeld) {
             setEditingOrder(null);
         }
@@ -46,6 +50,7 @@ export function NewOrderProvider({
     }
 
     function openEditOrder(order: EditableOrder) {
+        if (!guard()) return;
         if (!isOpen && !sessionHeld) {
             setEditingOrder(order);
         }
