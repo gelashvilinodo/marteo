@@ -271,10 +271,16 @@ model Business {
   stockAlerts         InventoryStockAlert[]
   payments            SubscriptionPayment[]
   aiUsage             AiUsage[]
+  smsMessages         SmsMessage[]
+  smsPacks            SmsPackPurchase[]
 
   // ადმინის გადაწყვეტილება: AI-ის გამორთვა ან პაკეტისგან განსხვავებული თვიური ლიმიტი.
   aiDisabled     Boolean @default(false)
   aiMonthlyLimit Int?
+
+  // SMS მყიდველთან შეკვეთის გაგზავნისას: ჩამრთველი და ნაყიდი პაკეტების ნაშთი (ვადა არ გასდის).
+  smsEnabled Boolean @default(true)
+  smsBalance Int     @default(0)
 }
 
 model BusinessMembership {
@@ -1833,4 +1839,51 @@ model SystemBanner {
   createdAt   DateTime  @default(now())
 
   @@index([startsAt])
+}
+
+// SMS მყიდველთან. PLAN — Pro-ს თვიური 500-დან, PACK — ნაყიდი პაკეტიდან.
+enum SmsSource {
+  PLAN
+  PACK
+}
+
+// DRY_RUN: ლოკალურად/ტესტში პროვაიდერი არ გამოიძახება, მაგრამ ლიმიტში ითვლება.
+enum SmsStatus {
+  SENDING
+  SENT
+  FAILED
+  DRY_RUN
+}
+
+// ერთი SMS ერთ გაგზავნაზე: შეკვეთის ყოველ მიწოდების ციკლზე მაქსიმუმ ერთხელ.
+model SmsMessage {
+  id               String    @id @default(cuid())
+  businessId       String
+  orderId          String?
+  fulfillmentCycle Int       @default(0)
+  phone            String
+  source           SmsSource
+  status           SmsStatus @default(SENDING)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, fulfillmentCycle])
+  @@index([businessId, createdAt])
+}
+
+// SMS პაკეტის შეძენა (ბანკამდე ადმინი ამატებს ხელით).
+model SmsPackPurchase {
+  id          String   @id @default(cuid())
+  businessId  String
+  count       Int
+  price       Decimal  @db.Decimal(12, 2)
+  note        String?
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, createdAt])
 }

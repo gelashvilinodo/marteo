@@ -1,9 +1,12 @@
 import { normalizePhone, isAllowedSmsPhone } from "@/lib/security/phone";
-import { reserveDelivery } from "@/lib/security/delivery-limit";
+import { reserveDelivery, reserveOrderSms } from "@/lib/security/delivery-limit";
 
 type SendSmsParams = {
   phone: string;
   message: string;
+  // verification: კოდის SMS მკაცრი ლიმიტით. order: მყიდველის შეტყობინება, რომელსაც ბიზნესის
+  // SMS ბალანსი უკვე ზღუდავს, ამიტომ მხოლოდ თითო ნომერზე და დღიური საერთო ზღვარი აქვს.
+  purpose?: "verification" | "order";
 };
 
 type SendSmsResponse = {
@@ -21,6 +24,7 @@ type SendSmsResponse = {
 export async function sendSms({
   phone,
   message,
+  purpose = "verification",
 }: SendSmsParams): Promise<void> {
   phone = normalizePhone(phone);
   if (!isAllowedSmsPhone(phone)) throw new Error("Unsupported SMS phone number");
@@ -45,7 +49,8 @@ export async function sendSms({
     contentType: "1",
   });
 
-  await reserveDelivery("sms", phone);
+  if (purpose === "order") await reserveOrderSms(phone);
+  else await reserveDelivery("sms", phone);
 
   const response = await fetch(`${baseUrl}/v2/send?${params.toString()}`, {
     method: "POST",

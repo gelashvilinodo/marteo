@@ -8,6 +8,7 @@ import { numericQuantities } from "./quantity";
 import { orderWithStock } from "./order-stock";
 import { completeOrder, completionBalance } from "./complete-order";
 import { OrderValidationError } from "./validate-order";
+import { queueShippedSms } from "@/lib/sms/order-sms";
 
 function fail(message: string, status = 400): never {
     throw new OrderValidationError(message, status);
@@ -96,10 +97,10 @@ export async function bulkOrderStatus(raw: unknown) {
         const businessId = membership.businessId;
 
         if (body.action === "ship") {
-            return await prisma.$transaction(async tx => {
+            const shippedIds = await prisma.$transaction(async tx => {
                 await tx.$queryRaw`SELECT "id" FROM "Business" WHERE "id"=${businessId} FOR UPDATE`;
                 // დაბრუნების ისტორიის მქონე შეკვეთის სტატუსი მხოლოდ დაბრუნების მოქმედებით იცვლება.
-                const shipped = await tx.$executeRaw`
+                const rows = await tx.$queryRaw<{ id: string }[]>`
                     UPDATE "Order" o
                     SET status = 'SHIPPED', "invoiceVersion" = o."invoiceVersion" + 1, "updatedAt" = now()
                     WHERE o."businessId" = ${businessId}
@@ -112,9 +113,13 @@ export async function bulkOrderStatus(raw: unknown) {
                                 AND r."fulfillmentCycle" = o."fulfillmentCycle"
                                 AND r.status IN ('PENDING', 'RECEIVED')
                         )
+                    RETURNING o.id
                 `;
-                return { shipped };
+                return rows.map(row => row.id);
             }, { maxWait: 10000, timeout: 60000 });
+            // გაგზავნილ შეკვეთებზე მყიდველებს SMS ფონურად მიდის.
+            void queueShippedSms(businessId, shippedIds);
+            return { shipped: shippedIds.length };
         }
 
         return await prisma.$transaction(async tx => {

@@ -48,7 +48,7 @@ export default function AiSettingsPanel({ businessId, initial }: { businessId: s
         </p>}
         <div className="grid grid-cols-3 gap-3">
             <div className="rounded-xl bg-background p-3">
-                <p className="text-xs text-text-secondary">ამ თვეში</p>
+                <p className="text-xs text-text-secondary">ამ პერიოდში</p>
                 <p className="mt-1 text-lg font-semibold text-text-primary">{ai.used} / {ai.limit}</p>
                 <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-border/60"><span className={`block h-full rounded-full ${share >= 1 ? "bg-danger" : share >= 0.8 ? "bg-warning" : "bg-accent"}`} style={{ width: `${share * 100}%` }} /></span>
             </div>

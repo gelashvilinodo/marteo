@@ -19,3 +19,14 @@ export async function reserveDelivery(channel: "sms" | "email", recipient: strin
         ]);
     } finally { await prisma.$disconnect(); }
 }
+
+// მყიდველის SMS (შეკვეთა გაიგზავნა): ერთ ნომერზე საათში რამდენიმე, მთელ სისტემაზე დღიური ზღვარი.
+export async function reserveOrderSms(recipient: string) {
+    const prisma = createPrismaClient();
+    try {
+        await reserveLimits(prisma, [
+            { scope: "order-sms-recipient-hour", identity: recipient, maximum: 5, seconds: 3600 },
+            { scope: "order-sms-global-day", identity: "all", maximum: dailyCap("ORDER_SMS_DAILY_LIMIT", 5000), seconds: 86400 },
+        ]);
+    } finally { await prisma.$disconnect(); }
+}

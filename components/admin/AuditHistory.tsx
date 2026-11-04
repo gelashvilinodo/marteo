@@ -17,6 +17,7 @@ export const AUDIT_ACTIONS: Record<string, { label: string; icon: string }> = {
     payment: { label: "გადახდა აღირიცხა", icon: "solar:wallet-money-linear" },
     "payment-void": { label: "გადახდა გაუქმდა", icon: "solar:close-circle-linear" },
     "ai-settings": { label: "AI-ის პარამეტრები შეიცვალა", icon: "solar:magic-stick-3-linear" },
+    "sms-pack": { label: "SMS პაკეტი დაემატა", icon: "solar:chat-round-line-linear" },
     "export-users": { label: "მომხმარებლების Excel ექსპორტი", icon: "solar:file-download-linear" },
     "export-businesses": { label: "ბიზნესების Excel ექსპორტი", icon: "solar:file-download-linear" },
     "export-payments": { label: "გადახდების Excel ექსპორტი", icon: "solar:file-download-linear" },
@@ -40,6 +41,7 @@ function detail(entry: AuditEntry) {
     const after = entry.after as Plain;
     if (entry.action === "subscription" || entry.action === "subscription-auto" || entry.action === "subscription-user") return `${subscriptionText(before)} → ${subscriptionText(after)}`;
     if (entry.action === "payment") return `${money(after?.amount)} · ${after?.months} თვე · ${subscriptionText(after)}`;
+    if (entry.action === "sms-pack") return `${after?.count} SMS · ნაშთი ${after?.balance}`;
     if (entry.action.startsWith("export-")) return after?.rows !== undefined ? `${after.rows} ჩანაწერი` : "";
     if (entry.action === "banner-create") return typeof after?.message === "string" ? after.message : "";
     if (entry.action === "errors-resolve") return after?.count !== undefined ? `${after.count} შეცდომა` : "";

@@ -17,6 +17,8 @@ import NotesPanel from "@/components/admin/NotesPanel";
 import PaymentsPanel from "@/components/admin/PaymentsPanel";
 import { listPayments } from "@/lib/admin/payments";
 import AiSettingsPanel from "@/components/admin/AiSettingsPanel";
+import SmsPackPanel from "@/components/admin/SmsPackPanel";
+import { getBusinessSms } from "@/lib/sms/sms-admin";
 import { getBusinessAi } from "@/lib/admin/ai-usage";
 import { createPrismaClient } from "@/lib/prisma";
 
@@ -38,8 +40,9 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
     });
     if (!business) notFound();
     const prisma = createPrismaClient();
-    const [history, notes, payments, ai] = await Promise.all([
+    const [history, notes, payments, ai, sms] = await Promise.all([
         getAuditLog(prisma, "BUSINESS", business.id), listNotes(prisma, business.id), listPayments(prisma, business.id), getBusinessAi(prisma, business.id),
+        getBusinessSms(prisma, business.id),
     ]).finally(() => prisma.$disconnect());
     const subscription = { plan: business.plan, status: business.subscriptionStatus, expiresAt: business.subscriptionExpiresAt?.toISOString() ?? null };
     const mode = BUSINESS_MODES.find(item => item.value === business.mode);
@@ -84,6 +87,10 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
 
         <div className="mt-4">
             <Panel title="მართეო AI"><AiSettingsPanel businessId={business.id} initial={ai} /></Panel>
+        </div>
+
+        <div className="mt-4">
+            <Panel title="SMS მყიდველთან"><SmsPackPanel businessId={business.id} initial={sms} /></Panel>
         </div>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">

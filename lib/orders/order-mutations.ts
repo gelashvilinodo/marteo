@@ -23,6 +23,7 @@ import {
 } from "./resolve-historical-order-payment";
 import { findActiveMembership } from "@/lib/auth/active-business";
 import { readUsagePeriod, requireFeature } from "@/lib/subscription/limits";
+import { queueShippedSms } from "@/lib/sms/order-sms";
 
 export type MutationKind =
     | "edit"
@@ -59,7 +60,9 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
         }
 
         const businessId = membership.businessId;
-        return await prisma.$transaction(async tx => {
+        // „გაგზავნილზე“ გადასვლისას მყიდველს SMS მიდის, ოღონდ ტრანზაქციის დასრულების შემდეგ.
+        let shipped = false;
+        const outcome = await prisma.$transaction(async tx => {
             await tx.$queryRaw`SELECT "id" FROM "Business" WHERE "id"=${businessId} FOR UPDATE`;
             const order = await tx.order.findFirst({ where: { id: orderId, businessId }, include: orderWithStock }).then(numericQuantities);
             if (!order) fail("შეკვეთა ვერ მოიძებნა.", 404);
@@ -350,6 +353,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                                 "შეკვეთის გაუქმება და დაბრუნება",
                             )
                             : false;
+                        shipped = next === "SHIPPED";
                         await tx.order.update({
                             where: { id: orderId }, data: {
                                 status: next,
@@ -718,5 +722,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
             await tx.orderMutation.create({ data: { orderId, requestId, fingerprint: hash, result } });
             return result;
         }, { maxWait: 10000, timeout: 60000 });
+        if (shipped) void queueShippedSms(businessId, [orderId]);
+        return outcome;
     } finally { await prisma.$disconnect(); }
 }

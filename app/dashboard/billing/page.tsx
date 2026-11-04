@@ -113,9 +113,11 @@ export default async function BillingPage() {
                             <UsageMeter icon="solar:bag-4-linear" label="შეკვეთები" used={usage.orders.used} limit={usage.orders.limit} />
                             <UsageMeter icon="solar:magic-stick-3-linear" label={plan.tier === "TRIAL" ? "მართეო AI (საცდელში სულ)" : "მართეო AI კითხვები"} used={usage.ai.used} limit={usage.ai.limit} />
                             {!usage.aiFiles.shared && <UsageMeter icon="solar:document-add-linear" label="შესყიდვა ფაილიდან" used={usage.aiFiles.used} limit={usage.aiFiles.limit} />}
+                            {usage.sms.allowed && usage.sms.planIncluded > 0 && <UsageMeter icon="solar:chat-round-line-linear" label="გეგმის SMS" used={usage.sms.planUsed} limit={usage.sms.planIncluded} />}
                             <UsageMeter icon="solar:user-id-linear" label="თანამფლობელები" used={usage.team.coOwners} limit={usage.team.coOwnersLimit} />
                             <UsageMeter icon="solar:users-group-rounded-linear" label="თანამშრომლები" used={usage.team.staff} limit={usage.team.staffLimit} />
                         </div>
+                        {usage.sms.balance > 0 && <p className="mt-3 text-sm text-text-secondary">ნაყიდი SMS: <b className="font-semibold text-text-primary">{usage.sms.balance}</b>{usage.sms.allowed ? "" : " (მიმდინარე გეგმაში SMS არ შედის, ნაშთი ინახება)"}</p>}
                         {plan.periodStart && plan.expiresAt && <p className="mt-3 text-xs text-text-secondary">პერიოდი: {formatDay(plan.periodStart)} — {formatDay(plan.expiresAt)}. შეკვეთების და AI-ის ლიმიტი ახალ პერიოდში თავიდან იწყება.</p>}
                     </section>
 

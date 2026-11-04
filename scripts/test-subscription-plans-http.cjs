@@ -150,7 +150,39 @@ const DAY=86400000,at=days=>new Date(Date.now()+days*DAY).toISOString();
   q=await quota();assert.deepEqual([q.used,q.limit,q.files.shared,q.trial],[105,20,true,true]);
   console.log('ok AI questions and files per plan period');
 
-  console.log('PASS: subscription plan gating (trial, start, business, pro, past due, trial ended, no plan), mode limit, admin change, onboarding, plan changes, usage limits.');
+  // SMS on shipping (dry run: ORDER_SMS_LIVE is not set, so no real SMS leaves).
+  assert.notEqual(process.env.ORDER_SMS_LIVE,'1','QA must never send real SMS');
+  const sms=async()=>(await db.query('SELECT source::text,status::text FROM "SmsMessage" WHERE "businessId"=$1 AND "orderId" IS NOT NULL ORDER BY "createdAt"',[businessId])).rows;
+  const balance=async()=>(await db.query('SELECT "smsBalance" FROM "Business" WHERE id=$1',[businessId])).rows[0].smsBalance;
+  const ship=async()=>{const res=await order();const {order:o}=await res.json();const b=await call(owner,'/api/orders/bulk-status','POST',{action:'ship',orderIds:[o.id]});assert.equal(b.status,200,'ship');await new Promise(r=>setTimeout(r,2500));return o.id};
+  await period('PRO');
+  await ship();
+  assert.deepEqual(await sms(),[{source:'PLAN',status:'DRY_RUN'}],'Pro uses the included SMS first');
+  await db.query(`INSERT INTO "SmsMessage" (id,"businessId",phone,source,status,"updatedAt") SELECT gen_random_uuid()::text,$1,'+995599000000','PLAN','SENT',now() FROM generate_series(1,499)`,[businessId]);
+  await ship();
+  assert.equal((await sms()).length,1,'no SMS when the plan SMS and packs are used up');
+  const pack=await call(admin,`/api/admin/businesses/${businessId}/sms`,'POST',{count:200,note:'QA'});assert.equal(pack.status,200);
+  assert.equal(await balance(),200);
+  await ship();
+  assert.deepEqual((await sms()).at(-1),{source:'PACK',status:'DRY_RUN'});assert.equal(await balance(),199);
+  // Business has no included SMS but uses packs; Start keeps the balance untouched.
+  await period('BUSINESS');await ship();
+  assert.equal((await sms()).at(-1).source,'PACK');assert.equal(await balance(),198);
+  // Start is over its order limit here, so ship an order created earlier on Pro.
+  await period('PRO');const {order:early}=await (await order()).json();
+  await period('START');
+  assert.equal((await call(owner,'/api/orders/bulk-status','POST',{action:'ship',orderIds:[early.id]})).status,200);
+  await new Promise(r=>setTimeout(r,2500));
+  assert.equal(await balance(),198,'Start sends nothing');
+  // The owner can switch SMS off; the trial cannot change it.
+  await period('PRO');
+  const off=await call(owner,'/api/business/sms','PATCH',{enabled:false});assert.equal(off.status,200);
+  const before=(await sms()).length;await ship();assert.equal((await sms()).length,before,'switched off');
+  await setPlan('FREE','TRIALING',5);
+  assert.equal(await code(owner,'/api/business/sms','PATCH',{enabled:true}),'PLAN_FEATURE');
+  console.log('ok SMS on shipping: plan SMS, packs, switch, plan rules');
+
+  console.log('PASS: subscription plan gating (trial, start, business, pro, past due, trial ended, no plan), mode limit, admin change, onboarding, plan changes, usage limits, SMS.');
  }finally{
   const owned=(await db.query('SELECT "businessId" FROM "BusinessMembership" WHERE "userId"=ANY($1::text[])',[userIds])).rows.map(r=>r.businessId);
   await db.query('DELETE FROM "AdminAuditLog" WHERE "targetId"=ANY($1::text[]) AND "createdAt">=$2',[owned,startedAt.toISOString()]);
