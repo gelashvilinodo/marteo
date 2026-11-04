@@ -7,7 +7,7 @@ import { getSmsUsage } from "@/lib/sms/order-sms";
 
 const json = (body: unknown, status = 200) => NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
 
-// SMS მყიდველთან ჩართვა/გამორთვა. ნაყიდი ნაშთი გამორთვისას არ იკარგება.
+// SMS მომხმარებელთან ჩართვა/გამორთვა. ნაყიდი ნაშთი გამორთვისას არ იკარგება.
 async function patch(request: Request) {
     const accessDenied = await apiAccessDenied("OWNER", "edit", { feature: "sms" }); if (accessDenied) return accessDenied;
     const businessId = (await getPgDashboardContext())!.membership!.businessId;

@@ -18,7 +18,7 @@ export const metadata = {
 const everywhere = [
     { icon: "solar:bag-4-bold-duotone", title: "შეკვეთების მართვა", text: "სტატუსები, გადახდები, კურიერი და მიწოდების ზონები ერთ სიაში." },
     { icon: "solar:qr-code-bold-duotone", title: "ინვოისი QR კოდით", text: "ერთი დაჭერით ბეჭდვა, ჯგუფურადაც." },
-    { icon: "solar:link-round-bold-duotone", title: "ბმული მყიდველისთვის", text: "მყიდველი შეკვეთის სტატუსს თავად ხედავს." },
+    { icon: "solar:link-round-bold-duotone", title: "ბმული მომხმარებლისთვის", text: "მომხმარებელი შეკვეთის სტატუსს თავად ხედავს." },
     { icon: "solar:chart-2-bold-duotone", title: "ანალიტიკა", text: "შემოსავალი, ხარჯი, მოგება და სტატისტიკა." },
     { icon: "solar:calendar-bold-duotone", title: "კონტენტ-კალენდარი", text: "პოსტების დაგეგმვა ყველა არხისთვის." },
     { icon: "solar:smartphone-bold-duotone", title: "ტელეფონზეც", text: "დააყენე როგორც აპი და მართე ნებისმიერი ადგილიდან." },
@@ -91,12 +91,12 @@ export default function PricingPage() {
                     </div>
                     <div className="rounded-2xl border border-border bg-surface p-6">
                         <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/10 text-accent"><Icon icon="solar:chat-round-line-bold-duotone" className="h-6 w-6" aria-hidden="true" /></span>
-                        <h3 className="mt-4 text-lg font-semibold text-text-primary">SMS მყიდველთან</h3>
-                        <p className="mt-2 text-sm leading-relaxed text-text-secondary">შეკვეთის გაგზავნისას მყიდველს ავტომატურად მიდის SMS შენი ბიზნესის სახელით. PRO-ში 500 SMS თვეში შედის, დამატებით კი პაკეტს ყიდულობ.</p>
+                        <h3 className="mt-4 text-lg font-semibold text-text-primary">SMS მომხმარებელთან</h3>
+                        <p className="mt-2 text-sm leading-relaxed text-text-secondary">შეკვეთის გაგზავნისას მომხმარებელს ავტომატურად ეგზავნება SMS შენი ბიზნესის სახელით. PRO-ში 500 SMS თვეში შედის, დამატებით კი პაკეტს ყიდულობ.</p>
                         <ul className="mt-5 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
                             {SMS_PACKS.map(pack => <li key={pack.count} className="rounded-xl bg-background p-3">
-                                <span className="block text-xs text-text-secondary">{pack.count} SMS</span>
-                                <span className="mt-1 block font-semibold text-text-primary">{pack.price} ₾</span>
+                                <span className="block font-semibold text-text-primary">{pack.count} SMS</span>
+                                <span className="mt-1 block text-xs text-text-secondary">{pack.price} ₾</span>
                             </li>)}
                         </ul>
                     </div>

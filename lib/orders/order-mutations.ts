@@ -60,7 +60,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
         }
 
         const businessId = membership.businessId;
-        // „გაგზავნილზე“ გადასვლისას მყიდველს SMS მიდის, ოღონდ ტრანზაქციის დასრულების შემდეგ.
+        // „გაგზავნილზე“ გადასვლისას მომხმარებელს SMS ეგზავნება, ოღონდ ტრანზაქციის დასრულების შემდეგ.
         let shipped = false;
         const outcome = await prisma.$transaction(async tx => {
             await tx.$queryRaw`SELECT "id" FROM "Business" WHERE "id"=${businessId} FOR UPDATE`;

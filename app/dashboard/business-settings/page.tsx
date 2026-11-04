@@ -85,7 +85,7 @@ export default async function BusinessSettingsPage() {
                         }}
                     />
                     <PlanLimitsCard overview={overview} />
-                    <SmsSettingsCard initial={sms} preview={shippedMessage(business.name, 1024)} />
+                    <SmsSettingsCard initial={sms} preview={shippedMessage(business.name)} />
                     <TeamSection initialTeam={team} businessMode={business.mode} />
                     <AppearanceSettings />
 

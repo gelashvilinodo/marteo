@@ -90,7 +90,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
         </div>
 
         <div className="mt-4">
-            <Panel title="SMS მყიდველთან"><SmsPackPanel businessId={business.id} initial={sms} /></Panel>
+            <Panel title="SMS მომხმარებელთან"><SmsPackPanel businessId={business.id} initial={sms} /></Panel>
         </div>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">

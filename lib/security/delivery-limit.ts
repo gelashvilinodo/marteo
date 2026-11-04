@@ -20,7 +20,7 @@ export async function reserveDelivery(channel: "sms" | "email", recipient: strin
     } finally { await prisma.$disconnect(); }
 }
 
-// მყიდველის SMS (შეკვეთა გაიგზავნა): ერთ ნომერზე საათში რამდენიმე, მთელ სისტემაზე დღიური ზღვარი.
+// მომხმარებლის SMS (შეკვეთა გაიგზავნა): ერთ ნომერზე საათში რამდენიმე, მთელ სისტემაზე დღიური ზღვარი.
 export async function reserveOrderSms(recipient: string) {
     const prisma = createPrismaClient();
     try {

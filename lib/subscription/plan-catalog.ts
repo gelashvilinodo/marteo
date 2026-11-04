@@ -72,7 +72,7 @@ export const PLAN_CARDS: readonly PlanCard[] = [
             { icon: "solar:magic-stick-3-linear", label: "მართეო AI", value: n(PLAN_LIMITS.BUSINESS.aiQuestions), highlight: true },
             { icon: "solar:document-add-linear", label: "შესყიდვა ფაილიდან", value: n(PLAN_LIMITS.BUSINESS.aiFiles), highlight: true },
             { icon: "solar:users-group-rounded-linear", label: "გუნდი", value: team("BUSINESS") },
-            { icon: "solar:chat-round-line-linear", label: "SMS მყიდველთან", value: "პაკეტით" },
+            { icon: "solar:chat-round-line-linear", label: "SMS მომხმარებელთან", value: "პაკეტით" },
             { icon: "solar:sale-linear", label: "ახალი ბიზნესი", value: "−25%" },
             { icon: "solar:close-circle-linear", label: "იმპორტი და წარმოება ერთად", included: false },
         ],
@@ -91,7 +91,7 @@ export const PLAN_CARDS: readonly PlanCard[] = [
             { icon: "solar:infinity-linear", label: "შეკვეთები", value: "ულიმიტო", highlight: true },
             { icon: "solar:magic-stick-3-linear", label: "მართეო AI", value: n(PLAN_LIMITS.PRO.aiQuestions), highlight: true },
             { icon: "solar:document-add-linear", label: "შესყიდვა ფაილიდან", value: "ულიმიტო", highlight: true },
-            { icon: "solar:chat-round-line-linear", label: "SMS მყიდველთან", value: n(PLAN_LIMITS.PRO.smsIncluded), highlight: true },
+            { icon: "solar:chat-round-line-linear", label: "SMS მომხმარებელთან", value: n(PLAN_LIMITS.PRO.smsIncluded), highlight: true },
             { icon: "solar:check-circle-linear", label: "იმპორტი და წარმოება ერთად" },
             { icon: "solar:users-group-rounded-linear", label: "გუნდი", value: team("PRO") },
             { icon: "solar:sale-linear", label: "ყოველი ახალი ბიზნესი", value: "−25%" },
@@ -118,7 +118,7 @@ export const PLAN_COMPARISON: readonly ComparisonGroup[] = [
         title: "შეკვეთები და მომხმარებლები", icon: "solar:bag-4-bold-duotone", rows: [
             row("შეკვეთები თვეში", n(PLAN_LIMITS.START.ordersPerPeriod), n(PLAN_LIMITS.BUSINESS.ordersPerPeriod), "ულიმიტო"),
             row("ინვოისი QR კოდით, ჯგუფური ბეჭდვა", true, true, true),
-            row("შეკვეთის ბმული მყიდველისთვის", true, true, true),
+            row("შეკვეთის ბმული მომხმარებლისთვის", true, true, true),
             row("დაბრუნება, გაცვლა, თანხის დაბრუნება", true, true, true),
             row("მომხმარებლების ბაზა", true, true, true),
             row("ფოტო შეკვეთაში", false, true, true),
@@ -150,7 +150,7 @@ export const PLAN_COMPARISON: readonly ComparisonGroup[] = [
         ],
     },
     {
-        title: "მყიდველთან კავშირი", icon: "solar:chat-round-line-bold-duotone", rows: [
+        title: "მომხმარებელთან კავშირი", icon: "solar:chat-round-line-bold-duotone", rows: [
             row("SMS შეკვეთის გაგზავნისას", false, "პაკეტით", `${PLAN_LIMITS.PRO.smsIncluded} / თვე + პაკეტები`),
             row("კონტენტ-კალენდარი", true, true, true),
         ],

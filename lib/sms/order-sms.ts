@@ -14,8 +14,9 @@ type Db = PrismaClient | Prisma.TransactionClient;
 export const SMS_MAX_LENGTH = 70;
 
 // შაბლონი: ბიზნესის სახელი ყოველთვის ჩანს, გრძელი სახელი კი მოკლდება, რომ ტექსტი ერთ SMS-ში დაეტიოს.
-export function shippedMessage(businessName: string, orderNumber: number | null) {
-    const tail = `: შეკვეთა${orderNumber ? ` #${orderNumber}` : ""} კურიერს გადაეცა, მალე მიიღებ.`;
+// შეკვეთის ნომერი მომხმარებლისთვის საინტერესო არ არის, ამიტომ ტექსტში არ ჩანს.
+export function shippedMessage(businessName: string) {
+    const tail = ": თქვენი შეკვეთა კურიერს გადაეცა, მალე მიიღებთ.";
     const room = SMS_MAX_LENGTH - tail.length;
     const name = businessName.trim().replace(/\s+/g, " ");
     return (name.length > room ? `${name.slice(0, Math.max(1, room - 1)).trimEnd()}…` : name) + tail;
@@ -29,6 +30,8 @@ export type SmsUsage = {
     planUsed: number;
     // ნაყიდი პაკეტების ნაშთი: ვადა არ გასდის და გეგმის შეცვლისას რჩება.
     balance: number;
+    // ოდესმე ნაყიდი პაკეტების რაოდენობა: „ამოიწურა“ მხოლოდ მაშინ ჩანს, თუ SMS ნამდვილად ჰქონდა.
+    packsBought: number;
 };
 
 export async function getSmsUsage(db: Db, businessId: string, now = new Date()): Promise<SmsUsage> {
@@ -37,14 +40,18 @@ export async function getSmsUsage(db: Db, businessId: string, now = new Date()):
         readUsagePeriod(db, businessId, now),
     ]);
     const planIncluded = period.plan.tier ? PLAN_LIMITS[period.plan.tier].smsIncluded : 0;
-    const planUsed = planIncluded
-        ? await db.smsMessage.count({ where: { businessId, source: "PLAN", status: { not: "FAILED" }, createdAt: { gte: period.start } } })
-        : 0;
+    const [planUsed, packsBought] = await Promise.all([
+        planIncluded
+            ? db.smsMessage.count({ where: { businessId, source: "PLAN", status: { not: "FAILED" }, createdAt: { gte: period.start } } })
+            : 0,
+        db.smsPackPurchase.count({ where: { businessId } }),
+    ]);
     return {
         allowed: planAllows(period.plan, "sms"),
         enabled: business?.smsEnabled ?? false,
         planIncluded, planUsed,
         balance: business?.smsBalance ?? 0,
+        packsBought,
     };
 }
 
@@ -63,7 +70,7 @@ async function reserve(prisma: PrismaClient, businessId: string, orderId: string
             tx.business.findUnique({ where: { id: businessId }, select: { name: true } }),
             tx.order.findFirst({
                 where: { id: orderId, businessId, status: "SHIPPED", deletedAt: null },
-                select: { number: true, recipientPhone: true, fulfillmentCycle: true },
+                select: { recipientPhone: true, fulfillmentCycle: true },
             }),
         ]);
         if (!usage.allowed || !usage.enabled || !order || !business) return null;
@@ -82,7 +89,7 @@ async function reserve(prisma: PrismaClient, businessId: string, orderId: string
             data: { businessId, orderId, fulfillmentCycle: order.fulfillmentCycle, phone, source },
             select: { id: true },
         });
-        return { id: row.id, phone, source, businessId, message: shippedMessage(business.name, order.number) };
+        return { id: row.id, phone, source, businessId, message: shippedMessage(business.name) };
     });
 }
 

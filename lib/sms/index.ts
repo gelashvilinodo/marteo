@@ -4,7 +4,7 @@ import { reserveDelivery, reserveOrderSms } from "@/lib/security/delivery-limit"
 type SendSmsParams = {
   phone: string;
   message: string;
-  // verification: კოდის SMS მკაცრი ლიმიტით. order: მყიდველის შეტყობინება, რომელსაც ბიზნესის
+  // verification: კოდის SMS მკაცრი ლიმიტით. order: მომხმარებლის შეტყობინება, რომელსაც ბიზნესის
   // SMS ბალანსი უკვე ზღუდავს, ამიტომ მხოლოდ თითო ნომერზე და დღიური საერთო ზღვარი აქვს.
   purpose?: "verification" | "order";
 };

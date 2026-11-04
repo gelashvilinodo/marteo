@@ -278,7 +278,7 @@ model Business {
   aiDisabled     Boolean @default(false)
   aiMonthlyLimit Int?
 
-  // SMS მყიდველთან შეკვეთის გაგზავნისას: ჩამრთველი და ნაყიდი პაკეტების ნაშთი (ვადა არ გასდის).
+  // SMS მომხმარებელთან შეკვეთის გაგზავნისას: ჩამრთველი და ნაყიდი პაკეტების ნაშთი (ვადა არ გასდის).
   smsEnabled Boolean @default(true)
   smsBalance Int     @default(0)
 }
@@ -1841,7 +1841,7 @@ model SystemBanner {
   @@index([startsAt])
 }
 
-// SMS მყიდველთან. PLAN — Pro-ს თვიური 500-დან, PACK — ნაყიდი პაკეტიდან.
+// SMS მომხმარებელთან. PLAN — Pro-ს თვიური 500-დან, PACK — ნაყიდი პაკეტიდან.
 enum SmsSource {
   PLAN
   PACK

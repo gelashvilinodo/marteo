@@ -7,9 +7,9 @@ import { CornerCrown } from "@/components/dashboard/plan/PlanCrown";
 import { SMS_PACKS } from "@/lib/subscription/plan-catalog";
 import UsageMeter from "./UsageMeter";
 
-type SmsUsage = { allowed: boolean; enabled: boolean; planIncluded: number; planUsed: number; balance: number };
+type SmsUsage = { allowed: boolean; enabled: boolean; planIncluded: number; planUsed: number; balance: number; packsBought: number };
 
-// SMS მყიდველთან: ჩამრთველი, გეგმის და ნაყიდი SMS-ის მრიცხველები, შაბლონის ნიმუში და პაკეტები.
+// SMS მომხმარებელთან: ჩამრთველი, გეგმის და ნაყიდი SMS-ის მრიცხველები, შაბლონის ნიმუში და პაკეტები.
 export default function SmsSettingsCard({ initial, preview }: { initial: SmsUsage; preview: string }) {
     const { guard } = usePlan();
     const [sms, setSms] = useState(initial);
@@ -17,7 +17,9 @@ export default function SmsSettingsCard({ initial, preview }: { initial: SmsUsag
     const [error, setError] = useState("");
     const [packNotice, setPackNotice] = useState(false);
     const planLeft = Math.max(sms.planIncluded - sms.planUsed, 0);
-    const empty = sms.allowed && planLeft + sms.balance === 0;
+    // „ამოიწურა“ მხოლოდ მაშინ, როცა SMS ნამდვილად ჰქონდა: გეგმის SMS დაიხარჯა ან ნაყიდი პაკეტი გათავდა.
+    const hadSms = sms.planUsed > 0 || sms.packsBought > 0;
+    const empty = sms.allowed && hadSms && planLeft + sms.balance === 0;
 
     const toggle = async () => {
         if (!guard("sms")) return;
@@ -39,12 +41,12 @@ export default function SmsSettingsCard({ initial, preview }: { initial: SmsUsag
         <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
                 <h2 id="sms-settings" className="flex items-center gap-2 font-semibold text-text-primary">
-                    <Icon icon="solar:chat-round-line-linear" className="size-5 shrink-0 text-accent" aria-hidden="true" />SMS მყიდველთან
+                    <Icon icon="solar:chat-round-line-linear" className="size-5 shrink-0 text-accent" aria-hidden="true" />SMS მომხმარებელთან
                 </h2>
-                <p className="mt-1 text-sm text-text-secondary">შეკვეთის „გაგზავნილზე“ გადაყვანისას მყიდველს ავტომატურად მიდის SMS.</p>
+                <p className="mt-1 text-sm text-text-secondary">შეკვეთის გაგზავნილზე გადაყვანისას მომხმარებელს ავტომატურად ეგზავნება შეტყობინება.</p>
             </div>
             {sms.allowed
-                ? <button type="button" role="switch" aria-checked={sms.enabled} aria-label="SMS მყიდველთან" disabled={busy} onClick={() => void toggle()}
+                ? <button type="button" role="switch" aria-checked={sms.enabled} aria-label="SMS მომხმარებელთან" disabled={busy} onClick={() => void toggle()}
                     className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition disabled:opacity-60 ${sms.enabled ? "bg-success" : "bg-border"}`}>
                     <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition ${sms.enabled ? "translate-x-6" : "translate-x-1"}`} />
                 </button>
@@ -68,14 +70,14 @@ export default function SmsSettingsCard({ initial, preview }: { initial: SmsUsag
                     <p className="mt-2 text-xs text-text-secondary">ვადა არ გასდის. {sms.planIncluded > 0 ? "იხარჯება გეგმის SMS-ის მერე." : ""}</p>
                 </div>
             </div>
-            {empty && <p role="status" className="mt-3 rounded-xl bg-warning/10 p-3 text-sm text-text-primary">SMS ამოიწურა: მყიდველებს შეტყობინება არ მიდის. შეიძინე პაკეტი.</p>}
+            {empty && <p role="status" className="mt-3 rounded-xl bg-warning/10 p-3 text-sm text-text-primary">SMS ამოიწურა: მომხმარებლებს შეტყობინება აღარ ეგზავნება. შეიძინე პაკეტი.</p>}
             <div className="mt-4">
                 <p className="text-sm font-medium text-text-primary">SMS პაკეტები</p>
                 <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {SMS_PACKS.map(pack => <li key={pack.count}>
                         <button type="button" onClick={() => setPackNotice(true)} className="w-full rounded-xl border border-border bg-background p-3 text-center transition hover:border-accent/40">
-                            <span className="block text-xs text-text-secondary">{pack.count} SMS</span>
-                            <span className="mt-1 block font-semibold text-text-primary">{pack.price} ₾</span>
+                            <span className="block font-semibold text-text-primary">{pack.count} SMS</span>
+                            <span className="mt-1 block text-xs text-text-secondary">{pack.price} ₾</span>
                         </button>
                     </li>)}
                 </ul>

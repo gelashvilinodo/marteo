@@ -117,7 +117,7 @@ export async function bulkOrderStatus(raw: unknown) {
                 `;
                 return rows.map(row => row.id);
             }, { maxWait: 10000, timeout: 60000 });
-            // გაგზავნილ შეკვეთებზე მყიდველებს SMS ფონურად მიდის.
+            // გაგზავნილ შეკვეთებზე მომხმარებლებს SMS ფონურად ეგზავნება.
             void queueShippedSms(businessId, shippedIds);
             return { shipped: shippedIds.length };
         }

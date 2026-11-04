@@ -17,7 +17,7 @@ export const FEATURE_LABELS: Record<PlanFeature, string> = {
     fileImport: "ფაილიდან იმპორტი",
     ai: "მართეო AI",
     aiFiles: "შესყიდვა ფაილიდან AI-ით",
-    sms: "SMS მყიდველთან",
+    sms: "SMS მომხმარებელთან",
     team: "გუნდი",
     extraBusiness: "ახალი ბიზნესი",
     hybridMode: "იმპორტი და წარმოება ერთად",

@@ -57,7 +57,7 @@ export const PLAN_FEATURES = [
     "fileImport",   // ფაილიდან იმპორტი
     "ai",           // მართეო AI ჩატი
     "aiFiles",      // შესყიდვა ფაილიდან AI-ით
-    "sms",          // SMS მყიდველთან
+    "sms",          // SMS მომხმარებელთან
     "team",         // თანამფლობელი და თანამშრომელი
     "extraBusiness",// მეორე და შემდეგი ბიზნესი
     "hybridMode",   // იმპორტი და წარმოება ერთად
