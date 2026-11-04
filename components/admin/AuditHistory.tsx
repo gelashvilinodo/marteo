@@ -18,6 +18,7 @@ export const AUDIT_ACTIONS: Record<string, { label: string; icon: string }> = {
     "payment-void": { label: "გადახდა გაუქმდა", icon: "solar:close-circle-linear" },
     "ai-settings": { label: "AI-ის პარამეტრები შეიცვალა", icon: "solar:magic-stick-3-linear" },
     "sms-pack": { label: "SMS პაკეტი დაემატა", icon: "solar:chat-round-line-linear" },
+    "business-delete": { label: "ბიზნესი წაიშალა (12 თვე გადაუხდელი)", icon: "solar:trash-bin-trash-linear" },
     "export-users": { label: "მომხმარებლების Excel ექსპორტი", icon: "solar:file-download-linear" },
     "export-businesses": { label: "ბიზნესების Excel ექსპორტი", icon: "solar:file-download-linear" },
     "export-payments": { label: "გადახდების Excel ექსპორტი", icon: "solar:file-download-linear" },

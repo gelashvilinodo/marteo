@@ -245,10 +245,30 @@ const DAY=86400000,at=days=>new Date(Date.now()+days*DAY).toISOString();
   const low=await notices('SMS_LOW');assert.equal(low.length,1);assert.equal(low[0].title,'დარჩა 20 SMS');
   console.log('ok notices: cron reminders, trial ended, limits, plan changes, SMS low');
 
-  console.log('PASS: subscription plan gating (trial, start, business, pro, past due, trial ended, no plan), mode limit, admin change, onboarding, plan changes, usage limits, SMS, periods, downgrade choices, notices.');
+  // Retention: 12 months unpaid → listed for the admin; owners warned 30 days before; deleted only by hand.
+  const old=async(key,days)=>{const id=`${tag}-${key}`;
+   await db.query('INSERT INTO "Business" (id,name,"updatedAt") VALUES ($1,$2,now())',[id,'QA retention '+key]);
+   await db.query('INSERT INTO "BusinessMembership" (id,"userId","businessId",role,"updatedAt") VALUES ($1,$2,$3,\'OWNER\',now())',[id+'-m',ownerId,id]);
+   await db.query('INSERT INTO "Subscription" (id,"businessId",plan,status,"expiresAt","updatedAt") VALUES ($1,$2,\'PRO\',\'EXPIRED\',$3,now())',[id+'-s',id,at(days)]);
+   return id;};
+  const due=await old('due',-400),soonId=await old('soon',-350);
+  await runCron();
+  assert.ok((await notices('RENEWAL_REMINDER')).some(n=>n.key.startsWith('retention:30:'+soonId)),'30-day warning');
+  let html=(await (await call(admin,'/admin/retention')).text()).replaceAll('<!-- -->','');
+  assert.ok(html.includes('QA retention due')&&html.includes('QA retention soon'),'both listed');
+  const del=(id,confirmName)=>call(admin,`/api/admin/businesses/${id}`,'DELETE',{confirmName});
+  assert.equal((await del(due,'wrong name')).status,422);
+  assert.equal((await del(soonId,'QA retention soon')).status,409,'not before 12 months');
+  assert.equal((await call(owner,`/api/admin/businesses/${due}`,'DELETE',{confirmName:'QA retention due'})).status,403,'admin only');
+  assert.equal((await del(due,'QA retention due')).status,200);
+  assert.equal((await db.query('SELECT count(*)::int AS n FROM "Business" WHERE id=$1',[due])).rows[0].n,0);
+  assert.equal((await db.query('SELECT count(*)::int AS n FROM "Notification" WHERE "userId"=$1 AND title=\'ბიზნესი წაიშალა\'',[ownerId])).rows[0].n,1);
+  console.log('ok retention list, warning and manual delete');
+
+  console.log('PASS: subscription plan gating (trial, start, business, pro, past due, trial ended, no plan), mode limit, admin change, onboarding, plan changes, usage limits, SMS, periods, downgrade choices, notices, retention.');
  }finally{
   const owned=(await db.query('SELECT "businessId" FROM "BusinessMembership" WHERE "userId"=ANY($1::text[])',[userIds])).rows.map(r=>r.businessId);
-  await db.query('DELETE FROM "AdminAuditLog" WHERE "targetId"=ANY($1::text[]) AND "createdAt">=$2',[owned,startedAt.toISOString()]);
+  await db.query('DELETE FROM "AdminAuditLog" WHERE ("targetId"=ANY($1::text[]) OR "targetId" LIKE $3) AND "createdAt">=$2',[owned,startedAt.toISOString(),tag+'%']);
   await db.query('DELETE FROM "SecurityRateBucket" WHERE identity=ANY($1::text[])',[userIds]).catch(()=>{});
   if(sessionIds.length)await db.query('DELETE FROM "Session" WHERE id=ANY($1::text[])',[sessionIds]);
   if(owned.length)await db.query('DELETE FROM "AiUsage" WHERE "businessId"=ANY($1::text[])',[owned]);

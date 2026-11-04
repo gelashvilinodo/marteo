@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { deliverRetentionWarnings } from "@/lib/admin/retention";
 import { deliverSubscriptionReminders } from "@/lib/notifications/sync";
 import { createPrismaClient } from "@/lib/prisma";
 import { deliverNoticeChannels } from "@/lib/subscription/notices";
@@ -21,13 +22,15 @@ function authorized(request: Request) {
     return timingSafeEqual(Buffer.from(given), Buffer.from(secret));
 }
 
-// საათობრივი cron (worker.mjs): გეგმის შეხსენებები ყველა ბიზნესზე და ჯერ გაუგზავნელი მეილი/პუში.
+// საათობრივი cron (worker.mjs): გეგმის შეხსენებები ყველა ბიზნესზე, წაშლის გაფრთხილებები (30/7 დღე)
+// და ჯერ გაუგზავნელი მეილი/პუში.
 // მომხმარებლისთვის მიუწვდომელია: მხოლოდ CRON_SECRET-ით.
 export async function POST(request: Request) {
     if (!authorized(request)) return Response.json({ success: false }, { status: 401 });
     const prisma = createPrismaClient();
     try {
         await deliverSubscriptionReminders(prisma, null);
+        await deliverRetentionWarnings(prisma);
         let sent = 0;
         for (let batch = 0; batch < 5; batch++) {
             const count = await deliverNoticeChannels(prisma);

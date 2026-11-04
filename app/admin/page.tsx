@@ -8,6 +8,8 @@ import GrowthSection from "@/components/admin/GrowthSection";
 import { getRevenueStats } from "@/lib/admin/revenue";
 import RevenueSection from "@/components/admin/RevenueSection";
 import { getRiskSignals } from "@/lib/admin/risk-signals";
+import { listRetention } from "@/lib/admin/retention";
+import { createPrismaClient } from "@/lib/prisma";
 
 type Card = { label: string; value: number; icon: string; tone: string; href?: string };
 
@@ -17,9 +19,13 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         if (error instanceof AdminAccessError) notFound();
         throw error;
     });
+    // წაშლის ვადა გასული ბიზნესები: ადმინმა ხელით უნდა წაშალოს (/admin/retention).
+    const prisma = createPrismaClient();
+    const retentionDue = (await listRetention(prisma).finally(() => prisma.$disconnect())).filter(row => row.due).length;
     const cards: Card[] = [
         { label: "ბიზნესები", value: data.totalBusinesses, icon: "solar:buildings-2-bold-duotone", tone: "bg-accent/12 text-accent", href: "/admin/businesses" },
         { label: "ყურადღება სჭირდება", value: risk.total, icon: "solar:danger-triangle-bold-duotone", tone: "bg-warning/15 text-warning", href: "/admin/attention" },
+        ...(retentionDue > 0 ? [{ label: "წასაშლელი ბიზნესი", value: retentionDue, icon: "solar:trash-bin-trash-bold-duotone", tone: "bg-danger/12 text-danger", href: "/admin/retention" }] : []),
         { label: "მომხმარებლები", value: data.users, icon: "solar:users-group-rounded-bold-duotone", tone: "bg-violet-500/12 text-violet-500", href: "/admin/users" },
         { label: "შეკვეთები", value: data.orders, icon: "solar:cart-large-2-bold-duotone", tone: "bg-success/12 text-success" },
         { label: "დაბეჭდილი ინვოისები", value: data.invoices, icon: "solar:printer-bold-duotone", tone: "bg-sky-500/12 text-sky-500" },
