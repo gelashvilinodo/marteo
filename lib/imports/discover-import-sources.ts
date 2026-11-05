@@ -5,6 +5,7 @@ import type { ParsedImportFile, ParsedImportSheet } from "./import-file-types";
 import type { ImportCustomerMapping } from "./import-types";
 import { createProductImportMapping, type ProductImportMapping } from "./product-import-mapping";
 import { createOrderImportMapping, type OrderImportMapping } from "./order-import-mapping";
+import { detectOrderCourierInclusion } from "./detect-order-courier-inclusion";
 
 export type ImportCategory = "orders" | "customers" | "products";
 export const IMPORT_CATEGORY_ORDER: ImportCategory[] = ["orders", "customers", "products"];
@@ -136,10 +137,18 @@ export function createDiscoveredMappings(file: ParsedImportFile) {
             products[source.sheetName] = { ...createProductImportMapping(source.headerRowNumber),
                 enabled: source.suggested, decimalSeparator: decimalSeparator(sheet, source.headerRowNumber, detected), mode: detected.some(v => v.field === "currentStock" && v.status === "MATCHED") ? "CURRENT_STOCK" : "CATALOG" };
         }
-        if (source.category === "orders") orders[source.sheetName] = {
-            ...createOrderImportMapping(source.headerRowNumber), enabled: source.suggested,
-            decimalSeparator: decimalSeparator(sheet, source.headerRowNumber, detectOrderColumns(h)),
-        };
+        if (source.category === "orders") {
+            const order: OrderImportMapping = {
+                ...createOrderImportMapping(source.headerRowNumber), enabled: source.suggested,
+                decimalSeparator: decimalSeparator(sheet, source.headerRowNumber, detectOrderColumns(h)),
+            };
+            const courier = detectOrderCourierInclusion(sheet, order);
+            orders[source.sheetName] = {
+                ...order,
+                orderTotalIncludesCourier: courier.orderTotalIncludesCourier,
+                paidAmountIncludesCourier: courier.paidAmountIncludesCourier,
+            };
+        }
     }
     return { customers, products, orders };
 }

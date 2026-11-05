@@ -5,8 +5,17 @@ import {
     validateImportMoney,
 } from "./validate-import-money";
 
+export type OrderImportStatusChoice =
+    | "PROCESSING"
+    | "SHIPPED"
+    | "COMPLETED"
+    | "SKIP";
+
 export type OrderImportOptions = {
     missingStatus: "UNRESOLVED" | "PROCESSING" | "COMPLETED";
+    // ფაილის უცნობი სტატუსები, ნორმალიზებული მნიშვნელობით.
+    // ერთხელ არჩეული სტატუსი ყველა შესაბამის შეკვეთას შეეხება.
+    statusMap: Record<string, OrderImportStatusChoice>;
     missingPayment: "UNRESOLVED" | "PAID" | "UNPAID";
     stockEffect: "UNRESOLVED" | "HISTORY_ONLY" | "DEDUCT_LINKED";
     grouping: "UNRESOLVED" | "EACH_ROW" | "PHONE_AND_DATE";
@@ -20,6 +29,7 @@ export type OrderImportOptions = {
 export function createOrderImportOptions(): OrderImportOptions {
     return {
         missingStatus: "UNRESOLVED",
+        statusMap: {},
         missingPayment: "UNRESOLVED",
         stockEffect: "HISTORY_ONLY",
         grouping: "UNRESOLVED",
@@ -58,7 +68,7 @@ function readFallbackDate(value: unknown): string | null {
         !/^\d{4}-\d{2}-\d{2}$/.test(value)
     ) {
         fail(
-            "საერთო თარიღი მიუთითე ფორმატით წელი-თვე-დღე.",
+            "საერთო თარიღი მიუთითეთ ფორმატით წელი-თვე-დღე.",
         );
     }
 
@@ -92,6 +102,38 @@ function readFallbackDate(value: unknown): string | null {
     }
 
     return value;
+}
+
+function readStatusMap(
+    value: unknown,
+): Record<string, OrderImportStatusChoice> {
+    if (value === undefined || value === null) return {};
+
+    if (typeof value !== "object" || Array.isArray(value)) {
+        fail("სტატუსების შესაბამისობის სტრუქტურა არასწორია.");
+    }
+
+    const entries = Object.entries(value);
+
+    if (entries.length > 200) {
+        fail("სტატუსების შესაბამისობა ძალიან ბევრ მნიშვნელობას შეიცავს.");
+    }
+
+    const result: Record<string, OrderImportStatusChoice> = {};
+
+    for (const [key, choice] of entries) {
+        if (!key.trim() || key.length > 200) {
+            fail("სტატუსების შესაბამისობაში მნიშვნელობა არასწორია.");
+        }
+
+        result[key] = readChoice(
+            choice,
+            ["PROCESSING", "SHIPPED", "COMPLETED", "SKIP"] as const,
+            `სტატუსი „${key}“`,
+        );
+    }
+
+    return result;
 }
 
 function readFallbackCourierFee(value: unknown): string | null {
@@ -145,6 +187,7 @@ export function validateOrderImportOptions(
             ["UNRESOLVED", "PROCESSING", "COMPLETED"] as const,
             "სტატუსის გარეშე შეკვეთები",
         ),
+        statusMap: readStatusMap(input.statusMap),
         missingPayment: readChoice(
             input.missingPayment,
             ["UNRESOLVED", "PAID", "UNPAID"] as const,

@@ -26,6 +26,7 @@ function missing(value: unknown): boolean {
 export function resolveImportOrderGroupStatus(input: {
     rows: readonly PreparedOrderSourceRow[];
     fallback: OrderImportOptions["missingStatus"];
+    statusMap?: OrderImportOptions["statusMap"];
 }): OrderStatusReadResult {
     const values: {
         rowNumber: number;
@@ -52,6 +53,7 @@ export function resolveImportOrderGroupStatus(input: {
         const result = readOrderImportStatus(
             row.input.status,
             "UNRESOLVED",
+            input.statusMap,
         );
 
         if (result.kind === "NEEDS_REVIEW") {
@@ -66,7 +68,9 @@ export function resolveImportOrderGroupStatus(input: {
             rowNumber: row.rowNumber,
             value:
                 result.kind === "SKIPPED"
-                    ? result.reason
+                    ? result.reason === "EXCLUDED"
+                        ? "SKIP"
+                        : result.reason
                     : result.status,
         });
     }
@@ -91,6 +95,16 @@ export function resolveImportOrderGroupStatus(input: {
 
     if (resolved.kind === "MISSING") {
         return readOrderImportStatus(null, input.fallback);
+    }
+
+    if (resolved.value === "SKIP") {
+        return {
+            kind: "SKIPPED",
+            reason: "EXCLUDED",
+            message:
+                "შეკვეთა გამოტოვებულია: მისი სტატუსი მონიშნულია, " +
+                "როგორც გადმოსატანი არ არის.",
+        };
     }
 
     return readOrderImportStatus(

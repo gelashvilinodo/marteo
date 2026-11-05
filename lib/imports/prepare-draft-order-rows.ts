@@ -74,8 +74,8 @@ export function prepareDraftOrderRows(input: {
                     sheetName,
                     message:
                         "შეკვეთებისთვის მონიშნული წყაროს ფაილი ან ფურცელი " +
-                        "მონახაზში ვერ მოიძებნა. ხელახლა აირჩიე შესაბამისი " +
-                        "ფურცელი ან მოხსენი ამ წყაროდან შეკვეთების გადმოტანა.",
+                        "მონახაზში ვერ მოიძებნა. ხელახლა აირჩიეთ შესაბამისი " +
+                        "ფურცელი ან მოხსენით ამ წყაროდან შეკვეთების გადმოტანა.",
                 });
                 continue;
             }
@@ -103,7 +103,11 @@ export function prepareDraftOrderRows(input: {
                 const prepared: PreparedOrderSourceRow = {
                     ...row,
                     decimalSeparator: mapping.decimalSeparator,
-                    excelDateSystem: entry.file.excelDateSystem,
+                    // ადრე შენახულ Numbers ფაილებს თარიღების სისტემა
+                    // არ ჰქონდათ მითითებული.
+                    excelDateSystem:
+                        entry.file.excelDateSystem ??
+                        (entry.file.format === "numbers" ? "1900" : null),
                     orderTotalIncludesCourier:
                         mapping.orderTotalIncludesCourier === true,
                     paidAmountIncludesCourier:

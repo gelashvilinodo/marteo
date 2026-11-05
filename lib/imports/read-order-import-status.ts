@@ -1,5 +1,6 @@
 import type {
     OrderImportOptions,
+    OrderImportStatusChoice,
 } from "./order-import-options";
 
 export type ImportedOrderStatus =
@@ -15,7 +16,7 @@ export type OrderStatusReadResult =
     }
     | {
         kind: "SKIPPED";
-        reason: "CANCELED" | "RETURNED";
+        reason: "CANCELED" | "RETURNED" | "EXCLUDED";
         message: string;
     }
     | {
@@ -23,7 +24,7 @@ export type OrderStatusReadResult =
         message: string;
     };
 
-function normalize(value: string): string {
+export function normalizeOrderImportStatus(value: string): string {
     return value
         .normalize("NFC")
         .trim()
@@ -40,6 +41,17 @@ const processing = new Set([
     "დამუშავებაში",
     "დამუშავების პროცესში",
     "ახალი",
+    "confirmed",
+    "accepted",
+    "in progress",
+    "დადასტურებული",
+    "დადასტურებულია",
+    "მიღებული",
+    "მიღებულია",
+    "შეკვეთილი",
+    "მზადდება",
+    "მომზადების პროცესში",
+    "მოლოდინში",
 ]);
 
 const shipped = new Set([
@@ -47,6 +59,15 @@ const shipped = new Set([
     "dispatched",
     "გაგზავნილი",
     "გაგზავნილია",
+    "in transit",
+    "on the way",
+    "out for delivery",
+    "გზაში",
+    "გზაშია",
+    "კურიერთან",
+    "კურიერს გადაეცა",
+    "ტრანზიტში",
+    "მიწოდების პროცესში",
 ]);
 
 const completed = new Set([
@@ -54,6 +75,18 @@ const completed = new Set([
     "complete",
     "დასრულებული",
     "დასრულებულია",
+    "delivered",
+    "done",
+    "fulfilled",
+    "მიწოდებული",
+    "მიწოდებულია",
+    "მიტანილი",
+    "მიტანილია",
+    "ჩაბარებული",
+    "ჩაბარებულია",
+    "გაყიდული",
+    "შესრულებული",
+    "შესრულებულია",
 ]);
 
 const canceled = new Set([
@@ -75,9 +108,17 @@ const returned = new Set([
     "ნაწილობრივ დაბრუნებული",
 ]);
 
+export function isKnownOrderImportStatus(value: string): boolean {
+    const normalized = normalizeOrderImportStatus(value);
+
+    return [processing, shipped, completed, canceled, returned]
+        .some(values => values.has(normalized));
+}
+
 export function readOrderImportStatus(
     value: unknown,
     fallback: OrderImportOptions["missingStatus"],
+    statusMap: Readonly<Record<string, OrderImportStatusChoice>> = {},
 ): OrderStatusReadResult {
     const missing =
         value === null ||
@@ -103,8 +144,8 @@ export function readOrderImportStatus(
             kind: "NEEDS_REVIEW",
             message:
                 "შეკვეთის სტატუსი მითითებული არ არის. " +
-                "აირჩიე საერთო წესი სტატუსის გარეშე შეკვეთებისთვის " +
-                "ან მიუთითე ამ შეკვეთის სტატუსი.",
+                "აირჩიეთ საერთო წესი სტატუსის გარეშე შეკვეთებისთვის " +
+                "ან მიუთითეთ ამ შეკვეთის სტატუსი.",
         };
     }
 
@@ -113,11 +154,11 @@ export function readOrderImportStatus(
             kind: "NEEDS_REVIEW",
             message:
                 "სტატუსის უჯრედში ტექსტური მნიშვნელობა არ არის. " +
-                "აირჩიე სტატუსის შესაბამისი სვეტი ან შეასწორე მნიშვნელობა.",
+                "აირჩიეთ სტატუსის შესაბამისი სვეტი ან შეასწორეთ მნიშვნელობა.",
         };
     }
 
-    const normalized = normalize(value);
+    const normalized = normalizeOrderImportStatus(value);
 
     if (canceled.has(normalized)) {
         return {
@@ -163,11 +204,33 @@ export function readOrderImportStatus(
         };
     }
 
+    const chosen = Object.hasOwn(statusMap, normalized)
+        ? statusMap[normalized]
+        : undefined;
+
+    if (chosen === "SKIP") {
+        return {
+            kind: "SKIPPED",
+            reason: "EXCLUDED",
+            message:
+                `შეკვეთა გამოტოვებულია: სტატუსი „${value.trim()}“ ` +
+                "მონიშნულია, როგორც გადმოსატანი არ არის.",
+        };
+    }
+
+    if (chosen !== undefined) {
+        return {
+            kind: "READY",
+            status: chosen,
+            usedFallback: false,
+        };
+    }
+
     return {
         kind: "NEEDS_REVIEW",
         message:
             `სტატუსი „${value.trim()}“ ავტომატურად ვერ განვსაზღვრეთ. ` +
-            "მიუთითე შესაბამისი სტატუსი. საერთო წესი მხოლოდ ცარიელ " +
-            "სტატუსებზე მოქმედებს და ამ მნიშვნელობას არ შეცვლის.",
+            "აირჩიეთ, რას ნიშნავს ეს სტატუსი, ზემოთ „ფაილის სტატუსები“ " +
+            "ნაწილში. არჩევანი ამ სტატუსის მქონე ყველა შეკვეთას შეეხება.",
     };
 }
