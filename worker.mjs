@@ -5,6 +5,7 @@ import {createCspWorker} from './lib/security/create-csp-worker.mjs';
 import {purgeExpiredSupportMessages} from './lib/support/purge-expired-support.mjs';
 import {expireSubscriptions} from './lib/billing/expire-subscriptions.mjs';
 import {pruneSystemLog, runJob} from './lib/system/job-runs.mjs';
+import {sweepUnusedImages} from './lib/storage/sweep-unused-images.mjs';
 export * from './.open-next/worker.js';
 
 const worker = createCspWorker(openNextWorker, manifest);
@@ -13,7 +14,7 @@ const entry = {
     ...worker,
     // Hourly cron (wrangler.jsonc triggers): support chat history and photos live 24 hours,
     // subscriptions past their end date get their status updated, then plan reminders go out.
-    async scheduled(_controller, env, ctx) {
+    async scheduled(controller, env, ctx) {
         // Each task's last run and failures show on /admin/system.
         const url = env.HYPERDRIVE.connectionString;
         ctx.waitUntil(runJob(url, 'support-cleanup', () => purgeExpiredSupportMessages(url, env.SUPABASE_SECRET_KEY)));
@@ -27,6 +28,10 @@ const entry = {
             return (await response.json()).sent;
         })));
         ctx.waitUntil(runJob(url, 'system-log-prune', () => pruneSystemLog(url)));
+        // Once a day, at 03:00 UTC: photos in storage that no database row mentions.
+        if (new Date(controller.scheduledTime).getUTCHours() === 3) {
+            ctx.waitUntil(runJob(url, 'unused-image-cleanup', () => sweepUnusedImages(url, env.SUPABASE_SECRET_KEY)));
+        }
     },
 };
 

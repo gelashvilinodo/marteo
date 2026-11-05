@@ -8,6 +8,7 @@ import {
     readBusinessLogoForm,
     uploadBusinessLogo,
 } from "@/lib/business/upload-business-logo";
+import { removeUnusedImages } from "@/lib/storage/remove-unused-images";
 
 const businessSelect = {
     id: true,
@@ -63,9 +64,24 @@ async function readBusiness(
     return business;
 }
 
+function removeUnusedLogos(
+    prisma: ReturnType<typeof createPrismaClient>,
+    urls: Array<string | null>,
+) {
+    return removeUnusedImages("business-logos", urls, async candidates =>
+        (
+            await prisma.business.findMany({
+                where: { logoUrl: { in: candidates } },
+                select: { logoUrl: true },
+            })
+        ).map(business => business.logoUrl),
+    );
+}
+
 export async function POST(request: Request) {
     const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
     const prisma = createPrismaClient();
+    let uploadedLogoUrl: string | null = null;
 
     try {
         if (
@@ -140,8 +156,9 @@ export async function POST(request: Request) {
             context.businessId,
             form.get("file"),
         );
+        uploadedLogoUrl = logoUrl;
 
-        const business = await prisma.$transaction(
+        const { business, previousLogoUrl } = await prisma.$transaction(
             async (tx) => {
                 await tx.$queryRaw`
                     SELECT id
@@ -162,11 +179,14 @@ export async function POST(request: Request) {
                     );
                 }
 
-                return tx.business.update({
-                    where: { id: context.businessId },
-                    data: { logoUrl },
-                    select: businessSelect,
-                });
+                return {
+                    business: await tx.business.update({
+                        where: { id: context.businessId },
+                        data: { logoUrl },
+                        select: businessSelect,
+                    }),
+                    previousLogoUrl: latest.logoUrl,
+                };
             },
             {
                 isolationLevel:
@@ -176,6 +196,10 @@ export async function POST(request: Request) {
             },
         );
 
+        // The new logo is saved, so the replaced one can go.
+        uploadedLogoUrl = null;
+        await removeUnusedLogos(prisma, [previousLogoUrl]);
+
         return json({
             success: true,
             business: {
@@ -184,6 +208,11 @@ export async function POST(request: Request) {
             },
         });
     } catch (cause: unknown) {
+        // A logo the database does not use was never saved.
+        if (uploadedLogoUrl) {
+            await removeUnusedLogos(prisma, [uploadedLogoUrl]);
+        }
+
         if (cause instanceof BusinessSettingsError) {
             return json(
                 {

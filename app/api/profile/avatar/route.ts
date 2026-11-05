@@ -6,6 +6,7 @@ import {
     readProfileAvatarForm,
     uploadProfileAvatar,
 } from "@/lib/profile/upload-profile-avatar";
+import { removeUnusedImages } from "@/lib/storage/remove-unused-images";
 
 const profileSelect = {
     id: true,
@@ -29,8 +30,23 @@ function json(data: unknown, status = 200) {
     });
 }
 
+function removeUnusedAvatars(
+    prisma: ReturnType<typeof createPrismaClient>,
+    urls: Array<string | null>,
+) {
+    return removeUnusedImages("user-avatars", urls, async candidates =>
+        (
+            await prisma.user.findMany({
+                where: { avatarUrl: { in: candidates } },
+                select: { avatarUrl: true },
+            })
+        ).map(user => user.avatarUrl),
+    );
+}
+
 export async function POST(request: Request) {
     const prisma = createPrismaClient();
+    let uploadedAvatarUrl: string | null = null;
 
     try {
         if (
@@ -93,8 +109,9 @@ export async function POST(request: Request) {
             user.id,
             form.get("file"),
         );
+        uploadedAvatarUrl = avatarUrl;
 
-        const profile = await prisma.$transaction(
+        const { profile, previousAvatarUrl } = await prisma.$transaction(
             async tx => {
                 await tx.$queryRaw`
                     SELECT id
@@ -108,6 +125,7 @@ export async function POST(request: Request) {
                     select: {
                         status: true,
                         updatedAt: true,
+                        avatarUrl: true,
                     },
                 });
 
@@ -125,11 +143,14 @@ export async function POST(request: Request) {
                     );
                 }
 
-                return tx.user.update({
-                    where: { id: user.id },
-                    data: { avatarUrl },
-                    select: profileSelect,
-                });
+                return {
+                    profile: await tx.user.update({
+                        where: { id: user.id },
+                        data: { avatarUrl },
+                        select: profileSelect,
+                    }),
+                    previousAvatarUrl: latest.avatarUrl,
+                };
             },
             {
                 isolationLevel:
@@ -138,6 +159,10 @@ export async function POST(request: Request) {
                 timeout: 20_000,
             },
         );
+
+        // The new photo is saved, so the replaced one can go.
+        uploadedAvatarUrl = null;
+        await removeUnusedAvatars(prisma, [previousAvatarUrl]);
 
         return json({
             success: true,
@@ -152,6 +177,11 @@ export async function POST(request: Request) {
             },
         });
     } catch (cause: unknown) {
+        // A photo the database does not use was never saved.
+        if (uploadedAvatarUrl) {
+            await removeUnusedAvatars(prisma, [uploadedAvatarUrl]);
+        }
+
         if (cause instanceof ProfileSettingsError) {
             return json(
                 {

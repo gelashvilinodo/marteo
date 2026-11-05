@@ -10,6 +10,7 @@ export const SYSTEM_JOBS = [
     { name: "subscription-expiry", label: "პაკეტების ვადის შემოწმება" },
     { name: "support-cleanup", label: "დახმარების ჩათის გასუფთავება (24 სთ)" },
     { name: "system-log-prune", label: "ძველი ჩანაწერების წაშლა" },
+    { name: "unused-image-cleanup", label: "გამოუყენებელი ფოტოების წაშლა (დღეში ერთხელ)", lateAfterMs: 26 * 3600_000 },
 ] as const;
 
 const LATE_AFTER_MS = 2 * 3600_000;
@@ -50,10 +51,12 @@ export async function getSystemOverview(view: "open" | "resolved", page: number)
             `;
             const byName = new Map(jobs.map(job => [job.name, job as typeof job & { lastOk: boolean | null }]));
             return {
-                jobs: SYSTEM_JOBS.map(({ name, label }): SystemJobView => {
+                jobs: SYSTEM_JOBS.map((definition): SystemJobView => {
+                    const { name, label } = definition;
+                    const lateAfterMs = "lateAfterMs" in definition ? definition.lateAfterMs : LATE_AFTER_MS;
                     const job = byName.get(name);
                     if (!job?.lastStartedAt) return { name, label, state: "never", lastStartedAt: null, lastFinishedAt: null, lastError: null, lastResult: null, runs: 0, failures: 0 };
-                    const state = job.lastOk === false ? "failed" : now.getTime() - job.lastStartedAt.getTime() > LATE_AFTER_MS ? "late" : "ok";
+                    const state = job.lastOk === false ? "failed" : now.getTime() - job.lastStartedAt.getTime() > lateAfterMs ? "late" : "ok";
                     return { name, label, state, lastStartedAt: job.lastStartedAt, lastFinishedAt: job.lastFinishedAt, lastError: job.lastError, lastResult: job.lastResult, runs: job.runs, failures: job.failures };
                 }),
                 counts: counts ?? { open: 0, resolved: 0, day: 0 },
