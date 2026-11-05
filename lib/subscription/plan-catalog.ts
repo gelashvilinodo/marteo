@@ -32,8 +32,8 @@ export const PLAN_CARDS: readonly PlanCard[] = [
         tier: "START",
         name: "სტარტი",
         icon: "solar:leaf-bold-duotone",
-        tagline: "პირველი ნაბიჯი, წესრიგით",
-        audience: "ვინც ახლა იწყებს ონლაინ გაყიდვებს და შეკვეთების წესრიგი სჭირდება.",
+        tagline: "შეკვეთები, სრულ წესრიგში",
+        audience: "ვისაც შეკვეთების მარტივი მართვა სჭირდება, დიდი გუნდის გარეშე.",
         price: PLAN_PRICES.START,
         perDay: perDay(PLAN_PRICES.START),
         rows: [

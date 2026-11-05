@@ -80,7 +80,7 @@ export default function EditMemberDialog({ member, plan, businessMode, onClose, 
                     onReadOnly={() => setReadOnly(value => !value)} />
                 {hidden.length > 0 && (
                     <p className="rounded-xl bg-background p-3 text-sm text-text-secondary">
-                        უფლებები „{hidden.map(option => option.label).join("“, „")}“ თქვენს გეგმაში არ შედის. ისინი შენახულია და ბიზნეს გეგმაზე გადასვლისას თავისით დაბრუნდება.
+                        {hidden.length === 1 ? "უფლება" : "უფლებები"} „{hidden.map(option => option.label).join("“, „")}“ თქვენს გეგმაში არ შედის. {hidden.length === 1 ? "ის შენახულია" : "ისინი შენახულია"} და ბიზნეს გეგმაზე გადასვლისას თავისით დაბრუნდება.
                     </p>
                 )}
                 {error && <p role="alert" className="text-sm text-danger">{error}</p>}
