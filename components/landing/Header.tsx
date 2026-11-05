@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 
 import { authPrimaryButtonClass } from "@/components/auth/AuthShell";
@@ -12,11 +13,38 @@ const navigation = [
   { label: "შესაძლებლობები", href: "/features", icon: "solar:widget-5-bold-duotone" },
 ];
 
+// These pages mount their own Header. Keep the previous destination across
+// client navigation so the new header can finish the same sliding motion.
+let previousNavigationHref: string | null = null;
+
 export default function Header() {
+  const pathname = usePathname();
+  const desktopNav = useRef<HTMLElement>(null);
+  const activeBackground = useRef<HTMLSpanElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
 
   const closeMenu = () => setMenuOpen(false);
+
+  useLayoutEffect(() => {
+    const previousHref = previousNavigationHref;
+    previousNavigationHref = navigation.some(item => item.href === pathname) ? pathname : null;
+
+    if (!previousHref || previousHref === pathname || !window.matchMedia("(min-width: 768px) and (prefers-reduced-motion: no-preference)").matches) return;
+
+    const links = desktopNav.current?.querySelectorAll<HTMLAnchorElement>("a");
+    const previous = Array.from(links ?? []).find(link => link.getAttribute("href") === previousHref);
+    const current = Array.from(links ?? []).find(link => link.getAttribute("href") === pathname);
+    const background = activeBackground.current;
+    if (!previous || !current || !background) return;
+
+    const from = previous.getBoundingClientRect();
+    const to = current.getBoundingClientRect();
+    background.animate([
+      { transform: `translateX(${from.left - to.left}px)`, width: `${from.width}px` },
+      { transform: "translateX(0)", width: `${to.width}px` },
+    ], { duration: 320, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
+  }, [pathname]);
 
   // Escape ჯერ ფანჯარას ხურავს, მერე მენიუს.
   useEffect(() => {
@@ -52,14 +80,16 @@ export default function Header() {
               />
             </Link>
 
-            <nav className="hidden items-center gap-8 md:flex">
+            <nav ref={desktopNav} aria-label="მთავარი ნავიგაცია" className="hidden items-center gap-2 md:flex">
               {navigation.map(item => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-sm font-medium text-[#f8fafc] transition-colors hover:text-[#5a8dee]"
+                  aria-current={pathname === item.href ? "page" : undefined}
+                  className={`relative inline-flex min-h-10 items-center rounded-full px-4 text-sm font-medium transition-colors motion-reduce:transition-none ${pathname === item.href ? "text-white" : "text-[#f8fafc] hover:text-[#5a8dee]"}`}
                 >
-                  {item.label}
+                  {pathname === item.href && <span ref={activeBackground} aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-full bg-white/10 ring-1 ring-inset ring-white/10" />}
+                  <span className="relative">{item.label}</span>
                 </Link>
               ))}
             </nav>
@@ -104,7 +134,8 @@ export default function Header() {
                 key={item.label}
                 href={item.href}
                 onClick={closeMenu}
-                className="flex h-12 items-center gap-3 rounded-2xl px-3 text-sm font-medium text-text-primary transition-colors hover:bg-accent/10 hover:text-accent"
+                aria-current={pathname === item.href ? "page" : undefined}
+                className={`flex h-12 items-center gap-3 rounded-2xl px-3 text-sm font-medium ${pathname === item.href ? "bg-accent/10 text-accent ring-1 ring-inset ring-accent/15" : "text-text-primary hover:bg-accent/10 hover:text-accent"}`}
               >
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
                   <Icon icon={item.icon} className="h-5 w-5" />

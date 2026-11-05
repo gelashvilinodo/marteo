@@ -140,7 +140,7 @@ const steps: Step[] = [
     {
         id: "money",
         icon: "solar:wallet-money-bold-duotone",
-        title: "ფული",
+        title: "მოგება",
         plan: "all",
         headline: "ხედავთ მოგებას, არა მხოლოდ შემოსავალს",
         points: [
@@ -171,10 +171,10 @@ const planLabels: Record<Step["plan"], string> = {
 };
 
 const extras = [
-    { icon: "solar:smartphone-2-bold-duotone", label: "ტელეფონზე, აპლიკაციასავით" },
+    { icon: "solar:devices-bold-duotone", label: "ყველა მოწყობილობაზე" },
     { icon: "solar:users-group-two-rounded-bold-duotone", label: "გუნდი და როლები" },
     { icon: "solar:bell-bold-duotone", label: "შეტყობინებები" },
-    { icon: "solar:chat-round-dots-bold-duotone", label: "მხარდაჭერის ჩატი" },
+    { icon: "solar:chat-round-dots-bold-duotone", label: "მხარდაჭერა" },
 ];
 
 export default function CapabilitiesFlow() {

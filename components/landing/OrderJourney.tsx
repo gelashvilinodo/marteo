@@ -60,7 +60,7 @@ export default function OrderJourney() {
                 <div className="text-center">
                     <p className="text-sm font-semibold text-accent">ერთი შეკვეთის გზა</p>
                     <h2 id="order-journey-title" className="mt-2 text-[clamp(1.35rem,4vw,2rem)] leading-tight font-bold text-balance text-text-primary">
-                        თქვენ ერთხელ აჭერთ, დანარჩენი თავისით ხდება
+                        ნახეთ, როგორ მოძრაობს შეკვეთა MARTEO-ში
                     </h2>
                 </div>
 

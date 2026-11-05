@@ -1,0 +1,18 @@
+/* Render the catalog's own geometry, including wrapping and comparison breakpoints. */
+.catalog,
+.catalog * {
+    color: transparent !important;
+    border-color: var(--marteo-border) !important;
+    box-shadow: none !important;
+    background-image: none !important;
+}
+.catalog article {
+    background-color: var(--marteo-surface) !important;
+}
+.catalog :is(p, h3, li > span, th > span, td > span) {
+    border-radius: 0.375rem;
+    background-color: color-mix(in srgb, var(--marteo-text-secondary) 10%, transparent) !important;
+}
+.catalog svg {
+    visibility: hidden;
+}
