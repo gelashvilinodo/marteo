@@ -190,27 +190,51 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
     }, [open, desktop]);
 
     // ღია ფანჯრისას შიდა ბმულზე დაჭერა ჯერ ფანჯარას კეცავს, გვერდი კი
-    // ანიმაციის დასრულების შემდეგ იცვლება.
+    // ანიმაციის დასრულების შემდეგ იცვლება. დესკტოპზე ფანჯრის გარეთ ნებისმიერი
+    // დაჭერაც კეცავს, თუ ბარათიდან გახსნილი ფანჯარა (dialog) არ არის ღია.
     useEffect(() => {
         if (!open) return;
 
-        function onClick(event: MouseEvent) {
-            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        // ფანჯრიდან დაწყებული მონიშვნა გარეთ რომ მთავრდება, ფანჯარას არ კეცავს.
+        let pressedInside = false;
+
+        function onPointerDown(event: PointerEvent) {
+            pressedInside = event.target instanceof Node && !!panelRef.current?.contains(event.target);
+        }
+
+        function followLink(event: MouseEvent) {
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
 
             const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
-            if (!(link instanceof HTMLAnchorElement) || link.target === "_blank" || link.hasAttribute("download")) return;
+            if (!(link instanceof HTMLAnchorElement) || link.target === "_blank" || link.hasAttribute("download")) return false;
 
             const url = new URL(link.href, window.location.href);
-            if (url.origin !== window.location.origin) return;
-            if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+            if (url.origin !== window.location.origin) return false;
+            if (url.pathname === window.location.pathname && url.search === window.location.search) return false;
 
             event.preventDefault();
             collapse();
             navigateTimer.current = window.setTimeout(() => router.push(url.pathname + url.search + url.hash), desktop ? 300 : 550);
+            return true;
         }
 
+        function onClick(event: MouseEvent) {
+            const startedInside = pressedInside;
+            pressedInside = false;
+
+            if (followLink(event) || !desktop || startedInside) return;
+            if (!(event.target instanceof Node) || panelRef.current?.contains(event.target)) return;
+            if (document.querySelector("dialog[open]")) return;
+
+            collapse();
+        }
+
+        document.addEventListener("pointerdown", onPointerDown, true);
         document.addEventListener("click", onClick, true);
-        return () => document.removeEventListener("click", onClick, true);
+        return () => {
+            document.removeEventListener("pointerdown", onPointerDown, true);
+            document.removeEventListener("click", onClick, true);
+        };
     }, [open, desktop, collapse, router]);
 
     useEffect(() => () => window.clearTimeout(navigateTimer.current), []);
