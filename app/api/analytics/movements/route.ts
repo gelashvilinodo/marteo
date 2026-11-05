@@ -2,7 +2,7 @@ import { apiAccessDenied } from "@/lib/business/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { createPrismaClient } from "@/lib/prisma";
-import { resolveOrdersPeriod } from "@/lib/orders/orders-period";
+import { resolveBusinessPeriod } from "@/lib/orders/business-period";
 import { getFinancialMovements } from "@/lib/analytics/get-financial-movements";
 import { orderJson, orderError } from "@/lib/orders/order-http";
 
@@ -34,15 +34,17 @@ export async function GET(request: Request) {
             page: search.get("page") ?? "1",
         };
 
-        const range = resolveOrdersPeriod(
-            params.period,
-            params.from,
-            params.to,
-        );
-
         const prisma = createPrismaClient();
 
         try {
+            const range = await resolveBusinessPeriod(
+                prisma,
+                membership.businessId,
+                params.period,
+                params.from,
+                params.to,
+            );
+
             const data = await getFinancialMovements(
                 prisma,
                 membership.businessId,

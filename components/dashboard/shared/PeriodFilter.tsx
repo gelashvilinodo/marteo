@@ -28,6 +28,7 @@ export const standardPeriodOptions: readonly PeriodOption<OrdersPeriod>[] = [
     { value: "week", label: "ერთი კვირა" },
     { value: "two-weeks", label: "ორი კვირა" },
     { value: "month", label: "ერთი თვე" },
+    { value: "all", label: "დასაწყისიდან დღემდე" },
     { value: "custom", label: "სხვა პერიოდი" },
 ];
 

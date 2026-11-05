@@ -3,6 +3,7 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import type { createPrismaClient } from "@/lib/prisma";
 import { resolveCustomersPeriod } from "./customers-period";
+import { getBusinessSince } from "@/lib/orders/business-period";
 
 export type CustomersSearchParams = Record<
     string,
@@ -62,6 +63,10 @@ export async function getCustomersPage(
         text("period"),
         text("from"),
         text("to"),
+        new Date(),
+        text("period") === "all"
+            ? await getBusinessSince(prisma, businessId)
+            : undefined,
     );
 
     const filters: CustomersFilter[] = [

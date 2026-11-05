@@ -19,7 +19,7 @@ export type OrdersFilter =
     | "canceled"
     | "returned";
 
-import { resolveOrdersPeriod } from "./orders-period";
+import { resolveBusinessPeriod } from "./business-period";
 export type OrdersSort = "date-desc" | "date-asc" | "number-desc" | "number-asc" | "recipient-asc" | "recipient-desc";
 export type OrdersPaymentFilter = "all" | "PAID" | "UNPAID" | "PARTIALLY_PAID" | "COURIER_ONLY_PAID" | "UNKNOWN";
 const PAGE_SIZE = 15;
@@ -54,7 +54,7 @@ export async function getOrdersPage(
         ? requestedFilter
         : "all";
 
-    const range = resolveOrdersPeriod(text("period"), text("from"), text("to"));
+    const range = await resolveBusinessPeriod(prisma, businessId, text("period"), text("from"), text("to"));
     const allowedSorts: OrdersSort[] = ["date-desc", "date-asc", "number-desc", "number-asc", "recipient-asc", "recipient-desc"];
     const sort: OrdersSort = allowedSorts.includes(text("sort") as OrdersSort) ? text("sort") as OrdersSort : "date-desc";
     const allowedPayments: OrdersPaymentFilter[] = ["all", "PAID", "UNPAID", "PARTIALLY_PAID", "COURIER_ONLY_PAID", "UNKNOWN"];

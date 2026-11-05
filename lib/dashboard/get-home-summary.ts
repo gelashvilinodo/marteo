@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createPgReader } from "@/lib/database/pg-reader";
-import { resolveOrdersPeriod } from "@/lib/orders/orders-period";
+import { resolveBusinessPeriod } from "@/lib/orders/business-period";
 
 export type HomeSearchParams = Record<
     string,
@@ -36,15 +36,17 @@ export async function getHomeSummary(
         return typeof value === "string" ? value.trim() : "";
     };
 
-    const range = resolveOrdersPeriod(
-        text("period") || "month",
-        text("from"),
-        text("to"),
-    );
-
     const reader = createPgReader();
 
     try {
+        const range = await resolveBusinessPeriod(
+            reader,
+            businessId,
+            text("period") || "month",
+            text("from"),
+            text("to"),
+        );
+
         const [row] = await reader.$queryRaw<SummaryRow[]>`
             WITH financial AS (
                 SELECT

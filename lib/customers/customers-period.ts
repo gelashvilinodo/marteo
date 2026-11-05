@@ -10,11 +10,13 @@ export function resolveCustomersPeriod(
     fromValue: string,
     toValue: string,
     now = new Date(),
+    since?: string,
 ) {
     return resolveOrdersPeriod(
         periodValue || "month",
         fromValue,
         toValue,
         now,
+        since,
     );
 }

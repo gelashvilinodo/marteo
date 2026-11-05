@@ -2,7 +2,7 @@ import "server-only";
 import { sql, raw, join } from "@prisma/client-runtime-utils";
 import type { createPgReader } from "@/lib/database/pg-reader";
 import type { OrdersSearchParams, OrdersFilter, OrdersSort, OrdersPaymentFilter, OrdersPageData } from "./get-orders-page";
-import { resolveOrdersPeriod } from "./orders-period";
+import { resolveBusinessPeriod } from "./business-period";
 import { getOrdersSummary } from "./get-orders-summary";
 import { getOrderRecords } from "./get-order-records";
 import { serializeOrderRecord } from "./serialize-order-record";
@@ -30,7 +30,7 @@ export async function getOrdersPgPage(
     const sort: OrdersSort = Object.hasOwn(ordering, text("sort")) ? text("sort") as OrdersSort : "date-desc";
     const allowedPayments: OrdersPaymentFilter[] = ["all", "PAID", "UNPAID", "PARTIALLY_PAID", "COURIER_ONLY_PAID", "UNKNOWN"];
     const payment: OrdersPaymentFilter = allowedPayments.includes(text("payment") as OrdersPaymentFilter) ? text("payment") as OrdersPaymentFilter : "all";
-    const range = resolveOrdersPeriod(text("period"), text("from"), text("to"));
+    const range = await resolveBusinessPeriod(client, businessId, text("period"), text("from"), text("to"));
     const query = text("q"), rawPage = Number(text("page"));
     const requestedPage = Number.isSafeInteger(rawPage) && rawPage > 0 ? rawPage : 1;
     const base = sql`o."businessId" = ${businessId} AND o."deletedAt" IS NULL AND o."createdAt" >= ${range.start} AND o."createdAt" < ${range.end}`;

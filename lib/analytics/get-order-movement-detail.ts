@@ -2,7 +2,7 @@ import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 import type { createPrismaClient } from "@/lib/prisma";
-import { resolveOrdersPeriod } from "@/lib/orders/orders-period";
+import { resolveBusinessPeriod } from "@/lib/orders/business-period";
 
 export async function getOrderMovementDetail(
     prisma: ReturnType<typeof createPrismaClient>,
@@ -11,7 +11,9 @@ export async function getOrderMovementDetail(
     id: string,
     params: Record<string, string>,
 ) {
-    const range = resolveOrdersPeriod(
+    const range = await resolveBusinessPeriod(
+        prisma,
+        businessId,
         params.period || "month",
         params.from || "",
         params.to || "",

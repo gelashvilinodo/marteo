@@ -2,7 +2,7 @@ import "server-only";
 
 import { Prisma } from "@/generated/prisma/client";
 import type { createPrismaClient } from "@/lib/prisma";
-import { resolveOrdersPeriod } from "@/lib/orders/orders-period";
+import { resolveBusinessPeriod } from "@/lib/orders/business-period";
 
 export type StatisticsSearchParams = Record<
     string,
@@ -29,7 +29,9 @@ export async function getStatisticsSummary(
     const text = (key: string) =>
         typeof params[key] === "string" ? params[key].trim() : "";
 
-    const range = resolveOrdersPeriod(
+    const range = await resolveBusinessPeriod(
+        prisma,
+        businessId,
         text("period") || "month",
         text("from"),
         text("to"),

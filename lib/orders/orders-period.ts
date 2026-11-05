@@ -4,6 +4,7 @@ export type OrdersPeriod =
     | "week"
     | "two-weeks"
     | "month"
+    | "all"
     | "custom";
 
 const DAY = 86_400_000;
@@ -35,6 +36,8 @@ export function resolveOrdersPeriod(
     fromValue: string,
     toValue: string,
     now = new Date(),
+    // "all"-ისთვის: ბიზნესის დაწყების დღე (რეგისტრაცია ან ყველაზე ძველი შეკვეთა).
+    since?: string,
 ) {
     const today = new Date(
         now.getTime() + OFFSET,
@@ -44,6 +47,7 @@ export function resolveOrdersPeriod(
 
     let period: OrdersPeriod =
         Object.hasOwn(durations, periodValue) ||
+            periodValue === "all" ||
             periodValue === "custom"
             ? (periodValue as OrdersPeriod)
             : "week";
@@ -68,6 +72,10 @@ export function resolveOrdersPeriod(
     const from =
         period === "custom"
             ? fromValue
+            : period === "all"
+            ? since && validDate(since) && since < today
+                ? since
+                : today
             : new Date(
                 new Date(
                     `${today}T00:00:00.000Z`,
