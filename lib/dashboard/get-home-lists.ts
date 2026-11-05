@@ -9,6 +9,8 @@ export type HomeRecentOrder = {
     status: string;
     total: string;
     invalidReturns: boolean;
+    imageUrl: string | null;
+    itemCount: number;
 };
 
 export type HomeTopProduct = {
@@ -82,6 +84,29 @@ export async function getHomeLists(
                     AND r."fulfillmentCycle" = o."fulfillmentCycle"
                 GROUP BY ri."orderItemId"
             ),
+            recent_items AS (
+                SELECT
+                    o.id AS order_id,
+                    i.id AS item_id,
+                    i."createdAt",
+                    COALESCE(i."imageUrl", inv."imageUrl") AS image_url
+                FROM recent o
+                JOIN "OrderItem" i
+                    ON i."orderId" = o.id
+                    AND i."isActive" = TRUE
+                LEFT JOIN "InventoryItem" inv
+                    ON inv.id = i."inventoryItemId"
+            ),
+            recent_images AS (
+                SELECT
+                    order_id,
+                    (ARRAY_AGG(
+                        image_url ORDER BY "createdAt", item_id
+                    ) FILTER (WHERE image_url IS NOT NULL))[1] AS image_url,
+                    COUNT(*)::int AS item_count
+                FROM recent_items
+                GROUP BY order_id
+            ),
             recent_totals AS (
                 SELECT
                     o.id,
@@ -137,7 +162,7 @@ export async function getHomeLists(
                         ELSE 'historical:' || i."sourceOrderItemId"
                     END AS product_key,
                     i.name,
-                    oi."imageUrl" AS image_url,
+                    COALESCE(oi."imageUrl", inv."imageUrl") AS image_url,
                     i."quantityDelta" AS quantity,
                     i."revenueDelta" AS revenue
                 FROM "OrderFinancialEntry" f
@@ -145,6 +170,8 @@ export async function getHomeLists(
                     ON i."entryId" = f.id
                 LEFT JOIN "OrderItem" oi
                     ON oi.id = i."sourceOrderItemId"
+                LEFT JOIN "InventoryItem" inv
+                    ON inv.id = oi."inventoryItemId"
                 WHERE ${includeProducts}::boolean
     AND f."businessId" = ${businessId}
     AND f."occurredAt" >= ${start}
@@ -177,11 +204,15 @@ export async function getHomeLists(
                                 'recipientName', o.recipient_name,
                                 'status', o.status,
                                 'total', ROUND(o.total, 2)::text,
-                                'invalidReturns', o.invalid_returns
+                                'invalidReturns', o.invalid_returns,
+                                'imageUrl', ri.image_url,
+                                'itemCount', COALESCE(ri.item_count, 0)
                             )
                             ORDER BY o."createdAt" DESC, o.id DESC
                         )
                         FROM recent_totals o
+                        LEFT JOIN recent_images ri
+                            ON ri.order_id = o.id
                     ),
                     '[]'::jsonb
                 ),

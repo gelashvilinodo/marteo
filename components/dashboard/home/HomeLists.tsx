@@ -13,6 +13,47 @@ function formatNumber(value: string) {
     );
 }
 
+// Quantities are stored with 6 decimals; show "8", "2.5", not "8.000000".
+function formatQuantity(value: string) {
+    return formatNumber(
+        value.includes(".") ? value.replace(/\.?0+$/, "") : value,
+    );
+}
+
+function Thumbnail({ imageUrl }: { imageUrl: string | null }) {
+    return (
+        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-background">
+            {imageUrl ? (
+                <Image
+                    src={productThumbnailUrl(imageUrl)}
+                    alt=""
+                    width={48}
+                    height={48}
+                    unoptimized
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                />
+            ) : (
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className="text-accent"
+                >
+                    <path d="m12 3 9 5-9 5-9-5 9-5ZM3 8v9l9 5 9-5V8M12 13v9" />
+                </svg>
+            )}
+        </div>
+    );
+}
+
 const statuses: Record<
     string,
     { label: string; className: string }
@@ -76,29 +117,51 @@ export default function HomeLists({
                             return (
                                 <li
                                     key={order.id}
-                                    className="grid h-24 min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] content-center items-center gap-x-3 gap-y-2 px-4 sm:px-5"
+                                    className="flex h-24 min-w-0 items-center gap-3 px-4 sm:px-5"
                                 >
-                                    <span className="whitespace-nowrap text-sm font-semibold text-text-primary tabular-nums">
-                                        {order.number === null
-                                            ? "უნომრო"
-                                            : `#${String(order.number).padStart(4, "0")}`}
-                                    </span>
+                                    <div className="relative shrink-0">
+                                        <Thumbnail imageUrl={order.imageUrl} />
 
-                                    <span
-                                        title={order.recipientName}
-                                        className="min-w-0 truncate text-sm text-text-primary"
-                                    >
-                                        {order.recipientName}
-                                    </span>
+                                        {order.itemCount > 1 && (
+                                            <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-surface bg-accent px-1 text-[10px] font-semibold text-white tabular-nums">
+                                                +{order.itemCount - 1}
+                                            </span>
+                                        )}
+                                    </div>
 
-                                    <span className="whitespace-nowrap text-sm font-semibold text-text-primary tabular-nums">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="flex min-w-0 items-baseline gap-2 text-sm">
+                                            <span className="shrink-0 font-semibold text-text-primary tabular-nums">
+                                                {order.number === null
+                                                    ? "უნომრო"
+                                                    : `#${String(order.number).padStart(4, "0")}`}
+                                            </span>
+
+                                            <span
+                                                title={order.recipientName}
+                                                className="min-w-0 truncate font-medium text-text-primary"
+                                            >
+                                                {order.recipientName}
+                                            </span>
+                                        </p>
+
+                                        <p className="mt-1.5 flex min-w-0 items-center gap-2 text-xs text-text-secondary">
+                                            <span
+                                                className={`shrink-0 rounded-md px-2 py-0.5 font-medium ${status.className}`}
+                                            >
+                                                {status.label}
+                                            </span>
+
+                                            {order.itemCount > 0 && (
+                                                <span className="truncate">
+                                                    {order.itemCount} პროდუქტი
+                                                </span>
+                                            )}
+                                        </p>
+                                    </div>
+
+                                    <span className="shrink-0 whitespace-nowrap text-sm font-semibold text-text-primary tabular-nums">
                                         {formatNumber(order.total)} ₾
-                                    </span>
-
-                                    <span
-                                        className={`col-span-3 justify-self-start rounded-lg px-2 py-1 text-xs font-medium ${status.className}`}
-                                    >
-                                        {status.label}
                                     </span>
                                 </li>
                             );
@@ -139,37 +202,7 @@ export default function HomeLists({
                                     {index + 1}
                                 </span>
 
-                                <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-background">
-                                    {product.imageUrl ? (
-                                        <Image
-                                            src={productThumbnailUrl(
-                                                product.imageUrl,
-                                            )}
-                                            alt=""
-                                            width={44}
-                                            height={44}
-                                            unoptimized
-                                            loading="lazy"
-                                            className="h-full w-full object-cover"
-                                        />
-                                    ) : (
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            width="22"
-                                            height="22"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="1.7"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            aria-hidden="true"
-                                            className="text-accent"
-                                        >
-                                            <path d="m12 3 9 5-9 5-9-5 9-5ZM3 8v9l9 5 9-5V8M12 13v9" />
-                                        </svg>
-                                    )}
-                                </div>
+                                <Thumbnail imageUrl={product.imageUrl} />
 
                                 <div className="min-w-0 flex-1">
                                     <p
@@ -179,8 +212,8 @@ export default function HomeLists({
                                         {product.name}
                                     </p>
 
-                                    <p className="mt-1 text-xs text-text-secondary">
-                                        {formatNumber(product.quantity)} ერთეული
+                                    <p className="mt-1.5 text-xs text-text-secondary">
+                                        {formatQuantity(product.quantity)} ერთეული
                                     </p>
                                 </div>
 
