@@ -30,6 +30,26 @@ export const PLAN_ONTO: Record<PlanTier, string> = {
 // ლარი, თვეში. ფასში შედის ბანკის საკომისიო.
 export const PLAN_PRICES: Record<PaidTier, number> = { START: 19, BUSINESS: 39, PRO: 79 };
 
+// გადახდის პერიოდი. წლიური 12 თვეა, ფასი კი 10 თვისა (2 თვე საჩუქრად).
+export const BILLING_INTERVALS = ["MONTHLY", "YEARLY"] as const;
+export type BillingInterval = typeof BILLING_INTERVALS[number];
+export const YEARLY_PAID_MONTHS = 10;
+export const INTERVAL_MONTHS: Record<BillingInterval, number> = { MONTHLY: 1, YEARLY: 12 };
+// ნაშთის დღეებად გადასაყვანად: თვე 30 დღეა, წელი 365.
+export const INTERVAL_DAYS: Record<BillingInterval, number> = { MONTHLY: 30, YEARLY: 365 };
+export const INTERVAL_LABELS: Record<BillingInterval, string> = { MONTHLY: "თვიური", YEARLY: "წლიური" };
+// სიტყვის წინ ბრუნვაში: „თვიურ გადახდაზე“, „წლიურ ფასად“.
+export const INTERVAL_ADJECTIVES: Record<BillingInterval, string> = { MONTHLY: "თვიურ", YEARLY: "წლიურ" };
+
+export function isBillingInterval(value: unknown): value is BillingInterval {
+    return BILLING_INTERVALS.includes(value as BillingInterval);
+}
+
+// პერიოდის ფასი თვიური ფასიდან (ფასდაკლებულიდანაც).
+export function periodPrice(monthly: number, interval: BillingInterval) {
+    return Math.round(monthly * (interval === "YEARLY" ? YEARLY_PAID_MONTHS : 1) * 100) / 100;
+}
+
 // null ნიშნავს ულიმიტოს. AI და შეკვეთები ითვლება გადახდის პერიოდში, საცდელში კი მთელ საცდელზე.
 export type PlanLimits = {
     ordersPerPeriod: number | null;

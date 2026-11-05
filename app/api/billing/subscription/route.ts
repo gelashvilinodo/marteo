@@ -13,13 +13,13 @@ async function post(request: Request) {
     const accessDenied = await apiAccessDenied("OWNER", "edit"); if (accessDenied) return accessDenied;
     const context = (await getPgDashboardContext())!;
     const businessId = context.membership!.businessId;
-    const body = await request.json().catch(() => null) as { action?: unknown; plan?: unknown; keep?: unknown; mode?: unknown } | null;
+    const body = await request.json().catch(() => null) as { action?: unknown; plan?: unknown; keep?: unknown; mode?: unknown; period?: unknown } | null;
     const db = createPrismaClient();
     try {
         let message: string;
         if (body?.action === "cancel") message = await cancelPlan(db, context.user.id, businessId);
         else if (body?.action === "resume") message = await resumePlan(db, context.user.id, businessId);
-        else if (body?.action === "downgrade") message = await downgradePlan(db, context.user.id, businessId, body.plan, { keep: body.keep, mode: body.mode });
+        else if (body?.action === "downgrade") message = await downgradePlan(db, context.user.id, businessId, body.plan, { keep: body.keep, mode: body.mode, interval: typeof body.period === "string" ? body.period.toUpperCase() : undefined });
         else return json({ success: false, message: "ქმედება არასწორია." }, 422);
         void queueNoticeChannels(businessId);
         return json({ success: true, message });

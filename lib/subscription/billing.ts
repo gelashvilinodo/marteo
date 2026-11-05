@@ -53,7 +53,7 @@ export async function getBillingOverview(db: Db, userId: string, businessId: str
     const now = new Date();
     const row = await db.subscription.findUnique({
         where: { businessId },
-        select: { plan: true, status: true, expiresAt: true, currentPeriodStart: true, cancelAtPeriodEnd: true, startedAt: true },
+        select: { plan: true, status: true, expiresAt: true, currentPeriodStart: true, cancelAtPeriodEnd: true, billingInterval: true, startedAt: true },
     });
     const plan = planStateFrom(row, now);
     const limits = plan.tier ? PLAN_LIMITS[plan.tier] : null;

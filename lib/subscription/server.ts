@@ -9,7 +9,7 @@ type Db = PrismaClient | Prisma.TransactionClient;
 export async function readPlanState(db: Db, businessId: string, now = new Date()): Promise<PlanState> {
     const row = await db.subscription.findUnique({
         where: { businessId },
-        select: { plan: true, status: true, expiresAt: true, currentPeriodStart: true, cancelAtPeriodEnd: true },
+        select: { plan: true, status: true, expiresAt: true, currentPeriodStart: true, cancelAtPeriodEnd: true, billingInterval: true },
     });
     return planStateFrom(row, now);
 }

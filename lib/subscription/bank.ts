@@ -11,7 +11,7 @@ import { priceForBusiness } from "./billing";
 import { PlanActionError, quoteForBusiness } from "./manage";
 import { notifyOwners, notifyPaymentFailed, queueNoticeChannels } from "./notices";
 import { addBillingMonths } from "./period";
-import { isPaidTier, PLAN_ADJECTIVES, PLAN_LABELS, type PaidTier } from "./plans";
+import { INTERVAL_ADJECTIVES, INTERVAL_LABELS, INTERVAL_MONTHS, isBillingInterval, isPaidTier, periodPrice, PLAN_ADJECTIVES, PLAN_LABELS, type BillingInterval, type PaidTier } from "./plans";
 import { applyPlanMode } from "./server";
 
 const DAY = 86_400_000;
@@ -23,15 +23,17 @@ const POLL_AFTER_MS = 5 * 60_000;
 
 // გადახდის დაწყება: ბანკში იქმნება შეკვეთა, ბარათი ავტოგანახლებისთვის ინახება და მომხმარებელი
 // ბანკის გვერდზე გადადის. გეგმა მხოლოდ დადასტურებული გადახდის შემდეგ ირთვება (applyBankReceipt).
-export async function startCheckout(prisma: PrismaClient, userId: string, businessId: string, target: unknown) {
+export async function startCheckout(prisma: PrismaClient, userId: string, businessId: string, target: unknown, period: unknown = "MONTHLY") {
     if (!isPaidTier(target)) throw new PlanActionError("გეგმა არასწორია.");
+    const interval: BillingInterval = isBillingInterval(period) ? period : "MONTHLY";
     if (!bogConfigured()) throw new PlanActionError("ბარათით გადახდა დროებით მიუწვდომელია. სცადეთ მოგვიანებით.", 503);
-    const { quote } = await quoteForBusiness(prisma, userId, businessId, target);
+    const { quote, current } = await quoteForBusiness(prisma, userId, businessId, target, interval);
+    if (current.tier === target && current.interval === interval) throw new PlanActionError("ეს უკვე თქვენი გეგმაა.", 409);
     if (quote.kind === "downgrade") throw new PlanActionError("დაბალ გეგმაზე გადასვლას გადახდა არ სჭირდება.", 409);
     if (quote.amountDue <= 0) throw new PlanActionError("გადასახდელი თანხა არასწორია.", 409);
     const business = await prisma.business.findUnique({ where: { id: businessId }, select: { name: true } });
     const row = await prisma.bankPayment.create({
-        data: { businessId, userId, kind: "CHECKOUT", plan: target, amount: quote.amountDue.toFixed(2), bonusDays: quote.kind === "upgrade" ? quote.days : 0 },
+        data: { businessId, userId, kind: "CHECKOUT", plan: target, interval, amount: quote.amountDue.toFixed(2), bonusDays: quote.kind === "upgrade" ? quote.days : 0 },
         select: { id: true },
     });
     const back = `${getAppOrigin()}/dashboard/billing?payment=${row.id}`;
@@ -39,8 +41,8 @@ export async function startCheckout(prisma: PrismaClient, userId: string, busine
         const order = await createBogOrder({
             externalOrderId: row.id,
             amount: quote.amountDue,
-            itemId: `plan-${target.toLowerCase()}`,
-            description: `MARTEO ${PLAN_LABELS[target]} - ${business?.name ?? ""}`.slice(0, 120),
+            itemId: `plan-${target.toLowerCase()}${interval === "YEARLY" ? "-yearly" : ""}`,
+            description: `MARTEO ${PLAN_LABELS[target]} (${INTERVAL_LABELS[interval]}) - ${business?.name ?? ""}`.slice(0, 120),
             successUrl: back,
             failUrl: back,
             idempotencyKey: randomUUID(),
@@ -98,6 +100,7 @@ async function completePayment(prisma: PrismaClient, id: string, cardMask: strin
         if (!claimed.count) return null;
         const now = new Date();
         const plan = row.plan as PaidTier;
+        const months = INTERVAL_MONTHS[row.interval];
         const business = await tx.business.findUniqueOrThrow({
             where: { id: businessId },
             select: { name: true, subscription: { select: { plan: true, status: true, expiresAt: true, bankCardOrderId: true } } },
@@ -107,14 +110,14 @@ async function completePayment(prisma: PrismaClient, id: string, cardMask: strin
         if (row.kind === "RENEWAL" && before?.expiresAt && before.expiresAt.getTime() > now.getTime() - 7 * DAY) {
             // განახლება ძველი ვადიდან გრძელდება, რომ გადახდის დღე არ გადაიწიოს.
             start = before.expiresAt;
-            end = addBillingMonths(start, 1);
-            if (end <= now) { start = now; end = addBillingMonths(now, 1); }
+            end = addBillingMonths(start, months);
+            if (end <= now) { start = now; end = addBillingMonths(now, months); }
         } else {
-            end = new Date(addBillingMonths(now, 1).getTime() + row.bonusDays * DAY);
+            end = new Date(addBillingMonths(now, months).getTime() + row.bonusDays * DAY);
         }
         const payment = await tx.subscriptionPayment.create({
             data: {
-                businessId, businessName: business.name, plan, amount: row.amount, method: "CARD", months: 1, paidAt: now,
+                businessId, businessName: business.name, plan, amount: row.amount, method: "CARD", months, paidAt: now,
                 periodStart: start, periodEnd: end, note: `საქართველოს ბანკი${cardMask ? ` · ${cardMask}` : ""}`, createdById: null,
             },
             select: { id: true },
@@ -123,15 +126,15 @@ async function completePayment(prisma: PrismaClient, id: string, cardMask: strin
         const card = row.kind === "CHECKOUT" ? { bankCardOrderId: row.bankOrderId, bankCardAmount: row.amount, bankCardMask: cardMask } : {};
         const after = await tx.subscription.upsert({
             where: { businessId },
-            create: { businessId, plan, status: "ACTIVE", startedAt: now, expiresAt: end, currentPeriodStart: start, ...card },
-            update: { plan, status: "ACTIVE", expiresAt: end, currentPeriodStart: start, canceledAt: null, cancelAtPeriodEnd: false, ...card },
+            create: { businessId, plan, billingInterval: row.interval, status: "ACTIVE", startedAt: now, expiresAt: end, currentPeriodStart: start, ...card },
+            update: { plan, billingInterval: row.interval, status: "ACTIVE", expiresAt: end, currentPeriodStart: start, canceledAt: null, cancelAtPeriodEnd: false, ...card },
             select: { plan: true, status: true, expiresAt: true },
         });
         await tx.adminAuditLog.create({
             data: {
                 adminId: null, action: "payment-bank", targetType: "BUSINESS", targetId: businessId,
                 before: before ? { plan: before.plan, status: before.status, expiresAt: before.expiresAt?.toISOString() ?? null } : undefined,
-                after: { plan: after.plan, status: after.status, expiresAt: after.expiresAt?.toISOString() ?? null, paymentId: payment.id, amount: row.amount.toFixed(2), kind: row.kind },
+                after: { plan: after.plan, status: after.status, expiresAt: after.expiresAt?.toISOString() ?? null, paymentId: payment.id, amount: row.amount.toFixed(2), kind: row.kind, interval: row.interval },
             },
         });
         await applyPlanMode(tx, businessId, plan);
@@ -190,7 +193,7 @@ export async function runBankRenewals(prisma: PrismaClient, now = new Date()) {
             bankCardOrderId: { not: null },
             expiresAt: { lte: new Date(now.getTime() - RENEWAL_ATTEMPTS_AT[0]), gt: new Date(now.getTime() - 4 * DAY) },
         },
-        select: { businessId: true, plan: true, expiresAt: true, bankCardOrderId: true, bankCardAmount: true },
+        select: { businessId: true, plan: true, billingInterval: true, expiresAt: true, bankCardOrderId: true, bankCardAmount: true },
         take: 200,
     });
     for (const sub of due) {
@@ -200,7 +203,7 @@ export async function runBankRenewals(prisma: PrismaClient, now = new Date()) {
     return { charged, synced };
 }
 
-type DueSubscription = { businessId: string; plan: string; expiresAt: Date | null; bankCardOrderId: string | null; bankCardAmount: Prisma.Decimal | null };
+type DueSubscription = { businessId: string; plan: string; billingInterval: BillingInterval; expiresAt: Date | null; bankCardOrderId: string | null; bankCardAmount: Prisma.Decimal | null };
 
 async function renewOne(prisma: PrismaClient, sub: DueSubscription, now: Date) {
     if (!sub.expiresAt || !sub.bankCardOrderId || !sub.bankCardAmount || !isPaidTier(sub.plan)) return false;
@@ -217,14 +220,15 @@ async function renewOne(prisma: PrismaClient, sub: DueSubscription, now: Date) {
     const owner = await prisma.businessMembership.findFirst({
         where: { businessId: sub.businessId, role: "OWNER", status: "ACTIVE" }, orderBy: { createdAt: "asc" }, select: { userId: true },
     });
-    const price = owner ? (await priceForBusiness(prisma, owner.userId, sub.businessId))[sub.plan].price : null;
+    // წლიურზე ბარათი წლიური თანხით არის შენახული (10 თვის ფასი).
+    const price = owner ? periodPrice((await priceForBusiness(prisma, owner.userId, sub.businessId))[sub.plan].price, sub.billingInterval) : null;
     if (price === null || Math.abs(price - Number(sub.bankCardAmount)) > 0.009) {
         if (now >= sub.expiresAt) {
             const created = await notifyOwners(prisma, {
                 businessId: sub.businessId, kind: "PAYMENT_FAILED", key: `card-amount:${sub.businessId}:${sub.expiresAt.toISOString()}`,
                 title: "გეგმის განახლება ხელით გადახდას საჭიროებს",
-                body: `${PLAN_ADJECTIVES[sub.plan]} გეგმის ფასი შეიცვალა, ამიტომ შენახული ბარათიდან ავტომატურად ვერ ჩამოიჭრება. გადაიხადეთ ერთხელ ბარათით და შემდეგი თვეები ისევ ავტომატურად განახლდება.`,
-                actionLabel: "გადახდა", actionUrl: `/dashboard/plans/checkout?plan=${sub.plan.toLowerCase()}`,
+                body: `${PLAN_ADJECTIVES[sub.plan]} გეგმის ${INTERVAL_ADJECTIVES[sub.billingInterval]} გადახდის თანხა შეიცვალა, ამიტომ შენახული ბარათიდან ავტომატურად ვერ ჩამოიჭრება. გადაიხადეთ ერთხელ ბარათით და შემდეგ ისევ ავტომატურად განახლდება.`,
+                actionLabel: "გადახდა", actionUrl: `/dashboard/plans/checkout?plan=${sub.plan.toLowerCase()}${sub.billingInterval === "YEARLY" ? "&period=yearly" : ""}`,
             });
             if (created) void queueNoticeChannels(sub.businessId);
         }
@@ -235,7 +239,7 @@ async function renewOne(prisma: PrismaClient, sub: DueSubscription, now: Date) {
     if (!business) return false;
     const row = await prisma.bankPayment.create({
         data: {
-            businessId: sub.businessId, kind: "RENEWAL", plan: sub.plan, amount: sub.bankCardAmount,
+            businessId: sub.businessId, kind: "RENEWAL", plan: sub.plan, interval: sub.billingInterval, amount: sub.bankCardAmount,
             parentOrderId: sub.bankCardOrderId, renewsExpiresAt: sub.expiresAt,
         },
         select: { id: true },

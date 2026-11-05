@@ -12,7 +12,7 @@ type Row = {
     firstName: string | null; lastName: string | null; phone: string | null; seenTours: string[];
     businessMode: BusinessMode | null; businessId: string | null; businessName: string | null; logoUrl: string | null;
     role: string | null; permissions: string[] | null; readOnly: boolean | null; membershipStatus: string | null;
-    subPlan: string | null; subStatus: string | null; subExpiresAt: Date | null; subPeriodStart: Date | null; subCancelAtPeriodEnd: boolean | null;
+    subPlan: string | null; subStatus: string | null; subExpiresAt: Date | null; subPeriodStart: Date | null; subCancelAtPeriodEnd: boolean | null; subInterval: string | null;
 };
 
 // React cache deduplicates only within this render/request, never across users.
@@ -30,7 +30,8 @@ export const getPgDashboardContext = cache(async () => {
                 m."businessId", b.name AS "businessName", b."logoUrl", b.mode AS "businessMode",
                 m.role::text AS role, m.permissions::text[] AS permissions, m."readOnly", m.status::text AS "membershipStatus",
                 sub.plan::text AS "subPlan", sub.status::text AS "subStatus", sub."expiresAt" AS "subExpiresAt",
-                sub."currentPeriodStart" AS "subPeriodStart", sub."cancelAtPeriodEnd" AS "subCancelAtPeriodEnd"
+                sub."currentPeriodStart" AS "subPeriodStart", sub."cancelAtPeriodEnd" AS "subCancelAtPeriodEnd",
+                sub."billingInterval"::text AS "subInterval"
             FROM "Session" s JOIN "User" u ON u.id = s."userId"
             LEFT JOIN LATERAL (
                 SELECT "businessId", role, permissions, "readOnly", "status" FROM "BusinessMembership"
@@ -57,7 +58,7 @@ export const getPgDashboardContext = cache(async () => {
                 business: { mode: row.businessMode ?? "IMPORT", id: row.businessId, name: row.businessName, logoUrl: row.logoUrl },
                 plan: planStateFrom(row.subPlan && row.subStatus ? {
                     plan: row.subPlan, status: row.subStatus, expiresAt: row.subExpiresAt,
-                    currentPeriodStart: row.subPeriodStart, cancelAtPeriodEnd: row.subCancelAtPeriodEnd,
+                    currentPeriodStart: row.subPeriodStart, cancelAtPeriodEnd: row.subCancelAtPeriodEnd, billingInterval: row.subInterval,
                 } : null),
             } : null,
         };

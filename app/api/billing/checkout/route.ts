@@ -13,10 +13,11 @@ const json = (body: unknown, status = 200) => NextResponse.json(body, { status, 
 async function post(request: Request) {
     const accessDenied = await apiAccessDenied("OWNER", "edit", { allowLocked: true }); if (accessDenied) return accessDenied;
     const context = (await getPgDashboardContext())!;
-    const body = await request.json().catch(() => null) as { plan?: unknown } | null;
+    const body = await request.json().catch(() => null) as { plan?: unknown; period?: unknown } | null;
     const db = createPrismaClient();
     try {
-        const redirectUrl = await startCheckout(db, context.user.id, context.membership!.businessId, typeof body?.plan === "string" ? body.plan.toUpperCase() : null);
+        const redirectUrl = await startCheckout(db, context.user.id, context.membership!.businessId, typeof body?.plan === "string" ? body.plan.toUpperCase() : null,
+            typeof body?.period === "string" ? body.period.toUpperCase() : "MONTHLY");
         return json({ success: true, redirectUrl });
     } catch (error) {
         if (error instanceof PlanActionError) return json({ success: false, message: error.message }, error.status);

@@ -29,7 +29,7 @@ export class PlanLimitError extends Error {
     }
 }
 
-export const usagePeriodSelect = { plan: true, status: true, expiresAt: true, currentPeriodStart: true, cancelAtPeriodEnd: true, startedAt: true } as const;
+export const usagePeriodSelect = { plan: true, status: true, expiresAt: true, currentPeriodStart: true, cancelAtPeriodEnd: true, billingInterval: true, startedAt: true } as const;
 
 // მიმდინარე პერიოდი ლიმიტებისთვის: გადახდის თარიღიდან ყოველთვიურად (საცდელი ერთი პერიოდია).
 export async function readUsagePeriod(db: Db, businessId: string, now = new Date()) {

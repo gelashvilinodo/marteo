@@ -22,7 +22,7 @@ export const LOCK_LABELS: Record<string, string> = {
 };
 
 export function planTitle(plan: PlanState) {
-    if (plan.tier) return plan.tier === "TRIAL" ? "საცდელი პერიოდი" : `${PLAN_ADJECTIVES[plan.tier]} გეგმა`;
+    if (plan.tier) return plan.tier === "TRIAL" ? "საცდელი პერიოდი" : `${PLAN_ADJECTIVES[plan.tier]} გეგმა${plan.interval === "YEARLY" ? " (წლიური)" : ""}`;
     return plan.lastPaidTier ? `${PLAN_ADJECTIVES[plan.lastPaidTier]} გეგმა` : "გეგმა არ არის არჩეული";
 }
 

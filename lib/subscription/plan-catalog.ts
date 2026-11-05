@@ -1,11 +1,14 @@
 // გეგმების ქარდების ტექსტი: საჯარო ფასების გვერდი, გეგმის ფანჯარა და გეგმების გვერდი ერთსა და იმავეს აჩვენებს.
 // ციფრები plans.ts-დან მოდის, რომ ქარდი და რეალური ლიმიტი არასდროს გაიყაროს.
-import { PLAN_LIMITS, PLAN_PRICES, TRIAL_DAYS, type PaidTier } from "./plans";
+import { PLAN_LIMITS, PLAN_PRICES, TRIAL_DAYS, YEARLY_PAID_MONTHS, type PaidTier } from "./plans";
 
 // ქარდზე მხოლოდ ის ჩანს, რაც გეგმაში შედის; რა აკლია, შედარების ცხრილი აჩვენებს.
+// ყოველი ქარდი სრულ ჩამონათვალს აჩვენებს, რომ სიგრძით ჩანდეს, რამდენად მეტს იძლევა ძვირი გეგმა.
 export type PlanRow = {
     label: string;
     value?: string;
+    // იაფი გეგმიდან გამეორებული სტრიქონი. შემოკლებულ ქარდზე ჯერ ახლები ჩანს.
+    shared?: boolean;
 };
 
 export type PlanCard = {
@@ -18,14 +21,20 @@ export type PlanCard = {
     perDay: string;
     // ბეჯი მხოლოდ გამოკვეთილ ქარდზე ჩანს.
     badge?: string;
-    // „სტარტი, პლუს:“ — წინა გეგმის ყველაფერი შედის.
-    includesPrevious?: string;
     rows: PlanRow[];
 };
 
 const n = (value: number | null) => value === null ? "ულიმიტო" : `${value} / თვე`;
 const perDay = (price: number) => `დღეში ${(price / 30).toFixed(1)} ₾`;
-const team = (tier: PaidTier) => `${PLAN_LIMITS[tier].coOwners} + ${PLAN_LIMITS[tier].staff}`;
+
+// სტარტის საბაზისო ფუნქციები, რომლებიც ბიზნესსა და PRO-შიც მეორდება.
+const START_BASICS: PlanRow[] = [
+    { label: "ინვოისი და შეკვეთის ბმული", shared: true },
+    { label: "დაბრუნება და გაცვლა", shared: true },
+    { label: "მომხმარებლების ბაზა", shared: true },
+    { label: "ანალიტიკა და სტატისტიკა", shared: true },
+    { label: "კონტენტ-კალენდარი", shared: true },
+];
 
 export const PLAN_CARDS: readonly PlanCard[] = [
     {
@@ -55,16 +64,19 @@ export const PLAN_CARDS: readonly PlanCard[] = [
         price: PLAN_PRICES.BUSINESS,
         perDay: perDay(PLAN_PRICES.BUSINESS),
         badge: "პოპულარული",
-        includesPrevious: "სტარტი, პლუს:",
         rows: [
             { label: "შეკვეთები", value: n(PLAN_LIMITS.BUSINESS.ordersPerPeriod) },
+            ...START_BASICS,
             { label: "შესყიდვები და მარაგი, ფოტოებით" },
+            { label: "ფოტო და პროდუქტი შეკვეთაში" },
             { label: "იმპორტი ან წარმოება" },
             { label: "ბიზნესის ანგარიში, მარაგის უწყისი" },
             { label: "ფაილიდან იმპორტი" },
             { label: "მართეო AI", value: n(PLAN_LIMITS.BUSINESS.aiQuestions) },
             { label: "შესყიდვა ფაილიდან", value: n(PLAN_LIMITS.BUSINESS.aiFiles) },
-            { label: "გუნდი", value: team("BUSINESS") },
+            { label: "AI კვირის შეჯამება" },
+            { label: "თანამფლობელი", value: String(PLAN_LIMITS.BUSINESS.coOwners) },
+            { label: "თანამშრომლები უფლებებით", value: String(PLAN_LIMITS.BUSINESS.staff) },
             { label: "SMS მომხმარებელთან", value: "პაკეტით" },
             { label: "ახალი ბიზნესი", value: "−25%" },
         ],
@@ -78,21 +90,37 @@ export const PLAN_CARDS: readonly PlanCard[] = [
         price: PLAN_PRICES.PRO,
         perDay: perDay(PLAN_PRICES.PRO),
         badge: "რეკომენდებული",
-        includesPrevious: "ბიზნესი, პლუს:",
         rows: [
             { label: "შეკვეთები", value: "ულიმიტო" },
+            ...START_BASICS,
+            { label: "შესყიდვები და მარაგი, ფოტოებით", shared: true },
+            { label: "ფოტო და პროდუქტი შეკვეთაში", shared: true },
+            { label: "იმპორტი და წარმოება ერთად" },
+            { label: "მასალების მარაგი და შესყიდვა" },
+            { label: "წარმოების თვითღირებულება" },
+            { label: "ინვენტარიზაცია, ბეჭდვით" },
+            { label: "მარაგის ჩამოწერა" },
+            { label: "შესაძენი სია" },
+            { label: "გაფრთხილება, როცა მარაგი იწურება" },
+            { label: "ბიზნესის ანგარიში, მარაგის უწყისი", shared: true },
+            { label: "ფაილიდან იმპორტი", shared: true },
             { label: "მართეო AI", value: n(PLAN_LIMITS.PRO.aiQuestions) },
             { label: "შესყიდვა ფაილიდან", value: "ულიმიტო" },
-            { label: "SMS მომხმარებელთან", value: n(PLAN_LIMITS.PRO.smsIncluded) },
-            { label: "იმპორტი და წარმოება ერთად" },
-            { label: "გუნდი", value: team("PRO") },
+            { label: "AI კვირის შეჯამება", shared: true },
+            { label: "თანამფლობელები", value: String(PLAN_LIMITS.PRO.coOwners) },
+            { label: "თანამშრომლები უფლებებით", value: String(PLAN_LIMITS.PRO.staff) },
+            { label: "SMS მომხმარებელთან", value: `${PLAN_LIMITS.PRO.smsIncluded} / თვე, უფასოდ` },
+            { label: "დამატებითი SMS პაკეტები" },
             { label: "ყოველი ახალი ბიზნესი", value: "−25%" },
         ],
     },
 ];
 
+export { YEARLY_PAID_MONTHS };
+
 export const TRIAL_PITCH = `${TRIAL_DAYS} დღე უფასოდ · ყველა ფუნქცია · ${PLAN_LIMITS.TRIAL.aiQuestions} AI კითხვა`;
 export const PLAN_FINE_PRINT = "ყოველთვიური გადახდა · გააუქმეთ ნებისმიერ დროს";
+export const PLAN_FINE_PRINT_YEARLY = "წლიური გადახდა · გააუქმეთ ნებისმიერ დროს";
 
 export function planCard(tier: PaidTier) {
     return PLAN_CARDS.find(card => card.tier === tier)!;

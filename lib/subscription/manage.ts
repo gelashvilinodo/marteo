@@ -5,7 +5,7 @@ import { priceForBusiness } from "./billing";
 import { currentMonthlyPeriod } from "./period";
 import { quotePlanChange, type CurrentPeriod } from "./plan-change";
 import { planStateFrom } from "./plan-state";
-import { isPaidTier, PLAN_ADJECTIVES, PLAN_LIMITS, type PaidTier } from "./plans";
+import { INTERVAL_ADJECTIVES, INTERVAL_LABELS, isBillingInterval, isPaidTier, periodPrice, PLAN_ADJECTIVES, PLAN_LIMITS, type BillingInterval, type PaidTier } from "./plans";
 import { applyPlanMode } from "./server";
 import { notifyOwners } from "./notices";
 import { formatDay } from "@/components/plans/billing-format";
@@ -20,7 +20,7 @@ export class PlanActionError extends Error {
     }
 }
 
-const subscriptionSelect = { plan: true, status: true, expiresAt: true, currentPeriodStart: true, cancelAtPeriodEnd: true, startedAt: true } as const;
+const subscriptionSelect = { plan: true, status: true, expiresAt: true, currentPeriodStart: true, cancelAtPeriodEnd: true, billingInterval: true, startedAt: true } as const;
 
 type SubscriptionRow = Prisma.SubscriptionGetPayload<{ select: typeof subscriptionSelect }>;
 
@@ -46,29 +46,31 @@ async function lockSubscription(tx: Tx, businessId: string) {
 }
 
 // მიმდინარე პერიოდი ნაშთის გამოსათვლელად. თუ გადახდა ჩაწერილია, ნაშთი მთელი გადახდილი თანხიდან
-// და მისი პერიოდიდან ითვლება (მაგ. 3 თვე ერთად). თუ გეგმა ხელით ჩაირთო გადახდის გარეშე,
+// და მისი პერიოდიდან ითვლება (მაგ. წელი ან 3 თვე ერთად). თუ გეგმა ხელით ჩაირთო გადახდის გარეშე,
 // ნაშთი მხოლოდ მიმდინარე თვისაა, ამ ბიზნესის თვიური ფასით.
 export async function readCurrentPeriod(db: Db, userId: string, businessId: string, row: SubscriptionRow | null, now = new Date()): Promise<CurrentPeriod> {
     const state = planStateFrom(row, now);
     const tier = state.tier;
-    if (!row || !tier || tier === "TRIAL") return { tier, paid: 0, periodStart: null, expiresAt: row?.expiresAt ?? null };
+    const interval = state.interval;
+    if (!row || !tier || tier === "TRIAL") return { tier, interval, paid: 0, periodStart: null, expiresAt: row?.expiresAt ?? null };
     const payment = await db.subscriptionPayment.findFirst({
         where: { businessId, voidedAt: null, plan: tier, periodStart: { lte: now }, periodEnd: { gt: now } },
         orderBy: { paidAt: "desc" },
         select: { amount: true, periodStart: true, periodEnd: true },
     });
-    if (payment) return { tier, paid: Number(payment.amount), periodStart: payment.periodStart, expiresAt: payment.periodEnd };
+    if (payment) return { tier, interval, paid: Number(payment.amount), periodStart: payment.periodStart, expiresAt: payment.periodEnd };
     const month = currentMonthlyPeriod(row.currentPeriodStart ?? row.startedAt, row.expiresAt, now);
-    return { tier, paid: (await priceForBusiness(db, userId, businessId))[tier].price, periodStart: month.start, expiresAt: row.expiresAt ? month.end : null };
+    return { tier, interval: "MONTHLY", paid: (await priceForBusiness(db, userId, businessId))[tier].price, periodStart: month.start, expiresAt: row.expiresAt ? month.end : null };
 }
 
-export async function quoteForBusiness(db: Db, userId: string, businessId: string, target: PaidTier, now = new Date()) {
+export async function quoteForBusiness(db: Db, userId: string, businessId: string, target: PaidTier, interval: BillingInterval = "MONTHLY", now = new Date()) {
     const row = await db.subscription.findUnique({ where: { businessId }, select: subscriptionSelect });
     const [current, prices] = await Promise.all([
         readCurrentPeriod(db, userId, businessId, row, now),
         priceForBusiness(db, userId, businessId),
     ]);
-    return { quote: quotePlanChange(current, target, prices[target].price, now), price: prices[target], current };
+    const amount = periodPrice(prices[target].price, interval);
+    return { quote: quotePlanChange(current, target, interval, amount, now), price: prices[target], amount, current };
 }
 
 // გაუქმება: გეგმა გადახდილი პერიოდის ბოლომდე მოქმედებს, მერე ბიზნესი მხოლოდ ნახვის რეჟიმში გადადის.
@@ -138,7 +140,7 @@ export async function readDowngradeContext(db: Db, businessId: string, userId: s
     };
 }
 
-type DowngradeOptions = { keep?: unknown; mode?: unknown };
+type DowngradeOptions = { keep?: unknown; mode?: unknown; interval?: unknown };
 
 // ლიმიტს გადაცილებული გუნდიდან მფლობელი ირჩევს, ვინ დარჩეს; დანარჩენი იყინება (არ იშლება)
 // და გეგმის აწევისას ბრუნდება. ზედმეტი მოლოდინში მყოფი მოწვევები უქმდება.
@@ -169,8 +171,8 @@ async function applyTeamChoice(tx: Tx, businessId: string, userId: string, targe
     if (cancel.length) await tx.businessInvite.updateMany({ where: { id: { in: cancel } }, data: { status: "CANCELED" } });
 }
 
-// დაბალ გეგმაზე გადასვლა დღესვე: არაფერს იხდის, ნაშთი ახალი გეგმის დღეებად იქცევა.
-// უფრო ძვირ გეგმაზე გადასვლა გადახდით ხდება (გადახდის გვერდი).
+// დაბალ გეგმაზე (ან წლიურიდან თვიურზე) გადასვლა დღესვე: არაფერს იხდის, ნაშთი ახალი გეგმის დღეებად იქცევა
+// და ვადა არ მოკლდება. უფრო ძვირ გეგმაზე ან წლიურზე გადასვლა გადახდით ხდება (გადახდის გვერდი).
 export async function downgradePlan(prisma: PrismaClient, userId: string, businessId: string, target: unknown, options: DowngradeOptions = {}) {
     if (!isPaidTier(target)) throw new PlanActionError("გეგმა არასწორია.");
     return prisma.$transaction(async tx => {
@@ -178,10 +180,11 @@ export async function downgradePlan(prisma: PrismaClient, userId: string, busine
         const now = new Date();
         const current = await readCurrentPeriod(tx, userId, businessId, before, now);
         if (!current.tier || current.tier === "TRIAL") throw new PlanActionError("ახალი გეგმის ჩასართავად გადახდაა საჭირო.", 409);
-        if (current.tier === target) throw new PlanActionError("ეს უკვე თქვენი გეგმაა.", 409);
+        const interval: BillingInterval = isBillingInterval(options.interval) ? options.interval : current.interval;
+        if (current.tier === target && current.interval === interval) throw new PlanActionError("ეს უკვე თქვენი გეგმაა.", 409);
         // უვადო გეგმა (ადმინის ჩართული) ნაშთს არ ითვლის: უბრალოდ გეგმა იცვლება.
         const quote = before.expiresAt
-            ? quotePlanChange(current, target, (await priceForBusiness(tx, userId, businessId))[target].price, now)
+            ? quotePlanChange(current, target, interval, periodPrice((await priceForBusiness(tx, userId, businessId))[target].price, interval), now)
             : null;
         if (quote && quote.kind !== "downgrade") throw new PlanActionError("უფრო ძვირ გეგმაზე გადასასვლელად გადახდაა საჭირო.", 409);
         // „ორივე“ მიმართულება Business-ზე არ შედის: მფლობელი ირჩევს იმპორტს ან წარმოებას.
@@ -194,7 +197,9 @@ export async function downgradePlan(prisma: PrismaClient, userId: string, busine
         const after = await tx.subscription.update({
             where: { businessId },
             data: {
-                plan: target, status: "ACTIVE", currentPeriodStart: now, cancelAtPeriodEnd: false, canceledAt: null,
+                plan: target, billingInterval: interval, status: "ACTIVE", cancelAtPeriodEnd: false, canceledAt: null,
+                // იგივე გეგმა თვიურზე: ლიმიტების თვე არ იცვლება, ახალი პერიოდი ვადის ბოლოს დაიწყება.
+                ...(current.tier === target ? {} : { currentPeriodStart: now }),
                 ...(quote ? { expiresAt: new Date(quote.expiresAt) } : {}),
             },
             select: subscriptionSelect,
@@ -202,15 +207,21 @@ export async function downgradePlan(prisma: PrismaClient, userId: string, busine
         await audit(tx, businessId, userId, before, after);
         await applyPlanMode(tx, businessId, target);
         await enforceTeamLimits(tx, businessId);
+        const sameTier = current.tier === target;
+        const title = sameTier ? `გადახვედით ${INTERVAL_ADJECTIVES[interval]} გადახდაზე` : `გადახვედით ${PLAN_ADJECTIVES[target]} გეგმაზე`;
         await notifyOwners(tx, {
             businessId, kind: "PLAN_CHANGED", key: `downgraded:${businessId}:${Date.now()}`,
-            title: `გადახვედით ${PLAN_ADJECTIVES[target]} გეგმაზე`,
-            body: quote
-                ? `ახალი გეგმა უკვე მოქმედებს. დაუხარჯავი თანხა ${quote.days} დღეს ფარავს, ასე რომ გეგმა ${formatDay(quote.expiresAt)}-მდე აქტიურია.`
-                : "ახალი გეგმა უკვე მოქმედებს. ფუნქციები, რომლებიც მასში არ შედის, დროებით დაიკეტა, მონაცემები კი სრულად შენახულია.",
+            title,
+            body: sameTier && quote
+                ? `მიმდინარე გეგმა ${formatDay(quote.expiresAt)}-მდე უცვლელად მოქმედებს, შემდეგ კი ${INTERVAL_LABELS[interval]} ფასით განახლდება.`
+                : quote
+                    ? `ახალი გეგმა უკვე მოქმედებს. დაუხარჯავი თანხა ${quote.days} დღეს ფარავს, ასე რომ გეგმა ${formatDay(quote.expiresAt)}-მდე აქტიურია.`
+                    : "ახალი გეგმა უკვე მოქმედებს. ფუნქციები, რომლებიც მასში არ შედის, დროებით დაიკეტა, მონაცემები კი სრულად შენახულია.",
         });
-        return quote
-            ? `გადახვედით ${PLAN_ADJECTIVES[target]} გეგმაზე. ნაშთი ${quote.days} დღეს ფარავს.`
-            : `გადახვედით ${PLAN_ADJECTIVES[target]} გეგმაზე.`;
+        return sameTier && quote
+            ? `${title}. მიმდინარე ვადა ${formatDay(quote.expiresAt)}-მდე უცვლელია.`
+            : quote
+                ? `${title}. ნაშთი ${quote.days} დღეს ფარავს.`
+                : `${title}.`;
     });
 }

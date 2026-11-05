@@ -3,7 +3,7 @@
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import PlanCards from "@/components/plans/PlanCards";
+import PlanCards, { planButtonClass } from "@/components/plans/PlanCards";
 import { PLAN_FINE_PRINT } from "@/lib/subscription/plan-catalog";
 import type { PlanState } from "@/lib/subscription/plan-state";
 import { FEATURE_MIN_TIER, PLAN_ADJECTIVES, type PlanFeature } from "@/lib/subscription/plans";
@@ -86,7 +86,7 @@ export default function PlanUpgradeDialog({ request, plan, isOwner, onClose }: {
                 <div className="mt-5">
                     <PlanCards compact current={plan.locked ? null : plan.tier === "TRIAL" ? null : plan.tier} focus={focus}
                         action={card => <Link href={`/dashboard/plans?plan=${card.tier.toLowerCase()}`} onClick={() => ref.current?.close()}
-                            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition ${(focus ?? "PRO") === card.tier ? "bg-accent text-white hover:bg-accent-hover" : "border border-border bg-background text-text-primary hover:border-accent/40 hover:text-accent"}`}>
+                            className={planButtonClass(card.tier, (focus ?? "PRO") === card.tier)}>
                             დეტალურად<Icon icon="solar:arrow-right-linear" className="h-4 w-4" aria-hidden="true" />
                         </Link>} />
                 </div>

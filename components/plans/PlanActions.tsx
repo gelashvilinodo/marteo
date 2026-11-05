@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import type { PlanChangeQuote } from "@/lib/subscription/plan-change";
-import { PLAN_ADJECTIVES, PLAN_LIMITS, type PaidTier } from "@/lib/subscription/plans";
+import { INTERVAL_ADJECTIVES, PLAN_ADJECTIVES, PLAN_LIMITS, type BillingInterval, type PaidTier } from "@/lib/subscription/plans";
 import { formatDay } from "./billing-format";
 
 async function send(body: Record<string, unknown>) {
@@ -102,7 +102,8 @@ function MemberPicker({ title, group, limit, keep, toggle }: { title: string; gr
 // დაბალ გეგმაზე გადასვლა: გადახდა არ სჭირდება, ნაშთი ახალი გეგმის დღეებად იქცევა.
 // ლიმიტს გადაცილებული გუნდიდან მფლობელი ირჩევს, ვინ დარჩეს; „ორივე“ მიმართულებიდან Business-ზე —
 // იმპორტს ან წარმოებას.
-export function DowngradeButton({ tier, quote, team, className, children }: { tier: PaidTier; quote: PlanChangeQuote | null; team: DowngradeTeam; className: string; children: ReactNode }) {
+// sameTier: იგივე გეგმა წლიურიდან თვიურზე. გეგმა ვადის ბოლომდე უცვლელია, მერე თვიურად განახლდება.
+export function DowngradeButton({ tier, interval = "MONTHLY", sameTier = false, quote, team, className, children }: { tier: PaidTier; interval?: BillingInterval; sameTier?: boolean; quote: PlanChangeQuote | null; team: DowngradeTeam; className: string; children: ReactNode }) {
     const router = useRouter();
     const action = useAction(() => { router.push("/dashboard/billing"); router.refresh(); });
     const [keep, setKeep] = useState(() => initialKeep(team, tier));
@@ -116,17 +117,23 @@ export function DowngradeButton({ tier, quote, team, className, children }: { ti
     });
     const confirm = () => {
         if (askMode && !mode) { action.fail("აირჩიეთ მიმართულება: იმპორტი ან წარმოება."); return; }
-        void action.run({ action: "downgrade", plan: tier, keep: [...keep], ...(askMode ? { mode } : {}) });
+        void action.run({ action: "downgrade", plan: tier, period: interval, keep: [...keep], ...(askMode ? { mode } : {}) });
     };
     return <>
         <button type="button" onClick={() => { setKeep(initialKeep(team, tier)); action.setOpen(true); }} className={className}>{children}</button>
-        <ConfirmDialog open={action.open} title={`გადასვლა ${PLAN_ADJECTIVES[tier]} გეგმაზე`} confirmLabel="გადასვლა" busy={action.busy} error={action.error}
+        <ConfirmDialog open={action.open} title={sameTier ? `გადასვლა ${INTERVAL_ADJECTIVES[interval]} გადახდაზე` : `გადასვლა ${PLAN_ADJECTIVES[tier]} გეგმაზე`} confirmLabel="გადასვლა" busy={action.busy} error={action.error}
             onConfirm={confirm} onClose={() => action.setOpen(false)}>
-            <span className="block">ახალი გეგმა დღესვე ჩაირთვება და დამატებით არაფერს გადაიხდით.</span>
-            {quote && <span className="mt-2 block">
-                დაუხარჯავი ნაშთი <b className="font-medium text-text-primary">{quote.credit.toFixed(2)} ₾</b> ახალ გეგმაზე {quote.days} დღეს ფარავს:
-                {" "}გეგმა იმოქმედებს <b className="font-medium text-text-primary">{formatDay(quote.expiresAt)}</b>-მდე.
-            </span>}
+            {sameTier
+                ? <span className="block">
+                    დამატებით არაფერს გადაიხდით. მიმდინარე გეგმა {quote ? <b className="font-medium text-text-primary">{formatDay(quote.expiresAt)}</b> : "ვადის ბოლომდე"}{quote ? "-მდე" : ""} უცვლელად მოქმედებს, შემდეგ კი {INTERVAL_ADJECTIVES[interval]} ფასით განახლდება.
+                </span>
+                : <>
+                    <span className="block">ახალი გეგმა დღესვე ჩაირთვება და დამატებით არაფერს გადაიხდით.</span>
+                    {quote && <span className="mt-2 block">
+                        დაუხარჯავი ნაშთი <b className="font-medium text-text-primary">{quote.credit.toFixed(2)} ₾</b> ახალ გეგმაზე {quote.days} დღეს ფარავს:
+                        {" "}გეგმა იმოქმედებს <b className="font-medium text-text-primary">{formatDay(quote.expiresAt)}</b>-მდე.
+                    </span>}
+                </>}
             {askMode && <fieldset className="mt-3 rounded-xl border border-border p-3">
                 <legend className="px-1 text-sm font-medium text-text-primary">რომელი მიმართულება დარჩეს?</legend>
                 <span className="block text-xs">ბიზნეს გეგმაში იმპორტი და წარმოება ერთად არ შედის. მეორე მიმართულების მონაცემები არ წაიშლება.</span>
@@ -138,7 +145,7 @@ export function DowngradeButton({ tier, quote, team, className, children }: { ti
             </fieldset>}
             <MemberPicker title="თანამფლობელები" group={team.coOwners} limit={limits.coOwners} keep={keep} toggle={toggle} />
             <MemberPicker title="თანამშრომლები" group={team.staff} limit={limits.staff} keep={keep} toggle={toggle} />
-            <span className="mt-2 block">ფუნქციები, რომლებიც ახალ გეგმაში არ შედის, დაიკეტება. მონაცემები არ წაიშლება.</span>
+            {!sameTier && <span className="mt-2 block">ფუნქციები, რომლებიც ახალ გეგმაში არ შედის, დაიკეტება. მონაცემები არ წაიშლება.</span>}
         </ConfirmDialog>
     </>;
 }

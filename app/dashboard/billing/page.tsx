@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
 import { getBillingOverview } from "@/lib/subscription/billing";
 import { readCheckoutResult } from "@/lib/subscription/bank";
-import { PLAN_ADJECTIVES, PLAN_LABELS, REFUND_WINDOW_DAYS, isPaidTier } from "@/lib/subscription/plans";
+import { PLAN_ADJECTIVES, PLAN_LABELS, REFUND_WINDOW_DAYS, YEARLY_PAID_MONTHS, isPaidTier, periodPrice } from "@/lib/subscription/plans";
 import { daysLeft, formatDay, LOCK_LABELS, PAYMENT_METHOD_LABELS, planTitle } from "@/components/plans/billing-format";
 import { CancelPlanButton } from "@/components/plans/PlanActions";
 import UsageMeter from "@/components/plans/UsageMeter";
@@ -29,6 +29,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         const card = await prisma.subscription.findUnique({ where: { businessId: membership.businessId }, select: { bankCardMask: true, bankCardOrderId: true } });
         const paid = plan.tier && isPaidTier(plan.tier) ? plan.tier : null;
         const monthly = paid ? prices[paid] : null;
+        const yearly = plan.interval === "YEARLY";
         return (
             <main className="min-w-0 p-4 sm:p-6 lg:p-8">
                 <div className="mx-auto w-full max-w-6xl space-y-5">
@@ -63,10 +64,11 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
 
                             <dl className="mt-5 grid gap-3 sm:grid-cols-2">
                                 {monthly && <div className="rounded-xl bg-background p-4">
-                                    <dt className="text-xs text-text-secondary">ყოველთვიური ფასი</dt>
-                                    <dd className="mt-1 text-lg font-semibold text-text-primary">{monthly.price} ₾
-                                        {monthly.discounted && <span className="ml-2 text-sm font-normal text-text-secondary line-through">{monthly.full} ₾</span>}
+                                    <dt className="text-xs text-text-secondary">{yearly ? "წლიური ფასი" : "ყოველთვიური ფასი"}</dt>
+                                    <dd className="mt-1 text-lg font-semibold text-text-primary">{periodPrice(monthly.price, plan.interval)} ₾
+                                        {monthly.discounted && <span className="ml-2 text-sm font-normal text-text-secondary line-through">{periodPrice(monthly.full, plan.interval)} ₾</span>}
                                     </dd>
+                                    {yearly && <p className="mt-1 text-xs text-success">12 თვე {YEARLY_PAID_MONTHS} თვის ფასად</p>}
                                     {monthly.discounted && <p className="mt-1 text-xs text-success">დამატებითი ბიზნესის ფასდაკლება −25%</p>}
                                 </div>}
                                 {plan.expiresAt && <div className="rounded-xl bg-background p-4">
@@ -84,7 +86,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
                             <div className="mt-5 flex flex-wrap items-start gap-2">
                                 {/* დაბლოკილი ფასიანი გეგმა ერთი დაჭერით ნახლდება; სხვა შემთხვევაში გეგმების გვერდი იხსნება. */}
                                 {plan.locked && plan.lastPaidTier
-                                    ? <Link href={`/dashboard/plans/checkout?plan=${plan.lastPaidTier.toLowerCase()}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-hover">
+                                    ? <Link href={`/dashboard/plans/checkout?plan=${plan.lastPaidTier.toLowerCase()}${yearly ? "&period=yearly" : ""}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-hover">
                                         <Icon icon="solar:restart-bold" className="h-4 w-4" aria-hidden="true" />{PLAN_ADJECTIVES[plan.lastPaidTier]} გეგმის განახლება
                                     </Link>
                                     : null}

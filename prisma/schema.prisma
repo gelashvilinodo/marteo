@@ -57,6 +57,12 @@ enum SubscriptionStatus {
   PAST_DUE
 }
 
+// გადახდის პერიოდი: წლიური 12 თვეა 10 თვის ფასად.
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
 enum SubscriptionPlan {
   FREE
   START
@@ -376,6 +382,8 @@ model Subscription {
   currentPeriodStart DateTime?
   // მომხმარებელმა გააუქმა: გეგმა გადახდილი პერიოდის ბოლომდე მოქმედებს.
   cancelAtPeriodEnd  Boolean            @default(false)
+  // რა პერიოდით იხდის: ავტოგანახლება ამ პერიოდზე და ამ ფასით ხდება.
+  billingInterval    BillingInterval    @default(MONTHLY)
   // საქართველოს ბანკში შენახული ბარათი: შეკვეთა, რომელზეც ბარათი შეინახა, და მისი თანხა.
   // ავტოგანახლება ყოველთვის ამ თანხას ჩამოჭრის (ბანკი თანხის შეცვლის საშუალებას არ იძლევა).
   bankCardOrderId    String?
@@ -410,6 +418,7 @@ model BankPayment {
   amount                Decimal           @db.Decimal(12, 2)
   // აწევისას ძველი გეგმის ნაშთით დამატებული დღეები.
   bonusDays             Int               @default(0)
+  interval              BillingInterval   @default(MONTHLY)
   bankOrderId           String?           @unique
   parentOrderId         String?
   bankStatus            String?

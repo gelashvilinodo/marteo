@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 // გადახდის ღილაკი: პირობებზე თანხმობის გარეშე არ ირთვება. დაჭერისას ბანკის გადახდის გვერდზე გადადის.
-export default function CheckoutConsent({ amount, plan }: { amount: string; plan: string }) {
+export default function CheckoutConsent({ amount, plan, interval }: { amount: string; plan: string; interval: "MONTHLY" | "YEARLY" }) {
     const [agreed, setAgreed] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
@@ -14,7 +14,7 @@ export default function CheckoutConsent({ amount, plan }: { amount: string; plan
         setError("");
         try {
             const response = await fetch("/api/billing/checkout", {
-                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan }),
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan, period: interval }),
             });
             const body = await response.json().catch(() => null) as { redirectUrl?: string; message?: string; error?: string } | null;
             if (response.ok && body?.redirectUrl) {
@@ -31,7 +31,7 @@ export default function CheckoutConsent({ amount, plan }: { amount: string; plan
         <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-text-secondary">
             <input type="checkbox" checked={agreed} onChange={event => { setAgreed(event.target.checked); setError(""); }}
                 className="mt-1 h-4 w-4 shrink-0 accent-[var(--marteo-accent)]" />
-            <span>ვეთანხმები <Link href="/terms" target="_blank" className="font-medium text-accent hover:underline">მომსახურების პირობებს</Link> და ყოველთვიურ ავტომატურ გადახდას. გაუქმება ნებისმიერ დროს შემიძლია.</span>
+            <span>ვეთანხმები <Link href="/terms" target="_blank" className="font-medium text-accent hover:underline">მომსახურების პირობებს</Link> და {interval === "YEARLY" ? "ყოველწლიურ" : "ყოველთვიურ"} ავტომატურ გადახდას. გაუქმება ნებისმიერ დროს შემიძლია.</span>
         </label>
         <button type="button" disabled={!agreed || busy} onClick={pay}
             className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-base font-semibold text-white transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50">

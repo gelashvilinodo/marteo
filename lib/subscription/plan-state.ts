@@ -1,6 +1,6 @@
 // ბიზნესის გეგმის მიმდინარე მდგომარეობა: რომელი გეგმა მოქმედებს, ან რატომ არის ბიზნესი მხოლოდ ნახვის რეჟიმში.
 // კლიენტზეც გამოიყენება, ამიტომ აქ სერვერის კოდი არ უნდა იყოს.
-import { isPaidTier, tierHasFeature, type PaidTier, type PlanFeature, type PlanTier } from "./plans";
+import { isBillingInterval, isPaidTier, tierHasFeature, type BillingInterval, type PaidTier, type PlanFeature, type PlanTier } from "./plans";
 
 export type SubscriptionRow = {
     plan: string;
@@ -8,6 +8,7 @@ export type SubscriptionRow = {
     expiresAt: Date | string | null;
     currentPeriodStart?: Date | string | null;
     cancelAtPeriodEnd?: boolean | null;
+    billingInterval?: string | null;
 };
 
 // NO_PLAN: გეგმა არასდროს ყოფილა (მაგ. ახალი დამატებითი ბიზნესი გადახდამდე).
@@ -23,6 +24,8 @@ export type PlanState = {
     expiresAt: string | null;
     periodStart: string | null;
     cancelAtPeriodEnd: boolean;
+    // თვიურად თუ წლიურად იხდის.
+    interval: BillingInterval;
 };
 
 const iso = (value: Date | string | null | undefined) => value ? new Date(value).toISOString() : null;
@@ -35,6 +38,7 @@ export function planStateFrom(row: SubscriptionRow | null, now = new Date()): Pl
         expiresAt: iso(row?.expiresAt),
         periodStart: iso(row?.currentPeriodStart),
         cancelAtPeriodEnd: row?.cancelAtPeriodEnd ?? false,
+        interval: isBillingInterval(row?.billingInterval) ? row.billingInterval : "MONTHLY",
     };
     const locked = (lockReason: LockReason): PlanState => ({ ...base, tier: null, locked: true, lockReason });
     const active = (tier: PlanTier): PlanState => ({ ...base, tier, locked: false, lockReason: null });

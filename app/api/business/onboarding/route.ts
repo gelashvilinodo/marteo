@@ -88,7 +88,7 @@ async function post(request: Request) {
     // plan may add one. A business where the user is only staff never counts.
     const ownedSubscriptions = await prisma.subscription.findMany({
       where: { business: { memberships: { some: { userId: user.id, role: "OWNER", status: "ACTIVE" } } } },
-      select: { plan: true, status: true, expiresAt: true, currentPeriodStart: true, cancelAtPeriodEnd: true },
+      select: { plan: true, status: true, expiresAt: true, currentPeriodStart: true, cancelAtPeriodEnd: true, billingInterval: true },
     });
     if (ownedSubscriptions.length > 0 && !ownedSubscriptions.some(row => planAllows(planStateFrom(row), "extraBusiness"))) {
       return NextResponse.json(
