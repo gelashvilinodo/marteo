@@ -3,6 +3,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { deliverRetentionWarnings } from "@/lib/admin/retention";
 import { deliverSubscriptionReminders } from "@/lib/notifications/sync";
 import { createPrismaClient } from "@/lib/prisma";
+import { runBankRenewals } from "@/lib/subscription/bank";
 import { deliverNoticeChannels } from "@/lib/subscription/notices";
 
 export const dynamic = "force-dynamic";
@@ -22,13 +23,15 @@ function authorized(request: Request) {
     return timingSafeEqual(Buffer.from(given), Buffer.from(secret));
 }
 
-// საათობრივი cron (worker.mjs): გეგმის შეხსენებები ყველა ბიზნესზე, წაშლის გაფრთხილებები (30/7 დღე)
+// საათობრივი cron (worker.mjs): ბარათიდან ავტოგანახლება და ბანკის დაკარგული პასუხების გადამოწმება, გეგმის შეხსენებები ყველა ბიზნესზე, წაშლის გაფრთხილებები (30/7 დღე)
 // და ჯერ გაუგზავნელი მეილი/პუში.
 // მომხმარებლისთვის მიუწვდომელია: მხოლოდ CRON_SECRET-ით.
 export async function POST(request: Request) {
     if (!authorized(request)) return Response.json({ success: false }, { status: 401 });
     const prisma = createPrismaClient();
     try {
+        // ჩამოჭრის შეცდომა შეხსენებებს არ აჩერებს (შემდეგ საათში თავიდან ცდის).
+        const bank = await runBankRenewals(prisma).catch(() => { console.error("Bank renewals failed"); return null; });
         await deliverSubscriptionReminders(prisma, null);
         await deliverRetentionWarnings(prisma);
         let sent = 0;
@@ -37,7 +40,7 @@ export async function POST(request: Request) {
             sent += count;
             if (count < 200) break;
         }
-        return Response.json({ success: true, sent });
+        return Response.json({ success: true, sent, bank });
     } catch (error) {
         console.error("Subscription notices failed", error instanceof Error ? error.name : "UnknownError");
         return Response.json({ success: false }, { status: 500 });

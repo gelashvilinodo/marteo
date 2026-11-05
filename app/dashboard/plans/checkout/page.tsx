@@ -13,7 +13,7 @@ import { PAID_TIERS, REFUND_WINDOW_DAYS, type PaidTier } from "@/lib/subscriptio
 
 export const metadata = { title: "გადახდა | MARTEO", robots: { index: false, follow: false } };
 
-// გადახდის გვერდი. ბანკის (საქართველოს ბანკი) ფორმა აქ ჩაჯდება; მანამდე ჯამი და პირობები ჩანს.
+// გადახდის გვერდი: ჯამი და პირობები, გადახდა კი საქართველოს ბანკის გვერდზე ხდება.
 export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ plan?: string }> }) {
     const membership = await requirePageAccess("OWNER");
     const user = await getCurrentUser();
@@ -53,11 +53,11 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                             <dl className="mt-4 space-y-3 text-sm">
                                 <div className="flex justify-between gap-3"><dt className="text-text-secondary">თვიური ფასი</dt><dd className="text-text-primary">{price.full.toFixed(2)} ₾</dd></div>
                                 {price.discounted && <div className="flex justify-between gap-3 text-success"><dt>დამატებითი ბიზნესის ფასდაკლება</dt><dd>−{(price.full - price.price).toFixed(2)} ₾</dd></div>}
-                                {quote.credit > 0 && <div className="flex justify-between gap-3 text-success"><dt>დაუხარჯავი ნაშთი მიმდინარე გეგმიდან</dt><dd>−{quote.credit.toFixed(2)} ₾</dd></div>}
+                                {quote.kind === "upgrade" && quote.days > 0 && <div className="flex justify-between gap-3 text-success"><dt>მიმდინარე გეგმის ნაშთი ({quote.credit.toFixed(2)} ₾)</dt><dd>+{quote.days} დღე</dd></div>}
                                 <div className="flex justify-between gap-3 border-t border-border pt-3 text-base font-semibold"><dt className="text-text-primary">დღეს გადასახდელი</dt><dd className="text-text-primary">{amount} ₾</dd></div>
                                 <div className="flex justify-between gap-3"><dt className="text-text-secondary">შემდეგი გადახდა</dt><dd className="text-text-primary">{formatDay(nextCharge)}</dd></div>
                             </dl>
-                            <p className="mt-3 text-xs text-text-secondary">ფასში შედის ბანკის საკომისიო.{quote.kind === "upgrade" ? ` ახალი გეგმა დღესვე ჩაირთვება, შემდეგი გადახდა კი ${price.price.toFixed(2)} ₾ იქნება.` : ""}</p>
+                            <p className="mt-3 text-xs text-text-secondary">ფასში შედის ბანკის საკომისიო.{quote.kind === "upgrade" ? " ახალი გეგმა დღესვე ჩაირთვება, მიმდინარე გეგმის დაუხარჯავი ნაშთი კი ახალ გეგმას დღეებად დაემატება." : ""}</p>
                             {trialDays > 0 && <p className="mt-4 flex items-start gap-2 rounded-xl bg-warning/10 p-3 text-sm leading-6 text-text-primary">
                                 <Icon icon="solar:info-circle-linear" className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
                                 საცდელი პერიოდის დარჩენილი {trialDays} დღე გაუქმდება და გეგმა დღესვე დაიწყება.
@@ -72,9 +72,9 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                             </ul>
                             <p className="mt-4 flex items-start gap-2 rounded-xl bg-background p-3 text-sm leading-6 text-text-secondary">
                                 <Icon icon="solar:refresh-circle-bold-duotone" className="mt-0.5 h-5 w-5 shrink-0 text-success" aria-hidden="true" />
-                                ყიდვიდან {REFUND_WINDOW_DAYS} დღის განმავლობაში შეგიძლია თანხის სრული დაბრუნება მოითხოვო. ამის შემდეგ თანხა აღარ ბრუნდება.
+                                ბიზნესის პირველი შეძენიდან {REFUND_WINDOW_DAYS} დღის განმავლობაში შეგიძლიათ მოითხოვოთ თანხის დაბრუნება დახმარების ჩატში.
                             </p>
-                            <div className="mt-5"><CheckoutConsent amount={amount} /></div>
+                            <div className="mt-5"><CheckoutConsent amount={amount} plan={tier} /></div>
                         </section>
                     </div>
                 </div>

@@ -6,20 +6,27 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
 import { getBillingOverview } from "@/lib/subscription/billing";
+import { readCheckoutResult } from "@/lib/subscription/bank";
 import { PLAN_ADJECTIVES, PLAN_LABELS, REFUND_WINDOW_DAYS, isPaidTier } from "@/lib/subscription/plans";
 import { daysLeft, formatDay, LOCK_LABELS, PAYMENT_METHOD_LABELS, planTitle } from "@/components/plans/billing-format";
 import { CancelPlanButton } from "@/components/plans/PlanActions";
 import UsageMeter from "@/components/plans/UsageMeter";
+import PaymentResult from "@/components/plans/PaymentResult";
 
 export const metadata = { title: "პაკეტი და გადახდები | MARTEO", robots: { index: false, follow: false } };
 
-export default async function BillingPage() {
+export default async function BillingPage({ searchParams }: { searchParams: Promise<{ payment?: string }> }) {
     const membership = await requireDashboardSection("/dashboard/billing");
     const user = await getCurrentUser();
     if (!user) redirect("/login");
     const prisma = createPrismaClient();
     try {
+        // ბანკის გვერდიდან დაბრუნება: სტატუსს ბანკს ვეკითხებით, რომ გეგმა callback-ის მოლოდინის გარეშე ჩაირთოს.
+        const paymentId = (await searchParams).payment;
+        const result = paymentId && /^[a-z0-9]{10,40}$/.test(paymentId) && membership.access.role === "OWNER"
+            ? await readCheckoutResult(prisma, membership.businessId, paymentId) : null;
         const { plan, period, usage, payments, prices } = await getBillingOverview(prisma, user.id, membership.businessId);
+        const card = await prisma.subscription.findUnique({ where: { businessId: membership.businessId }, select: { bankCardMask: true, bankCardOrderId: true } });
         const paid = plan.tier && isPaidTier(plan.tier) ? plan.tier : null;
         const monthly = paid ? prices[paid] : null;
         return (
@@ -37,6 +44,8 @@ export default async function BillingPage() {
                             ფასების გვერდი<Icon icon="solar:arrow-right-up-linear" className="h-4 w-4" aria-hidden="true" />
                         </Link>
                     </section>
+
+                    {result && <PaymentResult status={result.status} plan={result.plan} amount={result.amount} />}
 
                     <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
                         <section aria-labelledby="current-plan" className="rounded-2xl border border-border bg-surface p-5">
@@ -64,11 +73,12 @@ export default async function BillingPage() {
                                     <dt className="text-xs text-text-secondary">{plan.locked ? "დასრულდა" : plan.tier === "TRIAL" ? "საცდელი მთავრდება" : plan.cancelAtPeriodEnd ? "მოქმედებს" : "შემდეგი გადახდა"}</dt>
                                     <dd className="mt-1 text-lg font-semibold text-text-primary">{formatDay(plan.expiresAt)}</dd>
                                     {!plan.locked && <p className="mt-1 text-xs text-text-secondary">დარჩა {daysLeft(plan.expiresAt)} დღე</p>}
+                                    {!plan.locked && paid && !plan.cancelAtPeriodEnd && card?.bankCardOrderId && <p className="mt-1 text-xs text-text-secondary">ავტომატურად, ბარათიდან{card.bankCardMask ? ` ${card.bankCardMask}` : ""}</p>}
                                 </div>}
                             </dl>
 
                             {plan.locked && <p className="mt-4 rounded-xl bg-warning/10 p-3 text-sm leading-6 text-text-primary">
-                                ბიზნესი მხოლოდ ნახვის რეჟიმშია. მონაცემები შენახულია. დამატებისა და ცვლილებისთვის აირჩიე გეგმა.
+                                ბიზნესი მხოლოდ ნახვის რეჟიმშია. მონაცემები შენახულია. დამატებისა და ცვლილებისთვის აირჩიეთ გეგმა.
                             </p>}
 
                             <div className="mt-5 flex flex-wrap items-start gap-2">
@@ -82,7 +92,7 @@ export default async function BillingPage() {
                                     ? "inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium text-text-primary transition hover:border-accent/40 hover:text-accent"
                                     : "inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-white transition hover:bg-accent-hover"}>
                                     <Icon icon="solar:crown-bold" className="h-4 w-4" aria-hidden="true" />
-                                    {plan.locked || plan.tier === "TRIAL" ? "აირჩიე გეგმა" : "გეგმის შეცვლა"}
+                                    {plan.locked || plan.tier === "TRIAL" ? "აირჩიეთ გეგმა" : "გეგმის შეცვლა"}
                                 </Link>
                                 {paid && <CancelPlanButton canceled={plan.cancelAtPeriodEnd} expiresAt={plan.expiresAt} />}
                             </div>
@@ -141,11 +151,11 @@ export default async function BillingPage() {
                     <section className="grid gap-3 text-sm sm:grid-cols-2">
                         <p className="flex items-start gap-2 rounded-2xl border border-border bg-surface p-4 leading-6 text-text-secondary">
                             <Icon icon="solar:refresh-circle-linear" className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
-                            ბიზნესის პირველი შეძენიდან {REFUND_WINDOW_DAYS} დღის განმავლობაში თანხის დაბრუნება შეგიძლია მოითხოვო დახმარების ჩატში.
+                            ბიზნესის პირველი შეძენიდან {REFUND_WINDOW_DAYS} დღის განმავლობაში თანხის დაბრუნება შეგიძლიათ მოითხოვოთ დახმარების ჩატში.
                         </p>
                         <p className="flex items-start gap-2 rounded-2xl border border-border bg-surface p-4 leading-6 text-text-secondary">
                             <Icon icon="solar:calendar-mark-linear" className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
-                            გეგმის გაუქმებისას ის გადახდილი თვის ბოლომდე მოქმედებს, მონაცემები კი შენახული რჩება.
+                            გაუქმების შემდეგ თანხა აღარ ჩამოიჭრება, გეგმა კი გადახდილი თვის ბოლომდე მოქმედებს. მონაცემები შენახული რჩება.
                         </p>
                     </section>
                 </div>

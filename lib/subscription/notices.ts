@@ -9,7 +9,7 @@ import { escapeHtml } from "@/lib/security/html";
 type Db = PrismaClient | Prisma.TransactionClient;
 
 // გეგმასთან დაკავშირებული შეტყობინებები აპის გარდა მეილითა და პუშითაც იგზავნება.
-// შინაარსი ერთია, ტექსტი განსხვავებული: პუში მოკლეა, მეილს მისალმება და ღილაკი აქვს.
+// სათაური და ტექსტი ყველა არხზე ერთია; მეილს მხოლოდ მისალმება, ღილაკი და ხელმოწერა ემატება.
 export const CHANNEL_KINDS = ["TRIAL_ENDING", "RENEWAL_REMINDER", "PAYMENT_CONFIRMED", "PAYMENT_FAILED", "PLAN_CHANGED", "LIMIT_WARNING", "SMS_LOW"] as const;
 export type NoticeKind = typeof CHANNEL_KINDS[number];
 
@@ -46,7 +46,7 @@ function emailHtml(name: string | null, title: string, body: string, actionLabel
     <p style="font-size: 16px; font-weight: 600; margin: 0 0 8px;">${escapeHtml(title)}</p>
     <p style="font-size: 15px; line-height: 1.6; margin: 0 0 24px;">${escapeHtml(body)}</p>
     <a href="${escapeHtml(url)}" style="display: inline-block; background: #5a8dee; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: 600;">${escapeHtml(actionLabel)}</a>
-    <p style="font-size: 13px; color: #64748b; margin: 32px 0 0;">MARTEO · ამ წერილს იღებ, რადგან ბიზნესის მფლობელი ხარ.</p>
+    <p style="font-size: 15px; line-height: 1.6; margin: 32px 0 0;">პატივისცემით,<br>მართეოს გუნდი</p>
   </div>`;
 }
 
@@ -54,7 +54,7 @@ async function sendEmail(to: string, subject: string, html: string) {
     const apiKey = readServerSetting("RESEND_API_KEY");
     const from = readServerSetting("RESEND_FROM_EMAIL");
     if (!apiKey || !from || RESERVED_EMAIL.test(to)) return false;
-    const { error } = await new Resend(apiKey).emails.send({ from, to: [to], subject: `MARTEO - ${subject}`, html });
+    const { error } = await new Resend(apiKey).emails.send({ from, to: [to], subject: `${subject} · MARTEO`, html });
     if (error) throw new Error("Notice email failed");
     return true;
 }
@@ -107,8 +107,8 @@ export function notifyPaymentFailed(db: Db, input: { businessId: string; attempt
     return notifyOwners(db, {
         businessId: input.businessId, kind: "PAYMENT_FAILED", key: `payment-failed:${input.attemptId}`,
         title: "გადახდა ვერ შესრულდა",
-        body: `${input.plan} გეგმის გადახდა ვერ შესრულდა, ამიტომ ბიზნესი მხოლოდ ნახვის რეჟიმშია. გადაიხადე ან ბარათი შეცვალე, რომ ყველაფერი მაშინვე აღდგეს.`,
-        actionLabel: "გადახდა", actionUrl: "/dashboard/billing",
+        body: `სამწუხაროდ, ${input.plan} გეგმის გადახდა ვერ შესრულდა, ამიტომ ბიზნესი დროებით მხოლოდ ნახვის რეჟიმშია. თქვენი მონაცემები შენახულია: სცადეთ ხელახლა ან შეცვალეთ ბარათი და ყველაფერი მაშინვე აღდგება.`,
+        actionLabel: "ხელახლა გადახდა", actionUrl: "/dashboard/billing",
     });
 }
 
@@ -119,13 +119,14 @@ export async function notifyLimit(db: Db, input: { businessId: string; what: "or
     if (share < 0.8) return false;
     const full = share >= 1;
     const label = { orders: "შეკვეთების", ai: "მართეო AI-ის", aiFiles: "ფაილიდან შესყიდვის" }[input.what];
+    const stops = { orders: "ახალი შეკვეთების დამატება", ai: "მართეო AI-სთან მიმოწერა", aiFiles: "ფაილიდან შესყიდვის შექმნა" }[input.what];
     const created = await notifyOwners(db, {
         businessId: input.businessId, kind: "LIMIT_WARNING",
         key: `limit:${input.what}:${input.businessId}:${input.periodStart.toISOString()}:${full ? 100 : 80}`,
         title: full ? `${label} ლიმიტი ამოიწურა` : `${label} ლიმიტი იწურება`,
         body: full
-            ? `ამ პერიოდის ${label} ლიმიტი (${input.limit}) ამოიწურა. მეტისთვის გადადი უფრო დიდ გეგმაზე ან დაელოდე ახალ პერიოდს.`
-            : `ამ პერიოდში გამოყენებულია ${input.used} / ${input.limit}. ლიმიტის ამოწურვის შემდეგ ახლის დამატება შეჩერდება.`,
+            ? `ამ პერიოდის ${label} ლიმიტი (${input.limit}) სრულად გამოიყენეთ. ${stops} ახალი პერიოდის დაწყებისთანავე განახლდება, ან შეგიძლიათ ახლავე გადახვიდეთ უფრო დიდ გეგმაზე.`
+            : `ამ პერიოდში უკვე გამოყენებულია ${input.used} / ${input.limit}. ლიმიტის ამოწურვის შემდეგ ${stops} დროებით შეჩერდება, ამიტომ თუ მეტი გჭირდებათ, დროულად გადახედეთ გეგმებს.`,
         actionLabel: "გეგმების ნახვა", actionUrl: "/dashboard/plans",
     });
     return created > 0;

@@ -70,7 +70,7 @@ const subscriptionView = (value: { plan: string; status: string; expiresAt: Date
 /** Records a payment and extends the plan in one transaction, then notifies the owners. */
 export async function recordPayment(prisma: PrismaClient, adminId: string, businessId: unknown, input: PaymentInput) {
     const key = businessKey(businessId);
-    if (!(PAID_PLANS as readonly unknown[]).includes(input.plan)) throw new AdminActionError("აირჩიე ფასიანი პაკეტი.");
+    if (!(PAID_PLANS as readonly unknown[]).includes(input.plan)) throw new AdminActionError("აირჩიეთ ფასიანი პაკეტი.");
     if (!(PAYMENT_METHODS as readonly unknown[]).includes(input.method)) throw new AdminActionError("გადახდის მეთოდი არასწორია.");
     const months = Number(input.months);
     if (!Number.isInteger(months) || months < 1 || months > MAX_MONTHS) throw new AdminActionError(`პერიოდი 1-დან ${MAX_MONTHS} თვემდე უნდა იყოს.`);
@@ -130,7 +130,7 @@ export async function voidPayment(prisma: PrismaClient, adminId: string, busines
     const key = businessKey(businessId);
     if (typeof paymentId !== "string" || !ID.test(paymentId)) throw new AdminActionError("გადახდა ვერ მოიძებნა.", 404);
     const why = readNote(reason, 300);
-    if (!why) throw new AdminActionError("მიუთითე გაუქმების მიზეზი.");
+    if (!why) throw new AdminActionError("მიუთითეთ გაუქმების მიზეზი.");
     return prisma.$transaction(async tx => {
         const updated = await tx.subscriptionPayment.updateMany({
             where: { id: paymentId, businessId: key, voidedAt: null },
@@ -141,6 +141,6 @@ export async function voidPayment(prisma: PrismaClient, adminId: string, busines
         await tx.adminAuditLog.create({
             data: { adminId, action: "payment-void", targetType: "BUSINESS", targetId: key, after: { paymentId, amount: payment.amount.toFixed(2), plan: payment.plan, reason: why } },
         });
-        return { message: "გადახდა გაუქმდა. პაკეტის ვადა არ შეცვლილა: საჭიროების შემთხვევაში ზემოთ შეასწორე.", payments: await listPayments(tx, key) };
+        return { message: "გადახდა გაუქმდა. პაკეტის ვადა არ შეცვლილა: საჭიროების შემთხვევაში ზემოთ შეასწორეთ.", payments: await listPayments(tx, key) };
     });
 }

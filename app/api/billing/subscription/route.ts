@@ -26,7 +26,7 @@ async function post(request: Request) {
     } catch (error) {
         if (error instanceof PlanActionError) return json({ success: false, message: error.message }, error.status);
         console.error("Plan change failed", error instanceof Error ? error.name : "UnknownError");
-        return json({ success: false, message: "გეგმა ვერ შეიცვალა. სცადე ხელახლა." }, 500);
+        return json({ success: false, message: "გეგმა ვერ შეიცვალა. სცადეთ ხელახლა." }, 500);
     } finally {
         await db.$disconnect();
     }
