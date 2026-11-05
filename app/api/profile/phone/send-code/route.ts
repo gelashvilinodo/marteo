@@ -27,7 +27,7 @@ export async function POST(request: Request) {
             !/^[a-f0-9]{64}$/.test(body.authorization)
         ) {
             throw new PhoneChangeError(
-                "ჯერ დაადასტურე მიმდინარე პაროლი.",
+                "ჯერ დაადასტურეთ მიმდინარე პაროლი.",
                 403,
             );
         }
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
                     current.sessionTokenHash !== initial.sessionTokenHash
                 ) {
                     throw new PhoneChangeError(
-                        "სესია შეიცვალა. თავიდან გახსენი ფანჯარა.",
+                        "სესია შეიცვალა. თავიდან გახსენით ფანჯარა.",
                         409,
                     );
                 }
@@ -77,14 +77,14 @@ export async function POST(request: Request) {
                         hashPhoneChangeValue(current.user.password)
                 ) {
                     throw new PhoneChangeError(
-                        "დადასტურების ვადა ამოიწურა ან ანგარიშის მონაცემები შეიცვალა. თავიდან დაადასტურე პაროლი.",
+                        "დადასტურების ვადა ამოიწურა ან ანგარიშის მონაცემები შეიცვალა. თავიდან დაადასტურეთ პაროლი.",
                         409,
                     );
                 }
 
                 if (pending.attempts >= PHONE_CHANGE_MAX_ATTEMPTS) {
                     throw new PhoneChangeError(
-                        "კოდის მცდელობები ამოიწურა. თავიდან დაადასტურე პაროლი.",
+                        "კოდის მცდელობები ამოიწურა. თავიდან დაადასტურეთ პაროლი.",
                         409,
                     );
                 }
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
                     newPhone === normalizeProfilePhone(current.user.phone)
                 ) {
                     throw new PhoneChangeError(
-                        "მიუთითე მიმდინარე ნომრისგან განსხვავებული ნომერი.",
+                        "მიუთითეთ მიმდინარე ნომრისგან განსხვავებული ნომერი.",
                         422,
                     );
                 }
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
 
                 if (existing) {
                     throw new PhoneChangeError(
-                        "ამ ნომრის გამოყენება შეუძლებელია. მიუთითე სხვა ნომერი.",
+                        "ამ ნომრის გამოყენება შეუძლებელია. მიუთითეთ სხვა ნომერი.",
                         422,
                     );
                 }
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
 
                     if (retryAfter > 0) {
                         throw new PhoneChangeError(
-                            "SMS-ის ხელახლა გაგზავნამდე ცოტა მოიცადე.",
+                            "SMS-ის ხელახლა გაგზავნამდე ცოტა მოიცადეთ.",
                             429,
                             retryAfter,
                         );
@@ -184,7 +184,7 @@ export async function POST(request: Request) {
                     expiresAt: delivery.expiresAt.toISOString(),
                     retryAfter: PHONE_CHANGE_RESEND_SECONDS,
                     message:
-                        "SMS-ის გაგზავნა ვერ დადასტურდა. თუ კოდი მიიღე, გამოიყენე მიღებული კოდი; სხვა შემთხვევაში ხელახლა გაგზავნე.",
+                        "SMS-ის გაგზავნა ვერ დადასტურდა. თუ კოდი მიიღეთ, გამოიყენეთ მიღებული კოდი; სხვა შემთხვევაში ხელახლა გაგზავნეთ.",
                 },
                 502,
                 PHONE_CHANGE_RESEND_SECONDS,

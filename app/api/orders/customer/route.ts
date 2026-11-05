@@ -38,7 +38,7 @@ export async function GET(request: Request) {
             return json(
                 {
                     success: false,
-                    message: "გაიარე ავტორიზაცია.",
+                    message: "გაიარეთ ავტორიზაცია.",
                 },
                 401,
             );

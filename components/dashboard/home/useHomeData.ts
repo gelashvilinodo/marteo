@@ -182,7 +182,7 @@ export function useHomeData(initialData: HomeData) {
             } else {
                 setError(
                     controller.signal.aborted
-                        ? "განახლების დრო ამოიწურა. სცადე ხელახლა."
+                        ? "განახლების დრო ამოიწურა. სცადეთ ხელახლა."
                         : cause instanceof Error
                             ? cause.message
                             : "მონაცემები ვერ განახლდა.",

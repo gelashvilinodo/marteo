@@ -86,7 +86,7 @@ function readItems(value: unknown): ReceiptItem[] {
         }
 
         if (row.defectiveQuantity === 0 && defectNote) {
-            fail("წუნის აღწერისთვის მიუთითე წუნდებული რაოდენობაც.");
+            fail("წუნის აღწერისთვის მიუთითეთ წუნდებული რაოდენობაც.");
         }
 
         return {
@@ -124,7 +124,7 @@ export async function receivePurchase(
     const user = await getCurrentUser();
 
     if (!user) {
-        fail("გთხოვ, ხელახლა გაიარე ავტორიზაცია.", 401);
+        fail("გთხოვთ, ხელახლა გაიარეთ ავტორიზაცია.", 401);
     }
 
     const prisma = createPrismaClient();
@@ -157,7 +157,7 @@ export async function receivePurchase(
                 });
 
                 if (!access) {
-                    fail("ამ ბიზნესზე წვდომა აღარ გაქვს.", 403);
+                    fail("ამ ბიზნესზე წვდომა აღარ გაქვთ.", 403);
                 }
 
                 const purchase = await tx.purchase.findFirst({
@@ -190,7 +190,7 @@ export async function receivePurchase(
                     )
                 ) {
                     fail(
-                        "პარტიის პროდუქტები შეიცვალა. განაახლე გვერდი და სცადე ხელახლა.",
+                        "პარტიის პროდუქტები შეიცვალა. განაახლეთ გვერდი და სცადეთ ხელახლა.",
                         409,
                     );
                 }
@@ -219,7 +219,7 @@ export async function receivePurchase(
 
                     if (!sameReceipt) {
                         fail(
-                            "პარტია უკვე მიღებულია სხვა მონაცემებით. განაახლე გვერდი.",
+                            "პარტია უკვე მიღებულია სხვა მონაცემებით. განაახლეთ გვერდი.",
                             409,
                         );
                     }
@@ -321,7 +321,7 @@ export async function receivePurchase(
 
                     if (updatedInventory.count !== 1) {
                         fail(
-                            "მარაგის ჩანაწერი ვერ განახლდა. გადაამოწმე ნაშთი.",
+                            "მარაგის ჩანაწერი ვერ განახლდა. გადაამოწმეთ ნაშთი.",
                             409,
                         );
                     }

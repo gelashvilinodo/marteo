@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
         if (!context) {
             return orderJson(
-                { success: false, message: "გაიარე ავტორიზაცია." },
+                { success: false, message: "გაიარეთ ავტორიზაცია." },
                 401,
             );
         }
@@ -194,7 +194,7 @@ export async function GET(request: Request) {
         return orderJson(
             {
                 success: false,
-                message: "მონაცემები ვერ განახლდა. სცადე ხელახლა.",
+                message: "მონაცემები ვერ განახლდა. სცადეთ ხელახლა.",
             },
             500,
         );

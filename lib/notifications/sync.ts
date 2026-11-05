@@ -67,13 +67,13 @@ export async function deliverSubscriptionReminders(tx: Tx, businessId: string | 
         SELECT gen_random_uuid()::text, m."userId", s."businessId",
             CASE WHEN s.status = 'TRIALING' THEN 'TRIAL_ENDING'::"NotificationKind" ELSE 'RENEWAL_REMINDER'::"NotificationKind" END,
             CASE WHEN s.status = 'TRIALING' THEN 'საცდელი პერიოდი 2 დღეში სრულდება'
-                WHEN s."cancelAtPeriodEnd" THEN 'გაუქმებული გეგმა მალე სრულდება'
-                ELSE 'გეგმის ვადა მალე იწურება' END,
+                WHEN s."cancelAtPeriodEnd" THEN 'თქვენი გეგმა მალე სრულდება'
+                ELSE 'გეგმა მალე ავტომატურად განახლდება' END,
             CASE WHEN s.status = 'TRIALING'
-                THEN 'საცდელი პერიოდი სრულდება ' || ${date} || '-ს. აირჩიე გეგმა, რომ მუშაობა უწყვეტად გააგრძელო. მონაცემები არ იკარგება.'
+                THEN 'საცდელი პერიოდი ' || ${date} || '-ს სრულდება. იმედი გვაქვს, მართეო მოგეწონათ! აირჩიეთ თქვენთვის შესაფერისი გეგმა და მუშაობა უწყვეტად გააგრძელეთ. ყველა მონაცემი შენახული დაგხვდებათ.'
                 WHEN s."cancelAtPeriodEnd"
-                THEN 'შენი ' || ${plan} || ' გეგმა ' || ${date} || '-ს სრულდება. გადაფიქრება ვადამდე შეგიძლია „პაკეტი და გადახდებიდან“.'
-                ELSE 'შენი ' || ${plan} || ' გეგმის ვადა ' || ${date} || '-ს იწურება. განაახლე, რომ მუშაობა არ შეფერხდეს.'
+                THEN 'თქვენი ' || ${plan} || ' გეგმა ' || ${date} || '-ს სრულდება. თუ გადაიფიქრებთ, ვადის ამოწურვამდე მისი აღდგენა „პაკეტი და გადახდებიდან“ ერთი ღილაკით შეგიძლიათ.'
+                ELSE 'თქვენი ' || ${plan} || ' გეგმა ' || ${date} || '-ს ავტომატურად განახლდება და გადახდა მიბმული ბარათიდან ჩამოიჭრება. თუ გაგრძელება აღარ გსურთ, გეგმა ამ თარიღამდე გააუქმეთ „პაკეტი და გადახდებიდან“.'
             END,
             CASE WHEN s.status = 'TRIALING' THEN 'გეგმის არჩევა' ELSE 'პაკეტი და გადახდები' END,
             CASE WHEN s.status = 'TRIALING' THEN '/dashboard/plans' ELSE '/dashboard/billing' END,
@@ -94,11 +94,11 @@ export async function deliverSubscriptionReminders(tx: Tx, businessId: string | 
         SELECT gen_random_uuid()::text, m."userId", s."businessId",
             CASE WHEN s.plan = 'FREE' THEN 'TRIAL_ENDING'::"NotificationKind" ELSE 'RENEWAL_REMINDER'::"NotificationKind" END,
             CASE WHEN s.plan = 'FREE' THEN 'საცდელი პერიოდი დასრულდა'
-                WHEN s.status = 'CANCELED' OR s."cancelAtPeriodEnd" THEN 'გაუქმებული გეგმა დასრულდა'
+                WHEN s.status = 'CANCELED' OR s."cancelAtPeriodEnd" THEN 'თქვენი გეგმა დასრულდა'
                 ELSE 'გეგმის ვადა ამოიწურა' END,
-            CASE WHEN s.plan = 'FREE' THEN 'საცდელი პერიოდი დასრულდა ' || ${date} || '-ს.'
-                ELSE 'შენი ' || ${plan} || ' გეგმა დასრულდა ' || ${date} || '-ს.' END
-                || ' ბიზნესი ახლა მხოლოდ ნახვის რეჟიმშია, მონაცემები შენახულია. აირჩიე გეგმა, რომ დამატება და ცვლილება დაგიბრუნდეს.',
+            CASE WHEN s.plan = 'FREE' THEN 'საცდელი პერიოდი ' || ${date} || '-ს დასრულდა.'
+                ELSE 'თქვენი ' || ${plan} || ' გეგმა ' || ${date} || '-ს დასრულდა.' END
+                || ' ბიზნესი ახლა მხოლოდ ნახვის რეჟიმშია, ყველა მონაცემი კი უსაფრთხოდ არის შენახული. აირჩიეთ გეგმა და ყველაფერი მაშინვე დაგიბრუნდებათ.',
             'გეგმის არჩევა', '/dashboard/plans',
             'ended:' || s.id || ':' || ${exp} || ':' || m."userId",
             ${now}, ${now}
@@ -169,11 +169,11 @@ async function deliverStockAlerts(tx: Tx, businessId: string, now: Date) {
         // Many alerts at once (e.g. the first check of a business): one summary, not a flood.
         const out = alerts.filter(a => a.level === "OUT").length;
         const low = alerts.length - out;
-        const body = [low && `${low} პროდუქტის მარაგი იწურება`, out && `${out} პროდუქტი ამოიწურა`].filter(Boolean).join(", ") + ". გადახედე მარაგებს და დროულად შეავსე.";
+        const body = [low && `${low} პროდუქტის მარაგი იწურება`, out && `${out} პროდუქტი ამოიწურა`].filter(Boolean).join(", ") + ". გადახედეთ მარაგს და დროულად შეავსეთ, რომ შეკვეთები არ გამოგრჩეთ.";
         const key = `stock-summary:${alerts[0].alertId}`;
         await tx.$executeRaw`
             INSERT INTO "Notification" (id, "userId", "businessId", kind, title, body, "actionLabel", "actionUrl", "dedupeKey", "deliverAt", "createdAt")
-            SELECT gen_random_uuid()::text, m."userId", ${businessId}, 'STOCK_SUMMARY', 'მარაგები ყურადღებას საჭიროებს', ${body},
+            SELECT gen_random_uuid()::text, m."userId", ${businessId}, 'STOCK_SUMMARY', 'მარაგს თქვენი ყურადღება სჭირდება', ${body},
                 'მარაგების ნახვა', ${out && !low ? "/dashboard/inventory?status=exhausted" : "/dashboard/inventory?status=low"}, ${key} || ':' || m."userId", ${now}, ${now}
             FROM (${members}) m
             ON CONFLICT ("dedupeKey") DO NOTHING
@@ -185,7 +185,9 @@ async function deliverStockAlerts(tx: Tx, businessId: string, now: Date) {
         const label = variant ? `${alert.name} (${variant})` : alert.name;
         const out = alert.level === "OUT";
         const title = out ? "პროდუქტი ამოიწურა" : "მარაგი იწურება";
-        const body = out ? `${label} - მარაგი ამოიწურა. შეავსე, რომ შეკვეთები არ დაკარგო.` : `${label} - დარჩა მხოლოდ ${alert.good} ცალი.`;
+        const body = out
+            ? `${label} მარაგში აღარ არის. შეავსეთ დროულად, რომ შეკვეთები არ გამოგრჩეთ.`
+            : `${label}: მარაგში მხოლოდ ${alert.good} ცალი დარჩა. გირჩევთ, დროულად შეავსოთ.`;
         await tx.$executeRaw`
             INSERT INTO "Notification" (id, "userId", "businessId", kind, title, body, "actionLabel", "actionUrl", "imageUrl", "inventoryItemId", "dedupeKey", "deliverAt", "createdAt")
             SELECT gen_random_uuid()::text, m."userId", ${businessId}, ${alert.level === "OUT" ? "OUT_OF_STOCK" : "LOW_STOCK"}::"NotificationKind",
@@ -206,8 +208,8 @@ export async function notifyPaymentConfirmed(tx: Tx, input: { businessId: string
     const plan = PLAN_LABELS[input.plan] ?? input.plan;
     await tx.$executeRaw`
         INSERT INTO "Notification" (id, "userId", "businessId", kind, title, body, "actionLabel", "actionUrl", "dedupeKey", "deliverAt", "createdAt")
-        SELECT gen_random_uuid()::text, m."userId", ${input.businessId}, 'PAYMENT_CONFIRMED', 'გადახდა დადასტურდა, მადლობა! 🎉',
-            ${`${plan} გეგმა გააქტიურდა. მადლობა, რომ მართეოს ენდობი, წარმატებებს გისურვებთ!`},
+        SELECT gen_random_uuid()::text, m."userId", ${input.businessId}, 'PAYMENT_CONFIRMED', 'გადახდა მიღებულია, მადლობა! 🎉',
+            ${`თქვენი ${plan} გეგმა უკვე აქტიურია. დიდი მადლობა, რომ მართეოს ენდობით. წარმატებებს გისურვებთ!`},
             'მთავარზე გადასვლა', '/dashboard', ${`payment:${input.paymentId}:`} || m."userId", ${now}, ${now}
         FROM "BusinessMembership" m WHERE m."businessId" = ${input.businessId} AND m.role = 'OWNER' AND m.status = 'ACTIVE'
         ON CONFLICT ("dedupeKey") DO NOTHING

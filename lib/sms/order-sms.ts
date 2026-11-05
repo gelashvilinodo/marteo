@@ -102,11 +102,11 @@ async function reserve(prisma: PrismaClient, businessId: string, orderId: string
             notice = await notifyOwners(tx, {
                 businessId, kind: "SMS_LOW",
                 key: `sms-${left === 0 ? "empty" : "low"}:${businessId}:${period.start.toISOString()}:${usage.packsBought}`,
-                title: left === 0 ? "SMS ამოიწურა" : `დარჩა ${left} SMS`,
+                title: left === 0 ? "SMS ბალანსი ამოიწურა" : `დარჩა ${left} SMS`,
                 body: left === 0
-                    ? "მომხმარებლებს შეკვეთის გაგზავნის SMS აღარ ეგზავნებათ. შეიძინე SMS პაკეტი ბიზნესის პარამეტრებიდან."
-                    : "SMS მალე ამოიწურება. რომ მომხმარებლებს შეტყობინებები არ შეუწყდეს, შეიძინე SMS პაკეტი.",
-                actionLabel: "ბიზნესის პარამეტრები", actionUrl: "/dashboard/business-settings",
+                    ? "თქვენს მომხმარებლებს შეკვეთის გაგზავნის SMS ამჟამად აღარ ეგზავნებათ. შეიძინეთ SMS პაკეტი და შეტყობინებები მაშინვე განახლდება."
+                    : "SMS ბალანსი მალე ამოიწურება. შეავსეთ დროულად, რომ თქვენს მომხმარებლებს შეკვეთის შეტყობინებები უწყვეტად მისდიოდეთ.",
+                actionLabel: "SMS-ის შევსება", actionUrl: "/dashboard/business-settings",
             }) > 0;
         }
         return { reserved: { id: row.id, phone, source, businessId, message: shippedMessage(business.name) }, notice };

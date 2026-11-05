@@ -30,14 +30,14 @@ export async function POST(request: Request) {
             )
         ) {
             throw new PasswordSettingsError(
-                "მოთხოვნის იდენტიფიკატორი არასწორია. ხელახლა სცადე.",
+                "მოთხოვნის იდენტიფიკატორი არასწორია. ხელახლა სცადეთ.",
                 400,
             );
         }
 
         if (typeof body.logoutOtherSessions !== "boolean") {
             throw new PasswordSettingsError(
-                "აირჩიე, გსურს თუ არა სხვა მოწყობილობებიდან გამოსვლა.",
+                "აირჩიეთ, გსურთ თუ არა სხვა მოწყობილობებიდან გამოსვლა.",
             );
         }
 
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
                     current.sessionTokenHash !== initial.sessionTokenHash
                 ) {
                     throw new PasswordSettingsError(
-                        "სესია შეიცვალა. თავიდან სცადე.",
+                        "სესია შეიცვალა. თავიდან სცადეთ.",
                         409,
                     );
                 }
@@ -81,14 +81,14 @@ export async function POST(request: Request) {
                         existing.logoutOtherSessions !== logoutOtherSessions
                     ) {
                         throw new PasswordSettingsError(
-                            "მოთხოვნის მონაცემები შეიცვალა. ხელახლა სცადე.",
+                            "მოთხოვნის მონაცემები შეიცვალა. ხელახლა სცადეთ.",
                             409,
                         );
                     }
 
                     if (!existing.completedAt || !existing.newPasswordHash) {
                         throw new PasswordSettingsError(
-                            "წინა მოთხოვნა ჯერ მუშავდება ან არ დასრულდა. ცოტა მოიცადე და ხელახლა სცადე.",
+                            "წინა მოთხოვნა ჯერ მუშავდება ან არ დასრულდა. ცოტა მოიცადეთ და ხელახლა სცადეთ.",
                             409,
                         );
                     }
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
                     );
 
                     throw new PasswordSettingsError(
-                        "პაროლის შეცვლის მცდელობები ამოიწურა. ცოტა მოგვიანებით სცადე.",
+                        "პაროლის შეცვლის მცდელობები ამოიწურა. ცოტა მოგვიანებით სცადეთ.",
                         429,
                         "form",
                         retryAfter,
@@ -166,7 +166,7 @@ export async function POST(request: Request) {
                 !(await bcrypt.compare(input.newPassword, savedHash))
             ) {
                 throw new PasswordSettingsError(
-                    "მოთხოვნა აღარ შეესაბამება მიმდინარე მონაცემებს. ხელახლა სცადე.",
+                    "მოთხოვნა აღარ შეესაბამება მიმდინარე მონაცემებს. ხელახლა სცადეთ.",
                     409,
                 );
             }
@@ -179,7 +179,7 @@ export async function POST(request: Request) {
                 current.user.password !== savedHash
             ) {
                 throw new PasswordSettingsError(
-                    "ანგარიშის მონაცემები შეიცვალა. ხელახლა სცადე.",
+                    "ანგარიშის მონაცემები შეიცვალა. ხელახლა სცადეთ.",
                     409,
                 );
             }
@@ -247,7 +247,7 @@ export async function POST(request: Request) {
                         ATTEMPT_WINDOW_MS <= now.getTime()
                 ) {
                     throw new PasswordSettingsError(
-                        "ანგარიშის მონაცემები შეიცვალა ან მოთხოვნის ვადა ამოიწურა. თავიდან სცადე.",
+                        "ანგარიშის მონაცემები შეიცვალა ან მოთხოვნის ვადა ამოიწურა. თავიდან სცადეთ.",
                         409,
                     );
                 }
@@ -337,7 +337,7 @@ export async function POST(request: Request) {
             {
                 success: false,
                 message:
-                    "შენახვის შედეგი ვერ დადასტურდა. იგივე მონაცემებით ხელახლა სცადე.",
+                    "შენახვის შედეგი ვერ დადასტურდა. იგივე მონაცემებით ხელახლა სცადეთ.",
                 field: "form",
             },
             500,

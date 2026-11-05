@@ -73,24 +73,24 @@ export function orderCreatePayload(
     clientRequestId: string,
     mode: "create" | "edit" = "create",
 ) {
-    if (!lookupPhone(draft.recipientPhone)) throw new Error("მიუთითე სწორი ტელეფონის ნომერი.");
-    if (!draft.items.length) throw new Error("შეკვეთაში დაამატე პროდუქტი.");
+    if (!lookupPhone(draft.recipientPhone)) throw new Error("მიუთითეთ სწორი ტელეფონის ნომერი.");
+    if (!draft.items.length) throw new Error("შეკვეთაში დაამატეთ პროდუქტი.");
     if (draft.items.some(item => item.uploadPending)) {
         throw new Error(
-            "ფოტო ჯერ იტვირთება. დაელოდე ატვირთვის დასრულებას.",
+            "ფოტო ჯერ იტვირთება. დაელოდეთ ატვირთვის დასრულებას.",
         );
     }
     const items = draft.items.map((item, index) => {
         const label = `პროდუქტი ${index + 1}`;
-        if (!item.name.trim()) throw new Error(`${label}: მიუთითე სახელი.`);
-        if (!/^\d+(?:[.,]\d{1,6})?$/.test(item.quantity) || !validQuantity(Number(item.quantity.replace(",","."))) || Number(item.quantity.replace(",",".")) <= 0 || ((item.source!=="MATERIAL"||item.unit==="PCS")&&!Number.isSafeInteger(Number(item.quantity)))) throw new Error(item.source==="MATERIAL"&&item.unit!=="PCS"?`${label}: მიუთითე დადებითი რაოდენობა, მაქსიმუმ 6 ათწილადით.`:`${label}: რაოდენობა უნდა იყოს დადებითი მთელი რიცხვი.`);
-        if (moneyCents(item.unitPrice) === null) throw new Error(`${label}: მიუთითე გასაყიდი ფასი. უფასოდ გაცემისთვის ჩაწერე 0.`);
+        if (!item.name.trim()) throw new Error(`${label}: მიუთითეთ სახელი.`);
+        if (!/^\d+(?:[.,]\d{1,6})?$/.test(item.quantity) || !validQuantity(Number(item.quantity.replace(",","."))) || Number(item.quantity.replace(",",".")) <= 0 || ((item.source!=="MATERIAL"||item.unit==="PCS")&&!Number.isSafeInteger(Number(item.quantity)))) throw new Error(item.source==="MATERIAL"&&item.unit!=="PCS"?`${label}: მიუთითეთ დადებითი რაოდენობა, მაქსიმუმ 6 ათწილადით.`:`${label}: რაოდენობა უნდა იყოს დადებითი მთელი რიცხვი.`);
+        if (moneyCents(item.unitPrice) === null) throw new Error(`${label}: მიუთითეთ გასაყიდი ფასი. უფასოდ გაცემისთვის ჩაწერეთ 0.`);
         if (
             item.source !== "MATERIAL" && item.unitCost.trim() !== "" &&
             moneyCents(item.unitCost) === null
         ) {
             throw new Error(
-                `${label}: თვითღირებულება მიუთითე თეთრების სიზუსტით ან დატოვე ცარიელი.`,
+                `${label}: თვითღირებულება მიუთითეთ თეთრების სიზუსტით ან დატოვეთ ცარიელი.`,
             );
         }
         return {
@@ -109,8 +109,8 @@ export function orderCreatePayload(
             quantity: Number(item.quantity.replace(",",".")), unitPrice: item.unitPrice.trim().replace(",", "."), unitCost: item.source==="MATERIAL"?"":item.unitCost.trim().replace(",", ".")
         };
     });
-    if (moneyCents(draft.courierFee) === null) throw new Error("მიუთითე კურიერის საფასური.");
-    if (paidMode === "custom" && moneyCents(draft.paidAmount) === null) throw new Error("მიუთითე გადახდილი თანხა.");
+    if (moneyCents(draft.courierFee) === null) throw new Error("მიუთითეთ კურიერის საფასური.");
+    if (paidMode === "custom" && moneyCents(draft.paidAmount) === null) throw new Error("მიუთითეთ გადახდილი თანხა.");
     const totals = orderFormTotals(draft, paidMode);
     if (mode === "create" && totals.paid > totals.total) {
         throw new Error("გადახდილი თანხა შეკვეთის ჯამს აღემატება.");

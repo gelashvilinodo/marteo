@@ -439,7 +439,7 @@ export default function FinancialMovements({
                             </article>
                         ))}
 
-                        {data.rows.length === 0 && (
+                        {listData.rows.length === 0 && (
                             <p className="border-t border-border p-6 text-center text-sm text-text-secondary">
                                 არჩეულ პერიოდში მოძრაობები არ მოიძებნა.
                             </p>
@@ -465,7 +465,7 @@ export default function FinancialMovements({
                         </thead>
 
                         <tbody>
-                            {data.rows.map(row => (
+                            {listData.rows.map(row => (
                                 <tr
                                     key={row.key}
                                     className={`border-t border-border ${movementStyle(row).row}`}
@@ -512,7 +512,7 @@ export default function FinancialMovements({
                                 </tr>
                             ))}
 
-                            {data.rows.length === 0 && (
+                            {listData.rows.length === 0 && (
                                 <tr>
                                     <td
                                         colSpan={6}

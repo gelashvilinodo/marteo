@@ -215,7 +215,7 @@ export default function ExpenseBreakdown({
 
                     <p className="mt-4 text-xs leading-relaxed text-text-secondary">
                         კატეგორიაზე დაჭერით მის თანხას
-                        წრის ცენტრში ნახავ.
+                        წრის ცენტრში ნახავთ.
                     </p>
 
                     {hasCorrections && (

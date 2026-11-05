@@ -28,25 +28,25 @@ export function salePriceFor(method:ProductionPricingMethod|null,value:Decimal|n
 }
 export function amount(v:unknown,label:string,precision=2){
     const s=typeof v==='string'?v.trim().replace(',','.') : '';
-    if(!new RegExp(precision===0?'^\\d{1,8}$':`^\\d{1,8}(\\.\\d{1,${precision}})?$`).test(s))throw new MaterialError(`${label}: მიუთითე სწორი არაუარყოფითი რიცხვი.`);
+    if(!new RegExp(precision===0?'^\\d{1,8}$':`^\\d{1,8}(\\.\\d{1,${precision}})?$`).test(s))throw new MaterialError(`${label}: მიუთითეთ სწორი არაუარყოფითი რიცხვი.`);
     return new Prisma.Decimal(s);
 }
 export function readProduction(raw:unknown){
     if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new MaterialError('წარმოების მონაცემები არასწორია.');
     const r=raw as Record<string,unknown>;
     const requestId=text(r.requestId,100,true);if(!/^[\w-]{10,100}$/.test(requestId))throw new MaterialError('მოთხოვნის კოდი არასწორია.');
-    const date=text(r.productionDate,10,true);if(!validDate(date))throw new MaterialError('მიუთითე სწორი თარიღი.');
+    const date=text(r.productionDate,10,true);if(!validDate(date))throw new MaterialError('მიუთითეთ სწორი თარიღი.');
     if(r.status!=='IN_PROGRESS'&&r.status!=='COMPLETED')throw new MaterialError('წარმოების სტატუსი არასწორია.');
-    if(!Array.isArray(r.materials)||!r.materials.length||r.materials.length>50)throw new MaterialError('აირჩიე 1-დან 50-მდე მასალა.');
+    if(!Array.isArray(r.materials)||!r.materials.length||r.materials.length>50)throw new MaterialError('აირჩიეთ 1-დან 50-მდე მასალა.');
     const materials=r.materials.map(v=>{if(!v||typeof v!=='object')throw new MaterialError('მასალის მონაცემები არასწორია.');const i=v as Record<string,unknown>,quantity=amount(i.quantity,'მასალის რაოდენობა',6);if(quantity.lte(0))throw new MaterialError('მასალის რაოდენობა ნულზე მეტი უნდა იყოს.');return {materialId:text(i.materialId,100,true),quantity};});
-    if(new Set(materials.map(m=>m.materialId)).size!==materials.length)throw new MaterialError('ერთი მასალა მხოლოდ ერთხელ აირჩიე.');
+    if(new Set(materials.map(m=>m.materialId)).size!==materials.length)throw new MaterialError('ერთი მასალა მხოლოდ ერთხელ აირჩიეთ.');
     if(!Array.isArray(r.outputs)||r.outputs.length>20)throw new MaterialError('პროდუქტების მონაცემები არასწორია.');
     const outputs=r.outputs.map(v=>{if(!v||typeof v!=='object')throw new MaterialError('პროდუქტის მონაცემები არასწორია.');const o=v as Record<string,unknown>;
         const quantity=amount(o.quantity||'0','პროდუქტის რაოდენობა',0).toNumber(),share=amount(o.costShare||'0','ხარჯის წილი');
         if(share.gt(100))throw new MaterialError('ხარჯის წილი 100%-ს არ უნდა აღემატებოდეს.');
         const rowKey=text(o.rowKey,100,true);if(!/^[\w-]{10,100}$/.test(rowKey))throw new MaterialError('პროდუქტის კოდი არასწორია.');
         const name=optional(o.name,200),category=optional(o.category,150),inventoryItemId=optional(o.inventoryItemId,100)||null;
-        if(r.status==='COMPLETED'&&(!quantity||(!inventoryItemId&&(!name||!category))))throw new MaterialError('დასრულებისთვის მიუთითე პროდუქტის სახელი, კატეგორია და რაოდენობა.');
+        if(r.status==='COMPLETED'&&(!quantity||(!inventoryItemId&&(!name||!category))))throw new MaterialError('დასრულებისთვის მიუთითეთ პროდუქტის სახელი, კატეგორია და რაოდენობა.');
         return {rowKey,inventoryItemId,name,category,brand:optional(o.brand,150),description:optional(o.description,3000),color:optional(o.color,150),size:optional(o.size,150),quantity,costShare:share,...readPricing(o,inventoryItemId)};
     });
     if(new Set(outputs.map(o=>o.rowKey)).size!==outputs.length)throw new MaterialError('პროდუქტის კოდი განმეორებულია.');

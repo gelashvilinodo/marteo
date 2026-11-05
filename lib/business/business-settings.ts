@@ -42,7 +42,7 @@ function readPhone(value: unknown): string | null {
 
     if (!/^\+[1-9]\d{7,14}$/.test(normalized)) {
         throw new BusinessSettingsError(
-            "მიუთითე 9-ციფრიანი ქართული ნომერი ან საერთაშორისო ნომერი ქვეყნის კოდით, მაგალითად +995…",
+            "მიუთითეთ 9-ციფრიანი ქართული ნომერი ან საერთაშორისო ნომერი ქვეყნის კოდით, მაგალითად +995…",
             422,
             "phone",
         );
@@ -75,7 +75,7 @@ export function validateBusinessSettings(value: unknown): {
         !input.name.trim()
     ) {
         throw new BusinessSettingsError(
-            "მიუთითე ბიზნესის სახელი.",
+            "მიუთითეთ ბიზნესის სახელი.",
             422,
             "name",
         );
@@ -85,7 +85,7 @@ export function validateBusinessSettings(value: unknown): {
 
     if (typeof input.expectedUpdatedAt !== "string") {
         throw new BusinessSettingsError(
-            "ბიზნესის მონაცემების ვერსია ვერ დადასტურდა. განაახლე გვერდი.",
+            "ბიზნესის მონაცემების ვერსია ვერ დადასტურდა. განაახლეთ გვერდი.",
             409,
         );
     }
@@ -100,12 +100,12 @@ export function validateBusinessSettings(value: unknown): {
             input.expectedUpdatedAt
     ) {
         throw new BusinessSettingsError(
-            "ბიზნესის მონაცემების ვერსია არასწორია. განაახლე გვერდი.",
+            "ბიზნესის მონაცემების ვერსია არასწორია. განაახლეთ გვერდი.",
             409,
         );
     }
 
-    if (!isBusinessMode(input.mode)) throw new BusinessSettingsError("აირჩიე ბიზნესის მიმართულება.", 422, "mode");
+    if (!isBusinessMode(input.mode)) throw new BusinessSettingsError("აირჩიეთ ბიზნესის მიმართულება.", 422, "mode");
 
     return {
         mode: input.mode,

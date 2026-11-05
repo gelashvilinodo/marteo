@@ -368,7 +368,7 @@ export default function SupportChat({ viewer, endpoint, header, banner, composer
                                 {groupEnd && <span className="mt-1 flex items-center gap-1 px-1 text-[10px] text-text-secondary">
                                     {formatSupportTime(createdAt)}
                                     {row.kind === "pending" && !failed && <><span aria-hidden="true">·</span> იგზავნება…</>}
-                                    {failed && <button type="button" onClick={() => retry(row.pending)} className="font-medium text-danger underline-offset-2 hover:underline">· ვერ გაიგზავნა, სცადე ხელახლა</button>}
+                                    {failed && <button type="button" onClick={() => retry(row.pending)} className="font-medium text-danger underline-offset-2 hover:underline">· ვერ გაიგზავნა, სცადეთ ხელახლა</button>}
                                     {row.kind === "message" && row.message.id === lastMine?.id && !pending.length && <>
                                         <span aria-hidden="true">·</span>
                                         <Icon icon={lastMineSeen ? "solar:check-read-linear" : "solar:check-circle-linear"} className={`h-3.5 w-3.5 ${lastMineSeen ? "text-accent" : ""}`} aria-hidden="true" />
@@ -425,7 +425,7 @@ export default function SupportChat({ viewer, endpoint, header, banner, composer
                     rows={1}
                     value={draft}
                     maxLength={SUPPORT_MESSAGE_MAX_LENGTH}
-                    placeholder="დაწერე შეტყობინება…"
+                    placeholder="დაწერეთ შეტყობინება…"
                     onChange={event => { setDraft(event.target.value); resize(); }}
                     onPaste={event => {
                         // A copied screenshot attaches straight from the clipboard.

@@ -42,7 +42,7 @@ function expectedVersion(body: Record<string, unknown>): Date {
     const date = new Date(value);
 
     if (!value || !Number.isFinite(date.getTime())) {
-        fail("ჩანაწერის ვერსია არასწორია. გახსენი ხარჯი ხელახლა.");
+        fail("ჩანაწერის ვერსია არასწორია. გახსენით ხარჯი ხელახლა.");
     }
 
     return date;
@@ -53,12 +53,12 @@ function validateEdit(body: Record<string, unknown>) {
         item => item.value === body.category,
     )?.value;
 
-    if (!category) fail("აირჩიე ხარჯის კატეგორია.");
+    if (!category) fail("აირჩიეთ ხარჯის კატეგორია.");
 
     const amountText = text(body.amount, "თანხა").replace(",", ".");
 
     if (!/^\d+(?:\.\d{1,2})?$/.test(amountText)) {
-        fail("თანხა მიუთითე თეთრების სიზუსტით.");
+        fail("თანხა მიუთითეთ თეთრების სიზუსტით.");
     }
 
     const amount = new Prisma.Decimal(amountText);
@@ -74,7 +74,7 @@ function validateEdit(body: Record<string, unknown>) {
     const dateText = text(body.expenseDate, "თარიღი");
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
-        fail("მიუთითე ხარჯის თარიღი.");
+        fail("მიუთითეთ ხარჯის თარიღი.");
     }
 
     const checkedDate = new Date(`${dateText}T00:00:00.000Z`);
@@ -102,7 +102,7 @@ async function mutate(
 ) {
     try {
         if (!(await getCurrentUser())) {
-            fail("გაიარე ავტორიზაცია.", 401);
+            fail("გაიარეთ ავტორიზაცია.", 401);
         }
 
         const membership = await getCurrentBusiness();
@@ -172,7 +172,7 @@ async function mutate(
 
                 if (existing.updatedAt.getTime() !== expected.getTime()) {
                     fail(
-                        "ხარჯი უკვე შეიცვალა. დახურე ფანჯარა და გახსენი ხელახლა.",
+                        "ხარჯი უკვე შეიცვალა. დახურეთ ფანჯარა და გახსენით ხელახლა.",
                         409,
                     );
                 }

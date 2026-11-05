@@ -8,5 +8,5 @@ export function adminJson(data: unknown, status = 200) {
 export function adminFailure(cause: unknown) {
     if (cause instanceof AdminActionError) return adminJson({ success: false, message: cause.message }, cause.status);
     console.error("Admin action failed", cause instanceof Error ? cause.name : "UnknownError");
-    return adminJson({ success: false, message: "მოქმედება ვერ შესრულდა. სცადე ხელახლა." }, 500);
+    return adminJson({ success: false, message: "მოქმედება ვერ შესრულდა. სცადეთ ხელახლა." }, 500);
 }

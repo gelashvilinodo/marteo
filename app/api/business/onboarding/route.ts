@@ -32,7 +32,7 @@ async function post(request: Request) {
       logoUrl?: unknown;
     };
 
-    if (!isBusinessMode(body.mode)) return NextResponse.json({error:"აირჩიე ბიზნესის მიმართულება."},{status:422});
+    if (!isBusinessMode(body.mode)) return NextResponse.json({error:"აირჩიეთ ბიზნესის მიმართულება."},{status:422});
     const mode=body.mode;
 
     const name =

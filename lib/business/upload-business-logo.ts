@@ -92,7 +92,7 @@ export async function readBusinessLogoForm(
     const reader = request.body?.getReader();
 
     if (!reader) {
-        throw new BusinessSettingsError("აირჩიე ლოგო.", 400);
+        throw new BusinessSettingsError("აირჩიეთ ლოგო.", 400);
     }
 
     const chunks: Uint8Array[] = [];
@@ -146,7 +146,7 @@ export async function uploadBusinessLogo(
     value: FormDataEntryValue | null,
 ): Promise<string> {
     if (!(value instanceof File) || value.size === 0) {
-        throw new BusinessSettingsError("აირჩიე ლოგო.", 400);
+        throw new BusinessSettingsError("აირჩიეთ ლოგო.", 400);
     }
 
     if (value.size > MAX_FILE_SIZE) {
@@ -161,7 +161,7 @@ export async function uploadBusinessLogo(
 
     if (!image) {
         throw new BusinessSettingsError(
-            "აირჩიე PNG, JPG ან WEBP ფორმატის ფოტო.",
+            "აირჩიეთ PNG, JPG ან WEBP ფორმატის ფოტო.",
             400,
         );
     }
@@ -193,7 +193,7 @@ export async function uploadBusinessLogo(
         console.error("Business logo upload failed");
 
         throw new BusinessSettingsError(
-            "ლოგო ვერ აიტვირთა. სცადე ხელახლა.",
+            "ლოგო ვერ აიტვირთა. სცადეთ ხელახლა.",
             502,
         );
     }

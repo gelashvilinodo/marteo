@@ -32,7 +32,7 @@ export function readCostScope(value: Record<string, unknown>): CostScope {
         }
     }
     if (scope.inventoryItemId && scope.orderId)
-        throw new CostInputError("აირჩიე პროდუქტი ან შეკვეთა.");
+        throw new CostInputError("აირჩიეთ პროდუქტი ან შეკვეთა.");
     return scope;
 }
 export function readCostInput(value: unknown) {
@@ -41,9 +41,9 @@ export function readCostInput(value: unknown) {
     const body = value as Record<string, unknown>;
     const scope = readCostScope(body);
     if (body.confirmed !== true || typeof body.token !== "string" || !/^[a-f0-9]{64}$/.test(body.token))
-        throw new CostInputError("გადაამოწმე და დაადასტურე შესანახი მონაცემები.");
+        throw new CostInputError("გადაამოწმეთ და დაადასტურეთ შესანახი მონაცემები.");
     if (!Array.isArray(body.entries) || !body.entries.length || body.entries.length > 300)
-        throw new CostInputError("შეავსე სულ მცირე ერთი თვითღირებულება.");
+        throw new CostInputError("შეავსეთ სულ მცირე ერთი თვითღირებულება.");
     const seen = new Set<string>();
     const entries = body.entries.map((raw: unknown) => {
         if (!raw || typeof raw !== "object" || Array.isArray(raw))
@@ -54,7 +54,7 @@ export function readCostInput(value: unknown) {
         seen.add(row.key);
         const unitCost = typeof row.unitCost === "string" ? row.unitCost.trim().replace(",", ".") : "";
         if (!/^\d{1,10}(\.\d{1,2})?$/.test(unitCost))
-            throw new CostInputError("თვითღირებულება მიუთითე არაუარყოფითი თანხით, მაქსიმუმ ორი ათწილადით.");
+            throw new CostInputError("თვითღირებულება მიუთითეთ არაუარყოფითი თანხით, მაქსიმუმ ორი ათწილადით.");
         return {
             key: row.key,
             unitCost

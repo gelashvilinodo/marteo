@@ -128,7 +128,7 @@ export default function PaymentsPanel({ businessId, current, initial }: { busine
         <ConfirmDialog open={confirming} title="გადახდის დამატება" confirmLabel="დამატება" busy={busy} error={confirming ? error : ""} onConfirm={save} onClose={() => { if (!busy) setConfirming(false); }}>
             <span className="block"><b className="font-medium text-text-primary">{validAmount ? money(amount.replace(",", ".")) : ""}</b> · {PAYMENT_METHOD_LABELS[method]} · {paidAt.split("-").reverse().join(".")}</span>
             <span className="block">პაკეტი გახდება: <b className="font-medium text-text-primary">{plan} · აქტიური · {toTbilisiDay(period.end).split("-").reverse().join(".")}-ის ჩათვლით</b></span>
-            <span className="mt-1 block text-xs">მფლობელები მიიღებენ შეტყობინებას „გადახდა დადასტურდა“.</span>
+            <span className="mt-1 block text-xs">მფლობელები მიიღებენ შეტყობინებას „გადახდა მიღებულია“.</span>
         </ConfirmDialog>
         <ConfirmDialog open={Boolean(voiding)} title="გადახდის გაუქმება" confirmLabel="გაუქმება" danger busy={busy} error={voiding ? error : ""}
             onConfirm={async () => { if (voiding && await send(`/api/admin/businesses/${businessId}/payments/${voiding.id}/void`, { reason })) setVoiding(null); }}

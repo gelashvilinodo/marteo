@@ -340,7 +340,7 @@ export default function CalendarView({
             );
         } catch {
             setError(
-                "მოქმედების შედეგი ვერ დადასტურდა. სცადე ხელახლა იგივე მოთხოვნით.",
+                "მოქმედების შედეგი ვერ დადასტურდა. სცადეთ ხელახლა იგივე მოთხოვნით.",
             );
         } finally {
             running.current = false;
@@ -398,7 +398,7 @@ export default function CalendarView({
                         : "კონტენტი ვერ გადაიტანა.";
             }
         } catch {
-            failure = "კონტენტი ვერ გადაიტანა. შეამოწმე კავშირი და სცადე ხელახლა.";
+            failure = "კონტენტი ვერ გადაიტანა. შეამოწმეთ კავშირი და სცადეთ ხელახლა.";
         } finally {
             running.current = false;
             setSaving(false);

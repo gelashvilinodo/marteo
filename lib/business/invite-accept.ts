@@ -64,9 +64,9 @@ export function readNewAccount(body: Record<string, unknown>): NewAccount {
     const firstName = text("firstName"), lastName = text("lastName");
     const phone = normalizePhone(text("phone"));
     const password = typeof body.password === "string" ? body.password : "";
-    if (!firstName || !lastName) throw new TeamError("ჩაწერე სახელი და გვარი.");
+    if (!firstName || !lastName) throw new TeamError("ჩაწერეთ სახელი და გვარი.");
     if (firstName.length > 100 || lastName.length > 100) throw new TeamError("სახელი ან გვარი ძალიან გრძელია.");
-    if (!isAllowedSmsPhone(phone)) throw new TeamError("ჩაწერე მობილურის ნომერი, მაგალითად 599123456.");
+    if (!isAllowedSmsPhone(phone)) throw new TeamError("ჩაწერეთ მობილურის ნომერი, მაგალითად 599123456.");
     if (password.length < 8) throw new TeamError("პაროლი მინიმუმ 8 სიმბოლო უნდა იყოს.");
     if (password.length > 200) throw new TeamError("პაროლი ძალიან გრძელია.");
     return { firstName, lastName, phone, password };
@@ -96,7 +96,7 @@ export async function acceptInvite(db: Db, token: string, input: AcceptInput) {
         });
         if (!invite || invite.status !== "PENDING") throw new TeamError("მოწვევა ვერ მოიძებნა ან უკვე გამოყენებულია.", 404);
         const now = new Date();
-        if (invite.expiresAt <= now) throw new TeamError("მოწვევის ბმულს ვადა გაუვიდა. სთხოვე მომწვევს ხელახლა გაგზავნა.", 410);
+        if (invite.expiresAt <= now) throw new TeamError("მოწვევის ბმულს ვადა გაუვიდა. სთხოვეთ მომწვევს ხელახლა გაგზავნა.", 410);
 
         const existing = await tx.user.findFirst({
             where: { email: { equals: invite.email, mode: "insensitive" } },
@@ -105,7 +105,7 @@ export async function acceptInvite(db: Db, token: string, input: AcceptInput) {
 
         let userId: string;
         if (input.kind === "new") {
-            if (existing) throw new TeamError("ამ ელფოსტით ანგარიში უკვე არსებობს. შედი შენი პაროლით.", 409);
+            if (existing) throw new TeamError("ამ ელფოსტით ანგარიში უკვე არსებობს. შედით თქვენი პაროლით.", 409);
             const phoneTaken = await tx.user.findUnique({ where: { phone: input.account.phone }, select: { id: true } });
             if (phoneTaken) throw new TeamError("ეს ტელეფონის ნომერი უკვე გამოყენებულია.", 409);
             const created = await tx.user.create({
@@ -129,7 +129,7 @@ export async function acceptInvite(db: Db, token: string, input: AcceptInput) {
             userId = existing.id;
         } else {
             if (!existing || existing.id !== input.userId) {
-                throw new TeamError("მოწვევა სხვა ელფოსტაზეა გაგზავნილი. შედი იმ ანგარიშით.", 403);
+                throw new TeamError("მოწვევა სხვა ელფოსტაზეა გაგზავნილი. შედით იმ ანგარიშით.", 403);
             }
             userId = existing.id;
         }
@@ -160,7 +160,7 @@ export async function acceptInvite(db: Db, token: string, input: AcceptInput) {
             : await tx.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true, email: true } })
                 .then(user => [user?.firstName, user?.lastName].filter(Boolean).join(" ") || invite.email);
         const roleText = invite.role === "OWNER" ? "თანამფლობელად" : "თანამშრომლად";
-        const message = `${memberName} დაემატა ბიზნესში „${invite.business.name}“ ${roleText}.`;
+        const message = `${memberName} ბიზნესს „${invite.business.name}“ ${roleText} შეუერთდა. კარგ თანამშრომლობას გისურვებთ!`;
 
         // მომწვევს ვატყობინებთ მხოლოდ მაშინ, თუ ის ჯერ კიდევ ამ ბიზნესშია.
         const inviter = invite.invitedById && invite.invitedById !== userId
@@ -173,7 +173,7 @@ export async function acceptInvite(db: Db, token: string, input: AcceptInput) {
             await tx.notification.create({
                 data: {
                     userId: inviter.userId, businessId: invite.businessId, kind: "TEAM",
-                    title: "ახალი წევრი გუნდში", body: message,
+                    title: "გუნდს ახალი წევრი შეემატა", body: message,
                     actionLabel: "გუნდის ნახვა", actionUrl: "/dashboard/business-settings",
                     dedupeKey: `team-joined:${invite.id}`,
                 },

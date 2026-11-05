@@ -9,7 +9,7 @@ export type OrderState =
     | "RETURNED";
 export function assertVersion(actual: number, expected: unknown) {
     if (typeof expected !== "number" || !Number.isInteger(expected) || actual !== expected) {
-        throw new OrderValidationError("შეკვეთა უკვე შეიცვალა. განაახლე მონაცემები და სცადე ხელახლა.", 409);
+        throw new OrderValidationError("შეკვეთა უკვე შეიცვალა. განაახლეთ მონაცემები და სცადეთ ხელახლა.", 409);
     }
 }
 export function assertTransition(from: OrderState, to: OrderState, confirmed: unknown) {
@@ -21,7 +21,7 @@ export function assertTransition(from: OrderState, to: OrderState, confirmed: un
     };
     if (!allowed[from].includes(to)) throw new OrderValidationError("სტატუსის ეს ცვლილება დაუშვებელია.", 409);
     if (to === "COMPLETED" && confirmed !== true) {
-        throw new OrderValidationError("დაადასტურე დასრულება: ამის შემდეგ შეკვეთის რედაქტირება აღარ იქნება შესაძლებელი.", 422);
+        throw new OrderValidationError("დაადასტურეთ დასრულება: ამის შემდეგ შეკვეთის რედაქტირება აღარ იქნება შესაძლებელი.", 422);
     }
 }
 export function paymentState(total: Prisma.Decimal, paid: Prisma.Decimal, courier: Prisma.Decimal) {

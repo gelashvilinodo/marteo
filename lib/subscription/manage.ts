@@ -86,8 +86,8 @@ export async function cancelPlan(prisma: PrismaClient, userId: string, businessI
             businessId, kind: "PLAN_CHANGED", key: `canceled:${businessId}:${Date.now()}`,
             title: "გეგმა გაუქმდა",
             body: after.expiresAt
-                ? `გეგმა ${formatDay(after.expiresAt.toISOString())}-მდე ჩვეულებრივ იმუშავებს, მერე ბიზნესი მხოლოდ ნახვის რეჟიმში გადავა. გადაფიქრება ვადამდე შეგიძლია.`
-                : "გეგმა გაუქმდა. მონაცემები შენახულია.",
+                ? `თქვენი გეგმა ${formatDay(after.expiresAt.toISOString())}-მდე ჩვეულებრივ იმუშავებს, შემდეგ კი ბიზნესი მხოლოდ ნახვის რეჟიმში გადავა. თუ გადაიფიქრებთ, ვადის ამოწურვამდე მისი აღდგენა ნებისმიერ დროს შეგიძლიათ.`
+                : "თქვენი გეგმა გაუქმდა. ყველა მონაცემი უსაფრთხოდ არის შენახული.",
         });
         return after.expiresAt
             ? "გეგმა გაუქმდა. ის გადახდილი პერიოდის ბოლომდე მოქმედებს."
@@ -106,7 +106,7 @@ export async function resumePlan(prisma: PrismaClient, userId: string, businessI
         await audit(tx, businessId, userId, before, after);
         await notifyOwners(tx, {
             businessId, kind: "PLAN_CHANGED", key: `resumed:${businessId}:${Date.now()}`,
-            title: "გეგმა გაგრძელდა", body: "გაუქმება გადაიფიქრე: გეგმა ჩვეულებრივ გაგრძელდება.",
+            title: "გეგმა აღდგა", body: "გვიხარია, რომ ჩვენთან რჩებით! თქვენი გეგმა ჩვეულებრივ გაგრძელდება.",
         });
         return "გეგმა გაგრძელდა. შემდეგი გადახდა ჩვეულებრივ შესრულდება.";
     });
@@ -152,10 +152,10 @@ async function applyTeamChoice(tx: Tx, businessId: string, userId: string, targe
         const you = group.find(member => member.isYou);
         // გეგმაზე, სადაც თანამფლობელი არ შედის, გადასვლა მხოლოდ დამფუძნებელს შეუძლია (თავს ვერ გაყინავს).
         if (you && limit === 0) throw new PlanActionError("ამ გეგმაზე გადასვლა მხოლოდ ბიზნესის დამფუძნებელს შეუძლია.", 403);
-        if (limit > 0 && !provided) throw new PlanActionError(`აირჩიე, რომელი ${label} დარჩეს.`);
+        if (limit > 0 && !provided) throw new PlanActionError(`აირჩიეთ, რომელი ${label} დარჩეს.`);
         const kept = limit === 0 ? [] : group.filter(member => keepIds.has(member.id));
         if (kept.length > limit) throw new PlanActionError(`ახალ გეგმაში მაქსიმუმ ${limit} ${label} რჩება.`);
-        if (you && !keepIds.has(you.id)) throw new PlanActionError("საკუთარი თავის გაყინვა არ შეიძლება: მონიშნე შენც.");
+        if (you && !keepIds.has(you.id)) throw new PlanActionError("საკუთარი თავის გაყინვა არ შეიძლება: მონიშნეთ თქვენც.");
         const frozen = group.filter(member => !kept.includes(member)).map(member => member.id);
         await tx.businessMembership.updateMany({ where: { id: { in: frozen }, businessId }, data: { status: "FROZEN" } });
     }
@@ -178,7 +178,7 @@ export async function downgradePlan(prisma: PrismaClient, userId: string, busine
         const now = new Date();
         const current = await readCurrentPeriod(tx, userId, businessId, before, now);
         if (!current.tier || current.tier === "TRIAL") throw new PlanActionError("ახალი გეგმის ჩასართავად გადახდაა საჭირო.", 409);
-        if (current.tier === target) throw new PlanActionError("ეს უკვე შენი გეგმაა.", 409);
+        if (current.tier === target) throw new PlanActionError("ეს უკვე თქვენი გეგმაა.", 409);
         // უვადო გეგმა (ადმინის ჩართული) ნაშთს არ ითვლის: უბრალოდ გეგმა იცვლება.
         const quote = before.expiresAt
             ? quotePlanChange(current, target, (await priceForBusiness(tx, userId, businessId))[target].price, now)
@@ -187,7 +187,7 @@ export async function downgradePlan(prisma: PrismaClient, userId: string, busine
         // „ორივე“ მიმართულება Business-ზე არ შედის: მფლობელი ირჩევს იმპორტს ან წარმოებას.
         const business = await tx.business.findUnique({ where: { id: businessId }, select: { mode: true } });
         if (business?.mode === "HYBRID" && target === "BUSINESS") {
-            if (options.mode !== "IMPORT" && options.mode !== "MANUFACTURING") throw new PlanActionError("აირჩიე მიმართულება: იმპორტი ან წარმოება.");
+            if (options.mode !== "IMPORT" && options.mode !== "MANUFACTURING") throw new PlanActionError("აირჩიეთ მიმართულება: იმპორტი ან წარმოება.");
             await tx.business.update({ where: { id: businessId }, data: { mode: options.mode } });
         }
         await applyTeamChoice(tx, businessId, userId, target, options.keep);
@@ -204,13 +204,13 @@ export async function downgradePlan(prisma: PrismaClient, userId: string, busine
         await enforceTeamLimits(tx, businessId);
         await notifyOwners(tx, {
             businessId, kind: "PLAN_CHANGED", key: `downgraded:${businessId}:${Date.now()}`,
-            title: `გადახვედი ${PLAN_ADJECTIVES[target]} გეგმაზე`,
+            title: `გადახვედით ${PLAN_ADJECTIVES[target]} გეგმაზე`,
             body: quote
-                ? `ახალი გეგმა ჩაირთო. დაუხარჯავი ნაშთი ${quote.days} დღეს ფარავს: გეგმა მოქმედებს ${formatDay(quote.expiresAt)}-მდე.`
-                : "ახალი გეგმა ჩაირთო. ფუნქციები, რომლებიც მასში არ შედის, დაიკეტა, მონაცემები კი შენახულია.",
+                ? `ახალი გეგმა უკვე მოქმედებს. დაუხარჯავი თანხა ${quote.days} დღეს ფარავს, ასე რომ გეგმა ${formatDay(quote.expiresAt)}-მდე აქტიურია.`
+                : "ახალი გეგმა უკვე მოქმედებს. ფუნქციები, რომლებიც მასში არ შედის, დროებით დაიკეტა, მონაცემები კი სრულად შენახულია.",
         });
         return quote
-            ? `გადახვედი ${PLAN_ADJECTIVES[target]} გეგმაზე. ნაშთი ${quote.days} დღეს ფარავს.`
-            : `გადახვედი ${PLAN_ADJECTIVES[target]} გეგმაზე.`;
+            ? `გადახვედით ${PLAN_ADJECTIVES[target]} გეგმაზე. ნაშთი ${quote.days} დღეს ფარავს.`
+            : `გადახვედით ${PLAN_ADJECTIVES[target]} გეგმაზე.`;
     });
 }

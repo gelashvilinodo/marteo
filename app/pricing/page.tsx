@@ -20,9 +20,9 @@ const everywhere = [
     { icon: "solar:link-round-bold-duotone", title: "ბმული მომხმარებლისთვის", text: "მომხმარებელი შეკვეთის სტატუსს თავად ხედავს." },
     { icon: "solar:chart-2-bold-duotone", title: "ანალიტიკა", text: "შემოსავალი, ხარჯი, მოგება და სტატისტიკა." },
     { icon: "solar:calendar-bold-duotone", title: "კონტენტ-კალენდარი", text: "პოსტების დაგეგმვა ყველა არხისთვის." },
-    { icon: "solar:smartphone-bold-duotone", title: "ტელეფონზეც", text: "დააყენე როგორც აპი და მართე ნებისმიერი ადგილიდან." },
+    { icon: "solar:smartphone-bold-duotone", title: "ტელეფონზეც", text: "დააყენეთ როგორც აპი და მართეთ ნებისმიერი ადგილიდან." },
     { icon: "solar:chat-round-dots-bold-duotone", title: "დახმარების ჩატი", text: "ქართულად, პირდაპირ აპიდან." },
-    { icon: "solar:shield-check-bold-duotone", title: "უსაფრთხოება", text: "შენი მონაცემები მხოლოდ შენ გეკუთვნის." },
+    { icon: "solar:shield-check-bold-duotone", title: "უსაფრთხოება", text: "თქვენი მონაცემები მხოლოდ თქვენ გეკუთვნით." },
 ];
 
 export default function PricingPage() {
@@ -38,10 +38,10 @@ export default function PricingPage() {
                 <div className="mx-auto max-w-7xl px-4 py-14 text-center sm:px-6 sm:py-20 lg:px-8">
                     <p className="text-xs font-semibold tracking-wider text-accent uppercase sm:text-sm">ფასები</p>
                     <h1 id="pricing-title" className="mt-3 text-[clamp(1.6rem,6vw,3rem)] leading-tight font-bold text-balance">
-                        გეგმა, რომელიც შენს ბიზნესთან ერთად იზრდება
+                        გეგმა, რომელიც თქვენს ბიზნესთან ერთად იზრდება
                     </h1>
                     <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/70 sm:text-base">
-                        დაიწყე უფასოდ, აირჩიე ის, რაც ახლა გჭირდება, და გადადი უფრო დიდზე, როცა ბიზნესი გაიზრდება. გადახდილი თანხა არ იკარგება.
+                        დაიწყეთ უფასოდ, აირჩიეთ ის, რაც ახლა გჭირდებათ, და გადადით უფრო დიდზე, როცა ბიზნესი გაიზრდება. გადახდილი თანხა არ იკარგება.
                     </p>
                     <p className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white">
                         <Icon icon="solar:gift-bold-duotone" className="h-5 w-5 text-[#7ee2a8]" aria-hidden="true" />
@@ -54,7 +54,7 @@ export default function PricingPage() {
                 <section aria-label="გეგმები">
                     <PlanCards action={card => <Link href="/register"
                         className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors ${card.tier === "PRO" ? "bg-accent text-white hover:bg-accent-hover" : "border border-border bg-background text-text-primary hover:border-accent/40 hover:text-accent"}`}>
-                        {card.tier === "PRO" ? "სცადე PRO 14 დღე" : "დაიწყე უფასოდ"}
+                        {card.tier === "PRO" ? "სცადეთ PRO 14 დღე" : "დაიწყეთ უფასოდ"}
                     </Link>} />
                     <p className="mt-6 text-center text-sm text-text-secondary">{PLAN_FINE_PRINT}</p>
                 </section>
@@ -81,7 +81,7 @@ export default function PricingPage() {
                 </section>
 
                 <section className="mt-20 rounded-3xl bg-[#081F46] px-6 py-12 text-center text-white sm:px-10">
-                    <h2 className="text-2xl font-bold sm:text-3xl">დაიწყე დღესვე, 14 დღე უფასოდ</h2>
+                    <h2 className="text-2xl font-bold sm:text-3xl">დაიწყეთ დღესვე, 14 დღე უფასოდ</h2>
                     <p className="mx-auto mt-3 max-w-lg text-sm text-white/70 sm:text-base">ბარათი არ არის საჭირო. რეგისტრაციას რამდენიმე წუთი სჭირდება.</p>
                     <Link href="/register" className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-6 text-sm font-semibold text-white transition-colors hover:bg-accent-hover">
                         რეგისტრაცია<Icon icon="solar:arrow-right-linear" className="h-4 w-4" aria-hidden="true" />

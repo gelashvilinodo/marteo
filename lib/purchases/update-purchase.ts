@@ -62,7 +62,7 @@ export async function updatePurchase(
 
     if (!user) {
         throw new PurchaseEditError(
-            "რედაქტირებისთვის შედი ანგარიშში.",
+            "რედაქტირებისთვის შედით ანგარიშში.",
             401,
         );
     }
@@ -101,7 +101,7 @@ export async function updatePurchase(
             )
         ) {
             throw new PurchaseEditError(
-                "აირჩიე ფოტო, რომლის ზომა მაქსიმუმ 5 MB იქნება.",
+                "აირჩიეთ ფოტო, რომლის ზომა მაქსიმუმ 5 MB იქნება.",
             );
         }
     }
@@ -179,9 +179,14 @@ export async function updatePurchase(
                     ),
                 });
 
-                if (input.receiptStatus !== purchase.receiptStatus) {
+                // გზაში მყოფი პარტია რედაქტირებისასაც შეიძლება მივიღოთ,
+                // მიღებულს კი გზაში ვეღარ დავაბრუნებთ.
+                if (
+                    purchase.receiptStatus === "RECEIVED" &&
+                    input.receiptStatus !== "RECEIVED"
+                ) {
                     throw new PurchaseEditError(
-                        "რედაქტირებისას პარტიის მდგომარეობა ვერ შეიცვლება. გზაში მყოფი პარტიის მისაღებად გამოიყენე „პარტიის მიღება“.",
+                        "მიღებულ პარტიას გზაში ვეღარ დააბრუნებთ.",
                         409,
                     );
                 }
@@ -191,8 +196,11 @@ export async function updatePurchase(
                     businessId,
                 );
 
-                const isReceived =
+                const wasReceived =
                     purchase.receiptStatus === "RECEIVED";
+                const isReceived =
+                    input.receiptStatus === "RECEIVED";
+                const receivesNow = isReceived && !wasReceived;
 
                 const usage = await getPurchaseEditUsage(
                     tx,
@@ -235,7 +243,7 @@ export async function updatePurchase(
                     });
                 }
 
-                if (isReceived) {
+                if (wasReceived) {
                     await freezePurchaseStockLots(
                         tx,
                         businessId,
@@ -262,7 +270,7 @@ export async function updatePurchase(
                     }
                 }
 
-                if (isReceived) {
+                if (wasReceived) {
                     // ერთი მარაგის ჩანაწერი პარტიაში შეიძლება
                     // რამდენიმე სტრიქონში გვხვდებოდეს.
                     const previousQuantities = new Map<string, number>();
@@ -601,9 +609,11 @@ export async function updatePurchase(
                                 purchaseItemId: change.purchaseItemId,
                                 condition: change.condition,
                                 quantity: Math.abs(change.quantity),
-                                type: change.quantity > 0
-                                    ? "ADJUSTMENT_IN" as const
-                                    : "ADJUSTMENT_OUT" as const,
+                                type: receivesNow
+                                    ? "PURCHASE_IN" as const
+                                    : change.quantity > 0
+                                        ? "ADJUSTMENT_IN" as const
+                                        : "ADJUSTMENT_OUT" as const,
                             })),
                         });
                     }
@@ -644,6 +654,12 @@ export async function updatePurchase(
                             otherCost: checkedMoney(
                                 input.calculation.otherCost,
                             ),
+                            ...(receivesNow
+                                ? {
+                                    receiptStatus: "RECEIVED" as const,
+                                    receivedAt: new Date(),
+                                }
+                                : {}),
                             updatedAt,
                         },
                         select: {

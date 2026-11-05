@@ -34,7 +34,7 @@ async function send(url: string, method: string, body?: unknown) {
     const data = await response.json().catch(() => null) as { success?: boolean; message?: string; error?: string } | null;
 
     if (!response.ok || !data?.success) {
-        throw new Error(data?.message || data?.error || "შესაძენი სია ვერ განახლდა. სცადე ხელახლა.");
+        throw new Error(data?.message || data?.error || "შესაძენი სია ვერ განახლდა. სცადეთ ხელახლა.");
     }
 
     window.dispatchEvent(new Event(PURCHASE_PLAN_CHANGED));

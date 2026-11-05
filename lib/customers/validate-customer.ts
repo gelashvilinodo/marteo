@@ -39,7 +39,7 @@ export function validateCustomer(raw: unknown) {
 
     if (!address) {
         throw new OrderValidationError(
-            "მიუთითე მომხმარებლის მისამართი.",
+            "მიუთითეთ მომხმარებლის მისამართი.",
             422,
         );
     }

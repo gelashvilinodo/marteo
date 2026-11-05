@@ -30,7 +30,7 @@ export function validateNewPassword(
 ): string {
     if (typeof value !== "string" || value.length === 0) {
         throw new PasswordSettingsError(
-            "შეიყვანე ახალი პაროლი.",
+            "შეიყვანეთ ახალი პაროლი.",
             422,
             "newPassword",
         );
@@ -50,7 +50,7 @@ export function validateNewPassword(
     // Reject longer values instead of silently truncating them.
     if (new TextEncoder().encode(value).byteLength > 72) {
         throw new PasswordSettingsError(
-            "პაროლი ზედმეტად გრძელია. გამოიყენე უფრო მოკლე პაროლი.",
+            "პაროლი ზედმეტად გრძელია. გამოიყენეთ უფრო მოკლე პაროლი.",
             422,
             "newPassword",
         );
@@ -82,7 +82,7 @@ export function validatePasswordChange(value: unknown): {
         input.currentPassword.length === 0
     ) {
         throw new PasswordSettingsError(
-            "შეიყვანე მიმდინარე პაროლი.",
+            "შეიყვანეთ მიმდინარე პაროლი.",
             422,
             "currentPassword",
         );
@@ -95,7 +95,7 @@ export function validatePasswordChange(value: unknown): {
         input.confirmPassword.length === 0
     ) {
         throw new PasswordSettingsError(
-            "გაიმეორე ახალი პაროლი.",
+            "გაიმეორეთ ახალი პაროლი.",
             422,
             "confirmPassword",
         );

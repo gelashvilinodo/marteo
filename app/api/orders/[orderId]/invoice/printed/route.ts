@@ -16,7 +16,7 @@ export async function POST(request: Request, context: { params: Promise<{ orderI
             return json({ success: false, message: "მოთხოვნის წყარო დაუშვებელია." }, 403);
         }
         const user = await getCurrentUser();
-        if (!user) return json({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
+        if (!user) return json({ success: false, message: "გაიარეთ ავტორიზაცია." }, 401);
         let data: unknown;
         try { data = await request.json(); }
         catch { return json({ success: false, message: "მონაცემების ფორმატი არასწორია." }, 400); }
@@ -37,12 +37,12 @@ export async function POST(request: Request, context: { params: Promise<{ orderI
         if (!result.count) {
             const order = await prisma.order.findFirst({ where, select: { id: true } });
             return json({ success: false, message: order
-                ? "ინვოისი შეიცვალა. განაახლე გვერდი და დაბეჭდე ახალი ვერსია."
+                ? "ინვოისი შეიცვალა. განაახლეთ გვერდი და დაბეჭდეთ ახალი ვერსია."
                 : "შეკვეთა ვერ მოიძებნა." }, order ? 409 : 404);
         }
         return costSafeJson({ success: true, printedAt: printedAt.toISOString(), version });
     } catch (cause: unknown) {
         console.error("Invoice print confirmation failed", cause instanceof Error ? cause.name : "UnknownError");
-        return json({ success: false, message: "დაბეჭდვის მონიშვნა ვერ მოხერხდა. სცადე ხელახლა." }, 500);
+        return json({ success: false, message: "დაბეჭდვის მონიშვნა ვერ მოხერხდა. სცადეთ ხელახლა." }, 500);
     } finally { if (prisma) await prisma.$disconnect(); }
 }

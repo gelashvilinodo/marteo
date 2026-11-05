@@ -27,7 +27,7 @@ export default async function AdminNotificationsPage() {
             </div>
         </div>
 
-        <PushCard publicKey={getVapidPublicKey()} description="ამ მოწყობილობაზე მოგივა ყოველი ახალი შეტყობინება დახმარების ჩათში და ყოველი ახალი მომხმარებლის რეგისტრაცია, ცალ-ცალკე, მაშინაც, თუ MARTEO დახურულია." />
+        <PushCard publicKey={getVapidPublicKey()} description="ამ მოწყობილობაზე მოგივათ ყოველი ახალი შეტყობინება დახმარების ჩათში და ყოველი ახალი მომხმარებლის რეგისტრაცია, ცალ-ცალკე, მაშინაც, თუ MARTEO დახურულია." />
 
         <section className="mt-6 rounded-2xl border border-border bg-surface p-5 text-sm text-text-secondary">
             <h2 className="font-semibold text-text-primary">ავტომატური შეტყობინებები</h2>
@@ -60,7 +60,7 @@ export default async function AdminNotificationsPage() {
                             </span>}</td>
                         </tr>;
                     })}
-                    {campaigns.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-text-secondary">ჯერ არცერთი შეტყობინება არ გაგიგზავნია.</td></tr>}
+                    {campaigns.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-text-secondary">ჯერ არცერთი შეტყობინება არ გაგიგზავნიათ.</td></tr>}
                 </tbody>
             </table>
         </div>

@@ -71,7 +71,7 @@ export default function OrderDeleteButton({
         if (!open && element?.open) element.close();
     }, [open]);
     function canLeave() {
-        return !running.current && (!pending || window.confirm("წაშლის შედეგი დაუდასტურებელია. დაბრუნებისას იგივე მოთხოვნის ხელახლა ცდა შეგეძლება. დახურო ფანჯარა?"));
+        return !running.current && (!pending || window.confirm("წაშლის შედეგი დაუდასტურებელია. დაბრუნებისას იგივე მოთხოვნის ხელახლა ცდა შეგეძლებათ. დახუროთ ფანჯარა?"));
     }
     function leave() { fetchController.current?.abort(); setOpen(false); onDismiss?.(); }
     useOrderLeaveGuard({ open, dirty: Boolean(pending), canLeave, leave });
@@ -142,7 +142,7 @@ export default function OrderDeleteButton({
         } catch (cause: unknown) {
             if (cause instanceof OrderActionError && cause.status < 500) {
                 setPending(null); setError(cause.message);
-            } else setError("შედეგი დაუდასტურებელია. იგივე მოთხოვნით სცადე ხელახლა.");
+            } else setError("შედეგი დაუდასტურებელია. იგივე მოთხოვნით სცადეთ ხელახლა.");
         } finally { mutationController.current = null; running.current = false; setSaving(false); }
     }
     function submit() {
@@ -151,9 +151,9 @@ export default function OrderDeleteButton({
             setError(deletionBalanceMessage);
             return;
         }
-        if (awaiting && mode !== "WAIT_FOR_RETURN") { setError("ჯერ დაადასტურე დასაბრუნებელი ნივთების მიღება."); return; }
-        if (mode === "WAIT_FOR_RETURN" && !awaiting) { setError("ჯერ დაბრუნების ღილაკით აირჩიე ნივთები და შეინახე დაბრუნების მოთხოვნა."); return; }
-        if (!simple && !mode) { setError("აირჩიე, რა ხდება პროდუქტების დაბრუნებასთან დაკავშირებით."); return; }
+        if (awaiting && mode !== "WAIT_FOR_RETURN") { setError("ჯერ დაადასტურეთ დასაბრუნებელი ნივთების მიღება."); return; }
+        if (mode === "WAIT_FOR_RETURN" && !awaiting) { setError("ჯერ დაბრუნების ღილაკით აირჩიეთ ნივთები და შეინახეთ დაბრუნების მოთხოვნა."); return; }
+        if (!simple && !mode) { setError("აირჩიეთ, რა ხდება პროდუქტების დაბრუნებასთან დაკავშირებით."); return; }
         const receivedEnough = order.status === "PROCESSING"
             ? carriedItemsReceived
             : fullyReturned;
@@ -164,11 +164,11 @@ export default function OrderDeleteButton({
             order.status !== "COMPLETED"
         ) {
             setError(
-                "ჯერ დაბრუნების ფანჯარაში დაადასტურე მომხმარებელთან არსებული ნივთების ფიზიკური მიღება.",
+                "ჯერ დაბრუნების ფანჯარაში დაადასტურეთ მომხმარებელთან არსებული ნივთების ფიზიკური მიღება.",
             );
             return;
         }
-        if (mode === "NO_RETURN" && !window.confirm("დარჩენილი ნივთები აღარ დაბრუნდება და მარაგს არ დაემატება. დაადასტურო წაშლა?")) return;
+        if (mode === "NO_RETURN" && !window.confirm("დარჩენილი ნივთები აღარ დაბრუნდება და მარაგს არ დაემატება. დაადასტუროთ წაშლა?")) return;
         void send({
             requestId: crypto.randomUUID(), expectedVersion: order.expectedVersion, confirmDeletion: true,
             mode: mode || (fullyReturned ? "RECEIVED" : undefined), confirmNoReturn: mode === "NO_RETURN",
@@ -179,9 +179,9 @@ export default function OrderDeleteButton({
         !order
             ? ""
             : order.deletionRefundDue !== "0.00"
-                ? `მომხმარებლისთვის დასაბრუნებელია ${order.deletionRefundDue} ₾. წაშლამდე დაადასტურე თანხის რეალური დაბრუნება. გაუგზავნელ შეკვეთაზე ჯერ გააფორმე გაუქმება, შემდეგ თანხის დაბრუნება.`
+                ? `მომხმარებლისთვის დასაბრუნებელია ${order.deletionRefundDue} ₾. წაშლამდე დაადასტურეთ თანხის რეალური დაბრუნება. გაუგზავნელ შეკვეთაზე ჯერ გააფორმეთ გაუქმება, შემდეგ თანხის დაბრუნება.`
                 : order.deletionRemainingAmount !== "0.00"
-                    ? `მომხმარებლისგან მისაღებია ${order.deletionRemainingAmount} ₾. წაშლამდე აღრიცხე გადახდა ან გააფორმე გაუქმება/დაბრუნება.`
+                    ? `მომხმარებლისგან მისაღებია ${order.deletionRemainingAmount} ₾. წაშლამდე აღრიცხეთ გადახდა ან გააფორმეთ გაუქმება/დაბრუნება.`
                     : "";
 
     const financialDeletionBlocked =
@@ -212,7 +212,7 @@ export default function OrderDeleteButton({
 
                         <p className="mt-2 text-xs text-text-secondary">
                             დაბრუნების მოლოდინის მოთხოვნის შენახვა
-                            შეგიძლია. თავად წაშლა ფინანსური ნაშთის
+                            შეგიძლიათ. თავად წაშლა ფინანსური ნაშთის
                             მოწესრიგების შემდეგ გახდება შესაძლებელი.
                         </p>
                     </div>
@@ -221,7 +221,7 @@ export default function OrderDeleteButton({
                     <p className="rounded-xl border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
                         ამ შეკვეთაზე ნივთების დაბრუნებას ველოდებით.
                         ეს შეიძლება წინა გადაცვლის ნივთებსაც ეხებოდეს.
-                        ახლა შეგიძლია წაშლის მოთხოვნა შეინახო.
+                        ახლა შეგიძლიათ წაშლის მოთხოვნა შეინახოთ.
                         ბოლო დაბრუნების მიღების შემდეგ წაშლის დადასტურებას
                         შემოგთავაზებთ.
                     </p>
@@ -231,11 +231,11 @@ export default function OrderDeleteButton({
                         ? "დაბრუნება უკვე აღრიცხულია. წაშლისას მარაგი მეორედ აღარ გაიზრდება."
                         : order.status === "PROCESSING"
                             ? hasOutstandingCarriedItems
-                                ? "ჯერ გასაგზავნი პროდუქტები მარაგს დაუბრუნდება. მომხმარებელთან დარჩენილ პროდუქტებზე მიუთითე, დაბრუნდება თუ არა ისინი."
+                                ? "ჯერ გასაგზავნი პროდუქტები მარაგს დაუბრუნდება. მომხმარებელთან დარჩენილ პროდუქტებზე მიუთითეთ, დაბრუნდება თუ არა ისინი."
                                 : "წაშლისას ჯერ გასაგზავნი, მარაგიდან არჩეული პროდუქტები მარაგს დაუბრუნდება."
                             : order.status === "COMPLETED"
                                 ? "შეკვეთა დასრულებულია. წაშლისას გაყიდული პროდუქტები მარაგს არ დაუბრუნდება."
-                                : "წაშლამდე მიუთითე, დაბრუნდა თუ არა პროდუქტები და იგეგმება თუ არა მათი დაბრუნება."}
+                                : "წაშლამდე მიუთითეთ, დაბრუნდა თუ არა პროდუქტები და იგეგმება თუ არა მათი დაბრუნება."}
                     {" "}
                     შეკვეთა სიიდან დაიმალება და მისი საჯარო ბმული გაუქმდება.
                 </p>
@@ -244,7 +244,7 @@ export default function OrderDeleteButton({
                     ["WAIT_FOR_RETURN", "ნივთები უნდა დაბრუნდეს - დაველოდოთ"],
                     ["NO_RETURN", "ნივთები აღარ დაბრუნდება"],
                 ] as const).map(([value, label]) => <label key={value} className={`flex items-center gap-3 rounded-xl border p-3 text-sm ${mode === value ? "border-accent bg-accent/5" : "border-border"}`}><input type="radio" disabled={awaiting && value !== "WAIT_FOR_RETURN"} name={`delete-mode-${orderId}`} checked={mode === value} onChange={() => { setMode(value); setError(""); }} className="h-4 w-4 accent-accent" />{label}</label>)}</fieldset>}
-                {(awaiting || mode === "RECEIVED" || mode === "WAIT_FOR_RETURN") && <div className="flex items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning/5 p-3"><p className="text-xs text-text-secondary">{awaiting ? "დაბრუნების მოთხოვნა არსებობს. აქედან დაადასტურე ფიზიკური მიღება." : "აქედან აირჩიე დასაბრუნებელი ნივთები და შეინახე მოთხოვნა. მიღება მხოლოდ ფიზიკური დაბრუნების შემდეგ დაადასტურე."}</p><OrderReturnButton
+                {(awaiting || mode === "RECEIVED" || mode === "WAIT_FOR_RETURN") && <div className="flex items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning/5 p-3"><p className="text-xs text-text-secondary">{awaiting ? "დაბრუნების მოთხოვნა არსებობს. აქედან დაადასტურეთ ფიზიკური მიღება." : "აქედან აირჩიეთ დასაბრუნებელი ნივთები და შეინახეთ მოთხოვნა. მიღება მხოლოდ ფიზიკური დაბრუნების შემდეგ დაადასტურეთ."}</p><OrderReturnButton
                     orderId={orderId}
                     onUpdated={() => {
                         void load();
@@ -262,7 +262,7 @@ export default function OrderDeleteButton({
                         </p>
 
                         <p className="mt-1 text-xs text-text-secondary">
-                            თუ წაშლა გადაიფიქრე, გააუქმე მხოლოდ წაშლის
+                            თუ წაშლა გადაიფიქრეთ, გააუქმეთ მხოლოდ წაშლის
                             მოთხოვნა. შეკვეთა დარჩება, ხოლო ნივთების
                             დაბრუნების პროცესი გაგრძელდება.
                         </p>
@@ -272,7 +272,7 @@ export default function OrderDeleteButton({
                             disabled={blocked}
                             onClick={() => {
                                 if (!window.confirm(
-                                    "გააუქმო წაშლის მოთხოვნა? შეკვეთა დარჩება, დაბრუნების მოთხოვნები არ გაუქმდება.",
+                                    "გააუქმოთ წაშლის მოთხოვნა? შეკვეთა დარჩება, დაბრუნების მოთხოვნები არ გაუქმდება.",
                                 )) {
                                     return;
                                 }
@@ -297,7 +297,7 @@ export default function OrderDeleteButton({
             {notice && <p role="status" className="mt-4 rounded-xl bg-success/10 p-3 text-sm text-success">{notice}</p>}
             {error && <p role="alert" className="mt-4 text-sm text-danger">{error}</p>}
             {!loading && !order && !pending && <button type="button" onClick={() => { setLoading(true); setError(""); void load(); }} className="mt-3 text-sm text-accent underline">ხელახლა ჩატვირთვა</button>}
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-2"><button type="button" disabled={saving} onClick={() => { if (canLeave()) leave(); }} className="h-11 rounded-xl border border-border px-4 text-sm disabled:opacity-40">დახურვა</button>{saving && <button type="button" onClick={() => mutationController.current?.abort()} className="text-xs text-text-secondary underline">შეაჩერე ლოდინი</button>}<button type="button" disabled={
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-2"><button type="button" disabled={saving} onClick={() => { if (canLeave()) leave(); }} className="h-11 rounded-xl border border-border px-4 text-sm disabled:opacity-40">დახურვა</button>{saving && <button type="button" onClick={() => mutationController.current?.abort()} className="text-xs text-text-secondary underline">შეაჩერეთ ლოდინი</button>}<button type="button" disabled={
                 loading ||
                 saving ||
                 (!order && !pending) ||

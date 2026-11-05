@@ -194,7 +194,7 @@ export default function NewOrderDrawer() {
                     setCustomerInfo("მომხმარებელი მოიძებნა.");
                 } else setCustomerInfo("ახალი მომხმარებელი - შეკვეთასთან ერთად შეინახება.");
             } catch (cause: unknown) {
-                if (active && !(cause instanceof Error && cause.name === "AbortError")) setCustomerInfo(cause instanceof Error ? cause.message : "მომხმარებლის მოძებნა ვერ მოხერხდა. ინფორმაციის ხელით შეყვანა შეგიძლია.");
+                if (active && !(cause instanceof Error && cause.name === "AbortError")) setCustomerInfo(cause instanceof Error ? cause.message : "მომხმარებლის მოძებნა ვერ მოხერხდა. ინფორმაციის ხელით შეყვანა შეგიძლიათ.");
             } finally { if (active) setCustomerBusy(false); }
         }, 350);
         return () => { active = false; clearTimeout(timer); controller.abort(); };
@@ -228,13 +228,13 @@ export default function NewOrderDrawer() {
     function canLeave() {
         if (photosUploading) {
             window.alert(
-                "ფოტო ჯერ იტვირთება. დაელოდე დასრულებას ან პროდუქტის ფოტოსთან დააჭირე „ატვირთვის შეწყვეტა“-ს.",
+                "ფოტო ჯერ იტვირთება. დაელოდეთ დასრულებას ან პროდუქტის ფოტოსთან დააჭირეთ „ატვირთვის შეწყვეტა“-ს.",
             );
             return false;
         }
-        if (saving) { window.alert("მიმდინარეობს შენახვა. შეგიძლია შეწყვიტო ლოდინი ქვედა ღილაკით და შემდეგ ხელახლა სცადო."); return false; }
-        if (pending) return window.confirm("შენახვის შედეგი ჯერ დაუდასტურებელია. ფანჯარაში დაბრუნებისას იგივე მოთხოვნას ხელახლა სცდი. გვერდის განახლებამდე შეინახე მონახაზის ასლი. დახურო ფანჯარა?");
-        return !dirty || window.confirm("ცვლილებები შენახული არ არის. OK-ზე დაჭერით დაკარგავ შეყვანილ მონაცემებს");
+        if (saving) { window.alert("მიმდინარეობს შენახვა. შეგიძლიათ შეწყვიტოთ ლოდინი ქვედა ღილაკით და შემდეგ ხელახლა სცადოთ."); return false; }
+        if (pending) return window.confirm("შენახვის შედეგი ჯერ დაუდასტურებელია. ფანჯარაში დაბრუნებისას იგივე მოთხოვნას ხელახლა სცდით. გვერდის განახლებამდე შეინახეთ მონახაზის ასლი. დახუროთ ფანჯარა?");
+        return !dirty || window.confirm("ცვლილებები შენახული არ არის. OK-ზე დაჭერით დაკარგავთ შეყვანილ მონაცემებს");
     }
     function leave() {
         if (closeTimer.current) return;
@@ -354,7 +354,7 @@ export default function NewOrderDrawer() {
         if (removingProduct) return;
 
         if (photosUploading) {
-            setError("ფოტო ჯერ იტვირთება. დაელოდე დასრულებას.");
+            setError("ფოტო ჯერ იტვირთება. დაელოდეთ დასრულებას.");
             return;
         }
 
@@ -372,12 +372,12 @@ export default function NewOrderDrawer() {
                 const paidNow = moneyCents(draft.paidAmount);
 
                 if (paidBefore === null || paidNow === null) {
-                    throw new Error("მიუთითე სწორი გადახდილი თანხა.");
+                    throw new Error("მიუთითეთ სწორი გადახდილი თანხა.");
                 }
 
                 if (paidNow < paidBefore) {
                     throw new Error(
-                        "გადახდილი თანხის შესამცირებლად გამოიყენე თანხის დაბრუნების დადასტურება შეკვეთის დეტალებიდან.",
+                        "გადახდილი თანხის შესამცირებლად გამოიყენეთ თანხის დაბრუნების დადასტურება შეკვეთის დეტალებიდან.",
                     );
                 }
 
@@ -391,7 +391,7 @@ export default function NewOrderDrawer() {
                     }
 
                     if (!window.confirm(
-                        `დაადასტურე, რომ მომხმარებლისგან დამატებით მიიღე ${moneyText(additionalPayment)} ₾. ეს თანხა გადახდების ისტორიაში ჩაიწერება.`,
+                        `დაადასტურეთ, რომ მომხმარებლისგან დამატებით მიიღეთ ${moneyText(additionalPayment)} ₾. ეს თანხა გადახდების ისტორიაში ჩაიწერება.`,
                     )) {
                         return;
                     }
@@ -420,7 +420,7 @@ export default function NewOrderDrawer() {
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "გადაამოწმე მონაცემები.",
+                    : "გადაამოწმეთ მონაცემები.",
             );
             return;
         }
@@ -505,7 +505,7 @@ export default function NewOrderDrawer() {
                 setError(cause.message);
             } else {
                 setError(
-                    "შენახვის შედეგი ვერ დადასტურდა. მონაცემები შენარჩუნებულია - დააჭირე ხელახლა ცდას.",
+                    "შენახვის შედეგი ვერ დადასტურდა. მონაცემები შენარჩუნებულია - დააჭირეთ ხელახლა ცდას.",
                 );
             }
         } finally {
@@ -559,7 +559,7 @@ export default function NewOrderDrawer() {
                             <div className="col-span-2 lg:col-span-1"><Field label="ტელეფონი *"><input type="tel" autoComplete="off" value={draft.recipientPhone} onChange={event => changePhone(event.target.value)} required placeholder="მაგ: 599 12 34 56" className={input} /></Field></div>
                             <Field label="სახელი"><input value={draft.recipientFirstName} onChange={event => patch({ recipientFirstName: event.target.value })} className={input} /></Field>
                             <Field label="გვარი"><input value={draft.recipientLastName} onChange={event => patch({ recipientLastName: event.target.value })} className={input} /></Field>
-                            <div className="col-span-2 lg:col-span-1"><Field label="მიწოდება"><select value={draft.deliveryZone ?? ""} onChange={event => patch({ deliveryZone: event.target.value as DeliveryZone })} className={input}>{draft.deliveryZone === null && <option value="" disabled>აირჩიე</option>}<option value="TBILISI">თბილისი</option><option value="REGION">რეგიონი</option></select></Field></div>
+                            <div className="col-span-2 lg:col-span-1"><Field label="მიწოდება"><select value={draft.deliveryZone ?? ""} onChange={event => patch({ deliveryZone: event.target.value as DeliveryZone })} className={input}>{draft.deliveryZone === null && <option value="" disabled>აირჩიეთ</option>}<option value="TBILISI">თბილისი</option><option value="REGION">რეგიონი</option></select></Field></div>
                             <div className="col-span-2 lg:col-span-1"><Field label="მისამართი"><input value={draft.shippingAddress} onChange={event => patch({ shippingAddress: event.target.value })} placeholder="ქალაქი, ქუჩა, ნომერი" className={input} /></Field></div>
                         </div>
                         <div className="mt-3">
@@ -667,7 +667,7 @@ export default function NewOrderDrawer() {
                                             className="h-10 w-10 text-accent/60"
                                         />
                                         <p className="text-sm">
-                                            აირჩიე მარაგიდან ან დაამატე ხელით
+                                            აირჩიეთ მარაგიდან ან დაამატეთ ხელით
                                         </p>
                                     </div>
                                 )}
@@ -682,7 +682,7 @@ export default function NewOrderDrawer() {
                                     </p>
 
                                     <p className="mt-1 text-xs text-text-secondary">
-                                        დამატებითი გადახდის მიღებისას მიუთითე ჯამურად
+                                        დამატებითი გადახდის მიღებისას მიუთითეთ ჯამურად
                                         მიღებული თანხა. პროდუქტის ფასის ცვლილება
                                         გადახდილ თანხას ავტომატურად არ ცვლის.
                                     </p>
@@ -690,7 +690,7 @@ export default function NewOrderDrawer() {
                                     {totals.remaining < 0n && (
                                         <p className="mt-2 text-xs text-warning">
                                             დასაბრუნებელია {moneyText(-totals.remaining)} ₾.
-                                            რეალური დაბრუნება დაადასტურე შეკვეთის
+                                            რეალური დაბრუნება დაადასტურეთ შეკვეთის
                                             დეტალებიდან, თანხის დაბრუნების ღილაკით.
                                         </p>
                                     )}
@@ -718,10 +718,10 @@ export default function NewOrderDrawer() {
             </form>
             <footer className="shrink-0 border-t border-border bg-surface px-3 py-3 sm:px-5" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
                 {error && <p role="alert" className="mb-2 text-xs text-danger sm:text-sm">{error}</p>}
-                {pending && !saving && <p className="mb-2 text-xs text-text-secondary">იგივე მონაცემები ხელახლა გაიგზავნება. ასლის შენახვაც შეგიძლია.</p>}
+                {pending && !saving && <p className="mb-2 text-xs text-text-secondary">იგივე მონაცემები ხელახლა გაიგზავნება. ასლის შენახვაც შეგიძლიათ.</p>}
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2"><button type="button" onClick={requestClose} disabled={saving} className="h-11 rounded-xl border border-border px-3 text-sm font-medium disabled:opacity-40">გაუქმება</button>{(pending || saving) && <button type="button" onClick={exportDraft} title="მონახაზის ასლის შენახვა" aria-label="მონახაზის ასლის შენახვა" className="flex h-11 w-11 items-center justify-center rounded-xl border border-border text-accent"><Icon icon="solar:download-linear" className="h-5 w-5" /></button>}</div>
-                    <div className="flex items-center gap-2">{saving && <button type="button" onClick={() => request.current?.abort()} className="h-11 px-2 text-xs text-text-secondary underline">შეაჩერე ლოდინი</button>}<button type="submit" form={formId} disabled={
+                    <div className="flex items-center gap-2">{saving && <button type="button" onClick={() => request.current?.abort()} className="h-11 px-2 text-xs text-text-secondary underline">შეაჩერეთ ლოდინი</button>}<button type="submit" form={formId} disabled={
                         saving ||
                         removingProduct ||
                         photosUploading ||

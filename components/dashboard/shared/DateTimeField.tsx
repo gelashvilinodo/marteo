@@ -17,8 +17,8 @@ type Props = Omit<
 function displayValue(value: string, type: "date" | "time") {
     if (!value) {
         return type === "date"
-            ? "აირჩიე თარიღი"
-            : "აირჩიე დრო";
+            ? "აირჩიეთ თარიღი"
+            : "აირჩიეთ დრო";
     }
 
     if (type === "time") return value;

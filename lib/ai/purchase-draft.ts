@@ -247,11 +247,11 @@ export async function createPurchaseDraft(options: {
         }, { timeout: 110_000 });
     } catch (error) {
         if (error instanceof Anthropic.RateLimitError) {
-            throw new AiChatError("მართეო AI ახლა გადატვირთულია. სცადე ცოტა ხანში.", 429);
+            throw new AiChatError("მართეო AI ახლა გადატვირთულია. სცადეთ ცოტა ხანში.", 429);
         }
         if (error instanceof Anthropic.APIError) {
             console.error("Marteo AI purchase draft failed", error.status);
-            throw new AiChatError("ფაილის დამუშავება ვერ მოხერხდა. სცადე ხელახლა.", 502);
+            throw new AiChatError("ფაილის დამუშავება ვერ მოხერხდა. სცადეთ ხელახლა.", 502);
         }
         throw error;
     }
@@ -259,7 +259,7 @@ export async function createPurchaseDraft(options: {
     options.meter?.add(response.usage);
 
     if (response.stop_reason === "max_tokens") {
-        throw new AiChatError("ფაილი ერთი ჯერისთვის ძალიან დიდია. დაყავი რამდენიმე ფაილად.", 422);
+        throw new AiChatError("ფაილი ერთი ჯერისთვის ძალიან დიდია. დაყავით რამდენიმე ფაილად.", 422);
     }
 
     const text = response.content.find((block): block is Anthropic.TextBlock => block.type === "text")?.text;
@@ -268,11 +268,11 @@ export async function createPurchaseDraft(options: {
     try {
         raw = JSON.parse(text ?? "") as RawDraft;
     } catch {
-        throw new AiChatError("ფაილის დამუშავება ვერ მოხერხდა. სცადე ხელახლა.", 502);
+        throw new AiChatError("ფაილის დამუშავება ვერ მოხერხდა. სცადეთ ხელახლა.", 502);
     }
 
     if (!raw.is_purchase_table || raw.items.length === 0) {
-        throw new AiChatError("ამ ფაილში შესყიდვის ცხრილი ვერ ვიპოვე. ატვირთე ცხრილი, სადაც პროდუქტები, რაოდენობა და ფასია.", 422);
+        throw new AiChatError("ამ ფაილში შესყიდვის ცხრილი ვერ ვიპოვე. ატვირთეთ ცხრილი, სადაც პროდუქტები, რაოდენობა და ფასია.", 422);
     }
 
     const sourceRows = new Map(rows.map((row) => [row.row, row]));
@@ -359,7 +359,7 @@ export async function createPurchaseDraft(options: {
         : null;
 
     if (flaggedRows.length) {
-        warnings.push(`რიგებ(ებ)ში ${flaggedRows.slice(0, 8).join(", ")}${flaggedRows.length > 8 ? "…" : ""} რაოდენობა ან ფასი ფაილს ზუსტად ვერ შევადარე. შეამოწმე ეს პროდუქტები.`);
+        warnings.push(`რიგებ(ებ)ში ${flaggedRows.slice(0, 8).join(", ")}${flaggedRows.length > 8 ? "…" : ""} რაოდენობა ან ფასი ფაილს ზუსტად ვერ შევადარე. შეამოწმეთ ეს პროდუქტები.`);
     }
     if (raw.file_totals.quantity !== null && Math.abs(raw.file_totals.quantity - totalQuantity) > 0.001) {
         warnings.push(`ფაილის ჯამური რაოდენობაა ${raw.file_totals.quantity}, ამოკითხული კი ${totalQuantity}.`);
@@ -369,10 +369,10 @@ export async function createPurchaseDraft(options: {
         warnings.push(`ფაილის ჯამური თანხაა ${raw.file_totals.amount}, ამოკითხული პროდუქტების ჯამი კი ${totalAmount}.`);
     }
     if (target === "products" && items.some((item) => !Number.isInteger(item.quantity) || item.quantity < 1)) {
-        warnings.push("პროდუქტის რაოდენობა მთელი რიცხვი უნდა იყოს. შეამოწმე მონიშნული ხაზები.");
+        warnings.push("პროდუქტის რაოდენობა მთელი რიცხვი უნდა იყოს. შეამოწმეთ მონიშნული ხაზები.");
     }
     if (items.some((item) => item.unitPrice <= 0)) {
-        warnings.push("ზოგ პროდუქტს ფასი ნულოვანი აქვს. შენახვამდე შეასწორე ფაილი.");
+        warnings.push("ზოგ პროდუქტს ფასი ნულოვანი აქვს. შენახვამდე შეასწორეთ ფაილი.");
     }
 
     const date = raw.purchase_date && /^\d{4}-\d{2}-\d{2}$/.test(raw.purchase_date) ? raw.purchase_date : null;

@@ -56,7 +56,7 @@ export async function requestOrderReturn(
         fail("დაბრუნების მოთხოვნა ამ სტატუსზე დაუშვებელია.", 409);
     }
     if (order.stockReturnedAt) fail("ამ შეკვეთის მარაგი უკვე დაბრუნებულია.", 409);
-    if (!Array.isArray(selections) || !selections.length) fail("აირჩიე დასაბრუნებელი პროდუქტი.");
+    if (!Array.isArray(selections) || !selections.length) fail("აირჩიეთ დასაბრუნებელი პროდუქტი.");
     const seen = new Set<string>();
     const items = selections.map(selection => {
         if (!selection || typeof selection.orderItemId !== "string" || seen.has(selection.orderItemId)) {
@@ -75,7 +75,7 @@ export async function requestOrderReturn(
                 409,
             );
         }
-        if (!validQuantity(selection.quantity) || selection.quantity <= 0 || ((item.source!=="MATERIAL"||item.unit==="PCS")&&!Number.isInteger(selection.quantity))) fail("მიუთითე დასაბრუნებელი რაოდენობა.");
+        if (!validQuantity(selection.quantity) || selection.quantity <= 0 || ((item.source!=="MATERIAL"||item.unit==="PCS")&&!Number.isInteger(selection.quantity))) fail("მიუთითეთ დასაბრუნებელი რაოდენობა.");
         const reserved = order.returns
             .filter(entry =>
                 entry.fulfillmentCycle === order.fulfillmentCycle
@@ -94,8 +94,8 @@ export async function requestOrderReturn(
                 0,
             );
         if (selection.quantity > qvalue(item.quantity - reserved)) fail(`${item.name}: დასაბრუნებელი რაოდენობა დარჩენილს აღემატება.`);
-        if (!["DEFECT", "EXCHANGE", "OTHER"].includes(selection.reason)) fail("აირჩიე დაბრუნების მიზეზი.");
-        if (selection.condition !== "GOOD" && selection.condition !== "DEFECTIVE") fail("მიუთითე ნივთის მდგომარეობა.");
+        if (!["DEFECT", "EXCHANGE", "OTHER"].includes(selection.reason)) fail("აირჩიეთ დაბრუნების მიზეზი.");
+        if (selection.condition !== "GOOD" && selection.condition !== "DEFECTIVE") fail("მიუთითეთ ნივთის მდგომარეობა.");
         if (selection.note !== undefined && typeof selection.note !== "string") fail("დაბრუნების განმარტება არასწორია.");
         return {
             orderItemId: item.id, quantity: selection.quantity,

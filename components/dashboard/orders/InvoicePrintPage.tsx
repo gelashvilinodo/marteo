@@ -57,7 +57,7 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
                     new Promise<never>((_, reject) => {
                         timeout = setTimeout(
                             () => reject(new Error(
-                                "ინვოისის მომზადების დრო ამოიწურა. განაახლე გვერდი და სცადე ხელახლა.",
+                                "ინვოისის მომზადების დრო ამოიწურა. განაახლეთ გვერდი და სცადეთ ხელახლა.",
                             )),
                             15000,
                         );
@@ -96,7 +96,7 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
                     setPreparationError(
                         cause instanceof Error
                             ? cause.message
-                            : "ინვოისის მომზადება ვერ მოხერხდა. სცადე ხელახლა.",
+                            : "ინვოისის მომზადება ვერ მოხერხდა. სცადეთ ხელახლა.",
                     );
                 }
             } finally {
@@ -126,7 +126,7 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
                 const preparedInvoice = await prepareInvoiceQr(data.invoice, controller.signal);
                 if (active && !controller.signal.aborted) setInvoice(preparedInvoice);
             } catch (cause: unknown) {
-                if (active) setError(cause instanceof Error && cause.name !== "AbortError" ? cause.message : "ინვოისის ჩატვირთვა შეწყდა. სცადე ხელახლა.");
+                if (active) setError(cause instanceof Error && cause.name !== "AbortError" ? cause.message : "ინვოისის ჩატვირთვა შეწყდა. სცადეთ ხელახლა.");
             } finally { clearTimeout(timeout); }
         }
         void load();
@@ -173,7 +173,7 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
             setInvoice(current => current ? { ...current, printState: "PRINTED", printedAt } : current);
             setConfirmPrompt(false);
         } catch (cause: unknown) {
-            setError(cause instanceof Error && cause.name !== "AbortError" ? cause.message : "კავშირი შეწყდა. მონიშვნა ხელახლა სცადე.");
+            setError(cause instanceof Error && cause.name !== "AbortError" ? cause.message : "კავშირი შეწყდა. მონიშვნა ხელახლა სცადეთ.");
         } finally {
             clearTimeout(timeout); confirmationInFlight.current = false; setConfirming(false);
         }
@@ -216,7 +216,7 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
             setConfirmPrompt(true);
         } catch {
             setError(
-                "ბეჭდვის ფანჯარა ვერ გაიხსნა. სცადე ხელახლა.",
+                "ბეჭდვის ფანჯარა ვერ გაიხსნა. სცადეთ ხელახლა.",
             );
         } finally {
             setPrinting(false);
@@ -257,7 +257,7 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "PDF-ის შექმნა ვერ მოხერხდა. სცადე ხელახლა.",
+                    : "PDF-ის შექმნა ვერ მოხერხდა. სცადეთ ხელახლა.",
             );
         } finally {
             downloadInFlight.current = false;
@@ -382,18 +382,18 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
                         <Icon icon={invoice.printState === "PRINTED" ? "solar:check-circle-linear" : "solar:document-text-linear"} className="h-5 w-5" />
                         {invoice.printState === "PRINTED" ? "დაბეჭდილია" : invoice.printState === "UPDATED" ? "შეცვლილია - ხელახლა დასაბეჭდია" : "ჯერ არ დაბეჭდილა"}
                     </span>
-                    {invoice.printState !== "PRINTED" && <button type="button" disabled={confirming || printing} onClick={confirmPrinted} className="rounded-lg bg-success px-3 py-2 font-semibold text-white disabled:opacity-50">{confirming ? "ინახება…" : "მონიშნე დაბეჭდილად"}</button>}
+                    {invoice.printState !== "PRINTED" && <button type="button" disabled={confirming || printing} onClick={confirmPrinted} className="rounded-lg bg-success px-3 py-2 font-semibold text-white disabled:opacity-50">{confirming ? "ინახება…" : "მონიშნეთ დაბეჭდილად"}</button>}
                 </div>
                 {invoice.printedAt && <p className="mt-2 text-xs text-text-secondary">ბოლო დადასტურება: {new Intl.DateTimeFormat("ka-GE", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Tbilisi" }).format(new Date(invoice.printedAt))}</p>}
                 {confirmPrompt && invoice.printState !== "PRINTED" && <div className="mt-3 border-t border-border pt-3">
-                    <p>ინვოისი წარმატებით დაბეჭდე ან PDF-ად შეინახე? დაადასტურე ზემოთ მდებარე ღილაკით.</p>
+                    <p>ინვოისი წარმატებით დაბეჭდეთ ან PDF-ად შეინახეთ? დაადასტურეთ ზემოთ მდებარე ღილაკით.</p>
                     <button type="button" disabled={confirming} onClick={() => setConfirmPrompt(false)} className="mt-2 text-text-secondary underline">ჯერ არა</button>
                 </div>}
             </div>}
-            <p className="text-xs text-text-secondary">ბეჭდვის ფანჯარაში აირჩიე პრინტერი ან PDF-ად შენახვა. გამორთე ბრაუზერის ჰედერი/ფუტერი და გამოიყენე 100% მასშტაბი.</p>
+            <p className="text-xs text-text-secondary">ბეჭდვის ფანჯარაში აირჩიეთ პრინტერი ან PDF-ად შენახვა. გამორთეთ ბრაუზერის ჰედერი/ფუტერი და გამოიყენეთ 100% მასშტაბი.</p>
             {(paper === "58mm" || paper === "80mm") && (
                 <p className="text-xs text-text-secondary">
-                    პრინტერის პარამეტრებშიც აირჩიე შესაბამისი ქაღალდის
+                    პრინტერის პარამეტრებშიც აირჩიეთ შესაბამისი ქაღალდის
                     სიგანე. რულონის სიგრძისა და ჭრის მხარდაჭერა
                     დრაივერზეა დამოკიდებული.
                 </p>
@@ -401,7 +401,7 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
 
             {paper === "100x150" && (
                 <p className="text-xs text-text-secondary">
-                    პრინტერის პარამეტრებში აირჩიე 100 × 150 მმ ქაღალდი.
+                    პრინტერის პარამეტრებში აირჩიეთ 100 × 150 მმ ქაღალდი.
                     ბევრი პროდუქტის შემთხვევაში ინვოისი რამდენიმე
                     გვერდზე გაგრძელდება.
                 </p>

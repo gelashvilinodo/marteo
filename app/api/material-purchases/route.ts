@@ -12,16 +12,16 @@ import { uploadProductImage, removeUncommittedProductImages, ProductImageError }
 import { canManageBusinessArea } from "@/lib/business/permissions";
 const json=(body:unknown,status=200)=>NextResponse.json(body,{status,headers:{'Cache-Control':'private, no-store'}});
 async function context() {
-    const user=await getCurrentUser();if(!user)throw new MaterialError("გაიარე ავტორიზაცია.",401);
+    const user=await getCurrentUser();if(!user)throw new MaterialError("გაიარეთ ავტორიზაცია.",401);
     const member=await getCurrentBusiness();if(!member)throw new MaterialError("ბიზნესი ვერ მოიძებნა.",403);
     return {userId:user.id,businessId:member.businessId};
 }
 function failure(e:unknown) {
     if(e instanceof MaterialError||e instanceof PurchaseFormError)return json({error:e.message},e.status);
     if(e instanceof ProductImageError)return json({error:e.message},422);
-    if(e&&typeof e==='object'&&'code' in e&&e.code==='P2034')return json({error:"პარტია შეიცვალა. სცადე ხელახლა."},409);
+    if(e&&typeof e==='object'&&'code' in e&&e.code==='P2034')return json({error:"პარტია შეიცვალა. სცადეთ ხელახლა."},409);
     console.error('Material purchase failed',e instanceof Error?e.name:'Unknown');
-    return json({error:"შენახვის შედეგი ვერ დადასტურდა. სცადე ხელახლა იმავე ფორმიდან."},500);
+    return json({error:"შენახვის შედეგი ვერ დადასტურდა. სცადეთ ხელახლა იმავე ფორმიდან."},500);
 }
 export async function GET(request:Request) {
     const accessDenied = await apiAccessDenied("PURCHASES", "view"); if (accessDenied) return accessDenied;
@@ -55,7 +55,7 @@ export async function POST(request:Request) {
     try {
         const c=await context();businessId=c.businessId;
         const member=await db.businessMembership.findUnique({where:{userId_businessId:{userId:c.userId,businessId}}});
-        if(!canManageBusinessArea(member,'PURCHASES'))throw new MaterialError('პარტიის მართვის უფლება არ გაქვს.',403);
+        if(!canManageBusinessArea(member,'PURCHASES'))throw new MaterialError('პარტიის მართვის უფლება არ გაქვთ.',403);
         if(request.headers.get('content-type')?.startsWith('application/json')) {
             const action=await smallJson(request);
             if(action.action!=='receive'&&action.action!=='delete')throw new MaterialError('მოქმედება არასწორია.');

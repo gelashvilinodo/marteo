@@ -10,7 +10,7 @@ export async function withOrderReadContext(
     const getClient = () => (client ??= createPrismaClient());
     try {
         const user = await getCurrentUserWithClient(getClient);
-        if (!user) return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
+        if (!user) return orderJson({ success: false, message: "გაიარეთ ავტორიზაცია." }, 401);
         const membership = await findActiveMembership(getClient(), user.id);
         if (!membership) return orderJson({ success: false, message: "ბიზნესი ვერ მოიძებნა." }, 403);
         return await read(getClient(), membership.businessId);

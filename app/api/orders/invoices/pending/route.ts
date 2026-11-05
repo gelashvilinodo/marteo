@@ -24,7 +24,8 @@ export async function GET(request: Request) {
                     if (!Number.isFinite(cursor.createdAt.getTime())) throw new Error();
                 } catch { throw new OrderValidationError("ბეჭდვის რიგის კურსორი არასწორია."); }
             }
-            const pending = onlyNew ? sql`"lastPrintedInvoiceVersion" IS NULL` : sql`("lastPrintedInvoiceVersion" IS NULL OR "lastPrintedInvoiceVersion" <> "invoiceVersion")`;
+            // იმპორტირებული ისტორიული შეკვეთები ახალი ინვოისების რიგში არ შედის.
+            const pending = onlyNew ? sql`"lastPrintedInvoiceVersion" IS NULL AND NOT "imported"` : sql`(("lastPrintedInvoiceVersion" IS NULL AND NOT "imported") OR "lastPrintedInvoiceVersion" <> "invoiceVersion")`;
             const after = cursor ? sql`AND ("createdAt", "id") > (${cursor.createdAt}, ${cursor.id})` : empty;
             // 50 მხოლოდ გადაცემის გვერდის ზომაა; შემდეგი კურსორით რიგი ბოლომდე იკითხება.
             const rows = await reader.$queryRaw<Array<{ id: string; createdAt: Date }>>(sql`

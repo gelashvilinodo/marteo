@@ -106,7 +106,7 @@ export async function POST(
 
         if (!user) {
             return errorResponse(
-                "პარტიის მისაღებად შედი ანგარიშში.",
+                "პარტიის მისაღებად შედით ანგარიშში.",
                 401,
             );
         }
@@ -149,7 +149,7 @@ export async function POST(
         console.error("Purchase receipt failed", error);
 
         return errorResponse(
-            "მიღების შედეგი ვერ დადასტურდა. იგივე მონაცემებით სცადე ხელახლა.",
+            "მიღების შედეგი ვერ დადასტურდა. იგივე მონაცემებით სცადეთ ხელახლა.",
             500,
         );
     }

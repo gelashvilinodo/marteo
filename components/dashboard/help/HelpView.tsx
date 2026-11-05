@@ -43,7 +43,7 @@ export default function HelpView({ business, self, firstName, pushKey }: HelpVie
             <SupportChat
                 viewer="USER"
                 endpoint="/api/support/messages"
-                banner={<PushBanner publicKey={pushKey} text="ჩართე შეტყობინებები, რომ პასუხი არ გამოგრჩეს." />}
+                banner={<PushBanner publicKey={pushKey} text="ჩართეთ შეტყობინებები, რომ პასუხი არ გამოგრჩეს." />}
                 welcome={welcome}
                 business={business}
                 self={self}
@@ -63,7 +63,7 @@ export default function HelpView({ business, self, firstName, pushKey }: HelpVie
         <aside className="hidden min-h-0 flex-col gap-3 overflow-y-auto lg:flex">
             <section className="rounded-3xl border border-border bg-surface p-4">
                 <h2 className="text-sm font-semibold text-text-primary">სხვა არხები</h2>
-                <p className="mt-1 text-xs leading-5 text-text-secondary">გირჩევნია სხვაგან მოგვწერო? აირჩიე შენთვის მოსახერხებელი.</p>
+                <p className="mt-1 text-xs leading-5 text-text-secondary">გირჩევნიათ სხვაგან მოგვწეროთ? აირჩიეთ თქვენთვის მოსახერხებელი.</p>
                 <div className="mt-4 flex flex-col gap-2">
                     {SUPPORT_CHANNELS.map(channel => <ChannelLink key={channel.id} channel={channel} />)}
                 </div>

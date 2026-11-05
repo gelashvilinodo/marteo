@@ -132,7 +132,7 @@ export default function ContentDetailsDialog({
         if (
             uncertain &&
             !window.confirm(
-                "მოქმედების შედეგი დაუდასტურებელია. მაინც დახურო ფანჯარა?",
+                "მოქმედების შედეგი დაუდასტურებელია. მაინც დახუროთ ფანჯარა?",
             )
         ) {
             return;
@@ -249,7 +249,7 @@ export default function ContentDetailsDialog({
         } catch {
             setUncertain(true);
             setError(
-                "მოქმედების შედეგი ვერ დადასტურდა. სცადე ხელახლა იგივე მოთხოვნით.",
+                "მოქმედების შედეგი ვერ დადასტურდა. სცადეთ ხელახლა იგივე მოთხოვნით.",
             );
         } finally {
             running.current = false;

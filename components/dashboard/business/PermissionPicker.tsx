@@ -17,7 +17,7 @@ export default function PermissionPicker({ options = PERMISSION_OPTIONS, permiss
     return (
         <fieldset className="space-y-2">
             <legend className="text-sm font-medium text-text-primary">რაზე ჰქონდეს წვდომა?</legend>
-            <p className="text-sm text-text-secondary">შეგიძლია რამდენიმე მონიშნო.</p>
+            <p className="text-sm text-text-secondary">შეგიძლიათ რამდენიმე მონიშნოთ.</p>
             {options.map(option => {
                 const checked = permissions.includes(option.value);
                 return (

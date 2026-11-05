@@ -8,7 +8,7 @@ export class ReportError extends Error { constructor(message: string, public sta
 const MAX = 10000;
 export async function getAccountantReport(tx: Prisma.TransactionClient, businessId: string, params: URLSearchParams): Promise<AccountantReport> {
     const range = resolveOrdersPeriod('custom', params.get('from') ?? '', params.get('to') ?? '');
-    if (range.error) throw new ReportError('მიუთითე სწორი საწყისი და საბოლოო თარიღი.');
+    if (range.error) throw new ReportError('მიუთითეთ სწორი საწყისი და საბოლოო თარიღი.');
     const dates = { gte: range.start, lt: range.end };
     const businessName = (await tx.business.findUniqueOrThrow({ where: { id: businessId }, select: { name: true } })).name;
     const data = await getAnalyticsPage(tx, businessId, { period: 'custom', from: range.from, to: range.to });
@@ -21,7 +21,7 @@ export async function getAccountantReport(tx: Prisma.TransactionClient, business
     const payments = await tx.orderPayment.findMany({ where: { order: { businessId }, createdAt: dates }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: MAX + 1, select: { createdAt: true, method: true, amount: true, order: { select: { number: true, analyticsPendingCost: true } } } });
     const writeOffs = await tx.inventoryWriteOff.findMany({ where: { businessId, createdAt: dates }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: MAX + 1, select: { createdAt: true, name: true, color: true, size: true, quantity: true, totalCost: true } });
     const expenseRows = await tx.expense.findMany({ where: { businessId, expenseDate: dates }, orderBy: [{ expenseDate: 'asc' }, { id: 'asc' }], take: MAX + 1, select: { expenseDate: true, title: true, category: true, note: true, amount: true } });
-    if ([entries, purchases, materials, productions, expenseRows, payments, writeOffs].some(rows => rows.length > MAX)) throw new ReportError('ანგარიში ძალიან დიდია. აირჩიე მოკლე პერიოდი (ერთ განყოფილებაში მაქსიმუმ 10 000 ჩანაწერი).');
+    if ([entries, purchases, materials, productions, expenseRows, payments, writeOffs].some(rows => rows.length > MAX)) throw new ReportError('ანგარიში ძალიან დიდია. აირჩიეთ მოკლე პერიოდი (ერთ განყოფილებაში მაქსიმუმ 10 000 ჩანაწერი).');
     const money = (v: string | number | Prisma.Decimal) => new Prisma.Decimal(v).toFixed(2) + ' ₾';
     const formatter = new Intl.DateTimeFormat('ka-GE', { timeZone: 'Asia/Tbilisi', dateStyle: 'short' });
     const date = (v: Date) => formatter.format(v);
@@ -41,7 +41,7 @@ export async function getAccountantReport(tx: Prisma.TransactionClient, business
         'კურიერის გამავალი/შემომავალი თანხები გაყიდვებისა და მოგების გამოთვლაში არ შედის. შესყიდვისა და წარმოების ღირებულება ცალკე საინფორმაციოდ არის ნაჩვენები და მოგებას მეორედ არ აკლდება.',
     ];
     if (!data.profitReady) warnings.push(`მოგება დაუზუსტებელია: არასრული ფინანსური ჩანაწერები - ${data.incompleteEntries}; თვითღირებულების მოლოდინში მყოფი შეკვეთები ბიზნესში - ${data.pendingCostOrders}; გაყიდვის ჩანაწერის გარეშე დასრულებული შეკვეთები ბიზნესში - ${data.unrecordedCompleted}. დაუზუსტებელი შეკვეთების ნაწილი ანალიტიკის ჯამებში არ შედის.`);
-    if (purchases.some(p => !p.country)) warnings.push('ზოგ პროდუქტების შესყიდვაზე იმპორტის ქვეყანა მითითებული არ არის. მისი დამატება პარტიის რედაქტირებიდან შეგიძლია.');
+    if (purchases.some(p => !p.country)) warnings.push('ზოგ პროდუქტების შესყიდვაზე იმპორტის ქვეყანა მითითებული არ არის. მისი დამატება პარტიის რედაქტირებიდან შეგიძლიათ.');
     const kinds = { SALE: 'გაყიდვა', RETURN: 'დაბრუნება', EXCHANGE_ADJUSTMENT: 'გაცვლა / შესწორება', COST_ADJUSTMENT: 'თვითღირებულების დაზუსტება' };
     const sections: ReportSection[] = [
         { title: 'ფინანსური შეჯამება', columns: ['მაჩვენებელი', 'თანხა'], rows: [

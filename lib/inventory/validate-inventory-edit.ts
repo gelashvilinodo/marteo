@@ -79,7 +79,7 @@ export function validateInventoryEdit(
             date.toISOString() !== result
         ) {
             throw new InventoryEditError(
-                "მონაცემების ვერსია არასწორია. გახსენი ფორმა ხელახლა.",
+                "მონაცემების ვერსია არასწორია. გახსენით ფორმა ხელახლა.",
             );
         }
 
@@ -90,7 +90,7 @@ export function validateInventoryEdit(
 
     if (!name) {
         throw new InventoryEditError(
-            "მიუთითე პროდუქტის დასახელება.",
+            "მიუთითეთ პროდუქტის დასახელება.",
         );
     }
 

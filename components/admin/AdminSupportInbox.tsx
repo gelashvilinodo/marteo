@@ -93,7 +93,7 @@ export default function AdminSupportInbox({ initial, pushKey }: { initial: Data;
         </div>
 
         <div className="mt-4 overflow-hidden rounded-2xl border border-border empty:hidden">
-            <PushBanner publicKey={pushKey} text="ჩართე შეტყობინებები, რომ ახალი მიწერა და ახალი მომხმარებელი არ გამოგრჩეს." />
+            <PushBanner publicKey={pushKey} text="ჩართეთ შეტყობინებები, რომ ახალი მიწერა და ახალი მომხმარებელი არ გამოგრჩეს." />
         </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -131,7 +131,7 @@ export default function AdminSupportInbox({ initial, pushKey }: { initial: Data;
                             </span>
                         </span>
                         <span className={`mt-0.5 block truncate text-[13px] ${row.unread ? "text-text-primary" : "text-text-secondary"}`}>
-                            {row.lastMessage?.sender === "ADMIN" && <span className="text-text-secondary">შენ: </span>}
+                            {row.lastMessage?.sender === "ADMIN" && <span className="text-text-secondary">თქვენ: </span>}
                             {row.lastMessage?.body}
                         </span>
                     </span>

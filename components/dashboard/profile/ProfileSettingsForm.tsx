@@ -172,7 +172,7 @@ export default function ProfileSettingsForm({
             ) {
                 throw new Error(
                     body.message ||
-                    "ფოტოს შენახვის შედეგი ვერ დადასტურდა. განაახლე მონაცემები და გადაამოწმე ფოტო.",
+                    "ფოტოს შენახვის შედეგი ვერ დადასტურდა. განაახლეთ მონაცემები და გადაამოწმეთ ფოტო.",
                 );
             }
 
@@ -201,7 +201,7 @@ export default function ProfileSettingsForm({
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "ფოტოს შენახვის შედეგი ვერ დადასტურდა. განაახლე მონაცემები და გადაამოწმე ფოტო.",
+                    : "ფოტოს შენახვის შედეგი ვერ დადასტურდა. განაახლეთ მონაცემები და გადაამოწმეთ ფოტო.",
             );
         } finally {
             running.current = false;
@@ -232,7 +232,7 @@ export default function ProfileSettingsForm({
                 setError(
                     cause instanceof Error
                         ? cause.message
-                        : "გადაამოწმე შევსებული ველები.",
+                        : "გადაამოწმეთ შევსებული ველები.",
                 );
                 setErrorField(
                     cause instanceof ProfileSettingsError
@@ -286,7 +286,7 @@ export default function ProfileSettingsForm({
 
                 throw new Error(
                     body.message ||
-                    "მოთხოვნის შედეგი ვერ დადასტურდა. განაახლე მონაცემები და გადაამოწმე.",
+                    "მოთხოვნის შედეგი ვერ დადასტურდა. განაახლეთ მონაცემები და გადაამოწმეთ.",
                 );
             }
 
@@ -323,7 +323,7 @@ export default function ProfileSettingsForm({
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "მოთხოვნა ვერ შესრულდა. სცადე ხელახლა.",
+                    : "მოთხოვნა ვერ შესრულდა. სცადეთ ხელახლა.",
             );
         } finally {
             running.current = false;
@@ -355,7 +355,7 @@ export default function ProfileSettingsForm({
                             პირადი ინფორმაცია
                         </h2>
                         <p className="mt-1 text-xs text-text-secondary">
-                            ეს ინფორმაცია შენს პირად ანგარიშს ეხება.
+                            ეს ინფორმაცია თქვენს პირად ანგარიშს ეხება.
                         </p>
                     </div>
                 </div>

@@ -47,7 +47,7 @@ export default function SmsPackPanel({ businessId, initial }: { businessId: stri
             <div className="rounded-xl bg-background p-3"><p className="text-xs text-text-secondary">გეგმის SMS</p><p className="mt-1 text-lg font-semibold text-text-primary">{sms.planIncluded ? `${sms.planUsed} / ${sms.planIncluded}` : "არ შედის"}</p></div>
             <div className="rounded-xl bg-background p-3"><p className="text-xs text-text-secondary">30 დღეში გაიგზავნა</p><p className="mt-1 text-lg font-semibold text-text-primary">{sms.sentThisMonth}</p></div>
         </div>
-        <p className="mt-2 text-xs text-text-secondary">{!sms.allowed ? "მიმდინარე გეგმაში SMS არ შედის (ნაშთი ინახება)." : sms.enabled ? "SMS ჩართულია." : "მფლობელმა SMS გამორთო."}</p>
+        <p className="mt-2 text-xs text-text-secondary">{!sms.allowed ? "მიმდინარე გეგმაში SMS არ შედის (ნაშთი ინახება)." : sms.enabled ? "SMS ჩართულია." : "მფლობელმა SMS გამორთოთ."}</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] sm:items-end">
             <label className="text-xs text-text-secondary">პაკეტი
                 <select value={count} onChange={event => { setNotice(""); setCount(Number(event.target.value)); }} className={`mt-1 ${field}`}>

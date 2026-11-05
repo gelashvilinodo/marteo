@@ -14,6 +14,8 @@ const EXEMPT_API = [
     "app/api/invites/",
     // საათობრივი cron: წვდომას CRON_SECRET განსაზღვრავს.
     "app/api/cron/",
+    // ბანკის callback: სერვერიდან სერვერზე, სტატუსი ბანკის API-დან მოწმდება.
+    "app/api/billing/bog/",
 ];
 
 function walk(dir, name) {

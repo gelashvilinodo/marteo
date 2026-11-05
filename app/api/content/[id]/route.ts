@@ -57,7 +57,7 @@ export async function GET(_request: Request, context: Context) {
     try {
         if (!(await getCurrentUser())) {
             return orderJson(
-                { success: false, message: "გაიარე ავტორიზაცია." },
+                { success: false, message: "გაიარეთ ავტორიზაცია." },
                 401,
             );
         }

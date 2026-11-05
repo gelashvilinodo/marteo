@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const context = await getPgDashboardContext();
 
     if (!context?.membership) {
-        return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
+        return orderJson({ success: false, message: "გაიარეთ ავტორიზაცია." }, 401);
     }
 
     const params = new URL(request.url).searchParams;
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
         const entry = day?.currencies.find((item) => item.code === currency);
 
         if (!day || !entry || !(entry.rate > 0) || !(entry.quantity > 0)) {
-            return orderJson({ success: false, message: `${currency}-ის კურსი ამ თარიღზე ვერ მოიძებნა. მიუთითე კურსი ხელით.` }, 404);
+            return orderJson({ success: false, message: `${currency}-ის კურსი ამ თარიღზე ვერ მოიძებნა. მიუთითეთ კურსი ხელით.` }, 404);
         }
 
         return orderJson({
@@ -44,6 +44,6 @@ export async function GET(request: Request) {
             date: day.date.slice(0, 10),
         });
     } catch {
-        return orderJson({ success: false, message: "ეროვნული ბანკის კურსი ვერ ჩაიტვირთა. მიუთითე კურსი ხელით." }, 502);
+        return orderJson({ success: false, message: "ეროვნული ბანკის კურსი ვერ ჩაიტვირთა. მიუთითეთ კურსი ხელით." }, 502);
     }
 }

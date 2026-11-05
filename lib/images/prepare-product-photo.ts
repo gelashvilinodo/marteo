@@ -83,11 +83,11 @@ async function prepare(
         );
 
     if (!looksLikeImage) {
-        throw new Error("აირჩიე ფოტო და არა სხვა ტიპის ფაილი.");
+        throw new Error("აირჩიეთ ფოტო და არა სხვა ტიპის ფაილი.");
     }
 
     if (original.size === 0) {
-        throw new Error("ფოტოს ფაილი ცარიელია. აირჩიე ხელახლა.");
+        throw new Error("ფოტოს ფაილი ცარიელია. აირჩიეთ ხელახლა.");
     }
 
     let decoded: Awaited<ReturnType<typeof decode>>;
@@ -103,7 +103,7 @@ async function prepare(
     } catch {
         if (isDng) {
             throw new Error(
-                "ამ DNG ფოტოს პრევიუ ვერ დამუშავდა. აირჩიე სხვა ფოტო.",
+                "ამ DNG ფოტოს პრევიუ ვერ დამუშავდა. აირჩიეთ სხვა ფოტო.",
             );
         }
         if (!isHeic) {
@@ -131,7 +131,7 @@ async function prepare(
             decoded = await decode(converted);
         } catch {
             throw new Error(
-                "iPhone-ის ფოტოს დამუშავება ვერ მოხერხდა. სცადე ხელახლა ან აირჩიე სხვა ფოტო.",
+                "iPhone-ის ფოტოს დამუშავება ვერ მოხერხდა. სცადეთ ხელახლა ან აირჩიეთ სხვა ფოტო.",
             );
         }
     }
@@ -214,7 +214,7 @@ async function prepare(
 
         if (!keepOriginal && (!result || result.size > TARGET_BYTES)) {
             throw new Error(
-                "ფოტოს საკმარისად შემცირება ვერ მოხერხდა. სცადე სხვა ფოტო.",
+                "ფოტოს საკმარისად შემცირება ვერ მოხერხდა. სცადეთ სხვა ფოტო.",
             );
         }
 

@@ -60,6 +60,114 @@ export async function recordSaleSnapshot(
         },
     });
 
+    const built = buildSaleEntry({
+        businessId,
+        order,
+        snapshot,
+        eventKey,
+        kind,
+        occurredAt,
+        previousLines,
+        previousDelivery:
+            previousTotals._sum.deliveryRevenueDelta ?? 0,
+    });
+
+    if (!built) return;
+
+    await tx.orderFinancialEntry.create({
+        data: {
+            ...built.entry,
+            ...(built.items.length > 0
+                ? {
+                    items: {
+                        createMany: {
+                            data: built.items,
+                        },
+                    },
+                }
+                : {}),
+        },
+    });
+}
+
+// ახლად შექმნილი შეკვეთების გაყიდვებს ჯგუფურად აღრიცხავს.
+// წინა ფინანსური ჩანაწერები ასეთ შეკვეთებს არ აქვს.
+export async function recordNewOrderSaleSnapshots(
+    tx: Prisma.TransactionClient,
+    businessId: string,
+    sales: readonly {
+        order: StockOrder;
+        snapshot: Snapshot;
+        eventKey: string;
+        occurredAt: Date;
+    }[],
+) {
+    const entries: Prisma.OrderFinancialEntryCreateManyInput[] = [];
+    const items: Prisma.OrderFinancialEntryItemCreateManyInput[] = [];
+
+    for (const sale of sales) {
+        if (
+            !(sale.occurredAt instanceof Date) ||
+            !Number.isFinite(sale.occurredAt.getTime())
+        ) {
+            throw new OrderValidationError(
+                "გაყიდვის აღრიცხვის თარიღი არასწორია.",
+                422,
+            );
+        }
+
+        const built = buildSaleEntry({
+            businessId,
+            order: sale.order,
+            snapshot: sale.snapshot,
+            eventKey: sale.eventKey,
+            kind: "SALE",
+            occurredAt: sale.occurredAt,
+            previousLines: [],
+            previousDelivery: 0,
+        });
+
+        if (!built) continue;
+
+        const entryId = crypto.randomUUID();
+
+        entries.push({ id: entryId, ...built.entry });
+        items.push(...built.items.map(item => ({ entryId, ...item })));
+    }
+
+    for (let index = 0; index < entries.length; index += 500) {
+        await tx.orderFinancialEntry.createMany({
+            data: entries.slice(index, index + 500),
+        });
+    }
+
+    for (let index = 0; index < items.length; index += 1000) {
+        await tx.orderFinancialEntryItem.createMany({
+            data: items.slice(index, index + 1000),
+        });
+    }
+}
+
+// ერთი ფინანსური ჩანაწერის გამოთვლა, ბაზასთან შეხების გარეშე.
+function buildSaleEntry({
+    businessId,
+    order,
+    snapshot,
+    eventKey,
+    kind,
+    occurredAt,
+    previousLines,
+    previousDelivery,
+}: {
+    businessId: string;
+    order: StockOrder;
+    snapshot: Snapshot;
+    eventKey: string;
+    kind: "SALE" | "RETURN" | "EXCHANGE_ADJUSTMENT";
+    occurredAt: Date;
+    previousLines: PreviousLine[];
+    previousDelivery: Prisma.Decimal | number;
+}) {
     const previous = new Map(
         previousLines.map(line => [line.sourceOrderItemId, line]),
     );
@@ -147,7 +255,7 @@ export async function recordSaleSnapshot(
 
     const deliveryRevenueDelta = kind === "SALE"
         ? snapshot.deliveryRevenue.minus(
-            previousTotals._sum.deliveryRevenueDelta ?? 0,
+            previousDelivery,
         )
         : new Prisma.Decimal(0);
 
@@ -156,11 +264,11 @@ export async function recordSaleSnapshot(
         items.length === 0 &&
         deliveryRevenueDelta.isZero()
     ) {
-        return;
+        return null;
     }
 
-    await tx.orderFinancialEntry.create({
-        data: {
+    return {
+        entry: {
             businessId,
             orderId: order.id,
             orderNumber: order.number,
@@ -174,15 +282,7 @@ export async function recordSaleSnapshot(
                 (kind !== "SALE" || snapshot.costComplete) &&
                 items.every(item => item.costComplete),
             occurredAt: new Date(occurredAt.getTime()),
-            ...(items.length > 0
-                ? {
-                    items: {
-                        createMany: {
-                            data: items,
-                        },
-                    },
-                }
-                : {}),
         },
-    });
+        items,
+    };
 }

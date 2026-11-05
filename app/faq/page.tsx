@@ -34,7 +34,7 @@ export default function FaqPage() {
                         ხშირად დასმული კითხვები
                     </h1>
                     <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/70 sm:text-base">
-                        ყველაფერი, რაც მართეოს შესახებ რეგისტრაციამდე უნდა იცოდე.
+                        ყველაფერი, რაც მართეოს შესახებ რეგისტრაციამდე უნდა იცოდეთ.
                     </p>
                 </div>
             </section>
@@ -66,8 +66,8 @@ export default function FaqPage() {
                                 <Icon icon="solar:chat-round-dots-bold-duotone" className="h-5 w-5" />
                             </span>
                             <div>
-                                <p className="font-semibold text-text-primary">პასუხი ვერ იპოვე?</p>
-                                <p className="mt-0.5 text-sm text-text-secondary">მოგვწერე და დაგეხმარებით.</p>
+                                <p className="font-semibold text-text-primary">პასუხი ვერ იპოვეთ?</p>
+                                <p className="mt-0.5 text-sm text-text-secondary">მოგვწერეთ და დაგეხმარებით.</p>
                             </div>
                         </div>
                         {/* m.me ბმული Facebook-ის გვერდის ნაცვლად პირდაპირ ჩატს ხსნის. */}
@@ -77,7 +77,7 @@ export default function FaqPage() {
                             rel="noopener noreferrer"
                             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover sm:w-auto"
                         >
-                            დაგვიკავშირდი
+                            დაგვიკავშირდით
                             <Icon icon="solar:arrow-right-linear" className="h-4 w-4" />
                         </a>
                     </div>

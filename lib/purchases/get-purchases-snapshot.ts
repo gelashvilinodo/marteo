@@ -33,7 +33,7 @@ export async function getPurchasesSnapshot(businessId: string, params: Purchases
 
   const filterError =
     (rawFrom && !from) || (rawTo && !to)
-      ? "მიუთითე სწორი თარიღი."
+      ? "მიუთითეთ სწორი თარიღი."
       : from && to && from > to
         ? "საწყისი თარიღი საბოლოო თარიღზე გვიან არ უნდა იყოს."
         : "";

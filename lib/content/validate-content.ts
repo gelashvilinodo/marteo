@@ -42,7 +42,7 @@ export function contentVersion(value: unknown) {
     const date = new Date(version);
 
     if (!version || !Number.isFinite(date.getTime())) {
-        fail("გახსენი კონტენტი ხელახლა და სცადე კიდევ ერთხელ.");
+        fail("გახსენით კონტენტი ხელახლა და სცადეთ კიდევ ერთხელ.");
     }
 
     return date;
@@ -55,11 +55,11 @@ export function validateSchedule(raw: unknown) {
     const scheduledTime = text(body.scheduledTime, "დრო");
 
     if (!validCalendarDate(scheduledDate)) {
-        fail("მიუთითე სწორი თარიღი.");
+        fail("მიუთითეთ სწორი თარიღი.");
     }
 
     if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(scheduledTime)) {
-        fail("მიუთითე სწორი დრო.");
+        fail("მიუთითეთ სწორი დრო.");
     }
 
     const scheduledAt = new Date(
@@ -77,14 +77,14 @@ export function validateContent(raw: unknown) {
     const body = contentBody(raw);
     const title = text(body.title, "სათაური");
 
-    if (!title) fail("მიუთითე კონტენტის სათაური.");
+    if (!title) fail("მიუთითეთ კონტენტის სათაური.");
 
     const description = text(body.description, "აღწერა");
     const type = contentTypes.find(
         item => item.value === body.type,
     )?.value;
 
-    if (!type) fail("აირჩიე კონტენტის ტიპი.");
+    if (!type) fail("აირჩიეთ კონტენტის ტიპი.");
 
     const customType =
         type === "OTHER"
@@ -92,11 +92,11 @@ export function validateContent(raw: unknown) {
             : null;
 
     if (type === "OTHER" && !customType) {
-        fail("მიუთითე, რა ტიპის კონტენტია.");
+        fail("მიუთითეთ, რა ტიპის კონტენტია.");
     }
 
     if (!Array.isArray(body.platforms) || body.platforms.length === 0) {
-        fail("აირჩიე მინიმუმ ერთი პლატფორმა.");
+        fail("აირჩიეთ მინიმუმ ერთი პლატფორმა.");
     }
 
     const platforms = body.platforms.map(value => {
@@ -118,7 +118,7 @@ export function validateContent(raw: unknown) {
         : null;
 
     if (platforms.includes("OTHER") && !customPlatform) {
-        fail("მიუთითე სხვა პლატფორმის დასახელება.");
+        fail("მიუთითეთ სხვა პლატფორმის დასახელება.");
     }
 
     const scheduledAt = validateSchedule(body);
@@ -132,7 +132,7 @@ export function validateContent(raw: unknown) {
         try {
             url = new URL(link);
         } catch {
-            fail("მასალის ბმული მიუთითე სრული მისამართით.");
+            fail("მასალის ბმული მიუთითეთ სრული მისამართით.");
         }
 
         if (

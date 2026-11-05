@@ -61,7 +61,7 @@ export async function getContentInsights(prisma: Client, businessId: string, now
             card,
             days,
             pending,
-            note: `${days} დღეა ვადაგადაცილებულია. შესასრულებელია: ${pending.join(", ")}. გამოაქვეყნე და მონიშნე, ან გადაიტანე სხვა დღეზე.`,
+            note: `${days} დღეა ვადაგადაცილებულია. შესასრულებელია: ${pending.join(", ")}. გამოაქვეყნეთ და მონიშნეთ, ან გადაიტანეთ სხვა დღეზე.`,
         };
     });
 

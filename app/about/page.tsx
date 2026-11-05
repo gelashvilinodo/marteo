@@ -152,14 +152,14 @@ export default function AboutPage() {
                             href="/register"
                             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
                         >
-                            სცადე მართეო
+                            სცადეთ მართეო
                             <Icon icon="solar:arrow-right-linear" className="h-4 w-4" />
                         </Link>
                         <Link
                             href="/contact"
                             className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-background px-5 text-sm font-semibold text-text-primary transition-colors hover:border-accent/40 hover:text-accent"
                         >
-                            დაგვიკავშირდი
+                            დაგვიკავშირდით
                         </Link>
                     </div>
                 </section>

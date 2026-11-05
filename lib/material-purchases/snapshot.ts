@@ -5,7 +5,7 @@ import type { Prisma } from "@/generated/prisma/client";
 export async function getMaterialSnapshot(businessId:string,params:Record<string,string|string[]|undefined>) {
     const q=typeof params.q==='string'?params.q.trim().slice(0,150):'';
     const from=typeof params.from==='string'?params.from:'',to=typeof params.to==='string'?params.to:'';
-    const error=(from&&!validDate(from))||(to&&!validDate(to))?'მიუთითე სწორი თარიღი.':from&&to&&from>to?'საწყისი თარიღი საბოლოოზე გვიან არ უნდა იყოს.':'';
+    const error=(from&&!validDate(from))||(to&&!validDate(to))?'მიუთითეთ სწორი თარიღი.':from&&to&&from>to?'საწყისი თარიღი საბოლოოზე გვიან არ უნდა იყოს.':'';
     const requestedPage=typeof params.page==='string'&&/^\d{1,8}$/.test(params.page)?Math.max(1,Number(params.page)):1;
     const db=createPrismaClient();
     try {return await db.$transaction(async tx=>{

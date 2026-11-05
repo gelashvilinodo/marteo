@@ -7,7 +7,7 @@ import CookieSettingsButton from "@/components/consent/CookieSettingsButton";
 
 export const metadata = {
     title: "ქუქი-ფაილები - MARTEO",
-    description: "რომელ ქუქი-ფაილებს იყენებს მართეო, რისთვის და როგორ შეცვალო შენი არჩევანი.",
+    description: "რომელ ქუქი-ფაილებს იყენებს მართეო, რისთვის და როგორ შეცვალოთ თქვენი არჩევანი.",
 };
 
 const groups = [
@@ -18,8 +18,8 @@ const groups = [
         icon: "solar:shield-check-bold-duotone",
         items: [
             { name: "marteo_session", purpose: "ანგარიშში შესვლის შენარჩუნება", duration: "30 დღე" },
-            { name: "marteo-theme", purpose: "დღის/ღამის რეჟიმის დამახსოვრება", duration: "სანამ შეცვლი" },
-            { name: "marteo-cookie-consent", purpose: "ქუქის შესახებ შენი არჩევანის დამახსოვრება", duration: "12 თვე" },
+            { name: "marteo-theme", purpose: "დღის/ღამის რეჟიმის დამახსოვრება", duration: "სანამ შეცვლით" },
+            { name: "marteo-cookie-consent", purpose: "ქუქის შესახებ თქვენი არჩევანის დამახსოვრება", duration: "12 თვე" },
         ],
     },
     {
@@ -57,7 +57,7 @@ export default function CookiesPage() {
                         ქუქი-ფაილები
                     </h1>
                     <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/70 sm:text-base">
-                        მარტივად - რას ვინახავთ შენს ბრაუზერში, რისთვის და როგორ შეცვალო არჩევანი.
+                        მარტივად - რას ვინახავთ თქვენს ბრაუზერში, რისთვის და როგორ შეცვალოთ არჩევანი.
                     </p>
                 </div>
             </section>
@@ -68,12 +68,12 @@ export default function CookiesPage() {
                         რა არის ქუქი-ფაილი?
                     </h2>
                     <p>
-                        ქუქი-ფაილი პატარა ჩანაწერია, რომელსაც საიტი შენს ბრაუზერში ინახავს, რომ შენი არჩევანი ან
+                        ქუქი-ფაილი პატარა ჩანაწერია, რომელსაც საიტი თქვენს ბრაუზერში ინახავს, რომ თქვენი არჩევანი ან
                         შესვლა დაიმახსოვროს. ზოგი მათგანი საიტის მუშაობისთვის აუცილებელია, ზოგი კი - მხოლოდ
                         სტატისტიკისთვის.
                     </p>
                     <p>
-                        მართეო სარეკლამო ქუქი-ფაილებს არ იყენებს და შენს მონაცემებს არ ყიდის.
+                        მართეო სარეკლამო ქუქი-ფაილებს არ იყენებს და თქვენს მონაცემებს არ ყიდის.
                     </p>
                 </section>
 
@@ -113,20 +113,20 @@ export default function CookiesPage() {
                         როგორ შევცვალო არჩევანი?
                     </h2>
                     <p>
-                        შენი არჩევანი 12 თვე ინახება. მისი შეცვლა ნებისმიერ დროს შეგიძლია - ამ ღილაკით ან საიტის
+                        თქვენი არჩევანი 12 თვე ინახება. მისი შეცვლა ნებისმიერ დროს შეგიძლიათ - ამ ღილაკით ან საიტის
                         ბოლოში „ქუქის პარამეტრებიდან“. თანხმობის გაუქმებისას ანალიტიკური ქუქი-ფაილები იშლება.
                     </p>
                     <CookieSettingsButton className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-surface px-5 text-sm font-semibold text-text-primary transition-colors hover:border-accent/40 hover:text-accent" />
                     <p>
-                        ქუქი-ფაილების წაშლა ან დაბლოკვა ბრაუზერის პარამეტრებშიც შეგიძლია. გაითვალისწინე, რომ
+                        ქუქი-ფაილების წაშლა ან დაბლოკვა ბრაუზერის პარამეტრებშიც შეგიძლიათ. გაითვალისწინეთ, რომ
                         აუცილებელი ქუქი-ფაილების გარეშე ანგარიშში შესვლა ვერ მოხერხდება.
                     </p>
                 </section>
 
                 <p className="border-t border-border pt-6 text-sm text-text-secondary">
-                    კითხვები გაქვს?{" "}
+                    კითხვები გაქვთ?{" "}
                     <Link href="/contact" className="font-medium text-accent hover:underline">
-                        დაგვიკავშირდი
+                        დაგვიკავშირდით
                     </Link>
                     . ბოლო განახლება: 29 ოქტომბერი, 2026.
                 </p>

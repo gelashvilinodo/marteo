@@ -47,7 +47,7 @@ export async function POST(request: Request) {
             !/^[a-f0-9]{64}$/.test(body.authorization)
         ) {
             throw new EmailChangeError(
-                "ჯერ დაადასტურე მიმდინარე პაროლი.",
+                "ჯერ დაადასტურეთ მიმდინარე პაროლი.",
                 403,
             );
         }
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
             !/^\d{6}$/.test(body.code)
         ) {
             throw new EmailChangeError(
-                "შეიყვანე ექვსნიშნა კოდი.",
+                "შეიყვანეთ ექვსნიშნა კოდი.",
                 422,
             );
         }
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
                     current.sessionTokenHash !== initial.sessionTokenHash
                 ) {
                     throw new EmailChangeError(
-                        "სესია შეიცვალა. თავიდან გახსენი ფანჯარა.",
+                        "სესია შეიცვალა. თავიდან გახსენით ფანჯარა.",
                         409,
                     );
                 }
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
                         hashEmailChangeValue(current.user.password)
                 ) {
                     throw new EmailChangeError(
-                        "მოთხოვნა აღარ მოქმედებს. თავიდან დაადასტურე პაროლი.",
+                        "მოთხოვნა აღარ მოქმედებს. თავიდან დაადასტურეთ პაროლი.",
                         409,
                     );
                 }
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
                     }
 
                     throw new EmailChangeError(
-                        "მოთხოვნა უკვე დასრულებულია ან გაუქმებულია. თავიდან დაადასტურე პაროლი.",
+                        "მოთხოვნა უკვე დასრულებულია ან გაუქმებულია. თავიდან დაადასტურეთ პაროლი.",
                         409,
                     );
                 }
@@ -146,14 +146,14 @@ export async function POST(request: Request) {
                     pending.previousEmail !== current.user.email
                 ) {
                     throw new EmailChangeError(
-                        "კოდის ვადა ამოიწურა ან ანგარიშის მონაცემები შეიცვალა. თავიდან დაადასტურე პაროლი.",
+                        "კოდის ვადა ამოიწურა ან ანგარიშის მონაცემები შეიცვალა. თავიდან დაადასტურეთ პაროლი.",
                         409,
                     );
                 }
 
                 if (pending.attempts >= EMAIL_CHANGE_MAX_ATTEMPTS) {
                     throw new EmailChangeError(
-                        "კოდის მცდელობები ამოიწურა. თავიდან დაადასტურე პაროლი.",
+                        "კოდის მცდელობები ამოიწურა. თავიდან დაადასტურეთ პაროლი.",
                         409,
                     );
                 }
@@ -176,7 +176,7 @@ export async function POST(request: Request) {
                         message:
                             remaining > 0
                                 ? `კოდი არასწორია. დარჩენილია ${remaining} მცდელობა.`
-                                : "კოდის მცდელობები ამოიწურა. თავიდან დაადასტურე პაროლი.",
+                                : "კოდის მცდელობები ამოიწურა. თავიდან დაადასტურეთ პაროლი.",
                     };
                 }
 
@@ -187,7 +187,7 @@ export async function POST(request: Request) {
 
                 if (existing && existing.id !== current.user.id) {
                     throw new EmailChangeError(
-                        "ამ ელფოსტის გამოყენება შეუძლებელია. მიუთითე სხვა მისამართი.",
+                        "ამ ელფოსტის გამოყენება შეუძლებელია. მიუთითეთ სხვა მისამართი.",
                         422,
                     );
                 }
@@ -276,7 +276,7 @@ export async function POST(request: Request) {
                 {
                     success: false,
                     message:
-                        "ამ ელფოსტის გამოყენება შეუძლებელია. მიუთითე სხვა მისამართი.",
+                        "ამ ელფოსტის გამოყენება შეუძლებელია. მიუთითეთ სხვა მისამართი.",
                 },
                 422,
             );

@@ -38,7 +38,7 @@ export async function changePurchaseStatus(
 
     if (!user) {
         throw new PurchaseActionError(
-            "მოქმედების შესასრულებლად შედი ანგარიშში.",
+            "მოქმედების შესასრულებლად შედით ანგარიშში.",
             401,
         );
     }
@@ -78,7 +78,7 @@ export async function changePurchaseStatus(
 
                 if (!access) {
                     throw new PurchaseActionError(
-                        "ამ ბიზნესზე წვდომა აღარ გაქვს.",
+                        "ამ ბიზნესზე წვდომა აღარ გაქვთ.",
                         403,
                     );
                 }
@@ -102,7 +102,7 @@ export async function changePurchaseStatus(
 
                 if (!purchase) {
                     throw new PurchaseActionError(
-                        "პარტია ვერ მოიძებნა. განაახლე სია.",
+                        "პარტია ვერ მოიძებნა. განაახლეთ სია.",
                         404,
                     );
                 }
@@ -110,7 +110,7 @@ export async function changePurchaseStatus(
                 if (action === "delete") {
                     if (!expectedDelete) {
                         throw new PurchaseActionError(
-                            "წაშლამდე გახსენი განახლებული დადასტურების ფანჯარა.",
+                            "წაშლამდე გახსენით განახლებული დადასტურების ფანჯარა.",
                             409,
                         );
                     }
@@ -128,7 +128,7 @@ export async function changePurchaseStatus(
                         expectedDelete.usedQuantity !== impact.usedQuantity
                     ) {
                         throw new PurchaseActionError(
-                            "პარტიის მონაცემები შეიცვალა. ხელახლა გახსენი წაშლის ფანჯარა და გადაამოწმე რაოდენობები.",
+                            "პარტიის მონაცემები შეიცვალა. ხელახლა გახსენით წაშლის ფანჯარა და გადაამოწმეთ რაოდენობები.",
                             409,
                         );
                     }

@@ -11,7 +11,7 @@ async function post(request: Request) {
 
     const body = (await request.json().catch(() => null)) as { businessId?: unknown } | null;
     const businessId = typeof body?.businessId === "string" ? body.businessId : "";
-    if (!businessId) return NextResponse.json({ error: "აირჩიე ბიზნესი." }, { status: 422 });
+    if (!businessId) return NextResponse.json({ error: "აირჩიეთ ბიზნესი." }, { status: 422 });
 
     const prisma = createPrismaClient();
     try {

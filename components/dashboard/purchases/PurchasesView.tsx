@@ -254,12 +254,12 @@ export default function PurchasesView({ initialSnapshot, showTour = false }: { i
             <div className="flex min-h-[240px] items-center justify-center rounded-2xl border border-border bg-surface px-6 text-center">
               <h2 className="text-base font-medium text-text-secondary">
                 {filterError
-                  ? "შეასწორე თარიღის ფილტრი"
+                  ? "შეასწორეთ თარიღის ფილტრი"
                   : hasFilters
                     ? "პარტიები ვერ მოიძებნა"
                     : isArchive
                       ? "არქივი ცარიელია"
-                      : "შესყიდვები ჯერ არ გაქვს"}
+                      : "შესყიდვები ჯერ არ გაქვთ"}
               </h2>
             </div>
           ) : (
@@ -371,7 +371,7 @@ export default function PurchasesView({ initialSnapshot, showTour = false }: { i
                           type="button"
                           disabled
                           aria-label={`პარტია #${number} - რედაქტირება მიუწვდომელია`}
-                          title="რედაქტირებისთვის ჯერ აღადგინე პარტია არქივიდან"
+                          title="რედაქტირებისთვის ჯერ აღადგინეთ პარტია არქივიდან"
                           className="inline-flex h-11 w-11 cursor-not-allowed items-center justify-center rounded-xl border border-border text-text-secondary opacity-50"
                         >
                           <Icon

@@ -165,7 +165,7 @@ export default function PurchasePlanSection({ inventoryOptions }: { inventoryOpt
                         </div>
                     ) : list.length === 0 ? (
                         <p className="rounded-xl border border-dashed border-border px-4 py-5 text-center text-sm text-text-secondary">
-                            სია ცარიელია. დაამატე პროდუქტი ქვემოთ ან ჰკითხე მართეო AI-ს: „რა ვიყიდო შემდეგ პარტიაში?“
+                            სია ცარიელია. დაამატეთ პროდუქტი ქვემოთ ან ჰკითხეთ მართეო AI-ს: „რა ვიყიდო შემდეგ პარტიაში?“
                         </p>
                     ) : (
                         <ul className="divide-y divide-border">

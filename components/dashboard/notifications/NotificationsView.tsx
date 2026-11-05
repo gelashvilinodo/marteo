@@ -53,7 +53,7 @@ export default function NotificationsView({ notifications: initial, pushKey }: {
         const response = await fetch(id === null ? "/api/notifications" : `/api/notifications/${encodeURIComponent(id)}`, { method: "DELETE", credentials: "same-origin" }).catch(() => null);
         if (!response?.ok) {
             setNotifications(before);
-            setError("შეტყობინება ვერ წაიშალა. სცადე თავიდან.");
+            setError("შეტყობინება ვერ წაიშალა. სცადეთ თავიდან.");
         }
     }
 
@@ -62,18 +62,18 @@ export default function NotificationsView({ notifications: initial, pushKey }: {
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-semibold text-text-primary">შეტყობინებები</h1>
-                    <p className="mt-2 text-sm text-text-secondary">მართეოს სიახლეები და შენი ბიზნესის მნიშვნელოვანი მოვლენები</p>
+                    <p className="mt-2 text-sm text-text-secondary">მართეოს სიახლეები და თქვენი ბიზნესის მნიშვნელოვანი მოვლენები</p>
                 </div>
                 {notifications.length > 0 && <button type="button" onClick={() => remove(null)} className="delete-action inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-sm transition">
                     <Icon icon="solar:trash-bin-trash-linear" className="h-5 w-5" />ყველას წაშლა
                 </button>}
             </div>
-            <PushCard publicKey={pushKey} description="ჩართე და დახმარების პასუხი ტელეფონზე ან კომპიუტერზე მოგივა, მაშინაც, თუ MARTEO დახურულია." />
+            <PushCard publicKey={pushKey} description="ჩართეთ და დახმარების პასუხი ტელეფონზე ან კომპიუტერზე მოგივათ, მაშინაც, თუ MARTEO დახურულია." />
             {error && <p role="alert" className="mt-4 text-sm text-danger">{error}</p>}
 
             {notifications.length === 0 ? <section className="mt-6 flex flex-col items-center rounded-2xl border border-dashed border-border bg-surface px-6 py-12 text-center">
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/15 text-accent"><Icon icon="solar:bell-bold-duotone" className="h-6 w-6" /></span>
-                <h2 className="mt-4 text-base font-semibold text-text-primary">შეტყობინებები ჯერ არ გაქვს</h2>
+                <h2 className="mt-4 text-base font-semibold text-text-primary">შეტყობინებები ჯერ არ გაქვთ</h2>
                 <p className="mt-2 max-w-md text-sm text-text-secondary">როცა რამე მნიშვნელოვანი მოხდება, აქ გამოჩნდება.</p>
             </section> : <ul className="mt-6 space-y-3">
                 {notifications.map(item => {

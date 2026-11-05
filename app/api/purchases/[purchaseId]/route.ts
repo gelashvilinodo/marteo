@@ -59,7 +59,7 @@ export async function GET(
 
         if (!user) {
             return errorResponse(
-                "რედაქტირებისთვის შედი ანგარიშში.",
+                "რედაქტირებისთვის შედით ანგარიშში.",
                 401,
             );
         }
@@ -219,7 +219,7 @@ export async function GET(
         console.error("Purchase edit data loading failed", error);
 
         return errorResponse(
-            "პარტიის მონაცემები ვერ ჩაიტვირთა. სცადე ხელახლა.",
+            "პარტიის მონაცემები ვერ ჩაიტვირთა. სცადეთ ხელახლა.",
             500,
         );
     } finally {
@@ -253,7 +253,7 @@ export async function PATCH(
 
         if (!user) {
             return errorResponse(
-                "რედაქტირებისთვის შედი ანგარიშში.",
+                "რედაქტირებისთვის შედით ანგარიშში.",
                 401,
             );
         }
@@ -267,7 +267,7 @@ export async function PATCH(
             payload.expectedUpdatedAt.length > 40
         ) {
             return errorResponse(
-                "პარტიის ვერსია არასწორია. გახსენი რედაქტირება თავიდან.",
+                "პარტიის ვერსია არასწორია. გახსენით რედაქტირება თავიდან.",
                 400,
             );
         }
@@ -307,7 +307,7 @@ export async function PATCH(
         console.error("Purchase update failed", error);
 
         return errorResponse(
-            "შენახვის შედეგი ვერ დადასტურდა. ხელახლა გახსნამდე შეინარჩუნე შეყვანილი მონაცემები და გადაამოწმე პარტია.",
+            "შენახვის შედეგი ვერ დადასტურდა. ხელახლა გახსნამდე შეინარჩუნეთ შეყვანილი მონაცემები და გადაამოწმეთ პარტია.",
             500,
         );
     }

@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const prisma = createPrismaClient();
     try {
         const user = await getCurrentUserWithClient(() => prisma);
-        if (!user) return json({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
+        if (!user) return json({ success: false, message: "გაიარეთ ავტორიზაცია." }, 401);
         await prisma.$executeRaw`
             UPDATE "User" SET "seenTours" = array_append("seenTours", ${tour})
             WHERE id = ${user.id} AND NOT (${tour} = ANY("seenTours"))

@@ -38,7 +38,7 @@ export function validatePaymentResolution(
 
     if (input.confirmHistoricalPayment !== true) {
         fail(
-            "დაადასტურე, რომ უთითებ უკვე მიღებულ თანხას და არა ახალ ჩარიცხვას.",
+            "დაადასტურეთ, რომ უთითებთ უკვე მიღებულ თანხას და არა ახალ ჩარიცხვას.",
         );
     }
 
@@ -58,7 +58,7 @@ export function validatePaymentResolution(
 
     if (paidAmount.greaterThan(payableTotal)) {
         fail(
-            "უკვე მიღებული თანხა შეკვეთის სრულ თანხას აღემატება. გადაამოწმე გადახდა და შეკვეთის თანხა.",
+            "უკვე მიღებული თანხა შეკვეთის სრულ თანხას აღემატება. გადაამოწმეთ გადახდა და შეკვეთის თანხა.",
         );
     }
 

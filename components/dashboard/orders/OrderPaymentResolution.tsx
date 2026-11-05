@@ -94,7 +94,7 @@ export default function OrderPaymentResolution({
             } catch {
                 if (mounted.current) {
                     setError(
-                        "გადახდა დაზუსტებულია, მაგრამ გვერდი ვერ განახლდა. განაახლე გვერდი.",
+                        "გადახდა დაზუსტებულია, მაგრამ გვერდი ვერ განახლდა. განაახლეთ გვერდი.",
                     );
                 }
             }
@@ -113,7 +113,7 @@ export default function OrderPaymentResolution({
             } else {
                 uncertain.current = true;
                 setError(
-                    "შენახვის შედეგი დაუდასტურებელია. ხელახლა სცადე იმავე ღილაკით - იგივე მოთხოვნას გადავამოწმებთ.",
+                    "შენახვის შედეგი დაუდასტურებელია. ხელახლა სცადეთ იმავე ღილაკით - იგივე მოთხოვნას გადავამოწმებთ.",
                 );
             }
         } finally {
@@ -137,9 +137,9 @@ export default function OrderPaymentResolution({
             </h3>
 
             <p className="text-sm text-text-secondary">
-                მიუთითე უკვე მიღებული თანხა. ეს მოქმედება ახალ თანხას
-                არ იღებს და მარაგს არ ცვლის. თუ თანხა არ მიგიღია,
-                მიუთითე 0.
+                მიუთითეთ უკვე მიღებული თანხა. ეს მოქმედება ახალ თანხას
+                არ იღებს და მარაგს არ ცვლის. თუ თანხა არ მიგიღიათ,
+                მიუთითეთ 0.
             </p>
 
             {!done && (
@@ -167,7 +167,7 @@ export default function OrderPaymentResolution({
                         />
                         <span className="block text-xs text-text-secondary">
                             საჭიროა დადებითი თანხისთვის. 0-ის შემთხვევაში
-                            შეგიძლია ცარიელი დატოვო.
+                            შეგიძლიათ ცარიელი დატოვოთ.
                         </span>
                     </label>
 

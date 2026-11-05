@@ -174,7 +174,7 @@ export default function OrderBulkStatusButtons({
 
             {rows.length > 0 && <section className="mt-4">
                 <p className="text-sm text-text-secondary">
-                    ამ შეკვეთებზე თანხა ბოლომდე არ არის აღრიცხული. მონიშნე, რომელზეც დარჩენილი თანხა რეალურად მიიღე, და მიუთითე გადახდის მეთოდი.
+                    ამ შეკვეთებზე თანხა ბოლომდე არ არის აღრიცხული. მონიშნეთ, რომელზეც დარჩენილი თანხა რეალურად მიიღეთ, და მიუთითეთ გადახდის მეთოდი.
                 </p>
                 <div className="mt-3 grid gap-3 rounded-xl border border-border p-3 sm:grid-cols-2">
                     <label className="flex items-center gap-3 text-sm font-medium sm:col-span-2">

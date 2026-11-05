@@ -14,7 +14,7 @@ export async function withOrderPgReadContext(
         const cookieStore = await cookies();
         const token = cookieStore.get("marteo_session")?.value;
         const preferred = cookieStore.get(ACTIVE_BUSINESS_COOKIE)?.value ?? "";
-        if (!token) return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
+        if (!token) return orderJson({ success: false, message: "გაიარეთ ავტორიზაცია." }, 401);
         const tokenHash = createHash("sha256").update(token).digest("hex");
         client = createPgReader();
         const [session] = await client.$queryRaw<SessionRow[]>`
@@ -26,13 +26,13 @@ export async function withOrderPgReadContext(
                 ORDER BY ("businessId" = ${preferred}) DESC, "createdAt" ASC, "businessId" ASC LIMIT 1
             ) m ON true WHERE s."tokenHash" = ${tokenHash} LIMIT 1
         `;
-        if (!session) return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
+        if (!session) return orderJson({ success: false, message: "გაიარეთ ავტორიზაცია." }, 401);
         if (session.expiresAt <= new Date()) {
             // Preserve existing session-expiry cleanup; no business data writes.
             await client.$queryRaw`DELETE FROM "Session" WHERE "tokenHash" = ${tokenHash}`;
-            return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
+            return orderJson({ success: false, message: "გაიარეთ ავტორიზაცია." }, 401);
         }
-        if (session.status !== "ACTIVE") return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
+        if (session.status !== "ACTIVE") return orderJson({ success: false, message: "გაიარეთ ავტორიზაცია." }, 401);
         if (!session.businessId) return orderJson({ success: false, message: "ბიზნესი ვერ მოიძებნა." }, 403);
         return await read(client, session.businessId);
     } catch (cause) {

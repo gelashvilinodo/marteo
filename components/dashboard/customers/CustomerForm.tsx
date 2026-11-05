@@ -60,8 +60,8 @@ export default function CustomerForm({
         if (submittingRef.current) return;
 
         const message = uncertain
-            ? "შენახვის შედეგი უცნობია. დახურვის შემდეგ გადაამოწმე სია. დახურავ?"
-            : "შეუნახავი ცვლილებები დაიკარგება. დახურავ?";
+            ? "შენახვის შედეგი უცნობია. დახურვის შემდეგ გადაამოწმეთ სია. დახურავთ?"
+            : "შეუნახავი ცვლილებები დაიკარგება. დახურავთ?";
 
         if (
             (dirty || uncertain) &&
@@ -141,7 +141,7 @@ export default function CustomerForm({
         } catch {
             setUncertain(true);
             setError(
-                "შენახვის შედეგი ვერ დადასტურდა. დახურე ფანჯარა და გადაამოწმე სია ხელახლა დამატებამდე.",
+                "შენახვის შედეგი ვერ დადასტურდა. დახურეთ ფანჯარა და გადაამოწმეთ სია ხელახლა დამატებამდე.",
             );
         } finally {
             submittingRef.current = false;

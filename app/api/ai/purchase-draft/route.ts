@@ -33,7 +33,7 @@ export const POST = guardMutation(async (request) => {
     const context = await getPgDashboardContext();
 
     if (!context) {
-        return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
+        return orderJson({ success: false, message: "გაიარეთ ავტორიზაცია." }, 401);
     }
 
     if (!context.membership) {
@@ -80,7 +80,7 @@ export const POST = guardMutation(async (request) => {
         }
 
         console.error("Marteo AI purchase draft failed", error instanceof Error ? error.name : "UnknownError");
-        return orderJson({ success: false, message: "ფაილის დამუშავება ვერ მოხერხდა. სცადე ხელახლა." }, 500);
+        return orderJson({ success: false, message: "ფაილის დამუშავება ვერ მოხერხდა. სცადეთ ხელახლა." }, 500);
     } finally {
         if (usage) await finishAiUsage(prisma, usage, failed);
         await prisma.$disconnect();

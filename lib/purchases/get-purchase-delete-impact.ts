@@ -33,7 +33,7 @@ export async function getPurchaseDeleteImpact(
 
     if (!purchase) {
         throw new PurchaseEditError(
-            "პარტია ვერ მოიძებნა. განაახლე სია.",
+            "პარტია ვერ მოიძებნა. განაახლეთ სია.",
             404,
         );
     }

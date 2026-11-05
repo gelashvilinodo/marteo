@@ -23,7 +23,7 @@ export async function mutateContent(
     action: Action,
     raw: unknown,
 ) {
-    if (!(await getCurrentUser())) fail("გაიარე ავტორიზაცია.", 401);
+    if (!(await getCurrentUser())) fail("გაიარეთ ავტორიზაცია.", 401);
 
     const membership = await getCurrentBusiness();
     if (!membership) fail("ბიზნესი ვერ მოიძებნა.", 403);
@@ -45,11 +45,11 @@ export async function mutateContent(
         action === "platform" &&
         (!platform || typeof body.completed !== "boolean")
     ) {
-        fail("მიუთითე პლატფორმა და შესრულების მდგომარეობა.");
+        fail("მიუთითეთ პლატფორმა და შესრულების მდგომარეობა.");
     }
 
     if (action === "all-platforms" && typeof body.completed !== "boolean") {
-        fail("მიუთითე შესრულების მდგომარეობა.");
+        fail("მიუთითეთ შესრულების მდგომარეობა.");
     }
 
     const prisma = createPrismaClient();
@@ -196,7 +196,7 @@ export async function mutateContent(
                 expectedVersion.getTime()
             ) {
                 fail(
-                    "კონტენტი უკვე შეიცვალა. გახსენი ხელახლა და სცადე კიდევ ერთხელ.",
+                    "კონტენტი უკვე შეიცვალა. გახსენით ხელახლა და სცადეთ კიდევ ერთხელ.",
                     409,
                 );
             }
@@ -300,7 +300,7 @@ export async function mutateContent(
                 existingOther.customPlatform !== input.customPlatform
             ) {
                 fail(
-                    "შესრულებული პლატფორმის სახელის შესაცვლელად ჯერ მოხსენი შესრულების მონიშვნა.",
+                    "შესრულებული პლატფორმის სახელის შესაცვლელად ჯერ მოხსენით შესრულების მონიშვნა.",
                 );
             }
 
@@ -313,7 +313,7 @@ export async function mutateContent(
 
             if (removed.some(channel => channel.completedAt !== null)) {
                 fail(
-                    "შესრულებული პლატფორმის მოსაშორებლად ჯერ მოხსენი შესრულების მონიშვნა.",
+                    "შესრულებული პლატფორმის მოსაშორებლად ჯერ მოხსენით შესრულების მონიშვნა.",
                 );
             }
 

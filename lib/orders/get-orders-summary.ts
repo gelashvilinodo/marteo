@@ -24,7 +24,8 @@ export async function getOrdersSummary(
         )
         SELECT COALESCE((SELECT jsonb_agg(jsonb_build_object('status', status, 'count', count))
             FROM period_counts), '[]'::jsonb) AS grouped,
-            COUNT(*) FILTER (WHERE "lastPrintedInvoiceVersion" IS NULL) AS "newCount",
+            -- იმპორტირებული ისტორიული შეკვეთები ბეჭდვის რიგში არ შედის.
+            COUNT(*) FILTER (WHERE "lastPrintedInvoiceVersion" IS NULL AND NOT "imported") AS "newCount",
             COUNT(*) FILTER (WHERE "lastPrintedInvoiceVersion" IS NOT NULL
                 AND "lastPrintedInvoiceVersion" <> "invoiceVersion") AS "updatedCount",
             COUNT(*) FILTER (WHERE status = 'PROCESSING') AS "processingCount",

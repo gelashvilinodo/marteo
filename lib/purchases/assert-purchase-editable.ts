@@ -20,7 +20,7 @@ export async function assertPurchaseEditable(
 ) {
     if (purchase.archivedAt !== null) {
         throw new PurchaseEditError(
-            "რედაქტირებისთვის ჯერ აღადგინე პარტია არქივიდან.",
+            "რედაქტირებისთვის ჯერ აღადგინეთ პარტია არქივიდან.",
             409,
         );
     }

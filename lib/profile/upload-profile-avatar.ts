@@ -92,7 +92,7 @@ export async function readProfileAvatarForm(
     const reader = request.body?.getReader();
 
     if (!reader) {
-        throw new ProfileSettingsError("აირჩიე ფოტო.", 400);
+        throw new ProfileSettingsError("აირჩიეთ ფოტო.", 400);
     }
 
     const chunks: Uint8Array[] = [];
@@ -146,7 +146,7 @@ export async function uploadProfileAvatar(
     value: FormDataEntryValue | null,
 ): Promise<string> {
     if (!(value instanceof File) || value.size === 0) {
-        throw new ProfileSettingsError("აირჩიე ფოტო.", 400);
+        throw new ProfileSettingsError("აირჩიეთ ფოტო.", 400);
     }
 
     if (value.size > MAX_FILE_SIZE) {
@@ -161,7 +161,7 @@ export async function uploadProfileAvatar(
 
     if (!image) {
         throw new ProfileSettingsError(
-            "აირჩიე PNG, JPG ან WEBP ფორმატის ფოტო.",
+            "აირჩიეთ PNG, JPG ან WEBP ფორმატის ფოტო.",
             400,
         );
     }
@@ -203,7 +203,7 @@ export async function uploadProfileAvatar(
         });
 
         throw new ProfileSettingsError(
-            "ფოტო ვერ აიტვირთა. სცადე ხელახლა.",
+            "ფოტო ვერ აიტვირთა. სცადეთ ხელახლა.",
             502,
         );
     }

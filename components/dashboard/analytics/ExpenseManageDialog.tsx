@@ -154,7 +154,7 @@ export default function ExpenseManageDialog({
         if (
             dirty &&
             !window.confirm(
-                "ცვლილებები არ არის შენახული. დახურავ ფანჯარას?",
+                "ცვლილებები არ არის შენახული. დახურავთ ფანჯარას?",
             )
         ) {
             return;
@@ -211,7 +211,7 @@ export default function ExpenseManageDialog({
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "მოქმედების შედეგი ვერ დადასტურდა. სცადე ხელახლა.",
+                    : "მოქმედების შედეგი ვერ დადასტურდა. სცადეთ ხელახლა.",
             );
         } finally {
             submitting.current = false;

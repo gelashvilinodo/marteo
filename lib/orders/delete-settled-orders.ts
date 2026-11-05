@@ -15,7 +15,7 @@ function fail(message: string, status = 400): never {
 // და კლიენტი მას ჩვეულებრივი გზით ამოწმებს.
 export async function deleteSettledOrders(raw: unknown) {
     const user = await getCurrentUser();
-    if (!user) fail("გაიარე ავტორიზაცია.", 401);
+    if (!user) fail("გაიარეთ ავტორიზაცია.", 401);
 
     const ids = typeof raw === "object" && raw !== null && !Array.isArray(raw)
         ? (raw as Record<string, unknown>).orderIds
@@ -35,7 +35,7 @@ export async function deleteSettledOrders(raw: unknown) {
         const membership = await findActiveMembership(prisma, user.id);
         if (!membership) fail("ბიზნესი ვერ მოიძებნა.", 403);
         if (!canManageBusinessArea(membership, "ORDERS")) {
-            fail("ამ მოქმედების უფლება არ გაქვს.", 403);
+            fail("ამ მოქმედების უფლება არ გაქვთ.", 403);
         }
         const businessId = membership.businessId;
 

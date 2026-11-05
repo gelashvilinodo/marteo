@@ -3,24 +3,28 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 
-import { hasBusinessFeature, type BusinessMode } from "@/lib/business/business-mode";
+import type { BusinessMode } from "@/lib/business/business-mode";
 import type { BusinessPermission } from "@/lib/business/permissions";
-import { PERMISSION_OPTIONS, type TeamMember, type TeamSnapshot } from "@/lib/business/team";
+import { PERMISSION_OPTIONS, planPermissionOptions, planPermissions, type TeamMember, type TeamPlan, type TeamSnapshot } from "@/lib/business/team";
 import PermissionPicker from "./PermissionPicker";
 
-export default function EditMemberDialog({ member, businessMode, onClose, onSaved }: {
+export default function EditMemberDialog({ member, plan, businessMode, onClose, onSaved }: {
     member: TeamMember;
+    plan: TeamPlan;
     businessMode: BusinessMode;
     onClose: () => void;
     onSaved: (team: TeamSnapshot, message: string) => void;
 }) {
     const dialog = useRef<HTMLDialogElement>(null);
     const titleId = useId();
-    const [permissions, setPermissions] = useState<BusinessPermission[]>(member.permissions);
+    const allowed = planPermissions(plan);
+    const [permissions, setPermissions] = useState<BusinessPermission[]>(() => member.permissions.filter(permission => allowed.includes(permission)));
     const [readOnly, setReadOnly] = useState(member.readOnly);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
-    const options = PERMISSION_OPTIONS.filter(option => option.value !== "PRODUCTION" || hasBusinessFeature(businessMode, "manufacturing"));
+    const options = planPermissionOptions(plan, businessMode);
+    // გეგმაში არშემავალი უფლებები სერვერზე რჩება და გეგმის აწევისას ბრუნდება.
+    const hidden = PERMISSION_OPTIONS.filter(option => member.permissions.includes(option.value) && !allowed.includes(option.value));
 
     useEffect(() => {
         const element = dialog.current;
@@ -32,7 +36,7 @@ export default function EditMemberDialog({ member, businessMode, onClose, onSave
         event.preventDefault();
         if (busy) return;
         if (!permissions.length) {
-            setError("მონიშნე ერთი უფლება მაინც.");
+            setError("მონიშნეთ ერთი უფლება მაინც.");
             return;
         }
         setBusy(true);
@@ -45,12 +49,12 @@ export default function EditMemberDialog({ member, businessMode, onClose, onSave
             });
             const data = await response.json().catch(() => ({})) as { success?: boolean; message?: string; team?: TeamSnapshot };
             if (!response.ok || !data.success || !data.team) {
-                setError(data.message || "უფლებები ვერ შეინახა. სცადე ხელახლა.");
+                setError(data.message || "უფლებები ვერ შეინახა. სცადეთ ხელახლა.");
                 return;
             }
             onSaved(data.team, data.message || "უფლებები განახლდა.");
         } catch {
-            setError("კავშირი ვერ დამყარდა. სცადე ხელახლა.");
+            setError("კავშირი ვერ დამყარდა. სცადეთ ხელახლა.");
         } finally {
             setBusy(false);
         }
@@ -74,6 +78,11 @@ export default function EditMemberDialog({ member, businessMode, onClose, onSave
                 <PermissionPicker options={options} permissions={permissions} readOnly={readOnly} disabled={busy}
                     onToggle={permission => { setError(""); setPermissions(current => current.includes(permission) ? current.filter(item => item !== permission) : [...current, permission]); }}
                     onReadOnly={() => setReadOnly(value => !value)} />
+                {hidden.length > 0 && (
+                    <p className="rounded-xl bg-background p-3 text-sm text-text-secondary">
+                        უფლებები „{hidden.map(option => option.label).join("“, „")}“ თქვენს გეგმაში არ შედის. ისინი შენახულია და ბიზნეს გეგმაზე გადასვლისას თავისით დაბრუნდება.
+                    </p>
+                )}
                 {error && <p role="alert" className="text-sm text-danger">{error}</p>}
                 <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                     <button type="button" onClick={onClose} disabled={busy}

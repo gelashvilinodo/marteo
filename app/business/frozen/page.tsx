@@ -26,12 +26,12 @@ export default async function FrozenPage() {
         if (!frozen.length) redirect("/business/onboarding");
         const names = frozen.map(member => `„${member.business.name}“`).join(", ");
         return (
-            <AuthShell heading={<>წვდომა<br />დროებით შეჩერებულია.</>} text="შენი მონაცემები და ანგარიში უსაფრთხოდაა.">
+            <AuthShell heading={<>წვდომა<br />დროებით შეჩერებულია.</>} text="თქვენი მონაცემები და ანგარიში უსაფრთხოდაა.">
                 <div className={authCardClass}>
                     <Icon icon="solar:lock-keyhole-linear" className="size-12 text-accent" aria-hidden="true" />
                     <h2 className="mt-3 text-xl font-semibold text-text-primary">ბიზნესში შესვლა ახლა ვერ ხერხდება</h2>
                     <p className="mt-2 text-sm leading-6 text-text-secondary">
-                        {names} ბიზნესის გეგმა შეიცვალა და გუნდის წევრების ლიმიტი შემცირდა. ლიმიტში ჯერ ადრე დამატებული წევრები დარჩნენ, ამიტომ შენი წვდომა დროებით შეჩერდა.
+                        {names} ბიზნესის გეგმა შეიცვალა და გუნდის წევრების ლიმიტი შემცირდა. ლიმიტში ჯერ ადრე დამატებული წევრები დარჩნენ, ამიტომ თქვენი წვდომა დროებით შეჩერდა.
                     </p>
                     <p className="mt-2 text-sm leading-6 text-text-secondary">
                         წვდომა ავტომატურად აღდგება, როცა ბიზნესის მფლობელი გეგმას გააუმჯობესებს ან გუნდში ადგილი გათავისუფლდება.

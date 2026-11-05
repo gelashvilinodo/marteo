@@ -59,7 +59,7 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                     new Promise<never>((_, reject) => {
                         timeout = setTimeout(() => {
                             reject(new Error(
-                                "ინვოისების მომზადების დრო ამოიწურა. განაახლე გვერდი და სცადე ხელახლა.",
+                                "ინვოისების მომზადების დრო ამოიწურა. განაახლეთ გვერდი და სცადეთ ხელახლა.",
                             ));
                         }, 15000);
                     }),
@@ -138,7 +138,7 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                 if (selectionKey) {
                     const value = sessionStorage.getItem(`marteo.invoice-selection.${selectionKey}`);
                     const parsed: unknown = value ? JSON.parse(value) : null;
-                    if (!Array.isArray(parsed) || !parsed.every(id => typeof id === "string" && id.trim())) throw new Error("მონიშვნა ვერ მოიძებნა. შეკვეთებიდან ხელახლა გახსენი ბეჭდვა.");
+                    if (!Array.isArray(parsed) || !parsed.every(id => typeof id === "string" && id.trim())) throw new Error("მონიშვნა ვერ მოიძებნა. შეკვეთებიდან ხელახლა გახსენით ბეჭდვა.");
                     requestedIds = [...new Set(parsed as string[])];
                 }
                 if (mode) {
@@ -167,7 +167,7 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                 }
                 if (active) setReady(true);
             } catch (cause: unknown) {
-                if (active) setError(cause instanceof Error && cause.name !== "AbortError" ? cause.message : "ჩატვირთვა შეწყდა. განაახლე გვერდი.");
+                if (active) setError(cause instanceof Error && cause.name !== "AbortError" ? cause.message : "ჩატვირთვა შეწყდა. განაახლეთ გვერდი.");
             }
         }
         void load();
@@ -266,7 +266,7 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "PDF-ის შექმნა ვერ მოხერხდა. სცადე ხელახლა.",
+                    : "PDF-ის შექმნა ვერ მოხერხდა. სცადეთ ხელახლა.",
             );
         } finally {
             operation.current = false;
@@ -305,7 +305,7 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
             window.print();
             setPrompt(true);
         } catch {
-            setError("ბეჭდვის ფანჯარა ვერ გაიხსნა. სცადე ხელახლა.");
+            setError("ბეჭდვის ფანჯარა ვერ გაიხსნა. სცადეთ ხელახლა.");
         } finally {
             operation.current = false;
             setBusy(false);
@@ -330,7 +330,7 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                 } finally { clearTimeout(timeout); }
             }
             setPrompt(false);
-        } catch (cause: unknown) { setError(cause instanceof Error && cause.name !== "AbortError" ? cause.message : "კავშირი შეწყდა. სცადე ხელახლა; უკვე მონიშნული ინვოისები შენახულია."); }
+        } catch (cause: unknown) { setError(cause instanceof Error && cause.name !== "AbortError" ? cause.message : "კავშირი შეწყდა. სცადეთ ხელახლა; უკვე მონიშნული ინვოისები შენახულია."); }
         finally { operation.current = false; setBusy(false); }
     }
     const width =
@@ -434,7 +434,7 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                     </p>
                 )}
             </div>
-            <p className="text-xs leading-relaxed text-text-secondary">თითო ინვოისი ცალკე გვერდიდან იწყება. გამორთე ბრაუზერის ჰედერი/ფუტერი და გამოიყენე 100% მასშტაბი. თერმული ფორმატისთვის პრინტერშიც აირჩიე შესაბამისი ქაღალდი.</p>
+            <p className="text-xs leading-relaxed text-text-secondary">თითო ინვოისი ცალკე გვერდიდან იწყება. გამორთეთ ბრაუზერის ჰედერი/ფუტერი და გამოიყენეთ 100% მასშტაბი. თერმული ფორმატისთვის პრინტერშიც აირჩიეთ შესაბამისი ქაღალდი.</p>
             {ready && entries.length === 0 && <p role="status">დასაბეჭდი ინვოისები არ არის.</p>}
             {!ready && !error && <p role="status">ინვოისები იტვირთება…</p>}
             {preparationError && (
@@ -446,8 +446,8 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
             {ready && entries.length > 0 && <div className="rounded-xl border border-border bg-background p-3 text-sm">
                 <p role="status">დადასტურებულია: {confirmed.length} / {entries.length}</p>
                 {confirmed.length < entries.length && <>
-                    {prompt && <p className="mt-2">ყველა ინვოისი წარმატებით დაბეჭდე ან PDF-ად შეინახე?</p>}
-                    <button disabled={busy} onClick={confirm} className="mt-2 rounded-lg bg-success px-3 py-2 font-semibold text-white disabled:opacity-50">ყველა მონიშნე დაბეჭდილად</button>
+                    {prompt && <p className="mt-2">ყველა ინვოისი წარმატებით დაბეჭდეთ ან PDF-ად შეინახეთ?</p>}
+                    <button disabled={busy} onClick={confirm} className="mt-2 rounded-lg bg-success px-3 py-2 font-semibold text-white disabled:opacity-50">ყველა მონიშნეთ დაბეჭდილად</button>
                     {prompt && <button disabled={busy} onClick={() => setPrompt(false)} className="ml-3 underline">ჯერ არა</button>}
                 </>}
             </div>}

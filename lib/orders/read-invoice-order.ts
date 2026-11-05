@@ -8,7 +8,7 @@ import { getActiveBusinessPreference } from '@/lib/auth/active-business';
 // A request-owned connection and read-only snapshot; no cross-request data cache.
 type Reader = Pick<ReturnType<typeof createPgReader>, '$queryRaw'>;
 export async function withInvoiceReader<T>(token:string|undefined,read:(reader:Reader,businessId:string)=>Promise<T>):Promise<T> {
-    if(!token)throw new OrderValidationError('გაიარე ავტორიზაცია.',401);
+    if(!token)throw new OrderValidationError('გაიარეთ ავტორიზაცია.',401);
     const tokenHash=createHash('sha256').update(token).digest('hex');
     const preferred=await getActiveBusinessPreference();
     const reader=createPgReader();
@@ -24,7 +24,7 @@ export async function withInvoiceReader<T>(token:string|undefined,read:(reader:R
                 WHERE s."tokenHash"=${tokenHash} LIMIT 1
             `;
             if(!access||access.status!=='ACTIVE'||access.expiresAt<=new Date())
-                throw new OrderValidationError('გაიარე ავტორიზაცია.',401);
+                throw new OrderValidationError('გაიარეთ ავტორიზაცია.',401);
             if(!access.businessId)throw new OrderValidationError('ბიზნესი ვერ მოიძებნა.',403);
             return read(tx,access.businessId);
         });

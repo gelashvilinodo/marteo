@@ -128,7 +128,7 @@ export async function runUserAction(prisma: PrismaClient, adminId: string, userI
     const delivery = resetDelivery as { email: string; token: string } | null;
     if (delivery) {
         await sendPasswordResetEmail({ to: delivery.email, token: delivery.token }).catch(() => {
-            throw new AdminActionError("ბმული შეიქმნა, მაგრამ წერილი ვერ გაიგზავნა. სცადე ხელახლა.", 502);
+            throw new AdminActionError("ბმული შეიქმნა, მაგრამ წერილი ვერ გაიგზავნა. სცადეთ ხელახლა.", 502);
         });
     }
     return message;

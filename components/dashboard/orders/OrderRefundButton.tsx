@@ -47,8 +47,8 @@ export default function OrderRefundButton({ orderId, onUpdated, onChanged }: {
     function canLeave() {
         if (running.current) return false;
         return !(dirty || pending) || window.confirm(pending
-            ? "თანხის დაბრუნების აღრიცხვის შედეგი დაუდასტურებელია. ხელახლა ცდა იგივე მოთხოვნით შესრულდება. დახურო ფანჯარა?"
-            : "ცვლილებები შენახული არ არის. დახურო ფანჯარა?");
+            ? "თანხის დაბრუნების აღრიცხვის შედეგი დაუდასტურებელია. ხელახლა ცდა იგივე მოთხოვნით შესრულდება. დახუროთ ფანჯარა?"
+            : "ცვლილებები შენახული არ არის. დახუროთ ფანჯარა?");
     }
     function leave() {
         fetchController.current?.abort();
@@ -106,7 +106,7 @@ export default function OrderRefundButton({ orderId, onUpdated, onChanged }: {
                 setPending(null);
                 setError(cause.message);
             } else {
-                setError("აღრიცხვის შედეგი დაუდასტურებელია. ხელახლა ცდა მხოლოდ ჩანაწერს გადაამოწმებს - მომხმარებელს თანხა მეორედ არ დაუბრუნო.");
+                setError("აღრიცხვის შედეგი დაუდასტურებელია. ხელახლა ცდა მხოლოდ ჩანაწერს გადაამოწმებს - მომხმარებელს თანხა მეორედ არ დაუბრუნოთ.");
             }
         } finally {
             running.current = false;
@@ -119,11 +119,11 @@ export default function OrderRefundButton({ orderId, onUpdated, onChanged }: {
         const value = moneyCents(amount);
         const due = moneyCents(order.refundDue) ?? 0n;
         if (value === null || value <= 0n || value > due) {
-            setError(`მიუთითე დადებითი თანხა, მაქსიმუმ ${order.refundDue} ₾.`);
+            setError(`მიუთითეთ დადებითი თანხა, მაქსიმუმ ${order.refundDue} ₾.`);
             return;
         }
         if (!confirmed) {
-            setError("მონიშნე დადასტურება მხოლოდ მაშინ, თუ თანხა რეალურად დაუბრუნე მომხმარებელს.");
+            setError("მონიშნეთ დადასტურება მხოლოდ მაშინ, თუ თანხა რეალურად დაუბრუნეთ მომხმარებელს.");
             return;
         }
         void send({
@@ -144,12 +144,12 @@ export default function OrderRefundButton({ orderId, onUpdated, onChanged }: {
         </button>
         <dialog ref={dialog} onCancel={event => { event.preventDefault(); event.stopPropagation(); if (canLeave()) leave(); }} onClose={event => event.stopPropagation()} aria-labelledby="order-refund-title" className="m-auto max-h-[85dvh] w-[calc(100%_-_2rem)] max-w-lg overflow-y-auto rounded-2xl border border-border bg-surface p-5 text-text-primary shadow-2xl backdrop:bg-black/30 backdrop:backdrop-blur-sm">
             <h2 id="order-refund-title" className="flex items-center gap-2 text-lg font-semibold"><Icon icon="solar:wallet-money-linear" className="h-6 w-6 text-warning" />თანხის დაბრუნება</h2>
-            <p className="mt-3 text-sm text-text-secondary">ეს მოქმედება თანხას ბანკიდან არ გადარიცხავს. აქ აღრიცხე მხოლოდ ის თანხა, რომელიც მომხმარებელს უკვე დაუბრუნე.</p>
+            <p className="mt-3 text-sm text-text-secondary">ეს მოქმედება თანხას ბანკიდან არ გადარიცხავს. აქ აღრიცხეთ მხოლოდ ის თანხა, რომელიც მომხმარებელს უკვე დაუბრუნეთ.</p>
             {loading && <p role="status" className="mt-4 flex items-center gap-2 text-sm text-accent"><Icon icon="solar:refresh-linear" className="h-5 w-5 animate-spin" />იტვირთება…</p>}
             {!loading && order && <>
                 <div className="mt-4 rounded-xl border border-warning/30 bg-warning/5 p-3"><p className="text-xs text-text-secondary">მომხმარებელს დასაბრუნებელი თანხა</p><p className="mt-1 text-xl font-semibold tabular-nums text-warning">{order.refundDue} ₾</p></div>
                 {due > 0n ? <fieldset disabled={blocked} className="mt-4 space-y-3 disabled:opacity-60">
-                    <label className="block"><span className="mb-1 block text-sm">რეალურად დაბრუნებული თანხა · ₾</span><input inputMode="decimal" value={amount} onChange={event => { setAmount(event.target.value); setDirty(true); }} className={field} /><span className="mt-1 block text-xs text-text-secondary">შეგიძლია თანხა ნაწილობრივად აღრიცხო. დარჩენილი ნაწილი დასაბრუნებლად დარჩება.</span></label>
+                    <label className="block"><span className="mb-1 block text-sm">რეალურად დაბრუნებული თანხა · ₾</span><input inputMode="decimal" value={amount} onChange={event => { setAmount(event.target.value); setDirty(true); }} className={field} /><span className="mt-1 block text-xs text-text-secondary">შეგიძლიათ თანხა ნაწილობრივად აღრიცხოთ. დარჩენილი ნაწილი დასაბრუნებლად დარჩება.</span></label>
                     <label className="block"><span className="mb-1 block text-sm">დაბრუნების მეთოდი</span><select value={method} onChange={event => { setMethod(event.target.value as Method); setDirty(true); }} className={field}><option value="CASH">ნაღდი ფული</option><option value="BANK_TRANSFER">საბანკო გადარიცხვა</option><option value="CARD">ბარათი</option></select></label>
                     {method === "BANK_TRANSFER" && <label className="block"><span className="mb-1 block text-sm">ბანკი</span><input value={bankName} onChange={event => { setBankName(event.target.value); setDirty(true); }} className={field} /></label>}
                     <label className="flex items-start gap-3 rounded-xl border border-border p-3 text-sm"><input type="checkbox" checked={confirmed} onChange={event => { setConfirmed(event.target.checked); setDirty(true); }} className="mt-0.5 h-4 w-4 shrink-0 accent-accent" /><span>ვადასტურებ, რომ მითითებული თანხა მომხმარებელს რეალურად დავუბრუნე.</span></label>
@@ -159,7 +159,7 @@ export default function OrderRefundButton({ orderId, onUpdated, onChanged }: {
             {!loading && !order && !pending && <button type="button" onClick={() => void load()} className="mt-3 text-sm text-accent underline">ხელახლა ჩატვირთვა</button>}
             <footer className="mt-5 flex flex-wrap items-center justify-between gap-2">
                 <button type="button" disabled={saving} onClick={() => { if (canLeave()) leave(); }} className="h-11 rounded-xl border border-border px-3 text-sm disabled:opacity-40">დახურვა</button>
-                {saving && <button type="button" onClick={() => saveController.current?.abort()} className="text-xs text-text-secondary underline">შეაჩერე ლოდინი</button>}
+                {saving && <button type="button" onClick={() => saveController.current?.abort()} className="text-xs text-text-secondary underline">შეაჩერეთ ლოდინი</button>}
                 {(pending || due > 0n) && <button type="button" disabled={loading || saving} onClick={() => pending ? void send(pending) : submit()} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-success px-3 text-sm font-semibold text-white disabled:opacity-40"><Icon icon={saving ? "solar:refresh-linear" : "solar:check-circle-linear"} className={`h-5 w-5 ${saving ? "animate-spin" : ""}`} />{saving ? "ინახება…" : pending ? "ხელახლა ცდა" : "დაბრუნების დადასტურება"}</button>}
             </footer>
         </dialog>

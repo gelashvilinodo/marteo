@@ -155,7 +155,7 @@ export default function OrdersView({
             sessionStorage.setItem(`marteo.invoice-selection.${key}`, JSON.stringify(checkedIds));
             window.location.assign(`/print/orders?selection=${encodeURIComponent(key)}`);
             setPrintError("");
-        } catch { setPrintError("ბრაუზერის დროებით საცავში მონიშვნა ვერ შეინახა. მონიშვნა შენარჩუნებულია; სცადე ხელახლა."); }
+        } catch { setPrintError("ბრაუზერის დროებით საცავში მონიშვნა ვერ შეინახა. მონიშვნა შენარჩუნებულია; სცადეთ ხელახლა."); }
     }
     const dialog = useRef<HTMLDialogElement>(null);
     const search = useRef<HTMLInputElement>(null);
@@ -673,7 +673,7 @@ export default function OrdersView({
 
                     {/* {selectionMode && (
                         <p className="mt-2 text-xs text-text-secondary">
-                            მონიშნე სასურველი შეკვეთები. სათაურის ჩეკბოქსი
+                            მონიშნეთ სასურველი შეკვეთები. სათაურის ჩეკბოქსი
                             ამ გვერდის ყველა შეკვეთას მონიშნავს.
                         </p>
                     )} */}

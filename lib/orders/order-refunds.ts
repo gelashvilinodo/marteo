@@ -16,12 +16,12 @@ export async function confirmOrderRefund(
     body: Record<string, unknown>,
 ) {
     if (body.confirmRefund !== true) {
-        fail("დაადასტურე, რომ თანხა მომხმარებელს რეალურად დაუბრუნე.");
+        fail("დაადასტურეთ, რომ თანხა მომხმარებელს რეალურად დაუბრუნეთ.");
     }
-    if (typeof body.amount !== "string") fail("მიუთითე დაბრუნებული თანხა.");
+    if (typeof body.amount !== "string") fail("მიუთითეთ დაბრუნებული თანხა.");
     const text = body.amount.trim().replace(",", ".");
     if (!/^\d+(?:\.\d{1,2})?$/.test(text)) {
-        fail("დაბრუნებული თანხა მიუთითე მაქსიმუმ ორი ათწილადით.");
+        fail("დაბრუნებული თანხა მიუთითეთ მაქსიმუმ ორი ათწილადით.");
     }
     const amount = new Prisma.Decimal(text);
     const receivedItems = await tx.orderReturnItem.groupBy({
@@ -58,7 +58,7 @@ export async function confirmOrderRefund(
     }
     const method = body.paymentMethod;
     if (method !== "CASH" && method !== "BANK_TRANSFER" && method !== "CARD") {
-        fail("აირჩიე თანხის დაბრუნების მეთოდი.");
+        fail("აირჩიეთ თანხის დაბრუნების მეთოდი.");
     }
     if (body.bankName !== undefined && typeof body.bankName !== "string") {
         fail("ბანკის დასახელების ფორმატი არასწორია.");

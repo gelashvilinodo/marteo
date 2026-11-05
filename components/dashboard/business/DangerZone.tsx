@@ -60,7 +60,7 @@ function DeleteDialog({ businessName, onClose }: { businessName: string; onClose
             });
             const data = await response.json().catch(() => ({})) as { success?: boolean; deleted?: boolean; message?: string };
             if (!response.ok || !data.success) {
-                setError(data.message || "წაშლა ვერ მოხერხდა. სცადე ხელახლა.");
+                setError(data.message || "წაშლა ვერ მოხერხდა. სცადეთ ხელახლა.");
                 return;
             }
             if (data.deleted) {
@@ -70,7 +70,7 @@ function DeleteDialog({ businessName, onClose }: { businessName: string; onClose
             // სხვა მფლობელების თანხმობა საჭიროა: მოთხოვნა გუნდის სექციაში გამოჩნდება.
             window.location.reload();
         } catch {
-            setError("კავშირი ვერ დამყარდა. სცადე ხელახლა.");
+            setError("კავშირი ვერ დამყარდა. სცადეთ ხელახლა.");
         } finally {
             setBusy(false);
         }
@@ -86,14 +86,14 @@ function DeleteDialog({ businessName, onClose }: { businessName: string; onClose
                     ბიზნესის წაშლა
                 </h2>
                 <p className="text-sm text-text-secondary">
-                    დასადასტურებლად ჩაწერე ბიზნესის სახელი: <strong className="break-all text-text-primary">{businessName}</strong>
+                    დასადასტურებლად ჩაწერეთ ბიზნესის სახელი: <strong className="break-all text-text-primary">{businessName}</strong>
                 </p>
                 <label className="block text-sm font-medium">
                     ბიზნესის სახელი
                     <input value={confirmName} disabled={busy} autoComplete="off" onChange={event => { setConfirmName(event.target.value); setError(""); }} className={inputClass} />
                 </label>
                 <label className="block text-sm font-medium">
-                    შენი პაროლი
+                    თქვენი პაროლი
                     <input type="password" value={password} disabled={busy} autoComplete="current-password" onChange={event => { setPassword(event.target.value); setError(""); }} className={inputClass} />
                 </label>
                 {error && <p role="alert" className="text-sm text-red-600">{error}</p>}

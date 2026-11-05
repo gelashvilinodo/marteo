@@ -70,7 +70,7 @@ export default function OrderBulkDeleteButton({
     function canLeave() {
         if (running.current) return false;
         return !uncertain || window.confirm(
-            "ზოგი წაშლის შედეგი ჯერ დაუდასტურებელია. იგივე მოთხოვნით ხელახლა ცდა ამ ფანჯარაში შეგიძლია. დახურო?",
+            "ზოგი წაშლის შედეგი ჯერ დაუდასტურებელია. იგივე მოთხოვნით ხელახლა ცდა ამ ფანჯარაში შეგიძლიათ. დახუროთ?",
         );
     }
     function leave() { setOpen(false); }
@@ -111,14 +111,14 @@ export default function OrderBulkDeleteButton({
                 label,
                 state: "REVIEW",
                 message:
-                    "მომხმარებელთან დარჩენილი პროდუქტებია. გახსენი წაშლის ფანჯარა და მიუთითე, დაბრუნდება თუ არა ისინი.",
+                    "მომხმარებელთან დარჩენილი პროდუქტებია. გახსენით წაშლის ფანჯარა და მიუთითეთ, დაბრუნდება თუ არა ისინი.",
             };
         }
         if (pending) {
-            return { id, label, state: "REVIEW", message: "ნივთების დაბრუნებას ველოდებით. ჯერ დაადასტურე ფიზიკური მიღება." };
+            return { id, label, state: "REVIEW", message: "ნივთების დაბრუნებას ველოდებით. ჯერ დაადასტურეთ ფიზიკური მიღება." };
         }
         if (order.status !== "PROCESSING" && order.status !== "COMPLETED" && !fullyReturned) {
-            return { id, label, state: "REVIEW", message: "წაშლამდე მიუთითე, დაბრუნდება თუ არა დარჩენილი ნივთები." };
+            return { id, label, state: "REVIEW", message: "წაშლამდე მიუთითეთ, დაბრუნდება თუ არა დარჩენილი ნივთები." };
         }
         return {
             id,
@@ -222,7 +222,7 @@ export default function OrderBulkDeleteButton({
                         ? {
                             ...value,
                             state: definite ? "ERROR" : "UNCERTAIN",
-                            message: definite ? cause.message : "შედეგი დაუდასტურებელია. სცადე ხელახლა.",
+                            message: definite ? cause.message : "შედეგი დაუდასტურებელია. სცადეთ ხელახლა.",
                         }
                         : value));
                 }
@@ -241,7 +241,7 @@ export default function OrderBulkDeleteButton({
                         ? {
                             ...value,
                             state: definite ? "REVIEW" : "UNCERTAIN",
-                            message: definite ? cause.message : "შედეგი დაუდასტურებელია. იგივე მოთხოვნით სცადე ხელახლა.",
+                            message: definite ? cause.message : "შედეგი დაუდასტურებელია. იგივე მოთხოვნით სცადეთ ხელახლა.",
                         }
                         : value));
                     if (abort.signal.aborted) break;
@@ -278,7 +278,7 @@ export default function OrderBulkDeleteButton({
                 მონიშნული შეკვეთების წაშლა
             </h2>
             <p className="mt-3 text-sm text-text-secondary">
-                გადაამოწმე, რა მოხდება თითოეულ შეკვეთაზე. წაშლილი შეკვეთები სიიდან დაიმალება და მათი საჯარო ბმულები გაუქმდება.
+                გადაამოწმეთ, რა მოხდება თითოეულ შეკვეთაზე. წაშლილი შეკვეთები სიიდან დაიმალება და მათი საჯარო ბმულები გაუქმდება.
                 დამატებითი გადაწყვეტილების საჭიროებისას შეკვეთა დარჩება.
             </p>
             {busy && <p role="status" className="mt-3 flex items-center gap-2 text-sm text-accent"><Icon icon="solar:refresh-linear" className="h-5 w-5 animate-spin" />მიმდინარეობს დამუშავება…</p>}
@@ -296,7 +296,7 @@ export default function OrderBulkDeleteButton({
             </div>
             <footer className="mt-5 flex flex-wrap items-center justify-between gap-2">
                 <button type="button" disabled={busy} onClick={() => { if (canLeave()) leave(); }} className="h-11 rounded-xl border border-border px-4 text-sm disabled:opacity-40">დახურვა</button>
-                {busy && <button type="button" onClick={() => controller.current?.abort()} className="text-xs text-text-secondary underline">შეაჩერე ლოდინი</button>}
+                {busy && <button type="button" onClick={() => controller.current?.abort()} className="text-xs text-text-secondary underline">შეაჩერეთ ლოდინი</button>}
                 {actionable > 0 && <button type="button" disabled={busy} onClick={() => void remove()} className="delete-button inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold disabled:opacity-40">
                     <Icon icon="solar:trash-bin-trash-linear" className="h-5 w-5" />
                     {uncertain ? "ხელახლა ცდა" : `წაშლის დადასტურება (${actionable})`}

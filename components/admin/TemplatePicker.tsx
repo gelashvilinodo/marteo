@@ -52,7 +52,7 @@ export default function TemplatePicker({ contactName, onPick }: { contactName: s
             <ul className="min-h-0 flex-1 overflow-y-auto p-1">
                 {!templates && !error && <li className="px-3 py-4 text-sm text-text-secondary">იტვირთება…</li>}
                 {error && <li className="px-3 py-4 text-sm text-danger">შაბლონები ვერ ჩაიტვირთა.</li>}
-                {templates && !visible.length && <li className="px-3 py-4 text-sm text-text-secondary">{templates.length ? "ვერ მოიძებნა." : "შაბლონები ჯერ არ გაქვს."}</li>}
+                {templates && !visible.length && <li className="px-3 py-4 text-sm text-text-secondary">{templates.length ? "ვერ მოიძებნა." : "შაბლონები ჯერ არ გაქვთ."}</li>}
                 {visible.map(item => <li key={item.id}>
                     <button type="button" onClick={() => { onPick(fillTemplate(item.body, contactName)); setOpen(false); setQuery(""); }}
                         className="w-full rounded-xl px-3 py-2 text-left transition hover:bg-background">

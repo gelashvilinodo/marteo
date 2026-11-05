@@ -8,7 +8,7 @@ import { orderJson } from "@/lib/orders/order-http";
 export async function GET(request: Request) {
     const accessDenied = await apiAccessDenied("ORDERS", "view"); if (accessDenied) return accessDenied;
     try {
-        if (!(await getCurrentUser())) return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
+        if (!(await getCurrentUser())) return orderJson({ success: false, message: "გაიარეთ ავტორიზაცია." }, 401);
         const membership = await getCurrentBusiness();
         if (!membership) return orderJson({ success: false, message: "ბიზნესი ვერ მოიძებნა." }, 403);
         const prisma = createPrismaClient();
@@ -18,6 +18,6 @@ export async function GET(request: Request) {
         } finally { await prisma.$disconnect(); }
     } catch (cause) {
         console.error("Customer list refresh failed", cause instanceof Error ? cause.name : "UnknownError");
-        return orderJson({ success: false, message: "მომხმარებლების სია ვერ განახლდა. სცადე ხელახლა." }, 500);
+        return orderJson({ success: false, message: "მომხმარებლების სია ვერ განახლდა. სცადეთ ხელახლა." }, 500);
     }
 }

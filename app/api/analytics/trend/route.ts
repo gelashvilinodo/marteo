@@ -27,7 +27,7 @@ export async function GET(request: Request) {
         if (!user) {
             return json({
                 success: false,
-                message: "გაიარე ავტორიზაცია.",
+                message: "გაიარეთ ავტორიზაცია.",
             }, 401);
         }
 
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
         ) {
             return json({
                 success: false,
-                message: "აირჩიე დიაგრამის პერიოდი.",
+                message: "აირჩიეთ დიაგრამის პერიოდი.",
             }, 400);
         }
 
@@ -79,7 +79,7 @@ export async function GET(request: Request) {
 
         return json({
             success: false,
-            message: "დიაგრამა ვერ ჩაიტვირთა. სცადე ხელახლა.",
+            message: "დიაგრამა ვერ ჩაიტვირთა. სცადეთ ხელახლა.",
         }, 500);
     } finally {
         await prisma?.$disconnect();

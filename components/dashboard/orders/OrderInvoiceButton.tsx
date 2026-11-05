@@ -59,7 +59,7 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
                 setInvoice(preparedInvoice);
             }
         } catch (cause: unknown) {
-            if (mounted.current) setError(cause instanceof Error && cause.name !== "AbortError" ? cause.message : "ინვოისის ჩატვირთვა შეწყდა. სცადე ხელახლა.");
+            if (mounted.current) setError(cause instanceof Error && cause.name !== "AbortError" ? cause.message : "ინვოისის ჩატვირთვა შეწყდა. სცადეთ ხელახლა.");
         } finally {
             clearTimeout(timeout); request.current = null;
             if (mounted.current) setLoading(false);
@@ -73,7 +73,7 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
             await sendOrderAction(orderId, "link", { action, expectedVersion: invoice.version });
             const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/invoice`, { cache: "no-store" });
             const data = await response.json() as { success?: boolean; message?: string; invoice?: OrderInvoiceData };
-            if (!response.ok || !data.success || !data.invoice) throw new Error(data.message || "ბმული შეიცვალა. ინვოისი ხელახლა გახსენი.");
+            if (!response.ok || !data.success || !data.invoice) throw new Error(data.message || "ბმული შეიცვალა. ინვოისი ხელახლა გახსენით.");
             const preparedInvoice = await prepareInvoiceQr(data.invoice);
             if (mounted.current && dialog.current?.open) { setInvoice(preparedInvoice); setNotice(action === "revoke" ? "ბმული გაუქმებულია." : "ბმული მზადაა."); }
         } catch (cause: unknown) { if (mounted.current) setNotice(cause instanceof Error ? cause.message : "ბმული ვერ შეიცვალა."); }
@@ -83,7 +83,7 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
     async function copyLink() {
         if (!invoice?.publicUrl) return;
         try { await navigator.clipboard.writeText(invoice.publicUrl); setNotice("ბმული დაკოპირებულია."); }
-        catch { setNotice("კოპირება ვერ მოხერხდა. ბმული ქვემოთ მოცემული ველიდან დააკოპირე."); }
+        catch { setNotice("კოპირება ვერ მოხერხდა. ბმული ქვემოთ მოცემული ველიდან დააკოპირეთ."); }
     }
     async function shareLink() {
         if (!invoice?.publicUrl) return;
@@ -91,7 +91,7 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
         try {
             await navigator.share({ title: `${invoice.business.name} - შეკვეთა`, url: invoice.publicUrl });
         } catch (cause: unknown) {
-            if (!(cause instanceof Error && cause.name === "AbortError")) setNotice("გაზიარება ვერ მოხერხდა. შეგიძლია ბმული დააკოპირო.");
+            if (!(cause instanceof Error && cause.name === "AbortError")) setNotice("გაზიარება ვერ მოხერხდა. შეგიძლიათ ბმული დააკოპიროთ.");
         }
     }
 

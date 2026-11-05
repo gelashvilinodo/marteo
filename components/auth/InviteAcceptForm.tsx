@@ -94,9 +94,9 @@ export default function InviteAcceptForm() {
                 if (data.state === "ready" && data.invite) setState({ kind: "ready", invite: data.invite, signedInEmail: data.signedInEmail ?? null });
                 else if (data.state === "expired") setState({ kind: "expired" });
                 else if (data.state === "invalid") setState({ kind: "invalid" });
-                else setState({ kind: "error", message: data.message || "მოწვევის შემოწმება ვერ მოხერხდა. სცადე ხელახლა." });
+                else setState({ kind: "error", message: data.message || "მოწვევის შემოწმება ვერ მოხერხდა. სცადეთ ხელახლა." });
             } catch (cause) {
-                if ((cause as Error).name !== "AbortError") setState({ kind: "error", message: "კავშირი ვერ დამყარდა. სცადე ხელახლა." });
+                if ((cause as Error).name !== "AbortError") setState({ kind: "error", message: "კავშირი ვერ დამყარდა. სცადეთ ხელახლა." });
             }
         })();
         return () => controller.abort();
@@ -112,11 +112,11 @@ export default function InviteAcceptForm() {
     }
     if (state.kind === "invalid") {
         return <Notice icon="solar:link-broken-linear" title="ბმული აღარ მოქმედებს"
-            text="მოწვევა უკვე გამოყენებულია, გაუქმებულია ან ბმული არასრულად დაკოპირდა. საჭიროების შემთხვევაში სთხოვე მომწვევს ახალი მოწვევა." />;
+            text="მოწვევა უკვე გამოყენებულია, გაუქმებულია ან ბმული არასრულად დაკოპირდა. საჭიროების შემთხვევაში სთხოვეთ მომწვევს ახალი მოწვევა." />;
     }
     if (state.kind === "expired") {
         return <Notice icon="solar:clock-circle-linear" title="ბმულს ვადა გაუვიდა"
-            text="სთხოვე მომწვევს, მოწვევა ბიზნესის პარამეტრებიდან ხელახლა გამოგიგზავნოს." />;
+            text="სთხოვეთ მომწვევს, მოწვევა ბიზნესის პარამეტრებიდან ხელახლა გამოგიგზავნოს." />;
     }
     if (state.kind === "error") return <Notice icon="solar:danger-triangle-linear" title="რაღაც ვერ მოხერხდა" text={state.message} />;
 
@@ -139,13 +139,13 @@ export default function InviteAcceptForm() {
             });
             const data = await response.json().catch(() => ({})) as { success?: boolean; message?: string; redirectTo?: string };
             if (!response.ok || !data.success) {
-                setError(data.message || "მოწვევის მიღება ვერ მოხერხდა. სცადე ხელახლა.");
+                setError(data.message || "მოწვევის მიღება ვერ მოხერხდა. სცადეთ ხელახლა.");
                 return;
             }
             // სრული გადატვირთვა, რომ დაშბორდმა ახალი სესია და ბიზნესი წაიკითხოს.
             window.location.assign(data.redirectTo || "/dashboard");
         } catch {
-            setError("კავშირი ვერ დამყარდა. სცადე ხელახლა.");
+            setError("კავშირი ვერ დამყარდა. სცადეთ ხელახლა.");
         } finally {
             running.current = false;
             setBusy(false);
@@ -155,7 +155,7 @@ export default function InviteAcceptForm() {
     return (
         <form onSubmit={submit} noValidate className={authCardClass}>
             <div className="mb-6">
-                <p className="text-sm text-text-secondary">{invite.inviterName} გიწვევს</p>
+                <p className="text-sm text-text-secondary">{invite.inviterName} გიწვევთ</p>
                 <h2 className="mt-1 text-2xl font-semibold text-text-primary">„{invite.businessName}“</h2>
                 <div className="mt-3 rounded-xl bg-background p-3 text-sm text-text-secondary">
                     <p className="flex items-center gap-2 font-medium text-text-primary">
@@ -164,7 +164,7 @@ export default function InviteAcceptForm() {
                     </p>
                     <p className="mt-1">
                         {invite.role === "OWNER"
-                            ? "გექნება ბიზნესის მართვის სრული უფლება."
+                            ? "გექნებათ ბიზნესის მართვის სრული უფლება."
                             : `წვდომა: ${permissionLabels.join(", ")}${invite.readOnly ? " (მხოლოდ ნახვა)" : ""}.`}
                     </p>
                 </div>
@@ -196,7 +196,7 @@ export default function InviteAcceptForm() {
                                 onChange={event => { setPhone(event.target.value); setError(""); }} className={authInputClass()} />
                         </div>
                         <div>
-                            <label htmlFor="invite-password" className={authLabelClass}>შექმენი პაროლი</label>
+                            <label htmlFor="invite-password" className={authLabelClass}>შექმენით პაროლი</label>
                             <PasswordInput id="invite-password" value={password} autoComplete="new-password" disabled={busy}
                                 onChange={value => { setPassword(value); setError(""); }} />
                         </div>
@@ -206,9 +206,9 @@ export default function InviteAcceptForm() {
                 {mode === "existing" && (
                     <div>
                         <p className="mb-3 text-sm text-text-secondary">
-                            ამ ელფოსტით ანგარიში უკვე გაქვს. შენი ბიზნესი და მონაცემები უცვლელი დარჩება, ახალ ბიზნესზე კი პროფილის მენიუდან გადახვალ.
+                            ამ ელფოსტით ანგარიში უკვე გაქვთ. თქვენი ბიზნესი და მონაცემები უცვლელი დარჩება, ახალ ბიზნესზე კი პროფილის მენიუდან გადახვალთ.
                         </p>
-                        <label htmlFor="invite-current-password" className={authLabelClass}>შენი პაროლი</label>
+                        <label htmlFor="invite-current-password" className={authLabelClass}>თქვენი პაროლი</label>
                         <PasswordInput id="invite-current-password" value={password} autoComplete="current-password" disabled={busy}
                             onChange={value => { setPassword(value); setError(""); }} />
                         <div className="mt-2 flex justify-end">
@@ -221,7 +221,7 @@ export default function InviteAcceptForm() {
 
                 {mode === "signed-in" && (
                     <p className="text-sm text-text-secondary">
-                        შენი ბიზნესი და მონაცემები უცვლელი დარჩება. ახალ ბიზნესზე პროფილის მენიუდან გადახვალ.
+                        თქვენი ბიზნესი და მონაცემები უცვლელი დარჩება. ახალ ბიზნესზე პროფილის მენიუდან გადახვალთ.
                     </p>
                 )}
             </fieldset>

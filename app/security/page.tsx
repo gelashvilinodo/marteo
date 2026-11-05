@@ -7,7 +7,7 @@ import { MARTEO_CONTACTS } from "@/lib/marteo-contacts";
 
 export const metadata = {
     title: "უსაფრთხოება - MARTEO",
-    description: "როგორ იცავს მართეო შენს ანგარიშსა და ბიზნესის მონაცემებს.",
+    description: "როგორ იცავს მართეო თქვენს ანგარიშსა და ბიზნესის მონაცემებს.",
 };
 
 // აქ მხოლოდ ის წერია, რაც მართეოში რეალურად მუშაობს — ახალი პუნქტი მხოლოდ ფუნქციის შემდეგ ემატება.
@@ -34,7 +34,7 @@ const protections = [
     },
     {
         title: "უსაფრთხო სესია",
-        text: "შესვლა 30 დღეში იწურება. პაროლის შეცვლისას სხვა მოწყობილობებიდან ავტომატურად გამოხვალ.",
+        text: "შესვლა 30 დღეში იწურება. პაროლის შეცვლისას სხვა მოწყობილობებიდან ავტომატურად გამოხვალთ.",
         icon: "solar:devices-bold-duotone",
     },
     {
@@ -57,19 +57,19 @@ const protections = [
 const commitments = [
     {
         title: "მონაცემებს არ ვყიდით და არ ვაზიარებთ",
-        text: "შენი ბიზნესის მონაცემები - კლიენტები, შეკვეთები, ფასები, შემოსავალი - არ იყიდება და სარეკლამოდ მესამე მხარეს არ გადაეცემა.",
+        text: "თქვენი ბიზნესის მონაცემები - კლიენტები, შეკვეთები, ფასები, შემოსავალი - არ იყიდება და სარეკლამოდ მესამე მხარეს არ გადაეცემა.",
     },
     {
         title: "საკუთარი მიზნებისთვის არ ვიყენებთ",
-        text: "შენს კლიენტებს ჩვენი რეკლამისთვის არ გამოვიყენებთ და შენს მონაცემებს სხვა ბიზნესებს არ ვადარებთ.",
+        text: "თქვენს კლიენტებს ჩვენი რეკლამისთვის არ გამოვიყენებთ და თქვენს მონაცემებს სხვა ბიზნესებს არ ვადარებთ.",
     },
     {
-        title: "შენი კლიენტების მონაცემები შენს კონტროლშია",
-        text: "კლიენტების ტელეფონს და მისამართს მართეო მხოლოდ შენი დავალებით იყენებს - მაგალითად, შეკვეთის სტატუსის შეტყობინებისთვის. ჩვენი სახელით მათ არაფერს ვუგზავნით.",
+        title: "თქვენი კლიენტების მონაცემები თქვენს კონტროლშია",
+        text: "კლიენტების ტელეფონს და მისამართს მართეო მხოლოდ თქვენი დავალებით იყენებს - მაგალითად, შეკვეთის სტატუსის შეტყობინებისთვის. ჩვენი სახელით მათ არაფერს ვუგზავნით.",
     },
     {
         title: "გუნდის წვდომა შეზღუდულია",
-        text: "მართეოს გუნდი შენს შეკვეთებს, კლიენტებსა და ფინანსებს არ ათვალიერებს. შიგნით მხოლოდ შენი თხოვნით შევიხედავთ - მაგალითად, ტექნიკური პრობლემის მოსაგვარებლად.",
+        text: "მართეოს გუნდი თქვენს შეკვეთებს, კლიენტებსა და ფინანსებს არ ათვალიერებს. შიგნით მხოლოდ თქვენი თხოვნით შევიხედავთ - მაგალითად, ტექნიკური პრობლემის მოსაგვარებლად.",
     },
     {
         title: "წაშლისას ყველაფერი იშლება",
@@ -108,7 +108,7 @@ export default function SecurityPage() {
                         უსაფრთხოება
                     </h1>
                     <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/70 sm:text-base">
-                        როგორ ვიცავთ შენს ანგარიშსა და ბიზნესის მონაცემებს.
+                        როგორ ვიცავთ თქვენს ანგარიშსა და ბიზნესის მონაცემებს.
                     </p>
                 </div>
             </section>
@@ -116,7 +116,7 @@ export default function SecurityPage() {
             <div className="mx-auto max-w-5xl space-y-14 px-4 py-12 sm:space-y-16 sm:px-6 sm:py-16 lg:px-8">
                 <section aria-labelledby="security-protections">
                     <h2 id="security-protections" className="text-lg font-semibold text-text-primary sm:text-xl">
-                        როგორ ვიცავთ შენს ანგარიშს
+                        როგორ ვიცავთ თქვენს ანგარიშს
                     </h2>
 
                     <ul className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -143,7 +143,7 @@ export default function SecurityPage() {
                             <Icon icon="solar:shield-user-bold-duotone" className="h-6 w-6" />
                         </span>
                         <h2 id="security-data" className="text-lg font-semibold text-text-primary sm:text-xl">
-                            შენი მონაცემები - შენია
+                            თქვენი მონაცემები - თქვენია
                         </h2>
                     </div>
 
@@ -188,16 +188,16 @@ export default function SecurityPage() {
                         </span>
                         <div>
                             <h2 id="security-report" className="font-semibold text-text-primary">
-                                უსაფრთხოების ხარვეზი შეამჩნიე?
+                                უსაფრთხოების ხარვეზი შეამჩნიეთ?
                             </h2>
-                            <p className="mt-0.5 text-sm text-text-secondary">მოგვწერე - ყველა შეტყობინებას სერიოზულად განვიხილავთ.</p>
+                            <p className="mt-0.5 text-sm text-text-secondary">მოგვწერეთ - ყველა შეტყობინებას სერიოზულად განვიხილავთ.</p>
                         </div>
                     </div>
                     <a
                         href={`mailto:${MARTEO_CONTACTS.email}?subject=${encodeURIComponent("უსაფრთხოების ხარვეზი")}`}
                         className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover sm:w-auto"
                     >
-                        შეგვატყობინე
+                        შეგვატყობინეთ
                         <Icon icon="solar:arrow-right-linear" className="h-4 w-4" />
                     </a>
                 </section>

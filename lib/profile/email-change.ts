@@ -70,7 +70,7 @@ export function emailChangeFailure(cause: unknown) {
         {
             success: false,
             message:
-                "მოთხოვნის შედეგი ვერ დადასტურდა. სცადე ხელახლა.",
+                "მოთხოვნის შედეგი ვერ დადასტურდა. სცადეთ ხელახლა.",
         },
         500,
     );
@@ -168,7 +168,7 @@ export async function readEmailChangeSession(
 
     if (!rawToken) {
         throw new EmailChangeError(
-            "გაიარე ავტორიზაცია.",
+            "გაიარეთ ავტორიზაცია.",
             401,
         );
     }
@@ -199,7 +199,7 @@ export async function readEmailChangeSession(
         session.user.status !== "ACTIVE"
     ) {
         throw new EmailChangeError(
-            "სესიის ვადა ამოიწურა. თავიდან შედი ანგარიშში.",
+            "სესიის ვადა ამოიწურა. თავიდან შედით ანგარიშში.",
             401,
         );
     }

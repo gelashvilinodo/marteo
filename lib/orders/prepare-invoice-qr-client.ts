@@ -24,7 +24,7 @@ export async function prepareInvoiceQr(
         });
     } catch {
         throw new Error(
-            "ინვოისის QR კოდის მომზადება ვერ მოხერხდა. სცადე ხელახლა.",
+            "ინვოისის QR კოდის მომზადება ვერ მოხერხდა. სცადეთ ხელახლა.",
         );
     }
 

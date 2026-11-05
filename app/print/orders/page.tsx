@@ -14,6 +14,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ i
     if (typeof params.selection === "string" && params.selection) return <InvoiceBatchPrintPage selectionKey={params.selection} />;
     const raw = typeof params.ids === "string" ? params.ids : "";
     const ids = [...new Set(raw.split(",").filter(id => /^[a-zA-Z0-9_-]+$/.test(id)))];
-    if (!ids.length) return <main className="p-6">მონიშნე შეკვეთები და გახსენი ბეჭდვა. <a href="/dashboard/orders">შეკვეთებზე დაბრუნება</a></main>;
+    if (!ids.length) return <main className="p-6">მონიშნეთ შეკვეთები და გახსენით ბეჭდვა. <a href="/dashboard/orders">შეკვეთებზე დაბრუნება</a></main>;
     return <InvoiceBatchPrintPage key={ids.join(",")} ids={ids} />;
 }

@@ -79,7 +79,7 @@ function orderIds(value: unknown): string[] | null {
 // დანარჩენი ბრუნდება სიით, რომ მომხმარებელმა თანხის მიღება დაადასტუროს.
 export async function bulkOrderStatus(raw: unknown) {
     const user = await getCurrentUser();
-    if (!user) fail("გაიარე ავტორიზაცია.", 401);
+    if (!user) fail("გაიარეთ ავტორიზაცია.", 401);
     const body = typeof raw === "object" && raw !== null && !Array.isArray(raw)
         ? raw as Record<string, unknown>
         : {};
@@ -92,7 +92,7 @@ export async function bulkOrderStatus(raw: unknown) {
         const membership = await findActiveMembership(prisma, user.id);
         if (!membership) fail("ბიზნესი ვერ მოიძებნა.", 403);
         if (!canManageBusinessArea(membership, "ORDERS")) {
-            fail("ამ მოქმედების უფლება არ გაქვს.", 403);
+            fail("ამ მოქმედების უფლება არ გაქვთ.", 403);
         }
         const businessId = membership.businessId;
 
@@ -149,11 +149,11 @@ export async function bulkOrderStatus(raw: unknown) {
             for (const order of orders) {
                 const base = { id: order.id, label: label(order), customer: customer(order) };
                 if (order.deleteRequestedAt || order.stockReturnedAt || order.returns.length > 0) {
-                    result.blocked.push({ ...base, reason: "დაბრუნება ან წაშლა მიმდინარეობს. გახსენი შეკვეთა." });
+                    result.blocked.push({ ...base, reason: "დაბრუნება ან წაშლა მიმდინარეობს. გახსენით შეკვეთა." });
                     continue;
                 }
                 if (order.paymentStatus === "UNKNOWN") {
-                    result.blocked.push({ ...base, reason: "გადახდა დაუზუსტებელია. გახსენი და მიუთითე რეალურად გადახდილი თანხა." });
+                    result.blocked.push({ ...base, reason: "გადახდა დაუზუსტებელია. გახსენით და მიუთითეთ რეალურად გადახდილი თანხა." });
                     continue;
                 }
 
@@ -165,7 +165,7 @@ export async function bulkOrderStatus(raw: unknown) {
                     item.quantity > (receivedQuantities.get(item.id) ?? 0),
                 );
                 if (missingCosts) {
-                    result.blocked.push({ ...base, reason: "ხელით დამატებულ პროდუქტს თვითღირებულება აკლია. გახსენი და დაასრულე ცალკე." });
+                    result.blocked.push({ ...base, reason: "ხელით დამატებულ პროდუქტს თვითღირებულება აკლია. გახსენით და დაასრულეთ ცალკე." });
                     continue;
                 }
 

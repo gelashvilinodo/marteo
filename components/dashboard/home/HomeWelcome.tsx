@@ -40,7 +40,7 @@ const features = [
     {
         title: "გაყიდვები და მოგება",
         description:
-            "ნახავ გაყიდვების თანხასა და ხარჯების შემდეგ დარჩენილ მოგებას. დიაგრამები პერიოდების შედარებაში დაგეხმარება.",
+            "ნახავთ გაყიდვების თანხასა და ხარჯების შემდეგ დარჩენილ მოგებას. დიაგრამები პერიოდების შედარებაში დაგეხმარებათ.",
         path: "M4 20V10h4v10M10 20V6h4v14M16 20V3h4v17",
         color: "bg-success/10 text-success",
     },
@@ -54,7 +54,7 @@ const features = [
     {
         title: "პოპულარული პროდუქტები",
         description:
-            "გაიგებ, რომელი პროდუქტები იყიდება ყველაზე მეტად და რა თანხის გაყიდვები მოაქვს თითოეულს.",
+            "გაიგებთ, რომელი პროდუქტები იყიდება ყველაზე მეტად და რა თანხის გაყიდვები მოაქვს თითოეულს.",
         path: "m12 3 9 5-9 5-9-5 9-5ZM3 8v9l9 5 9-5V8M12 13v9",
         color: "bg-warning/10 text-warning",
     },
@@ -73,12 +73,12 @@ export default function HomeWelcome({
                         id="home-start-heading"
                         className="text-lg font-semibold text-text-primary"
                     >
-                        დაიწყე მართეოს გამოყენება
+                        დაიწყეთ მართეოს გამოყენება
                     </h2>
 
                     <p className="mt-2 max-w-2xl text-sm leading-relaxed text-text-secondary">
-                        დაამატე პირველი პარტია ან შეკვეთა.
-                        შენი მონაცემების მიხედვით აქ გამოჩნდება
+                        დაამატეთ პირველი პარტია ან შეკვეთა.
+                        თქვენი მონაცემების მიხედვით აქ გამოჩნდება
                         ბიზნესის მოკლე მიმოხილვა.
                     </p>
                 </div>
@@ -86,24 +86,24 @@ export default function HomeWelcome({
                 <div className="grid min-w-0 grid-cols-1 gap-3 xl:grid-cols-3 xl:gap-4">
                     <ActionCard
                         step="01"
-                        title="დაამატე პირველი პარტია"
-                        description="შეინახე შეძენილი მარაგები, რაოდენობები და შესყიდვის ხარჯები."
+                        title="დაამატეთ პირველი პარტია"
+                        description="შეინახეთ შეძენილი მარაგები, რაოდენობები და შესყიდვის ხარჯები."
                     >
                         <DeferredHomePurchaseButton />
                     </ActionCard>
 
                     <ActionCard
                         step="02"
-                        title="მიიღე პირველი შეკვეთა"
-                        description="დაამატე მიმღები და პროდუქტები, მიუთითე გადახდა და მოამზადე ინვოისი."
+                        title="მიიღეთ პირველი შეკვეთა"
+                        description="დაამატეთ მიმღები და პროდუქტები, მიუთითეთ გადახდა და მოამზადეთ ინვოისი."
                     >
                         <NewOrderButton />
                     </ActionCard>
 
                     <ActionCard
                         step="03"
-                        title="აღრიცხე სხვა ხარჯი"
-                        description="დაამატე რეკლამის, ქირის ან სხვა ბიზნესხარჯი. პარტიის ფასში შეტანილი ხარჯი აქ ხელახლა არ გაიმეორო."
+                        title="აღრიცხეთ სხვა ხარჯი"
+                        description="დაამატეთ რეკლამის, ქირის ან სხვა ბიზნესხარჯი. პარტიის ფასში შეტანილი ხარჯი აქ ხელახლა არ გაიმეოროთ."
                     >
                         <DeferredHomeExpenseButton
                             businessId={businessId}
@@ -112,7 +112,7 @@ export default function HomeWelcome({
                 </div>
 
                 <p className="mt-3 text-xs leading-relaxed text-text-secondary">
-                    შეგიძლია ნებისმიერი მოქმედებით დაიწყო -
+                    შეგიძლიათ ნებისმიერი მოქმედებით დაიწყოთ -
                     ეს სავალდებულო ნაბიჯების მიმდევრობა არ არის.
                 </p>
             </section>
@@ -125,7 +125,7 @@ export default function HomeWelcome({
                     id="home-features-heading"
                     className="text-lg font-semibold text-text-primary"
                 >
-                    რას დაინახავ აქ?
+                    რას დაინახავთ აქ?
                 </h2>
 
                 <div className="mt-5 grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-3">

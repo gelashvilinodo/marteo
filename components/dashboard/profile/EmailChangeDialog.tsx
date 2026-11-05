@@ -126,13 +126,13 @@ export default function EmailChangeDialog({
 
         if (action === "send-code" && logoutOthers === null) {
             setError(
-                "აირჩიე, გსურს თუ არა სხვა მოწყობილობებიდან გამოსვლა.",
+                "აირჩიეთ, გსურთ თუ არა სხვა მოწყობილობებიდან გამოსვლა.",
             );
             return;
         }
 
         if (action === "verify" && !/^\d{6}$/.test(code.join(""))) {
-            setError("შეიყვანე ექვსნიშნა კოდი.");
+            setError("შეიყვანეთ ექვსნიშნა კოდი.");
             return;
         }
 
@@ -208,7 +208,7 @@ export default function EmailChangeDialog({
                 setStep("code");
                 setError(
                     body.message ||
-                    "გაგზავნა ვერ დადასტურდა. თუ კოდი მიიღე, შეიყვანე აქ.",
+                    "გაგზავნა ვერ დადასტურდა. თუ კოდი მიიღეთ, შეიყვანეთ აქ.",
                 );
                 return;
             }
@@ -220,7 +220,7 @@ export default function EmailChangeDialog({
 
                 throw new Error(
                     body.message ||
-                    "მოთხოვნა ვერ შესრულდა. სცადე ხელახლა.",
+                    "მოთხოვნა ვერ შესრულდა. სცადეთ ხელახლა.",
                 );
             }
 
@@ -230,7 +230,7 @@ export default function EmailChangeDialog({
                     !/^[a-f0-9]{64}$/.test(body.authorization)
                 ) {
                     throw new Error(
-                        "პაროლის დადასტურების შედეგი ვერ დადასტურდა. სცადე ხელახლა.",
+                        "პაროლის დადასტურების შედეგი ვერ დადასტურდა. სცადეთ ხელახლა.",
                     );
                 }
 
@@ -253,7 +253,7 @@ export default function EmailChangeDialog({
                 setEmail(body.newEmail);
                 setCode(["", "", "", "", "", ""]);
                 setStep("code");
-                setNotice("კოდი გაგზავნილია. შეამოწმე ელფოსტა.");
+                setNotice("კოდი გაგზავნილია. შეამოწმეთ ელფოსტა.");
                 return;
             }
 
@@ -262,7 +262,7 @@ export default function EmailChangeDialog({
                 body.profile.id !== profileId
             ) {
                 throw new Error(
-                    "შენახვის შედეგი ვერ დადასტურდა. დახურე ფანჯარა და განაახლე პროფილის მონაცემები.",
+                    "შენახვის შედეგი ვერ დადასტურდა. დახურეთ ფანჯარა და განაახლეთ პროფილის მონაცემები.",
                 );
             }
 
@@ -276,10 +276,10 @@ export default function EmailChangeDialog({
 
             setError(
                 current.signal.aborted
-                    ? "პასუხის ლოდინის დრო ამოიწურა. თუ კოდი მიიღე, შეგიძლია ხელახლა გაგზავნის შემდეგ შეიყვანო. დადასტურებისას შეფერხების შემთხვევაში იგივე კოდით ხელახლა სცადე."
+                    ? "პასუხის ლოდინის დრო ამოიწურა. თუ კოდი მიიღეთ, შეგიძლიათ ხელახლა გაგზავნის შემდეგ შეიყვანოთ. დადასტურებისას შეფერხების შემთხვევაში იგივე კოდით ხელახლა სცადეთ."
                     : cause instanceof Error
                         ? cause.message
-                        : "მოთხოვნა ვერ შესრულდა. სცადე ხელახლა.",
+                        : "მოთხოვნა ვერ შესრულდა. სცადეთ ხელახლა.",
             );
         } finally {
             window.clearTimeout(timeout);
@@ -365,7 +365,7 @@ export default function EmailChangeDialog({
                         {step === "password" && (
                             <>
                                 <p className="text-sm text-text-secondary">
-                                    უსაფრთხოებისთვის ჯერ შეიყვანე
+                                    უსაფრთხოებისთვის ჯერ შეიყვანეთ
                                     მიმდინარე პაროლი.
                                 </p>
 
@@ -432,7 +432,7 @@ export default function EmailChangeDialog({
 
                                 <fieldset className="space-y-2">
                                     <legend className="mb-2 text-sm">
-                                        გსურს სხვა მოწყობილობებიდან გამოსვლა?
+                                        გსურთ სხვა მოწყობილობებიდან გამოსვლა?
                                     </legend>
 
                                     {([
@@ -459,7 +459,7 @@ export default function EmailChangeDialog({
                                 </fieldset>
 
                                 <p className="text-xs text-text-secondary">
-                                    მიმდინარე მოწყობილობაზე შესული დარჩები.
+                                    მიმდინარე მოწყობილობაზე შესული დარჩებით.
                                     ელფოსტა კოდის დადასტურების შემდეგ შეიცვლება.
                                 </p>
                             </>
@@ -468,7 +468,7 @@ export default function EmailChangeDialog({
                         {step === "code" && (
                             <>
                                 <p className="text-sm text-text-secondary">
-                                    შეიყვანე ამ მისამართზე გაგზავნილი კოდი:
+                                    შეიყვანეთ ამ მისამართზე გაგზავნილი კოდი:
                                 </p>
                                 <p className="break-all text-sm font-medium">
                                     {sentEmail}
@@ -482,7 +482,7 @@ export default function EmailChangeDialog({
                                 />
 
                                 <p className="text-center text-xs text-text-secondary">
-                                    სრული კოდის პირველ უჯრაში ჩაკოპირებაც შეგიძლია.
+                                    სრული კოდის პირველ უჯრაში ჩაკოპირებაც შეგიძლიათ.
                                 </p>
 
                                 <div className="flex flex-wrap items-center justify-between gap-2">

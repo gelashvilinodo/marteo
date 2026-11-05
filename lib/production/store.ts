@@ -12,7 +12,7 @@ export async function saveProduction(tx:Tx,businessId:string,userId:string,input
     if(replay){if(replay.inputHash!==fingerprint)throw new ProductionError('იგივე მოთხოვნის კოდით სხვა მონაცემები ვერ შეინახება.',409);return {id:replay.productionId,replayed:true};}
     const old=input.id?await tx.production.findFirst({where:{id:input.id,businessId},include:{inputs:{include:{allocations:true}},outputs:{where:{active:true},include:{stockLot:true}}}}):null;
     if(input.id&&!old)throw new ProductionError('წარმოება ვერ მოიძებნა.',404);
-    if(old&&old.updatedAt.toISOString()!==input.version)throw new ProductionError('წარმოება სხვა ფანჯარაში შეიცვალა. განაახლე სია და გახსენი თავიდან.',409);
+    if(old&&old.updatedAt.toISOString()!==input.version)throw new ProductionError('წარმოება სხვა ფანჯარაში შეიცვალა. განაახლეთ სია და გახსენით თავიდან.',409);
     // Product sales lock the same inventory rows; lock before reading their live balances.
     const inventoryIds=[...new Set([...input.outputs.flatMap(o=>o.inventoryItemId?[o.inventoryItemId]:[]),...(old?.outputs.flatMap(o=>o.inventoryItemId?[o.inventoryItemId]:[])??[])])].sort();
     if(inventoryIds.length)await tx.$queryRaw(Prisma.sql`SELECT id FROM "InventoryItem" WHERE "businessId"=${businessId} AND id IN (${Prisma.join(inventoryIds)}) ORDER BY id FOR UPDATE`);
@@ -34,7 +34,7 @@ export async function saveProduction(tx:Tx,businessId:string,userId:string,input
             const cents=materialCost(lot.remainingCost,lot.remainingQuantity,take);await tx.materialPurchaseItem.update({where:{id:lot.id},data:{remainingQuantity:{decrement:take},remainingCost:{decrement:cents}}});
             allocations.push({purchaseItemId:lot.id,quantity:take,totalCost:cents});cost=cost.plus(cents);needed=needed.minus(take);
         }
-        if(needed.gt(0))throw new ProductionError(`${material.name}: პარტიების ნაშთი არ ემთხვევა. განაახლე მარაგი.`,409);
+        if(needed.gt(0))throw new ProductionError(`${material.name}: პარტიების ნაშთი არ ემთხვევა. განაახლეთ მარაგი.`,409);
         await tx.material.update({where:{id:material.id},data:{currentStock:{decrement:line.quantity}}});
         plans.push({materialId:material.id,name:material.name,unit:material.unit,quantity:line.quantity,totalCost:cost,allocations});materialsCost=materialsCost.plus(cost);
     }
@@ -57,7 +57,7 @@ export async function saveProduction(tx:Tx,businessId:string,userId:string,input
     }
     for(let index=0;index<input.outputs.length;index++){
         const output=input.outputs[index],previous=old?.outputs.find(o=>o.rowKey===output.rowKey),inventory=output.inventoryItemId?inventories.find(i=>i.id===output.inventoryItemId):null;
-        if(previous?.stockLotId&&input.status==='COMPLETED'&&previous.inventoryItemId!==output.inventoryItemId)throw new ProductionError('დასრულებული წარმოების პროდუქტის ჩანაცვლებისთვის დაამატე ახალი პროდუქტი და ამოიღე ძველი.',409);
+        if(previous?.stockLotId&&input.status==='COMPLETED'&&previous.inventoryItemId!==output.inventoryItemId)throw new ProductionError('დასრულებული წარმოების პროდუქტის ჩანაცვლებისთვის დაამატეთ ახალი პროდუქტი და ამოიღეთ ძველი.',409);
         const metadata=inventory?{name:inventory.product.name,category:inventory.product.category,brand:inventory.product.brand,description:inventory.product.description,color:inventory.color,size:inventory.size,imageUrl:inventory.imageUrl,salePrice:inventory.salePrice}:{name:output.name,category:output.category||null,brand:output.brand||null,description:output.description||null,color:output.color||null,size:output.size||null,imageUrl:images.get(output.rowKey)??(removedImages.has(output.rowKey)?null:previous?.imageUrl??null),salePrice:null as Prisma.Decimal|null};
         let inventoryId=output.inventoryItemId,stockLotId:string|null=null;
         const cost=costs[index]??new Prisma.Decimal(0);
@@ -67,7 +67,7 @@ export async function saveProduction(tx:Tx,businessId:string,userId:string,input
             let existingLot=stockLots.find(l=>l.id===previous?.stockLotId);
             if(!inventoryId){const product=await tx.product.create({data:{businessId,name:metadata.name,brand:metadata.brand,category:metadata.category,description:metadata.description}});const created=await tx.inventoryItem.create({data:{businessId,productId:product.id,sku:nextSku(),color:metadata.color,size:metadata.size,imageUrl:metadata.imageUrl}});inventoryId=created.id;}
             if(existingLot){
-                if(existingLot.remainingDefectiveQuantity||existingLot.writtenOffDefectiveQuantity)throw new ProductionError('ამ პროდუქტის დეფექტური ნაშთი ცალკე შეიცვალა. ჯერ შეათანხმე მარაგის მონაცემები.',409);
+                if(existingLot.remainingDefectiveQuantity||existingLot.writtenOffDefectiveQuantity)throw new ProductionError('ამ პროდუქტის დეფექტური ნაშთი ცალკე შეიცვალა. ჯერ შეათანხმეთ მარაგის მონაცემები.',409);
                 const consumedQuantity=previous!.quantity-existingLot.remainingQuantity,consumedCost=previous!.totalCost.minus(existingLot.remainingCost??0),remainingQuantity=output.quantity-consumedQuantity,remainingCost=cost.minus(consumedCost);
                 if(consumedCost.lt(0)||remainingQuantity<0||remainingCost.lt(0)||(remainingQuantity===0&&!remainingCost.isZero()))throw new ProductionError('ცვლილება უკვე გამოყენებული პროდუქტის რაოდენობას ან ღირებულებას ეწინააღმდეგება. გაყიდული ნაწილის ისტორიული თვითღირებულება უცვლელი რჩება.',409);
                 const delta=remainingQuantity-existingLot.remainingQuantity;

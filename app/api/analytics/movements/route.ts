@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     try {
         if (!(await getCurrentUser())) {
             return orderJson(
-                { success: false, message: "გაიარე ავტორიზაცია." },
+                { success: false, message: "გაიარეთ ავტორიზაცია." },
                 401,
             );
         }

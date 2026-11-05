@@ -76,11 +76,11 @@ export default function DashboardHeader({
     }
 
     async function leaveBusiness() {
-        if (!window.confirm(`ნამდვილად ტოვებ ბიზნესს „${businessName}“? დაბრუნება მხოლოდ ახალი მოწვევით შეიძლება.`)) return;
+        if (!window.confirm(`ნამდვილად ტოვებთ ბიზნესს „${businessName}“? დაბრუნება მხოლოდ ახალი მოწვევით შეიძლება.`)) return;
         const response = await fetch("/api/business/members/leave", { method: "POST", credentials: "same-origin" }).catch(() => null);
         const data = response ? await response.json().catch(() => ({})) as { message?: string } : {};
         if (!response?.ok) {
-            window.alert(data.message || "ბიზნესის დატოვება ვერ მოხერხდა. სცადე ხელახლა.");
+            window.alert(data.message || "ბიზნესის დატოვება ვერ მოხერხდა. სცადეთ ხელახლა.");
             return;
         }
         window.location.assign("/dashboard");
@@ -336,7 +336,7 @@ export default function DashboardHeader({
                                                         <Icon icon="solar:refresh-circle-bold" className="h-5 w-5 shrink-0 animate-spin text-slate-300" aria-label="გადართვა..." />
                                                     )}
                                                     {failed && (
-                                                        <Icon icon="solar:danger-circle-bold" className="h-5 w-5 shrink-0 text-danger" aria-label="გადართვა ვერ მოხერხდა, სცადე ხელახლა" />
+                                                        <Icon icon="solar:danger-circle-bold" className="h-5 w-5 shrink-0 text-danger" aria-label="გადართვა ვერ მოხერხდა, სცადეთ ხელახლა" />
                                                     )}
                                                 </button>
                                             );

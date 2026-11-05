@@ -9,7 +9,7 @@ export async function GET(request:Request){
     const accessDenied = await apiAccessDenied("PURCHASES", "view"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('manufacturing');if(denied)return denied;
 
-    if(!await getCurrentUser())return json({error:'გაიარე ავტორიზაცია.'},401);
+    if(!await getCurrentUser())return json({error:'გაიარეთ ავტორიზაცია.'},401);
     const member=await getCurrentBusiness();if(!member)return json({error:'ბიზნესი ვერ მოიძებნა.'},403);
     const q=(new URL(request.url).searchParams.get('q')??'').trim().slice(0,150);
     const db=createPrismaClient();

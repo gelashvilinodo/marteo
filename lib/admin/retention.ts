@@ -50,10 +50,10 @@ export async function deliverRetentionWarnings(db: Db, now = new Date()) {
         await db.$executeRaw`
             INSERT INTO "Notification" (id, "userId", "businessId", kind, title, body, "actionLabel", "actionUrl", "dedupeKey", "deliverAt", "createdAt")
             SELECT gen_random_uuid()::text, m."userId", b.id, 'RENEWAL_REMINDER'::"NotificationKind",
-                ${`მონაცემები ${days} დღეში წაიშლება`},
-                'ბიზნესი „' || b.name || '“ ' || ${RETENTION_MONTHS - 1} || ' თვეზე მეტია გადაუხდელია. თუ '
+                ${`ბიზნესის მონაცემები ${days} დღეში წაიშლება`},
+                'ბიზნესი „' || b.name || '“ ' || ${RETENTION_MONTHS - 1} || ' თვეზე მეტია გადაუხდელია. გვინდა, რომ თქვენი მონაცემები არ დაიკარგოს, ამიტომ გთხოვთ, '
                     || to_char((${DELETE_AT} AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Tbilisi', 'DD.MM.YYYY')
-                    || '-მდე გეგმას არ აირჩევ, ბიზნესი და მისი მონაცემები წაიშლება.',
+                    || '-მდე აირჩიოთ გეგმა. წინააღმდეგ შემთხვევაში ბიზნესი და მისი მონაცემები სამუდამოდ წაიშლება.',
                 'გეგმის არჩევა', '/dashboard/plans',
                 ${`retention:${days}:`} || b.id || ':' || to_char(${LOCKED_SINCE}, 'YYYYMMDD') || ':' || m."userId",
                 ${now}, ${now}
@@ -77,7 +77,7 @@ export async function deleteRetainedBusiness(prisma: PrismaClient, adminId: stri
         `;
         if (!row) throw new AdminActionError("ბიზნესი ვერ მოიძებნა.", 404);
         if (!row.locked || row.deleteAt > new Date()) throw new AdminActionError("ამ ბიზნესის წაშლის დრო ჯერ არ დამდგარა.", 409);
-        if (typeof confirmName !== "string" || confirmName.trim() !== row.name.trim()) throw new AdminActionError("დასადასტურებლად ზუსტად აკრიფე ბიზნესის სახელი.");
+        if (typeof confirmName !== "string" || confirmName.trim() !== row.name.trim()) throw new AdminActionError("დასადასტურებლად ზუსტად აკრიფეთ ბიზნესის სახელი.");
         const members = await tx.businessMembership.findMany({ where: { businessId }, select: { userId: true } });
         await tx.business.delete({ where: { id: businessId } });
         await tx.adminAuditLog.create({
@@ -88,7 +88,7 @@ export async function deleteRetainedBusiness(prisma: PrismaClient, adminId: stri
             await tx.notification.create({
                 data: {
                     userId: member.userId, kind: "ANNOUNCEMENT", title: "ბიზნესი წაიშალა",
-                    body: `ბიზნესი „${row.name}“ ${RETENTION_MONTHS} თვე გადაუხდელი იყო და მისი მონაცემები წაიშალა.`,
+                    body: `ბიზნესი „${row.name}“ ${RETENTION_MONTHS} თვე გადაუხდელი იყო, ამიტომ ის და მისი მონაცემები წაიშალა. მადლობა, რომ მართეოთი სარგებლობდით. თუ დაბრუნებას გადაწყვეტთ, სიამოვნებით დაგეხმარებით.`,
                     dedupeKey: `business-retention-deleted:${businessId}:${member.userId}`,
                 },
             });

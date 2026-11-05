@@ -41,7 +41,7 @@ export default async function AdminRetentionPage() {
         <h1 className="text-2xl font-semibold text-text-primary">წასაშლელი ბიზნესები</h1>
         <p className="mt-1 text-sm text-text-secondary">
             გადაუხდელი ბიზნესის მონაცემები {RETENTION_MONTHS} თვე ინახება. მფლობელები {RETENTION_WARNING_DAYS.join(" და ")} დღით ადრე იღებენ გაფრთხილებას აპში, მეილით და პუშით.
-            წაშლა ავტომატური არ არის: ვადის გასვლის შემდეგ აქედან წაშლი ხელით.
+            წაშლა ავტომატური არ არის: ვადის გასვლის შემდეგ აქედან წაშლით ხელით.
         </p>
 
         <section aria-labelledby="retention-due" className="mt-6 rounded-3xl border border-danger/30 bg-surface p-5">

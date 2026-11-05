@@ -1,6 +1,7 @@
 // გუნდის (თანამფლობელები და თანამშრომლები) საერთო მონაცემები.
 // კლიენტზეც გამოიყენება, ამიტომ აქ სერვერის კოდი არ უნდა იყოს.
-import { PLAN_LIMITS } from "@/lib/subscription/plans";
+import { PLAN_LIMITS, tierHasFeature, type PlanFeature } from "@/lib/subscription/plans";
+import { hasBusinessFeature, type BusinessMode } from "./business-mode";
 import type { BusinessPermission } from "./permissions";
 
 export const INVITE_LIFETIME_HOURS = 12;
@@ -19,12 +20,14 @@ export const TEAM_LIMITS: Record<TeamPlan, { coOwners: number; staff: number }> 
     PRO: { coOwners: PLAN_LIMITS.PRO.coOwners, staff: PLAN_LIMITS.PRO.staff },
 };
 
+// feature: გეგმის ფუნქცია, რომლის გარეშეც უფლება მოსანიშნად არ ჩანს (მაგ. სტარტზე მარაგი).
 export const PERMISSION_OPTIONS: ReadonlyArray<{
     value: BusinessPermission;
     label: string;
     icon: string;
     can: string;
     cannot: string;
+    feature?: PlanFeature;
 }> = [
     {
         value: "ORDERS", label: "შეკვეთები", icon: "solar:bag-4-bold-duotone",
@@ -32,17 +35,17 @@ export const PERMISSION_OPTIONS: ReadonlyArray<{
         cannot: "ვერ ხედავს თვითღირებულებას, მოგებას და ხარჯებს.",
     },
     {
-        value: "INVENTORY", label: "მარაგი", icon: "solar:box-bold-duotone",
+        value: "INVENTORY", label: "მარაგი", icon: "solar:box-bold-duotone", feature: "stock",
         can: "აკონტროლებს ნაშთებს, ატარებს აღწერას და ჩამოწერას.",
         cannot: "ვერ აფორმებს შეკვეთებს.",
     },
     {
-        value: "PURCHASES", label: "შესყიდვები", icon: "solar:cart-large-2-bold-duotone",
+        value: "PURCHASES", label: "შესყიდვები", icon: "solar:cart-large-2-bold-duotone", feature: "stock",
         can: "ქმნის და იღებს პარტიებს, მართავს შესასყიდ სიას.",
         cannot: "ხედავს შესყიდვის ფასებს, მაგრამ არა მოგებას.",
     },
     {
-        value: "PRODUCTION", label: "წარმოება", icon: "solar:structure-bold-duotone",
+        value: "PRODUCTION", label: "წარმოება", icon: "solar:structure-bold-duotone", feature: "stock",
         can: "აღრიცხავს წარმოებას და მასალების ხარჯვას.",
         cannot: "ვერ ხედავს ფინანსებს.",
     },
@@ -57,6 +60,17 @@ export const PERMISSION_OPTIONS: ReadonlyArray<{
         cannot: "ბიზნესის პარამეტრებს და გუნდს ვერ მართავს.",
     },
 ];
+
+// რომელი უფლების მინიჭება შეიძლება ამ გეგმაზე. წარმოება მხოლოდ წარმოების მიმართულებაზე ჩანს.
+export function planPermissionOptions(plan: TeamPlan, mode?: BusinessMode) {
+    return PERMISSION_OPTIONS.filter(option =>
+        (!option.feature || (plan !== "FREE" && tierHasFeature(plan, option.feature)))
+        && (!mode || option.value !== "PRODUCTION" || hasBusinessFeature(mode, "manufacturing")));
+}
+
+export function planPermissions(plan: TeamPlan): BusinessPermission[] {
+    return planPermissionOptions(plan).map(option => option.value);
+}
 
 export type TeamMember = {
     id: string;

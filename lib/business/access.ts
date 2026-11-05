@@ -32,7 +32,7 @@ export async function getBusinessAccess() {
 // და code ველით კლიენტი გეგმის ფანჯარას ხსნის.
 export async function apiAccessDenied(need: AccessNeed, level: AccessLevel = "view", plan: PlanCheck = {}) {
     const context = await getPgDashboardContext();
-    if (!context) return deny("გაიარე ავტორიზაცია.", 401);
+    if (!context) return deny("გაიარეთ ავტორიზაცია.", 401);
     const access = context.membership?.access;
     if (!access) return deny("ბიზნესი ვერ მოიძებნა.", 403);
     if (meetsNeed(access, need, level)) {
@@ -44,9 +44,9 @@ export async function apiAccessDenied(need: AccessNeed, level: AccessLevel = "vi
         );
     }
     if (level === "edit" && access.readOnly && need !== "OWNER") {
-        return deny("შენ მხოლოდ ნახვის უფლება გაქვს.", 403);
+        return deny("თქვენ მხოლოდ ნახვის უფლება გაქვთ.", 403);
     }
-    return deny(need === "OWNER" ? "ეს მხოლოდ ბიზნესის მფლობელს შეუძლია." : "ამ განყოფილებაზე წვდომა არ გაქვს.", 403);
+    return deny(need === "OWNER" ? "ეს მხოლოდ ბიზნესის მფლობელს შეუძლია." : "ამ განყოფილებაზე წვდომა არ გაქვთ.", 403);
 }
 
 // გვერდისთვის: უფლების გარეშე მომხმარებელი პირველ ნებადართულ განყოფილებაზე გადადის,

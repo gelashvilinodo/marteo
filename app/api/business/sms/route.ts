@@ -19,7 +19,7 @@ async function patch(request: Request) {
         return json({ success: true, sms: await getSmsUsage(db, businessId) });
     } catch (error) {
         console.error("SMS setting failed", error instanceof Error ? error.name : "UnknownError");
-        return json({ success: false, message: "პარამეტრი ვერ შეინახა. სცადე ხელახლა." }, 500);
+        return json({ success: false, message: "პარამეტრი ვერ შეინახა. სცადეთ ხელახლა." }, 500);
     } finally {
         await db.$disconnect();
     }

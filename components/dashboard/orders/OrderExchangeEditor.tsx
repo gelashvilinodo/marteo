@@ -99,7 +99,7 @@ export default function OrderExchangeEditor({
             }, "none", crypto.randomUUID());
             onSubmit(payload.items);
         } catch (cause: unknown) {
-            setError(cause instanceof Error ? cause.message : "გადაამოწმე ახალი ნივთები.");
+            setError(cause instanceof Error ? cause.message : "გადაამოწმეთ ახალი ნივთები.");
         }
     }
     function productLine(item: Order["items"][number], quantity: number) {
@@ -113,12 +113,12 @@ export default function OrderExchangeEditor({
     }
     if (!open) return <section className="rounded-2xl border border-success/30 bg-success/5 p-4">
         <h3 className="flex items-center gap-2 text-sm font-semibold"><Icon icon="solar:check-circle-linear" className="h-5 w-5 text-success" />გადაცვლა - ახალი ნივთების არჩევა</h3>
-        <p className="mt-2 text-xs text-text-secondary">ახალი ნივთები ძველის დაბრუნებამდეც შეგიძლია აირჩიო. ძველი ნივთები მარაგში მხოლოდ ფიზიკური მიღების დადასტურებისას დაემატება. შენახვამდე ფასის სხვაობასაც ნახავ.</p>
-        <button type="button" disabled={blocked} onClick={() => { if (onStart()) setOpen(true); }} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-success px-4 text-sm font-semibold text-white disabled:opacity-40"><Icon icon="solar:transfer-horizontal-linear" className="h-5 w-5" />აირჩიე ახალი ნივთები</button>
+        <p className="mt-2 text-xs text-text-secondary">ახალი ნივთები ძველის დაბრუნებამდეც შეგიძლიათ აირჩიოთ. ძველი ნივთები მარაგში მხოლოდ ფიზიკური მიღების დადასტურებისას დაემატება. შენახვამდე ფასის სხვაობასაც ნახავთ.</p>
+        <button type="button" disabled={blocked} onClick={() => { if (onStart()) setOpen(true); }} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-success px-4 text-sm font-semibold text-white disabled:opacity-40"><Icon icon="solar:transfer-horizontal-linear" className="h-5 w-5" />აირჩიეთ ახალი ნივთები</button>
     </section>;
 
     return <section className="space-y-4 rounded-2xl border border-accent/30 bg-surface p-4">
-        <div><h3 className="flex items-center gap-2 font-semibold"><Icon icon="solar:transfer-horizontal-linear" className="h-5 w-5 text-accent" />გადაცვლა - ახალი ნივთების არჩევა</h3><p className="mt-2 text-xs text-text-secondary">დაბრუნების მოთხოვნა შენახულია. აქ დაამატე მხოლოდ სანაცვლოდ გასაგზავნი ახალი ნივთები. ძველის მიღებას ცალკე დაადასტურებ.</p></div>
+        <div><h3 className="flex items-center gap-2 font-semibold"><Icon icon="solar:transfer-horizontal-linear" className="h-5 w-5 text-accent" />გადაცვლა - ახალი ნივთების არჩევა</h3><p className="mt-2 text-xs text-text-secondary">დაბრუნების მოთხოვნა შენახულია. აქ დაამატეთ მხოლოდ სანაცვლოდ გასაგზავნი ახალი ნივთები. ძველის მიღებას ცალკე დაადასტურებთ.</p></div>
         <div className="space-y-2"><h4 className="text-sm font-medium">შეკვეთიდან გამოსაცვლელი ნივთები</h4>{returned.map(item => productLine(item, returnQuantity(item)))}</div>
         {kept.length > 0 && <div className="space-y-2"><h4 className="text-sm font-medium">მომხმარებელთან რჩება</h4><p className="text-xs text-text-secondary">ეს ნივთები შეკვეთაში დარჩება. ხელახლა დამატება არ არის საჭირო.</p>{kept.map(item => productLine(item, item.quantity))}</div>}
         <fieldset disabled={blocked} className="min-w-0 space-y-3 disabled:opacity-60">

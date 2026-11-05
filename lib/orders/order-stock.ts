@@ -144,7 +144,7 @@ export async function createOrderItems(
 
         if (item.source === "INVENTORY") {
             if (!item.inventoryItemId) {
-                fail("აირჩიე პროდუქტი მარაგიდან.");
+                fail("აირჩიეთ პროდუქტი მარაგიდან.");
             }
 
             const inventory =
@@ -307,7 +307,7 @@ export async function restoreOrderStock(
         include: { items: true },
     }).then(numericQuantities);
     if (returns.some(entry => entry.status === "PENDING")) {
-        fail("ჯერ დაადასტურე მიმდინარე დაბრუნების ფიზიკური მიღება.", 409);
+        fail("ჯერ დაადასტურეთ მიმდინარე დაბრუნების ფიზიკური მიღება.", 409);
     }
     const received = new Map<string, number>();
     for (const entry of returns) {
@@ -322,7 +322,7 @@ export async function restoreOrderStock(
     );
     for (const item of items) {
         if ((received.get(item.id) ?? 0) > 0 || item.allocations.some(value => value.returnedQuantity > 0)) {
-            fail("ნაწილობრივ დაბრუნებული ნივთის დარჩენილი რაოდენობა დაბრუნების ფანჯრიდან დაადასტურე.", 409);
+            fail("ნაწილობრივ დაბრუნებული ნივთის დარჩენილი რაოდენობა დაბრუნების ფანჯრიდან დაადასტურეთ.", 409);
         }
     }
 

@@ -13,7 +13,7 @@ export async function GET() {
     const accessDenied = await apiAccessDenied("OWNER", "edit", { feature: "ai" }); if (accessDenied) return accessDenied;
     const context = await getPgDashboardContext();
 
-    if (!context) return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
+    if (!context) return orderJson({ success: false, message: "გაიარეთ ავტორიზაცია." }, 401);
     if (!context.membership) return orderJson({ success: false, message: "ბიზნესი ვერ მოიძებნა." }, 403);
 
     const prisma = createPrismaClient();

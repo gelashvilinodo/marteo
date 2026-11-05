@@ -12,7 +12,7 @@ import {
 
 export async function createContent(raw: unknown) {
     if (!(await getCurrentUser())) {
-        throw new OrderValidationError("გაიარე ავტორიზაცია.", 401);
+        throw new OrderValidationError("გაიარეთ ავტორიზაცია.", 401);
     }
 
     const membership = await getCurrentBusiness();

@@ -25,7 +25,7 @@ export async function readSupportImage(value: FormDataEntryValue | null): Promis
     if (value.size > SUPPORT_IMAGE_MAX_BYTES) throw new SupportError("ფოტოს მაქსიმალური ზომაა 2 MB.", 413);
     const bytes = await value.arrayBuffer();
     const image = detectImage(new Uint8Array(bytes));
-    if (!image) throw new SupportError("აირჩიე PNG, JPG ან WEBP ფორმატის ფოტო.");
+    if (!image) throw new SupportError("აირჩიეთ PNG, JPG ან WEBP ფორმატის ფოტო.");
     return { bytes, ...image };
 }
 
@@ -44,7 +44,7 @@ export async function uploadSupportImage(conversationId: string, image: SupportI
     }
     if (error) {
         console.error("Support image upload failed");
-        throw new SupportError("ფოტო ვერ აიტვირთა. სცადე ხელახლა.", 502);
+        throw new SupportError("ფოტო ვერ აიტვირთა. სცადეთ ხელახლა.", 502);
     }
     return path;
 }

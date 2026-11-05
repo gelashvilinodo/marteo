@@ -41,7 +41,7 @@ export async function lockPurchaseForEdit(
         !Number.isFinite(expectedDate.getTime())
     ) {
         throw new PurchaseEditError(
-            "პარტიის ვერსია არასწორია. გახსენი რედაქტირება თავიდან.",
+            "პარტიის ვერსია არასწორია. გახსენით რედაქტირება თავიდან.",
         );
     }
 
@@ -63,7 +63,7 @@ export async function lockPurchaseForEdit(
 
     if (!membership) {
         throw new PurchaseEditError(
-            "ამ ბიზნესზე წვდომა აღარ გაქვს.",
+            "ამ ბიზნესზე წვდომა აღარ გაქვთ.",
             403,
         );
     }
@@ -99,7 +99,7 @@ export async function lockPurchaseForEdit(
         purchase.updatedAt.getTime() !== expectedDate.getTime()
     ) {
         throw new PurchaseEditError(
-            "პარტია სხვა ფანჯრიდან შეიცვალა. გახსენი რედაქტირება თავიდან.",
+            "პარტია სხვა ფანჯრიდან შეიცვალა. გახსენით რედაქტირება თავიდან.",
             409,
         );
     }

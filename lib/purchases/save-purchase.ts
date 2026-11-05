@@ -69,7 +69,7 @@ export async function savePurchase(
     const user = await getCurrentUser();
 
     if (!user) {
-        fail("პარტიის დასამატებლად შედი ანგარიშში.");
+        fail("პარტიის დასამატებლად შედით ანგარიშში.");
     }
 
     const input = validatePurchase(value);
@@ -95,7 +95,7 @@ export async function savePurchase(
                 change.file.size === 0 ||
                 change.file.size > 5 * 1024 * 1024)
         ) {
-            fail("აირჩიე ფოტო, რომლის ზომა მაქსიმუმ 5 MB იქნება.");
+            fail("აირჩიეთ ფოტო, რომლის ზომა მაქსიმუმ 5 MB იქნება.");
         }
     }
 
@@ -196,7 +196,7 @@ export async function savePurchase(
                 });
 
                 if (!access) {
-                    fail("ამ ბიზნესზე წვდომა აღარ გაქვს.");
+                    fail("ამ ბიზნესზე წვდომა აღარ გაქვთ.");
                 }
 
                 // იგივე მოთხოვნის ხელახლა გამოგზავნა

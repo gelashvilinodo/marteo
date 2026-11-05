@@ -117,7 +117,7 @@ export default function ReceivePurchaseButton({
             );
 
             if (invalid) {
-                setError("გადაამოწმე წუნდებული რაოდენობები.");
+                setError("გადაამოწმეთ წუნდებული რაოდენობები.");
                 return;
             }
 
@@ -166,13 +166,13 @@ export default function ReceivePurchaseButton({
                 throw new Error(
                     typeof data?.error === "string"
                         ? data.error
-                        : "მიღების შედეგი ვერ დადასტურდა. სცადე ხელახლა.",
+                        : "მიღების შედეგი ვერ დადასტურდა. სცადეთ ხელახლა.",
                 );
             }
 
             if (data?.success !== true) {
                 throw new Error(
-                    "მიღების შედეგი ვერ დადასტურდა. სცადე ხელახლა.",
+                    "მიღების შედეგი ვერ დადასტურდა. სცადეთ ხელახლა.",
                 );
             }
 

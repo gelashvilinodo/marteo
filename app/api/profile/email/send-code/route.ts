@@ -26,14 +26,14 @@ export async function POST(request: Request) {
             !/^[a-f0-9]{64}$/.test(body.authorization)
         ) {
             throw new EmailChangeError(
-                "ჯერ დაადასტურე მიმდინარე პაროლი.",
+                "ჯერ დაადასტურეთ მიმდინარე პაროლი.",
                 403,
             );
         }
 
         if (typeof body.newEmail !== "string") {
             throw new EmailChangeError(
-                "მიუთითე ახალი ელფოსტა.",
+                "მიუთითეთ ახალი ელფოსტა.",
                 422,
             );
         }
@@ -46,14 +46,14 @@ export async function POST(request: Request) {
             /[\u0000-\u001f\u007f]/u.test(newEmail)
         ) {
             throw new EmailChangeError(
-                "მიუთითე სწორი ელფოსტა.",
+                "მიუთითეთ სწორი ელფოსტა.",
                 422,
             );
         }
 
         if (typeof body.logoutOtherSessions !== "boolean") {
             throw new EmailChangeError(
-                "აირჩიე, გსურს თუ არა სხვა მოწყობილობებიდან გამოსვლა.",
+                "აირჩიეთ, გსურთ თუ არა სხვა მოწყობილობებიდან გამოსვლა.",
                 422,
             );
         }
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
                     current.sessionTokenHash !== initial.sessionTokenHash
                 ) {
                     throw new EmailChangeError(
-                        "სესია შეიცვალა. თავიდან გახსენი ფანჯარა.",
+                        "სესია შეიცვალა. თავიდან გახსენით ფანჯარა.",
                         409,
                     );
                 }
@@ -103,21 +103,21 @@ export async function POST(request: Request) {
                         hashEmailChangeValue(current.user.password)
                 ) {
                     throw new EmailChangeError(
-                        "დადასტურების ვადა ამოიწურა ან ანგარიშის მონაცემები შეიცვალა. თავიდან დაადასტურე პაროლი.",
+                        "დადასტურების ვადა ამოიწურა ან ანგარიშის მონაცემები შეიცვალა. თავიდან დაადასტურეთ პაროლი.",
                         409,
                     );
                 }
 
                 if (pending.attempts >= EMAIL_CHANGE_MAX_ATTEMPTS) {
                     throw new EmailChangeError(
-                        "კოდის მცდელობები ამოიწურა. თავიდან დაადასტურე პაროლი.",
+                        "კოდის მცდელობები ამოიწურა. თავიდან დაადასტურეთ პაროლი.",
                         409,
                     );
                 }
 
                 if (newEmail === current.user.email.toLowerCase()) {
                     throw new EmailChangeError(
-                        "მიუთითე მიმდინარე მისამართისგან განსხვავებული ელფოსტა.",
+                        "მიუთითეთ მიმდინარე მისამართისგან განსხვავებული ელფოსტა.",
                         422,
                     );
                 }
@@ -129,7 +129,7 @@ export async function POST(request: Request) {
 
                 if (existing) {
                     throw new EmailChangeError(
-                        "ამ ელფოსტის გამოყენება შეუძლებელია. მიუთითე სხვა მისამართი.",
+                        "ამ ელფოსტის გამოყენება შეუძლებელია. მიუთითეთ სხვა მისამართი.",
                         422,
                     );
                 }
@@ -155,7 +155,7 @@ export async function POST(request: Request) {
 
                     if (retryAfter > 0) {
                         throw new EmailChangeError(
-                            "კოდის ხელახლა გაგზავნამდე ცოტა მოიცადე.",
+                            "კოდის ხელახლა გაგზავნამდე ცოტა მოიცადეთ.",
                             429,
                             retryAfter,
                         );
@@ -205,7 +205,7 @@ export async function POST(request: Request) {
                     expiresAt: delivery.expiresAt.toISOString(),
                     retryAfter: EMAIL_CHANGE_RESEND_SECONDS,
                     message:
-                        "კოდის გაგზავნა ვერ დადასტურდა. თუ წერილი მიიღე, გამოიყენე მიღებული კოდი; სხვა შემთხვევაში ხელახლა გაგზავნე.",
+                        "კოდის გაგზავნა ვერ დადასტურდა. თუ წერილი მიიღეთ, გამოიყენეთ მიღებული კოდი; სხვა შემთხვევაში ხელახლა გაგზავნეთ.",
                 },
                 502,
                 EMAIL_CHANGE_RESEND_SECONDS,

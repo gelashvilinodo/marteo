@@ -11,7 +11,7 @@ export function supportFailure(cause: unknown) {
     if (limited) return limited;
     if (cause instanceof SupportError) return supportJson({ success: false, message: cause.message }, cause.status);
     console.error("Support chat failed", cause instanceof Error ? cause.name : "UnknownError");
-    return supportJson({ success: false, message: "მოქმედება ვერ შესრულდა. სცადე ხელახლა." }, 500);
+    return supportJson({ success: false, message: "მოქმედება ვერ შესრულდა. სცადეთ ხელახლა." }, 500);
 }
 
 export const supportUnauthorized = () => supportJson({ success: false, message: "ავტორიზაცია საჭიროა." }, 401);

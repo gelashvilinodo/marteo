@@ -35,7 +35,7 @@ function readName(
 
     if (typeof value !== "string" || !value.trim()) {
         throw new ProfileSettingsError(
-            `მიუთითე ${label}.`,
+            `მიუთითეთ ${label}.`,
             422,
             field,
         );
@@ -77,7 +77,7 @@ export function validateProfileSettings(value: unknown): {
 
     if (typeof input.expectedUpdatedAt !== "string") {
         throw new ProfileSettingsError(
-            "მონაცემების ვერსია ვერ დადასტურდა. განაახლე პროფილის მონაცემები.",
+            "მონაცემების ვერსია ვერ დადასტურდა. განაახლეთ პროფილის მონაცემები.",
             409,
         );
     }
@@ -91,7 +91,7 @@ export function validateProfileSettings(value: unknown): {
         expectedUpdatedAt.toISOString() !== input.expectedUpdatedAt
     ) {
         throw new ProfileSettingsError(
-            "მონაცემების ვერსია არასწორია. განაახლე პროფილის მონაცემები.",
+            "მონაცემების ვერსია არასწორია. განაახლეთ პროფილის მონაცემები.",
             409,
         );
     }

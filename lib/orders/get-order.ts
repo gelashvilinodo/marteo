@@ -9,7 +9,7 @@ import { orderPayableTotal } from "./order-payable-total";
 import { findActiveMembership } from "@/lib/auth/active-business";
 export async function getOrder(orderId: string) {
     const user = await getCurrentUser();
-    if (!user) throw new OrderValidationError("გაიარე ავტორიზაცია.", 401);
+    if (!user) throw new OrderValidationError("გაიარეთ ავტორიზაცია.", 401);
     const prisma = createPrismaClient();
     try {
         const membership = await findActiveMembership(prisma, user.id);

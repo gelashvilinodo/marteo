@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 
         if (!user) {
             throw new ProfileSettingsError(
-                "გაიარე ავტორიზაცია.",
+                "გაიარეთ ავტორიზაცია.",
                 401,
             );
         }
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
             new Date(version).toISOString() !== version
         ) {
             throw new ProfileSettingsError(
-                "განაახლე პროფილის მონაცემები და სცადე ხელახლა.",
+                "განაახლეთ პროფილის მონაცემები და სცადეთ ხელახლა.",
                 409,
             );
         }
@@ -76,14 +76,14 @@ export async function POST(request: Request) {
 
         if (!beforeUpload || beforeUpload.status !== "ACTIVE") {
             throw new ProfileSettingsError(
-                "გაიარე ავტორიზაცია.",
+                "გაიარეთ ავტორიზაცია.",
                 401,
             );
         }
 
         if (beforeUpload.updatedAt.toISOString() !== version) {
             throw new ProfileSettingsError(
-                "პროფილის მონაცემები შეიცვალა. განაახლე მონაცემები და ხელახლა აირჩიე ფოტო.",
+                "პროფილის მონაცემები შეიცვალა. განაახლეთ მონაცემები და ხელახლა აირჩიეთ ფოტო.",
                 409,
             );
         }
@@ -113,14 +113,14 @@ export async function POST(request: Request) {
 
                 if (!latest || latest.status !== "ACTIVE") {
                     throw new ProfileSettingsError(
-                        "გაიარე ავტორიზაცია.",
+                        "გაიარეთ ავტორიზაცია.",
                         401,
                     );
                 }
 
                 if (latest.updatedAt.toISOString() !== version) {
                     throw new ProfileSettingsError(
-                        "ატვირთვისას პროფილის მონაცემები შეიცვალა. განაახლე მონაცემები და ხელახლა აირჩიე ფოტო.",
+                        "ატვირთვისას პროფილის მონაცემები შეიცვალა. განაახლეთ მონაცემები და ხელახლა აირჩიეთ ფოტო.",
                         409,
                     );
                 }
@@ -169,7 +169,7 @@ export async function POST(request: Request) {
             {
                 success: false,
                 message:
-                    "ფოტოს შენახვის შედეგი ვერ დადასტურდა. განაახლე პროფილის მონაცემები და გადაამოწმე ფოტო.",
+                    "ფოტოს შენახვის შედეგი ვერ დადასტურდა. განაახლეთ პროფილის მონაცემები და გადაამოწმეთ ფოტო.",
                 field: "form",
             },
             500,

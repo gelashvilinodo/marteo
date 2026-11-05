@@ -39,7 +39,7 @@ function errorResponse(cause: unknown) {
         {
             success: false,
             message:
-                "მოქმედების შედეგი ვერ დადასტურდა. შეინარჩუნე წაშლის ფანჯარა და გადაამოწმე შედეგი იმავე მოთხოვნით.",
+                "მოქმედების შედეგი ვერ დადასტურდა. შეინარჩუნეთ წაშლის ფანჯარა და გადაამოწმეთ შედეგი იმავე მოთხოვნით.",
         },
         500,
     );
@@ -50,7 +50,7 @@ async function getAccess(routeContext: RouteContext) {
 
     if (!context) {
         throw new InventoryEditError(
-            "გაიარე ავტორიზაცია.",
+            "გაიარეთ ავტორიზაცია.",
             401,
         );
     }
@@ -108,7 +108,7 @@ export async function GET(
 
                 if (!membership) {
                     throw new InventoryEditError(
-                        "ამ ბიზნესზე წვდომა აღარ გაქვს.",
+                        "ამ ბიზნესზე წვდომა აღარ გაქვთ.",
                         403,
                     );
                 }

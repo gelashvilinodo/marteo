@@ -23,7 +23,7 @@ export async function mutateCustomers(
 ) {
     const user = await getCurrentUser();
 
-    if (!user) fail("გაიარე ავტორიზაცია.", 401);
+    if (!user) fail("გაიარეთ ავტორიზაცია.", 401);
 
     const body = customerObject(raw);
     const prisma = createPrismaClient();
@@ -37,7 +37,7 @@ export async function mutateCustomers(
         }
 
         if (!canManageBusinessArea(membership, "ORDERS")) {
-            fail("ამ მოქმედების უფლება არ გაქვს.", 403);
+            fail("ამ მოქმედების უფლება არ გაქვთ.", 403);
         }
 
         const businessId = membership.businessId;
@@ -52,14 +52,14 @@ export async function mutateCustomers(
 
             if (action === "delete") {
                 if (body.confirmDeletion !== true) {
-                    fail("დაადასტურე მომხმარებლების წაშლა.");
+                    fail("დაადასტურეთ მომხმარებლების წაშლა.");
                 }
 
                 if (
                     !Array.isArray(body.ids) ||
                     !body.ids.length
                 ) {
-                    fail("მონიშნე წასაშლელი მომხმარებლები.");
+                    fail("მონიშნეთ წასაშლელი მომხმარებლები.");
                 }
 
                 const ids = [

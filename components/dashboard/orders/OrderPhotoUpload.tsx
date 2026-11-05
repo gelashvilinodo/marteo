@@ -52,7 +52,7 @@ export default function OrderPhotoUpload({
             });
             const result = await response.json() as { success?: boolean; imageUrl?: string; message?: string };
             if (!response.ok || !result.success || !result.imageUrl) {
-                throw new Error(result.message || "ფოტო ვერ აიტვირთა. სცადე ხელახლა.");
+                throw new Error(result.message || "ფოტო ვერ აიტვირთა. სცადეთ ხელახლა.");
             }
             if (mounted.current && !abort.signal.aborted) onChange(result.imageUrl);
         } catch (cause: unknown) {

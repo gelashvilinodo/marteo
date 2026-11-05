@@ -12,8 +12,9 @@ export const TRIAL_DAYS = 14;
 export const TRIAL_REMINDER_DAYS = 2;
 // დამატებითი ბიზნესის ფასდაკლება.
 export const EXTRA_BUSINESS_DISCOUNT = 0.25;
-// ყიდვიდან ამდენ დღეში შეიძლება თანხის დაბრუნების მოთხოვნა.
-export const REFUND_WINDOW_DAYS = 3;
+// ბიზნესის პირველი შეძენიდან ამდენ დღეში შეიძლება თანხის დაბრუნების მოთხოვნა, მხოლოდ დახმარების ჩატში.
+// გაუქმება თანხას არ აბრუნებს: ის მხოლოდ შემდეგ ჩამოჭრას აჩერებს.
+export const REFUND_WINDOW_DAYS = 7;
 
 export const PLAN_LABELS: Record<PlanTier, string> = {
     TRIAL: "საცდელი", START: "სტარტი", BUSINESS: "ბიზნესი", PRO: "PRO",
@@ -43,7 +44,7 @@ export type PlanLimits = {
 
 export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     TRIAL: { ordersPerPeriod: null, aiQuestions: 20, aiFiles: null, aiFilesAreQuestions: true, smsIncluded: 0, coOwners: 0, staff: 0 },
-    START: { ordersPerPeriod: 200, aiQuestions: 0, aiFiles: 0, aiFilesAreQuestions: false, smsIncluded: 0, coOwners: 0, staff: 0 },
+    START: { ordersPerPeriod: 200, aiQuestions: 0, aiFiles: 0, aiFilesAreQuestions: false, smsIncluded: 0, coOwners: 0, staff: 1 },
     BUSINESS: { ordersPerPeriod: 500, aiQuestions: 100, aiFiles: 5, aiFilesAreQuestions: false, smsIncluded: 0, coOwners: 1, staff: 5 },
     PRO: { ordersPerPeriod: null, aiQuestions: 500, aiFiles: null, aiFilesAreQuestions: false, smsIncluded: 500, coOwners: 5, staff: 15 },
 };
@@ -68,7 +69,8 @@ export type PlanFeature = typeof PLAN_FEATURES[number];
 // PRO ოქროსფერია, BUSINESS ლურჯი (დღე) / თეთრი (ღამე).
 export const FEATURE_MIN_TIER: Record<PlanFeature, PaidTier> = {
     stock: "BUSINESS", orderPhotos: "BUSINESS", reports: "BUSINESS", fileImport: "BUSINESS",
-    ai: "BUSINESS", aiFiles: "BUSINESS", sms: "BUSINESS", team: "BUSINESS",
+    // სტარტზე გუნდი ერთი თანამშრომელია (თანამფლობელის გარეშე), ლიმიტები PLAN_LIMITS-შია.
+    ai: "BUSINESS", aiFiles: "BUSINESS", sms: "BUSINESS", team: "START",
     extraBusiness: "BUSINESS", hybridMode: "PRO",
 };
 

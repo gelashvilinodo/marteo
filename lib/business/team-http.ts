@@ -23,7 +23,7 @@ export async function withTeam(action: (db: ReturnType<typeof createPrismaClient
         const limited = rateLimitResponse(error);
         if (limited) return limited;
         console.error("Team request failed", error instanceof Error ? error.message : "UnknownError");
-        return json({ success: false, message: "მოთხოვნა ვერ შესრულდა. სცადე ხელახლა." }, 500);
+        return json({ success: false, message: "მოთხოვნა ვერ შესრულდა. სცადეთ ხელახლა." }, 500);
     } finally {
         await db.$disconnect();
     }

@@ -8,7 +8,7 @@ import { MARTEO_CONTACTS } from "@/lib/marteo-contacts";
 
 export const metadata = {
     title: "კონტაქტი - MARTEO",
-    description: "დაგვიკავშირდი ელფოსტით ან სოციალურ ქსელებში - Facebook, Instagram, TikTok.",
+    description: "დაგვიკავშირდით ელფოსტით ან სოციალურ ქსელებში - Facebook, Instagram, TikTok.",
 };
 
 const socials = [
@@ -19,14 +19,14 @@ const socials = [
 
 const helpLinks = [
     {
-        title: "უკვე მომხმარებელი ხარ?",
-        text: "მართვის პანელში, „დახმარების“ განყოფილებიდან პირდაპირ მოგვწერე.",
+        title: "უკვე მომხმარებელი ხართ?",
+        text: "მართვის პანელში, „დახმარების“ განყოფილებიდან პირდაპირ მოგვწერეთ.",
         href: "/dashboard/help",
         icon: "solar:chat-round-dots-bold-duotone",
     },
     {
         title: "ხშირად დასმული კითხვები",
-        text: "შესაძლოა, შენს კითხვაზე პასუხი უკვე იქ იყოს.",
+        text: "შესაძლოა, თქვენს კითხვაზე პასუხი უკვე იქ იყოს.",
         href: "/faq",
         icon: "solar:question-circle-bold-duotone",
     },
@@ -55,7 +55,7 @@ export default function ContactPage() {
                         კონტაქტი
                     </h1>
                     <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/70 sm:text-base">
-                        გაქვს კითხვა, იდეა ან შენიშვნა? მოგვწერე და სიამოვნებით გიპასუხებთ.
+                        გაქვთ კითხვა, იდეა ან შენიშვნა? მოგვწერეთ და სიამოვნებით გიპასუხებთ.
                     </p>
                 </div>
             </section>
@@ -90,7 +90,7 @@ export default function ContactPage() {
                             href={`mailto:${MARTEO_CONTACTS.email}`}
                             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover sm:w-auto"
                         >
-                            მოგვწერე
+                            მოგვწერეთ
                             <Icon icon="solar:arrow-right-linear" className="h-4 w-4" />
                         </a>
                         <CopyEmailButton email={MARTEO_CONTACTS.email} />
@@ -101,7 +101,7 @@ export default function ContactPage() {
                     <h2 id="contact-socials-title" className="text-lg font-semibold text-text-primary sm:text-xl">
                         სოციალური ქსელები
                     </h2>
-                    <p className="mt-1 text-sm text-text-secondary">გამოგვყევი სიახლეებისთვის ან მოგვწერე პირადში.</p>
+                    <p className="mt-1 text-sm text-text-secondary">გამოგვყევით სიახლეებისთვის ან მოგვწერეთ პირადში.</p>
 
                     <ul className="mt-5 grid gap-3 sm:grid-cols-3">
                         {socials.map(social => (

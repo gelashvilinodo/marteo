@@ -26,13 +26,13 @@ async function post(request: Request) {
             : body.mode === "signed-in" && user
                 ? { kind: "signed-in" as const, userId: user.id }
                 : { kind: "existing" as const, password: typeof body.password === "string" ? body.password : "" };
-        if (input.kind === "existing" && !input.password) throw new TeamError("ჩაწერე პაროლი.");
+        if (input.kind === "existing" && !input.password) throw new TeamError("ჩაწერეთ პაროლი.");
 
         const result = await acceptInvite(db, token, input);
         if (result.notifyUserId) {
             const pushClient = createPrismaClient();
             runInBackground(sendPushToUsers(pushClient, [result.notifyUserId], {
-                title: "ახალი წევრი გუნდში", body: result.message, url: "/dashboard/business-settings", tag: "team",
+                title: "გუნდს ახალი წევრი შეემატა", body: result.message, url: "/dashboard/business-settings", tag: "team",
             }).finally(() => pushClient.$disconnect()));
         }
 
@@ -50,7 +50,7 @@ async function post(request: Request) {
         const limited = rateLimitResponse(error);
         if (limited) return limited;
         console.error("Invite accept failed", error instanceof Error ? error.message : "UnknownError");
-        return json({ success: false, message: "მოწვევის მიღება ვერ მოხერხდა. სცადე ხელახლა." }, 500);
+        return json({ success: false, message: "მოწვევის მიღება ვერ მოხერხდა. სცადეთ ხელახლა." }, 500);
     } finally {
         await db.$disconnect();
     }

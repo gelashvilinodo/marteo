@@ -51,7 +51,7 @@ export default function TemplatesManager({ initial }: { initial: Template[] }) {
         {draft
             ? <section className="mb-4 rounded-2xl border border-accent/40 bg-surface p-4">
                 <h2 className="text-sm font-semibold text-text-primary">{draft.id ? "შაბლონის რედაქტირება" : "ახალი შაბლონი"}</h2>
-                <label className="mt-3 block text-xs text-text-secondary">სათაური (მხოლოდ შენ ხედავ)
+                <label className="mt-3 block text-xs text-text-secondary">სათაური (მხოლოდ თქვენ ხედავთ)
                     <input value={draft.title} maxLength={60} onChange={event => setDraft({ ...draft, title: event.target.value })} className={`mt-1 h-11 ${field}`} />
                 </label>
                 <label className="mt-3 block text-xs text-text-secondary">ტექსტი
@@ -84,7 +84,7 @@ export default function TemplatesManager({ initial }: { initial: Template[] }) {
                     </button>
                 </div>
             </li>)}
-            {!templates.length && <li className="rounded-2xl border border-dashed border-border bg-surface px-6 py-10 text-center text-sm text-text-secondary">შაბლონები ჯერ არ გაქვს.</li>}
+            {!templates.length && <li className="rounded-2xl border border-dashed border-border bg-surface px-6 py-10 text-center text-sm text-text-secondary">შაბლონები ჯერ არ გაქვთ.</li>}
         </ul>
 
         <ConfirmDialog open={Boolean(removing)} title="შაბლონის წაშლა" confirmLabel="წაშლა" danger busy={busy} error={removing ? error : ""}

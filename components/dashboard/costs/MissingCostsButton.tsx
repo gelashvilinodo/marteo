@@ -143,20 +143,20 @@ export default function MissingCostsButton({ inventoryItemId, orderId, label = "
                 close();
         }} aria-labelledby={`cost-title-${inventoryItemId ?? orderId ?? "all"}`} className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%_-_2rem)] min-w-0 max-w-2xl overflow-x-hidden overflow-y-auto rounded-2xl border border-border bg-surface p-4 text-text-primary shadow-2xl backdrop:bg-black/35 backdrop:backdrop-blur-sm sm:p-6">
             <div className="flex min-w-0 items-center justify-between gap-3"><h2 id={`cost-title-${inventoryItemId ?? orderId ?? "all"}`} className="text-lg font-semibold">თვითღირებულება</h2><button type="button" aria-label="დახურვა" disabled={saving} onClick={close} className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border"><Icon icon="solar:close-circle-linear" className="size-6"/></button></div>
-            <p className="mt-3 text-sm text-text-secondary">შეიყვანე ერთი ერთეულის ღირებულება. ცარიელი ველი უცნობად დარჩება; 0 ნიშნავს, რომ ხარჯი ნამდვილად არ გქონია. უკვე შევსებული თვითღირებულებები არ შეიცვლება.</p>
+            <p className="mt-3 text-sm text-text-secondary">შეიყვანეთ ერთი ერთეულის ღირებულება. ცარიელი ველი უცნობად დარჩება; 0 ნიშნავს, რომ ხარჯი ნამდვილად არ გქონიათ. უკვე შევსებული თვითღირებულებები არ შეიცვლება.</p>
             {loading ? <p role="status" className="py-8 text-center">იტვირთება…</p> : preview && <>
                 {!review && <>
                     <fieldset disabled={saving} className="mt-4 flex flex-wrap gap-4 text-sm">
                         {!orderId && <label className="flex items-center gap-2"><input type="checkbox" checked={stock} onChange={e => setStock(e.target.checked)}/>დარჩენილი მარაგი</label>}
                         <label className="flex items-center gap-2"><input type="checkbox" checked={historical} onChange={e => setHistorical(e.target.checked)}/>ძველი შეკვეთებიც</label>
                     </fieldset>
-                    {inventoryItemId && historical && <p className="mt-3 text-xs text-warning">ქვემოთ ჩანს იმავე დასახელების, ფერისა და ზომის შეკვეთის პროდუქტები. თითოეული გადაამოწმე - მარაგში შეყვანილი ფასი მათ ავტომატურად არ მიენიჭება.</p>}
+                    {inventoryItemId && historical && <p className="mt-3 text-xs text-warning">ქვემოთ ჩანს იმავე დასახელების, ფერისა და ზომის შეკვეთის პროდუქტები. თითოეული გადაამოწმეთ - მარაგში შეყვანილი ფასი მათ ავტომატურად არ მიენიჭება.</p>}
                     <div className="mt-4 space-y-3">{rows.map(row => <label key={row.key} className="block min-w-0 rounded-xl border border-border p-3"><span className="block break-words text-sm font-medium">{row.name}</span><span className="mt-1 block text-xs text-text-secondary">{row.kind === "stock" ? "დარჩენილი მარაგი" : `შეკვეთა #${row.orderNumber ?? "-"} · ${displayDate(row.date)}`} · {row.quantity} ერთეული</span><input aria-label={`${row.name} - ერთეულის თვითღირებულება`} inputMode="decimal" type="text" placeholder="არ არის მითითებული" value={values[row.key] ?? ""} aria-invalid={invalidFields.includes(row.key)} onChange={e => {
                         setInvalidFields(fields => fields.filter(key => key !== row.key));
                         setValues(v => ({...v, [row.key]: e.target.value}));
                     }} className={`${field} ${invalidFields.includes(row.key) ? "border-danger" : ""}`}/></label>)}</div>
                     {!rows.length && <p className="py-6 text-sm text-text-secondary">არჩეულ ნაწილში შესავსები თვითღირებულება არ არის.</p>}
-                    {preview.hasMore && <p className="mt-3 text-xs text-text-secondary">სია ნაწილობრივაა ნაჩვენები. შენახვის შემდეგ ხელახლა გახსენი დარჩენილი ჩანაწერებისთვის.</p>}
+                    {preview.hasMore && <p className="mt-3 text-xs text-text-secondary">სია ნაწილობრივაა ნაჩვენები. შენახვის შემდეგ ხელახლა გახსენით დარჩენილი ჩანაწერებისთვის.</p>}
                     <button type="button" disabled={!entries.length} onClick={() => {
                     try {
                         readCostInput({

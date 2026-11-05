@@ -98,7 +98,7 @@ export default function ForgotPasswordForm() {
             if (!response.ok || body.success !== true) {
                 throw new Error(
                     body.message ||
-                    "მოთხოვნა ვერ შესრულდა. სცადე ხელახლა.",
+                    "მოთხოვნა ვერ შესრულდა. სცადეთ ხელახლა.",
                 );
             }
 
@@ -112,17 +112,17 @@ export default function ForgotPasswordForm() {
             setRetryUntil(timestamp + seconds * 1000);
             setNotice(
                 body.message ||
-                "თუ ამ ელფოსტით აქტიური ანგარიში არსებობს, აღდგენის ბმულს მიიღებ.",
+                "თუ ამ ელფოსტით აქტიური ანგარიში არსებობს, აღდგენის ბმულს მიიღებთ.",
             );
         } catch (cause: unknown) {
             if (!mounted.current) return;
 
             setError(
                 current.signal.aborted
-                    ? "პასუხის ლოდინის დრო ამოიწურა. შეამოწმე ელფოსტა და საჭიროების შემთხვევაში ხელახლა სცადე."
+                    ? "პასუხის ლოდინის დრო ამოიწურა. შეამოწმეთ ელფოსტა და საჭიროების შემთხვევაში ხელახლა სცადეთ."
                     : cause instanceof Error
                         ? cause.message
-                        : "მოთხოვნა ვერ შესრულდა. სცადე ხელახლა.",
+                        : "მოთხოვნა ვერ შესრულდა. სცადეთ ხელახლა.",
             );
         } finally {
             window.clearTimeout(timeout);
@@ -143,11 +143,11 @@ export default function ForgotPasswordForm() {
             </div>
 
             <h1 className="text-2xl font-semibold text-text-primary">
-                დაგავიწყდა პაროლი?
+                დაგავიწყდათ პაროლი?
             </h1>
 
             <p className="mt-2 text-sm leading-relaxed text-text-secondary">
-                მიუთითე ანგარიშის ელფოსტა. პაროლის აღდგენის
+                მიუთითეთ ანგარიშის ელფოსტა. პაროლის აღდგენის
                 ბმულს ამ მისამართზე გამოგიგზავნით.
             </p>
 

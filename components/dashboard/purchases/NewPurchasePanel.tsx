@@ -408,6 +408,7 @@ export default function NewPurchasePanel({
         id: string;
         number: number;
         updatedAt: string;
+        receiptStatus: "IN_TRANSIT" | "RECEIVED";
     } | null>(null);
 
     const editLoadLocked = useRef(false);
@@ -561,14 +562,14 @@ export default function NewPurchasePanel({
 
             if (requestLocked.current) {
                 cancelNavigation();
-                setError("მიმდინარეობს შენახვა. დაელოდე დასრულებას.");
+                setError("მიმდინარეობს შენახვა. დაელოდეთ დასრულებას.");
                 return;
             }
 
             if (pendingSubmission.current) {
                 cancelNavigation();
                 setError(
-                    "შენახვის შედეგი ჯერ დაუდასტურებელია. დააჭირე „ხელახლა ცდა“-ს.",
+                    "შენახვის შედეგი ჯერ დაუდასტურებელია. დააჭირეთ „ხელახლა ცდა“-ს.",
                 );
                 return;
             }
@@ -576,7 +577,7 @@ export default function NewPurchasePanel({
             if (!dirty) return;
 
             const confirmed = window.confirm(
-                "ცვლილებები შენახული არ არის. გადახვალ სხვა გვერდზე და დაკარგავ შეყვანილ მონაცემებს?",
+                "ცვლილებები შენახული არ არის. გადახვალთ სხვა გვერდზე და დაკარგავთ შეყვანილ მონაცემებს?",
             );
 
             if (!confirmed) {
@@ -811,6 +812,7 @@ export default function NewPurchasePanel({
                 id: purchase.id,
                 number: purchase.number,
                 updatedAt: purchase.updatedAt,
+                receiptStatus: purchase.receiptStatus,
             });
 
             setName(purchase.name);
@@ -896,7 +898,7 @@ export default function NewPurchasePanel({
 
         if (pendingSubmission.current) {
             setError(
-                "შენახვის შედეგი ჯერ დაუდასტურებელია. დააჭირე „ხელახლა ცდა“-ს.",
+                "შენახვის შედეგი ჯერ დაუდასტურებელია. დააჭირეთ „ხელახლა ცდა“-ს.",
             );
             return;
         }
@@ -904,7 +906,7 @@ export default function NewPurchasePanel({
         if (
             dirty &&
             !window.confirm(
-                "დახურავ ახალ პარტიას? შეყვანილი მონაცემები არ შეინახება.",
+                "დახურავთ ახალ პარტიას? შეყვანილი მონაცემები არ შეინახება.",
             )
         ) {
             return;
@@ -1073,7 +1075,7 @@ export default function NewPurchasePanel({
     async function handleSave() {
         if (requestLocked.current) return;
         if (photoJobs.current.size > 0) {
-            setError("დაელოდე ფოტოების მომზადებას.");
+            setError("დაელოდეთ ფოტოების მომზადებას.");
             return;
         }
 
@@ -1083,7 +1085,7 @@ export default function NewPurchasePanel({
 
         if (hasPhotoErrors) {
             setError(
-                "ერთ-ერთი ფოტო ვერ მომზადდა. პროდუქტთან აირჩიე სხვა ფოტო ან გააგრძელე მის გარეშე.",
+                "ერთ-ერთი ფოტო ვერ მომზადდა. პროდუქტთან აირჩიეთ სხვა ფოტო ან გააგრძელეთ მის გარეშე.",
             );
             return;
         }
@@ -1096,7 +1098,7 @@ export default function NewPurchasePanel({
             if (!formRef.current?.reportValidity()) return;
 
             if (products.length === 0) {
-                setError("დაამატე მინიმუმ ერთი პროდუქტი.");
+                setError("დაამატეთ მინიმუმ ერთი პროდუქტი.");
                 return;
             }
 
@@ -1109,7 +1111,7 @@ export default function NewPurchasePanel({
                 )
             ) {
                 setError(
-                    "ყველა პროდუქტზე შეავსე სახელი, კატეგორია და გასაყიდი ფასის პარამეტრი.",
+                    "ყველა პროდუქტზე შეავსეთ სახელი, კატეგორია და გასაყიდი ფასის პარამეტრი.",
                 );
                 return;
             }
@@ -1187,7 +1189,7 @@ export default function NewPurchasePanel({
 
                     if (!product.imageFile) {
                         setError(
-                            `პროდუქტი ${index + 1}: თავიდან აირჩიე ფოტო.`,
+                            `პროდუქტი ${index + 1}: თავიდან აირჩიეთ ფოტო.`,
                         );
                         return;
                     }
@@ -1226,7 +1228,7 @@ export default function NewPurchasePanel({
             // სივრცე მოთხოვნის ტექნიკური მონაცემებისთვისაც რჩება.
             if (totalSize > 25 * 1024 * 1024 - 256 * 1024) {
                 setError(
-                    "ფოტოების საერთო ზომა ზედმეტად დიდია. შეამცირე ფოტოების ზომა.",
+                    "ფოტოების საერთო ზომა ზედმეტად დიდია. შეამცირეთ ფოტოების ზომა.",
                 );
                 return;
             }
@@ -1308,8 +1310,8 @@ export default function NewPurchasePanel({
                 setError(
                     data?.error ||
                     (rejectedWithoutSaving
-                        ? "მოთხოვნა ვერ დამუშავდა. გადაამოწმე მონაცემები."
-                        : "შენახვის შედეგი ვერ დადასტურდა. დააჭირე „ხელახლა ცდა“-ს."),
+                        ? "მოთხოვნა ვერ დამუშავდა. გადაამოწმეთ მონაცემები."
+                        : "შენახვის შედეგი ვერ დადასტურდა. დააჭირეთ „ხელახლა ცდა“-ს."),
                 );
                 return;
             }
@@ -1321,7 +1323,7 @@ export default function NewPurchasePanel({
             ) {
                 setRetryPending(true);
                 setError(
-                    "შენახვის პასუხი ვერ დადასტურდა. დააჭირე „ხელახლა ცდა“-ს.",
+                    "შენახვის პასუხი ვერ დადასტურდა. დააჭირეთ „ხელახლა ცდა“-ს.",
                 );
                 return;
             }
@@ -1357,7 +1359,7 @@ export default function NewPurchasePanel({
         } catch {
             setRetryPending(true);
             setError(
-                "სერვერთან კავშირი შეწყდა. შედეგის დასადასტურებლად დააჭირე „ხელახლა ცდა“-ს.",
+                "სერვერთან კავშირი შეწყდა. შედეგის დასადასტურებლად დააჭირეთ „ხელახლა ცდა“-ს.",
             );
         } finally {
             requestLocked.current = false;
@@ -1636,7 +1638,7 @@ export default function NewPurchasePanel({
 
                             <div className="col-span-2 min-w-0 sm:col-span-1">
                                 <Field label="იმპორტის ქვეყანა">
-                                    <input value={country} onChange={event => setCountry(event.target.value)} list={`${panelId}-countries`} maxLength={100} placeholder="ჩაწერე ან აირჩიე" className={inputClass}/>
+                                    <input value={country} onChange={event => setCountry(event.target.value)} list={`${panelId}-countries`} maxLength={100} placeholder="ჩაწერეთ ან აირჩიეთ" className={inputClass}/>
                                     <datalist id={`${panelId}-countries`}>{countryOptions.map(value => <option key={value} value={value}/>)}</datalist>
                                 </Field>
                             </div>
@@ -1676,10 +1678,10 @@ export default function NewPurchasePanel({
                                     ] as const).map((option) => (
                                         <button
                                             key={option.value}
-                                            disabled={isEditing}
+                                            disabled={editingPurchase?.receiptStatus === "RECEIVED"}
                                             title={
-                                                isEditing
-                                                    ? "პარტიის მისაღებად გამოიყენე „პარტიის მიღება“"
+                                                editingPurchase?.receiptStatus === "RECEIVED"
+                                                    ? "მიღებულ პარტიას გზაში ვეღარ დააბრუნებთ"
                                                     : undefined
                                             }
                                             type="button"
@@ -1698,7 +1700,7 @@ export default function NewPurchasePanel({
                                                     hasDefects
                                                 ) {
                                                     setError(
-                                                        "გზაში გადასართავად ჯერ გაასუფთავე წუნდებული რაოდენობა და წუნის აღწერა.",
+                                                        "გზაში გადასართავად ჯერ გაასუფთავეთ წუნდებული რაოდენობა და წუნის აღწერა.",
                                                     );
                                                     return;
                                                 }
@@ -2405,7 +2407,7 @@ export default function NewPurchasePanel({
                     {/* მუდმივად ხილული მოქმედებები */}
                     <footer className="shrink-0 border-t border-border bg-surface px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:px-5">
                         {/* <p className="mb-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-text-primary">
-                            გადაამოწმე რაოდენობები და ფასები. ამ პარტიიდან
+                            გადაამოწმეთ რაოდენობები და ფასები. ამ პარტიიდან
                             პირველი გაყიდვის შემდეგ რედაქტირება აღარ იქნება
                             შესაძლებელი.
                         </p> */}

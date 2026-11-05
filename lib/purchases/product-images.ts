@@ -113,7 +113,7 @@ export async function uploadProductImage(
     validateBusinessId(businessId);
 
     if (!(file instanceof File) || file.size === 0) {
-        throw new ProductImageError("აირჩიე პროდუქტის ფოტო.");
+        throw new ProductImageError("აირჩიეთ პროდუქტის ფოტო.");
     }
 
     if (file.size > MAX_FILE_SIZE) {
@@ -157,7 +157,7 @@ export async function uploadProductImage(
 
     if (error) {
         throw new ProductImageError(
-            "ფოტოს ატვირთვა ვერ მოხერხდა. სცადე ხელახლა.",
+            "ფოტოს ატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.",
         );
     }
 
@@ -173,7 +173,7 @@ export async function uploadProductImage(
             // Both UUID paths belong only to this uncommitted upload.
             try { await storage.storage.from(BUCKET).remove([path, `${stem}.thumb`]); }
             catch { console.error("Uncommitted product image pair needs cleanup"); }
-            throw new ProductImageError("მცირე ფოტოს ატვირთვა ვერ მოხერხდა. სცადე ხელახლა.");
+            throw new ProductImageError("მცირე ფოტოს ატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.");
         }
     }
     const { data } = storage.storage

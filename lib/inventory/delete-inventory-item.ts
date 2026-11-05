@@ -40,7 +40,7 @@ function validateRequest(value: unknown) {
         !/^[0-9a-f]{64}$/.test(input.expectedVersion)
     ) {
         throw new InventoryEditError(
-            "მარაგის ვერსია არასწორია. გახსენი წაშლის ფანჯარა ხელახლა.",
+            "მარაგის ვერსია არასწორია. გახსენით წაშლის ფანჯარა ხელახლა.",
         );
     }
 
@@ -80,7 +80,7 @@ export async function deleteInventoryItem(
 
                 if (!membership) {
                     throw new InventoryEditError(
-                        "ამ ბიზნესზე წვდომა აღარ გაქვს.",
+                        "ამ ბიზნესზე წვდომა აღარ გაქვთ.",
                         403,
                     );
                 }
@@ -135,7 +135,7 @@ export async function deleteInventoryItem(
 
                 if (impact.expectedVersion !== input.expectedVersion) {
                     throw new InventoryEditError(
-                        "მარაგი შეიცვალა. გახსენი წაშლის ფანჯარა ხელახლა და გადაამოწმე განახლებული რაოდენობა.",
+                        "მარაგი შეიცვალა. გახსენით წაშლის ფანჯარა ხელახლა და გადაამოწმეთ განახლებული რაოდენობა.",
                         409,
                     );
                 }

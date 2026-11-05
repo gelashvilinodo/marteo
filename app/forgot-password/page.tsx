@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function ForgotPasswordPage() {
     return (
         <AuthShell
-            heading={<>პაროლი დაგავიწყდა?<br />არაუშავს.</>}
+            heading={<>პაროლი დაგავიწყდათ?<br />არაუშავს.</>}
             text="მიუთითეთ ელფოსტა და აღდგენის ბმულს გამოგიგზავნით."
         >
             <ForgotPasswordForm />

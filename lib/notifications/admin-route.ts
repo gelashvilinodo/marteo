@@ -13,6 +13,6 @@ export async function adminRoute(name: string, run: () => Promise<Response>) {
         if (error instanceof AdminAccessError) return adminJson({ error: "წვდომა აკრძალულია." }, 403);
         if (error instanceof CampaignInputError) return adminJson({ error: error.message }, 400);
         console.error(`Admin notifications ${name} failed`, { type: error instanceof Error ? error.name : "unknown" });
-        return adminJson({ error: "მოქმედება ვერ შესრულდა. სცადე ხელახლა." }, 500);
+        return adminJson({ error: "მოქმედება ვერ შესრულდა. სცადეთ ხელახლა." }, 500);
     }
 }

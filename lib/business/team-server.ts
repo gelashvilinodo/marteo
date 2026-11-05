@@ -14,6 +14,7 @@ import {
     INVITE_MAX_RESENDS,
     INVITE_RESEND_COOLDOWN_SECONDS,
     PERMISSION_OPTIONS,
+    planPermissions,
     TEAM_LIMITS,
     type TeamPlan,
     type TeamSnapshot,
@@ -28,6 +29,8 @@ export class TeamError extends Error {
         super(message);
     }
 }
+
+export const PLAN_PERMISSION_ERROR = "მონიშნული უფლება თქვენს გეგმაში არ შედის. მარაგი, შესყიდვები და წარმოება ბიზნეს გეგმიდან იხსნება.";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -117,13 +120,13 @@ export type InviteInput = { email: string; role: "OWNER" | "MEMBER"; permissions
 export function readInviteInput(body: unknown): InviteInput {
     const value = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
     const email = typeof value.email === "string" ? value.email.trim().toLowerCase() : "";
-    if (!email || email.length > 254 || !EMAIL_PATTERN.test(email)) throw new TeamError("ჩაწერე სწორი ელფოსტა.", 422, "email");
-    if (value.role !== "OWNER" && value.role !== "MEMBER") throw new TeamError("აირჩიე თანამფლობელი ან თანამშრომელი.", 422, "role");
+    if (!email || email.length > 254 || !EMAIL_PATTERN.test(email)) throw new TeamError("ჩაწერეთ სწორი ელფოსტა.", 422, "email");
+    if (value.role !== "OWNER" && value.role !== "MEMBER") throw new TeamError("აირჩიეთ თანამფლობელი ან თანამშრომელი.", 422, "role");
     if (value.role === "OWNER") return { email, role: "OWNER", permissions: [], readOnly: false };
     const raw = Array.isArray(value.permissions) ? value.permissions : [];
     if (!raw.every(isBusinessPermission)) throw new TeamError("უფლებების სია არასწორია.", 422, "permissions");
     const permissions = PERMISSION_OPTIONS.map(option => option.value).filter(permission => raw.includes(permission));
-    if (!permissions.length) throw new TeamError("მონიშნე ერთი უფლება მაინც.", 422, "permissions");
+    if (!permissions.length) throw new TeamError("მონიშნეთ ერთი უფლება მაინც.", 422, "permissions");
     return { email, role: "MEMBER", permissions, readOnly: value.readOnly === true };
 }
 
@@ -148,7 +151,7 @@ export async function createInvite(db: Db, businessId: string, inviterId: string
             select: { id: true, expiresAt: true },
         });
         if (pending && pending.expiresAt > now) {
-            throw new TeamError("ამ ელფოსტაზე მოწვევა უკვე გაგზავნილია. საჭიროების შემთხვევაში ხელახლა გაუგზავნე სიიდან.", 409, "email");
+            throw new TeamError("ამ ელფოსტაზე მოწვევა უკვე გაგზავნილია. საჭიროების შემთხვევაში ხელახლა გაუგზავნეთ სიიდან.", 409, "email");
         }
         // ვადაგასული მოწვევა ახალს ადგილს უთავისუფლებს.
         if (pending) await tx.businessInvite.update({ where: { id: pending.id }, data: { status: "CANCELED" } });
@@ -157,13 +160,16 @@ export async function createInvite(db: Db, businessId: string, inviterId: string
         const limits = TEAM_LIMITS[plan];
         if (input.role === "OWNER" && used.coOwners >= limits.coOwners) {
             throw new TeamError(limits.coOwners
-                ? `შენს გეგმაზე მაქსიმუმ ${limits.coOwners} თანამფლობელის დამატებაა შესაძლებელი. მეტისთვის გეგმა გააუმჯობესე.`
+                ? `თქვენს გეგმაზე მაქსიმუმ ${limits.coOwners} თანამფლობელის დამატებაა შესაძლებელი. მეტისთვის გეგმა გააუმჯობესეთ.`
                 : "თანამფლობელის დასამატებლად გეგმის გაუმჯობესებაა საჭირო.", 403, "role");
         }
         if (input.role === "MEMBER" && used.staff >= limits.staff) {
             throw new TeamError(limits.staff
-                ? `შენს გეგმაზე მაქსიმუმ ${limits.staff} თანამშრომლის დამატებაა შესაძლებელი. მეტისთვის გეგმა გააუმჯობესე.`
+                ? `თქვენს გეგმაზე მაქსიმუმ ${limits.staff} თანამშრომლის დამატებაა შესაძლებელი. მეტისთვის გეგმა გააუმჯობესეთ.`
                 : "თანამშრომლის დასამატებლად გეგმის გაუმჯობესებაა საჭირო.", 403, "role");
+        }
+        if (input.permissions.some(permission => !planPermissions(plan).includes(permission))) {
+            throw new TeamError(PLAN_PERMISSION_ERROR, 403, "permissions");
         }
         return tx.businessInvite.create({
             data: {
@@ -194,16 +200,16 @@ export async function resendInvite(db: Db, businessId: string, inviteId: string)
         });
         if (!current) throw new TeamError("მოწვევა ვერ მოიძებნა.", 404);
         if (current.sendCount - 1 >= INVITE_MAX_RESENDS) {
-            throw new TeamError("ხელახლა გაგზავნის ლიმიტი ამოიწურა. გააუქმე მოწვევა და შექმენი ახალი.", 429);
+            throw new TeamError("ხელახლა გაგზავნის ლიმიტი ამოიწურა. გააუქმეთ მოწვევა და შექმენით ახალი.", 429);
         }
         const waitMs = current.lastSentAt.getTime() + INVITE_RESEND_COOLDOWN_SECONDS * 1000 - now.getTime();
-        if (waitMs > 0) throw new TeamError(`ხელახლა გაგზავნა ${Math.ceil(waitMs / 1000)} წამში შეგიძლია.`, 429);
+        if (waitMs > 0) throw new TeamError(`ხელახლა გაგზავნა ${Math.ceil(waitMs / 1000)} წამში შეგიძლიათ.`, 429);
         // ვადაგასული მოწვევის განახლებისას ლიმიტი თავიდან მოწმდება.
         if (current.expiresAt <= now) {
             const [plan, used] = await Promise.all([readPlan(tx, businessId, now), readUsage(tx, businessId, now)]);
             const limits = TEAM_LIMITS[plan];
             if (current.role === "OWNER" ? used.coOwners >= limits.coOwners : used.staff >= limits.staff) {
-                throw new TeamError("გეგმის ლიმიტი შევსებულია. მოწვევის განახლებისთვის გეგმა გააუმჯობესე.", 403);
+                throw new TeamError("გეგმის ლიმიტი შევსებულია. მოწვევის განახლებისთვის გეგმა გააუმჯობესეთ.", 403);
             }
         }
         // ახალი ტოკენი ძველ ლინკს აუქმებს.
@@ -255,21 +261,21 @@ async function sendInviteEmail({ to, token, role, businessName, inviter }: {
         to: [to],
         subject: `MARTEO - მოწვევა ბიზნესში „${businessName}“`,
         text: [
-            `${inviterName} გიწვევს ბიზნესში „${businessName}“ ${roleText}.`,
-            "მოწვევის მისაღებად გახსენი ბმული:",
+            `${inviterName} გიწვევთ ბიზნესში „${businessName}“ ${roleText}.`,
+            "მოწვევის მისაღებად გახსენით ბმული:",
             link,
             `ბმული მოქმედებს ${INVITE_LIFETIME_HOURS} საათის განმავლობაში და ერთჯერადია.`,
-            "თუ ამ ადამიანს არ იცნობ, უგულებელყავი ეს წერილი.",
+            "თუ ამ ადამიანს არ იცნობთ, უგულებელყავით ეს წერილი.",
         ].join("\n\n"),
         html: `
             <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto">
                 <h2>მოწვევა MARTEO-ში</h2>
-                <p><strong>${escapeHtml(inviterName)}</strong> გიწვევს ბიზნესში <strong>„${escapeHtml(businessName)}“</strong> ${roleText}.</p>
+                <p><strong>${escapeHtml(inviterName)}</strong> გიწვევთ ბიზნესში <strong>„${escapeHtml(businessName)}“</strong> ${roleText}.</p>
                 <a href="${link}" style="display:inline-block;margin:16px 0;padding:14px 22px;background:#16c45b;color:#081f16;text-decoration:none;font-weight:700;border-radius:12px">
                     მოწვევის მიღება
                 </a>
                 <p>ბმული მოქმედებს ${INVITE_LIFETIME_HOURS} საათის განმავლობაში და ერთჯერადია.</p>
-                <p>თუ ამ ადამიანს არ იცნობ, უგულებელყავი ეს წერილი.</p>
+                <p>თუ ამ ადამიანს არ იცნობთ, უგულებელყავით ეს წერილი.</p>
                 <p>MARTEO.GE</p>
             </div>
         `,

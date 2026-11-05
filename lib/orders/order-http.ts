@@ -13,5 +13,5 @@ export function orderError(cause: unknown) {
     if (cause instanceof PlanLimitError) return cause.toResponse();
     if (cause instanceof OrderValidationError) return orderJson({ success: false, message: cause.message }, cause.status);
     console.error("Order operation failed", cause instanceof Error ? cause.name : "UnknownError");
-    return orderJson({ success: false, message: "მოქმედების შედეგი ვერ დადასტურდა. იგივე მოთხოვნით სცადე ხელახლა." }, 500);
+    return orderJson({ success: false, message: "მოქმედების შედეგი ვერ დადასტურდა. იგივე მოთხოვნით სცადეთ ხელახლა." }, 500);
 }

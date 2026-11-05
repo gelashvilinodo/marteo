@@ -25,7 +25,7 @@ function text(value: unknown, label: string) {
 export async function createExpense(raw: unknown) {
     const user = await getCurrentUser();
 
-    if (!user) fail("გაიარე ავტორიზაცია.", 401);
+    if (!user) fail("გაიარეთ ავტორიზაცია.", 401);
 
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
         fail("მონაცემების ფორმატი არასწორია.");
@@ -44,12 +44,12 @@ export async function createExpense(raw: unknown) {
         item => item.value === body.category,
     )?.value;
 
-    if (!category) fail("აირჩიე ხარჯის კატეგორია.");
+    if (!category) fail("აირჩიეთ ხარჯის კატეგორია.");
 
     const amountText = text(body.amount, "თანხა").replace(",", ".");
 
     if (!/^\d+(?:\.\d{1,2})?$/.test(amountText)) {
-        fail("თანხა მიუთითე თეთრების სიზუსტით.");
+        fail("თანხა მიუთითეთ თეთრების სიზუსტით.");
     }
 
     const amount = new Prisma.Decimal(amountText);
@@ -66,7 +66,7 @@ export async function createExpense(raw: unknown) {
     const dateText = text(body.expenseDate, "თარიღი");
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
-        fail("მიუთითე ხარჯის თარიღი.");
+        fail("მიუთითეთ ხარჯის თარიღი.");
     }
 
     const checkedDate = new Date(`${dateText}T00:00:00.000Z`);
@@ -90,7 +90,7 @@ export async function createExpense(raw: unknown) {
         if (!membership) fail("ბიზნესი ვერ მოიძებნა.", 403);
 
         if (!canManageBusinessArea(membership, "FINANCE")) {
-            fail("ამ მოქმედების უფლება არ გაქვს.", 403);
+            fail("ამ მოქმედების უფლება არ გაქვთ.", 403);
         }
 
         const businessId = membership.businessId;

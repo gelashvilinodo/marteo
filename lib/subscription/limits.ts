@@ -67,7 +67,7 @@ export async function assertOrderAllowed(tx: Prisma.TransactionClient, businessI
     if (used >= limit) {
         const next = plan.tier ? NEXT[plan.tier] ?? null : null;
         throw new PlanLimitError(
-            `ამ პერიოდის შეკვეთების ლიმიტი ამოიწურა (${used}/${limit}). მეტი შეკვეთისთვის გადადი უფრო დიდ გეგმაზე.`,
+            `ამ პერიოდის შეკვეთების ლიმიტი ამოიწურა (${used}/${limit}). მეტი შეკვეთისთვის გადადით უფრო დიდ გეგმაზე.`,
             "PLAN_LIMIT", null, next,
         );
     }

@@ -23,7 +23,7 @@ function accepted() {
         success: true,
         retryAfter: 60,
         message:
-            "თუ ამ ელფოსტით აქტიური ანგარიში არსებობს, პაროლის აღდგენის ბმულს მიიღებ. შეამოწმე შემომავალი წერილები და სპამის საქაღალდე.",
+            "თუ ამ ელფოსტით აქტიური ანგარიში არსებობს, პაროლის აღდგენის ბმულს მიიღებთ. შეამოწმეთ შემომავალი წერილები და სპამის საქაღალდე.",
     });
 }
 
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
             return emailChangeJson(
                 {
                     success: false,
-                    message: "მიუთითე ელფოსტა.",
+                    message: "მიუთითეთ ელფოსტა.",
                 },
                 422,
             );
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
             return emailChangeJson(
                 {
                     success: false,
-                    message: "მიუთითე სწორი ელფოსტა.",
+                    message: "მიუთითეთ სწორი ელფოსტა.",
                 },
                 422,
             );
@@ -187,7 +187,7 @@ export async function POST(request: Request) {
             {
                 success: false,
                 message:
-                    "მოთხოვნა ვერ დამუშავდა. ცოტა მოგვიანებით სცადე.",
+                    "მოთხოვნა ვერ დამუშავდა. ცოტა მოგვიანებით სცადეთ.",
             },
             503,
         );

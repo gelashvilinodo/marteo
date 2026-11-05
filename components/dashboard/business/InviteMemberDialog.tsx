@@ -4,9 +4,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 
 import type { BusinessMode } from "@/lib/business/business-mode";
-import { hasBusinessFeature } from "@/lib/business/business-mode";
 import type { BusinessPermission } from "@/lib/business/permissions";
-import { INVITE_LIFETIME_HOURS, PERMISSION_OPTIONS, type TeamSnapshot } from "@/lib/business/team";
+import { INVITE_LIFETIME_HOURS, planPermissionOptions, type TeamSnapshot } from "@/lib/business/team";
 import PermissionPicker from "./PermissionPicker";
 
 type Role = "OWNER" | "MEMBER";
@@ -37,7 +36,7 @@ export default function InviteMemberDialog({ team, businessMode, onClose, onInvi
     const [error, setError] = useState("");
     const [sentTo, setSentTo] = useState("");
 
-    const options = PERMISSION_OPTIONS.filter(option => option.value !== "PRODUCTION" || hasBusinessFeature(businessMode, "manufacturing"));
+    const options = planPermissionOptions(team.plan, businessMode);
 
     useEffect(() => {
         const element = dialog.current;
@@ -71,7 +70,7 @@ export default function InviteMemberDialog({ team, businessMode, onClose, onInvi
         event.preventDefault();
         if (running.current || !role) return;
         if (role === "MEMBER" && !permissions.length) {
-            setError("მონიშნე ერთი უფლება მაინც.");
+            setError("მონიშნეთ ერთი უფლება მაინც.");
             return;
         }
         running.current = true;
@@ -87,13 +86,13 @@ export default function InviteMemberDialog({ team, businessMode, onClose, onInvi
             });
             const data = (await response.json().catch(() => ({}))) as ApiResponse;
             if (!response.ok || !data.success || !data.team) {
-                setError(data.message || "მოწვევა ვერ გაიგზავნა. სცადე ხელახლა.");
+                setError(data.message || "მოწვევა ვერ გაიგზავნა. სცადეთ ხელახლა.");
                 return;
             }
             onInvited(data.team);
             setSentTo(email.trim().toLowerCase());
         } catch (cause) {
-            if ((cause as Error).name !== "AbortError") setError("კავშირი ვერ დამყარდა. სცადე ხელახლა.");
+            if ((cause as Error).name !== "AbortError") setError("კავშირი ვერ დამყარდა. სცადეთ ხელახლა.");
         } finally {
             running.current = false;
             setBusy(false);
@@ -114,7 +113,7 @@ export default function InviteMemberDialog({ team, businessMode, onClose, onInvi
                     <span className="mt-1 block text-sm text-text-secondary">{text}</span>
                     {full && (
                         <span className="mt-1 block text-xs text-warning">
-                            {limit ? `ლიმიტი შევსებულია (${limit}). მეტისთვის გეგმა გააუმჯობესე.` : "შენს გეგმაზე ხელმისაწვდომი არ არის."}
+                            {limit ? `ლიმიტი შევსებულია (${limit}). მეტისთვის გეგმა გააუმჯობესეთ.` : "თქვენს გეგმაზე ხელმისაწვდომი არ არის."}
                         </span>
                     )}
                 </span>
@@ -153,9 +152,9 @@ export default function InviteMemberDialog({ team, businessMode, onClose, onInvi
                 ) : (
                     <form onSubmit={submit} noValidate className="mt-4 space-y-4">
                         <fieldset className="space-y-2">
-                            <legend className="text-sm font-medium text-text-primary">ვის ამატებ?</legend>
-                            {roleCard("OWNER", "თანამფლობელი", "მართავს ბიზნესს შენთან ერთად.", "solar:crown-linear", ownersFull, team.limits.coOwners)}
-                            {roleCard("MEMBER", "თანამშრომელი", "ხედავს მხოლოდ იმას, რასაც შენ მონიშნავ.", "solar:user-id-linear", staffFull, team.limits.staff)}
+                            <legend className="text-sm font-medium text-text-primary">ვის ამატებთ?</legend>
+                            {roleCard("OWNER", "თანამფლობელი", "მართავს ბიზნესს თქვენთან ერთად.", "solar:crown-linear", ownersFull, team.limits.coOwners)}
+                            {roleCard("MEMBER", "თანამშრომელი", "ხედავს მხოლოდ იმას, რასაც თქვენ მონიშნავთ.", "solar:user-id-linear", staffFull, team.limits.staff)}
                         </fieldset>
 
                         {role === "OWNER" && (

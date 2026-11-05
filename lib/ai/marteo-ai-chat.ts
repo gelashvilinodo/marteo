@@ -15,7 +15,7 @@ export type AiChatTurn = { role: "user" | "assistant"; text: string };
 
 const SYSTEM_PROMPT = `You are Marteo AI, the assistant inside Marteo, a business management app for small Georgian online shops (orders, purchases, inventory, analytics).
 
-Answer the owner's questions about their own business data. Always reply in Georgian, whatever language the tool data or field names are in; never answer in English and never mix in English or Russian words. Reply short and clear: the answer first, then one or two useful details at most. Format money as 1 234.50 ₾. When an answer depends on a period, say which dates it covers; for all_time say „ყველა დროის" instead of dates. Write plain text; **bold** for a key number is the only formatting allowed (no headings, tables or links). Use the Georgian labels the tools return (for example ამოწურული, მცირე მარაგი) instead of your own wording.
+Answer the owner's questions about their own business data. Always reply in Georgian, whatever language the tool data or field names are in, and address the owner politely with the formal თქვენ (აირჩიეთ, თქვენი), never შენ; never answer in English and never mix in English or Russian words. Reply short and clear: the answer first, then one or two useful details at most. Format money as 1 234.50 ₾. When an answer depends on a period, say which dates it covers; for all_time say „ყველა დროის" instead of dates. Write plain text; **bold** for a key number is the only formatting allowed (no headings, tables or links). Use the Georgian labels the tools return (for example ამოწურული, მცირე მარაგი) instead of your own wording.
 
 Rules:
 - Found orders, products and customers are shown to the user as cards right under your reply (photo, status, total, phone and a details button). Do not list them one by one: for one record give a short text summary of the key facts; for several, give the count and one or two notable points. When found is larger than the records you received, mention the total.
@@ -65,7 +65,7 @@ export async function runMarteoAiChat(
             });
         } catch (error) {
             if (error instanceof Anthropic.RateLimitError) {
-                throw new AiChatError("მართეო AI ახლა გადატვირთულია. სცადე ცოტა ხანში.", 429);
+                throw new AiChatError("მართეო AI ახლა გადატვირთულია. სცადეთ ცოტა ხანში.", 429);
             }
             if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError) {
                 console.error("Marteo AI credentials rejected");
@@ -73,7 +73,7 @@ export async function runMarteoAiChat(
             }
             if (error instanceof Anthropic.APIError) {
                 console.error("Marteo AI request failed", error.status);
-                throw new AiChatError("მართეო AI დროებით მიუწვდომელია. სცადე ხელახლა.", 502);
+                throw new AiChatError("მართეო AI დროებით მიუწვდომელია. სცადეთ ხელახლა.", 502);
             }
             throw error;
         }
@@ -81,7 +81,7 @@ export async function runMarteoAiChat(
         meter?.add(response.usage);
 
         if (response.stop_reason === "refusal") {
-            return { text: "ამ კითხვაზე პასუხს ვერ გავცემ. მკითხე შეკვეთებზე, მოგებაზე ან მარაგზე.", cards: [] };
+            return { text: "ამ კითხვაზე პასუხს ვერ გავცემ. მკითხეთ შეკვეთებზე, მოგებაზე ან მარაგზე.", cards: [] };
         }
 
         const text = response.content
@@ -92,7 +92,7 @@ export async function runMarteoAiChat(
 
         if (response.stop_reason !== "tool_use") {
             if (text) return { text, cards: mergeCardGroups(tools.cards).filter((group) => group.items.length > 0) };
-            throw new AiChatError("პასუხი ვერ მომზადდა. სცადე კითხვის სხვაგვარად დასმა.", 502);
+            throw new AiChatError("პასუხი ვერ მომზადდა. სცადეთ კითხვის სხვაგვარად დასმა.", 502);
         }
 
         // thinking ბლოკებიც უცვლელად ბრუნდება, როგორც API მოითხოვს.
@@ -106,5 +106,5 @@ export async function runMarteoAiChat(
         messages.push({ role: "user", content: results });
     }
 
-    throw new AiChatError("კითხვა ძალიან რთული აღმოჩნდა. სცადე უფრო კონკრეტულად.", 502);
+    throw new AiChatError("კითხვა ძალიან რთული აღმოჩნდა. სცადეთ უფრო კონკრეტულად.", 502);
 }

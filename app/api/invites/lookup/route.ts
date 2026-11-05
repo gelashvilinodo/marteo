@@ -23,7 +23,7 @@ async function post(request: Request) {
         const limited = rateLimitResponse(error);
         if (limited) return limited;
         console.error("Invite lookup failed", error instanceof Error ? error.message : "UnknownError");
-        return json({ success: false, message: "მოწვევის შემოწმება ვერ მოხერხდა. სცადე ხელახლა." }, 500);
+        return json({ success: false, message: "მოწვევის შემოწმება ვერ მოხერხდა. სცადეთ ხელახლა." }, 500);
     } finally {
         await db.$disconnect();
     }

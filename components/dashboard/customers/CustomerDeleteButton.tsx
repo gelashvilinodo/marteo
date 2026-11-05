@@ -84,7 +84,7 @@ export default function CustomerDeleteButton({
         } catch {
             setUncertain(true);
             setError(
-                "წაშლის შედეგი ვერ დადასტურდა. გადაამოწმე მომხმარებლების სია.",
+                "წაშლის შედეგი ვერ დადასტურდა. გადაამოწმეთ მომხმარებლების სია.",
             );
         } finally {
             busyRef.current = false;

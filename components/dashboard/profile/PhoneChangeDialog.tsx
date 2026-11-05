@@ -119,7 +119,7 @@ export default function PhoneChangeDialog({
             action === "verify" &&
             !/^\d{6}$/.test(code.join(""))
         ) {
-            setError("შეიყვანე ექვსნიშნა კოდი.");
+            setError("შეიყვანეთ ექვსნიშნა კოდი.");
             return;
         }
 
@@ -192,7 +192,7 @@ export default function PhoneChangeDialog({
                 setStep("code");
                 setError(
                     body.message ||
-                    "გაგზავნა ვერ დადასტურდა. თუ SMS მიიღე, შეიყვანე მიღებული კოდი.",
+                    "გაგზავნა ვერ დადასტურდა. თუ SMS მიიღეთ, შეიყვანეთ მიღებული კოდი.",
                 );
                 return;
             }
@@ -202,7 +202,7 @@ export default function PhoneChangeDialog({
 
                 throw new Error(
                     body.message ||
-                    "მოთხოვნა ვერ შესრულდა. სცადე ხელახლა.",
+                    "მოთხოვნა ვერ შესრულდა. სცადეთ ხელახლა.",
                 );
             }
 
@@ -212,7 +212,7 @@ export default function PhoneChangeDialog({
                     !/^[a-f0-9]{64}$/.test(body.authorization)
                 ) {
                     throw new Error(
-                        "პაროლის დადასტურების შედეგი ვერ დადასტურდა. სცადე ხელახლა.",
+                        "პაროლის დადასტურების შედეგი ვერ დადასტურდა. სცადეთ ხელახლა.",
                     );
                 }
 
@@ -244,7 +244,7 @@ export default function PhoneChangeDialog({
                 body.profile.id !== profileId
             ) {
                 throw new Error(
-                    "შენახვის შედეგი ვერ დადასტურდა. დახურე ფანჯარა და განაახლე პროფილის მონაცემები.",
+                    "შენახვის შედეგი ვერ დადასტურდა. დახურეთ ფანჯარა და განაახლეთ პროფილის მონაცემები.",
                 );
             }
 
@@ -255,10 +255,10 @@ export default function PhoneChangeDialog({
 
             setError(
                 current.signal.aborted
-                    ? "პასუხის ლოდინის დრო ამოიწურა. დადასტურებისას იგივე კოდით ხელახლა სცადე; SMS-ის გაგზავნისას შეამოწმე შეტყობინებები და საჭიროების შემთხვევაში ხელახლა გაგზავნე."
+                    ? "პასუხის ლოდინის დრო ამოიწურა. დადასტურებისას იგივე კოდით ხელახლა სცადეთ; SMS-ის გაგზავნისას შეამოწმეთ შეტყობინებები და საჭიროების შემთხვევაში ხელახლა გაგზავნეთ."
                     : cause instanceof Error
                         ? cause.message
-                        : "მოთხოვნა ვერ შესრულდა. სცადე ხელახლა.",
+                        : "მოთხოვნა ვერ შესრულდა. სცადეთ ხელახლა.",
             );
         } finally {
             window.clearTimeout(timeout);
@@ -342,7 +342,7 @@ export default function PhoneChangeDialog({
                         {step === "password" && (
                             <>
                                 <p className="text-sm text-text-secondary">
-                                    უსაფრთხოებისთვის ჯერ შეიყვანე
+                                    უსაფრთხოებისთვის ჯერ შეიყვანეთ
                                     მიმდინარე პაროლი.
                                 </p>
 
@@ -418,7 +418,7 @@ export default function PhoneChangeDialog({
                         {step === "code" && (
                             <>
                                 <p className="text-sm text-text-secondary">
-                                    შეიყვანე ამ ნომერზე გაგზავნილი კოდი:
+                                    შეიყვანეთ ამ ნომერზე გაგზავნილი კოდი:
                                 </p>
 
                                 <p className="break-all text-sm font-medium">
@@ -434,7 +434,7 @@ export default function PhoneChangeDialog({
 
                                 <p className="text-center text-xs text-text-secondary">
                                     სრული კოდის პირველ უჯრაში
-                                    ჩაკოპირებაც შეგიძლია.
+                                    ჩაკოპირებაც შეგიძლიათ.
                                 </p>
 
                                 <div className="flex flex-wrap items-center justify-between gap-2">

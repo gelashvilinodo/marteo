@@ -179,7 +179,7 @@ export async function POST(request: Request) {
 
         if (!user) {
             return errorResponse(
-                "პარტიის დასამატებლად შედი ანგარიშში.",
+                "პარტიის დასამატებლად შედით ანგარიშში.",
                 401,
             );
         }
@@ -336,7 +336,7 @@ export async function POST(request: Request) {
         });
 
         return errorResponse(
-            "შენახვის შედეგი ვერ დადასტურდა. სცადე ხელახლა იმავე ფორმიდან.",
+            "შენახვის შედეგი ვერ დადასტურდა. სცადეთ ხელახლა იმავე ფორმიდან.",
             500,
         );
     }

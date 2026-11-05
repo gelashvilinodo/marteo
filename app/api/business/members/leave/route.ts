@@ -20,7 +20,7 @@ async function post() {
     } catch (error) {
         if (error instanceof TeamError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
         console.error("Leave business failed", error instanceof Error ? error.message : "UnknownError");
-        return NextResponse.json({ success: false, message: "ბიზნესის დატოვება ვერ მოხერხდა. სცადე ხელახლა." }, { status: 500 });
+        return NextResponse.json({ success: false, message: "ბიზნესის დატოვება ვერ მოხერხდა. სცადეთ ხელახლა." }, { status: 500 });
     } finally {
         await db.$disconnect();
     }

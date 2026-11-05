@@ -38,17 +38,17 @@ export async function sendEmailChangeCode({
             "MARTEO ანგარიშის ელფოსტის შეცვლის კოდი:",
             code,
             `კოდის მოქმედების ვადა: ${expiry} - თბილისის დროით.`,
-            "თუ ელფოსტის შეცვლა არ მოგითხოვია, უგულებელყავი ეს წერილი.",
+            "თუ ელფოსტის შეცვლა არ მოგითხოვიათ, უგულებელყავით ეს წერილი.",
         ].join("\n\n"),
         html: `
             <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto">
                 <h2>ელფოსტის შეცვლა</h2>
-                <p>ახალი ელფოსტის დასადასტურებლად ჩაწერე ეს კოდი MARTEO-ში:</p>
+                <p>ახალი ელფოსტის დასადასტურებლად ჩაწერეთ ეს კოდი MARTEO-ში:</p>
                 <div style="margin:24px 0;padding:20px;background:#0f1c2e;color:#fff;font-size:32px;font-weight:700;letter-spacing:8px;text-align:center;border-radius:12px">
                     ${code}
                 </div>
                 <p>კოდის მოქმედების ვადა: ${expiry} - თბილისის დროით.</p>
-                <p>თუ ელფოსტის შეცვლა არ მოგითხოვია, უგულებელყავი ეს წერილი.</p>
+                <p>თუ ელფოსტის შეცვლა არ მოგითხოვიათ, უგულებელყავით ეს წერილი.</p>
             </div>
         `,
     });

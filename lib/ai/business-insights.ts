@@ -409,7 +409,7 @@ async function orderAdvice(prisma: Client, businessId: string, now: Date): Promi
         const card = orderCard(serializeOrderRecord(record, false));
         const age = days(row.createdAt, now);
         const note = row.kind === "stuck_shipped"
-            ? `გაგზავნილია და ${age} დღეა არ დასრულებულა. გადაამოწმე კურიერთან.`
+            ? `გაგზავნილია და ${age} დღეა არ დასრულებულა. გადაამოწმეთ კურიერთან.`
             : `დასრულებულია, მაგრამ სრულად არ არის გადახდილი (${card.total} ₾).`;
         return [{ order: card, kind: row.kind, days: age, note }];
     });

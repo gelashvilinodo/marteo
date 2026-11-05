@@ -5,12 +5,12 @@ import { SUPPORT_IMAGE_MAX_BYTES } from "@/lib/support/support-config";
 const STEPS = [{ side: 1600, quality: 0.82 }, { side: 1280, quality: 0.72 }, { side: 960, quality: 0.62 }];
 
 export async function compressSupportImage(file: File): Promise<Blob> {
-    if (!file.type.startsWith("image/")) throw new Error("აირჩიე ფოტო.");
+    if (!file.type.startsWith("image/")) throw new Error("აირჩიეთ ფოტო.");
     let bitmap: ImageBitmap;
     try {
         bitmap = await createImageBitmap(file);
     } catch {
-        throw new Error("ეს ფოტო ვერ წაიკითხა. სცადე სხვა ფორმატი (JPG ან PNG).");
+        throw new Error("ეს ფოტო ვერ წაიკითხა. სცადეთ სხვა ფორმატი (JPG ან PNG).");
     }
     try {
         for (const step of STEPS) {

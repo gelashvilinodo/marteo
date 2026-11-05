@@ -21,7 +21,7 @@ export default function NotificationsLoading() {
                             შეტყობინებები
                         </h1>
                         <p className="mt-2 text-sm text-text-secondary">
-                            მართეოს სიახლეები და შენი ბიზნესის მნიშვნელოვანი მოვლენები
+                            მართეოს სიახლეები და თქვენი ბიზნესის მნიშვნელოვანი მოვლენები
                         </p>
                     </div>
 

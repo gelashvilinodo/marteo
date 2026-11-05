@@ -91,7 +91,7 @@ export default function ResetPasswordForm() {
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "გადაამოწმე შევსებული ველები.",
+                    : "გადაამოწმეთ შევსებული ველები.",
             );
             return;
         }
@@ -142,7 +142,7 @@ export default function ResetPasswordForm() {
 
                 throw new Error(
                     body.message ||
-                    "შენახვის შედეგი ვერ დადასტურდა. ხელახლა სცადე.",
+                    "შენახვის შედეგი ვერ დადასტურდა. ხელახლა სცადეთ.",
                 );
             }
 
@@ -161,7 +161,7 @@ export default function ResetPasswordForm() {
 
             setError(
                 current.signal.aborted
-                    ? "პასუხის ლოდინის დრო ამოიწურა. ხელახლა სცადე. თუ ბმული აღარ მოქმედებს, სცადე ახალი პაროლით შესვლა."
+                    ? "პასუხის ლოდინის დრო ამოიწურა. ხელახლა სცადეთ. თუ ბმული აღარ მოქმედებს, სცადეთ ახალი პაროლით შესვლა."
                     : cause instanceof Error
                         ? cause.message
                         : "შენახვის შედეგი ვერ დადასტურდა.",
@@ -204,14 +204,14 @@ export default function ResetPasswordForm() {
                 <div role="status" className="mt-3">
                     <p className="text-sm leading-relaxed text-text-secondary">
                         პაროლი წარმატებით შეიცვალა. ყველა მოწყობილობაზე
-                        ძველი სესიები გაუქმებულია. შედი ახალი პაროლით.
+                        ძველი სესიები გაუქმებულია. შედით ახალი პაროლით.
                     </p>
                 </div>
             ) : invalid ? (
                 <div className="mt-3 space-y-3">
                     <p role="alert" className="text-sm text-text-secondary">
                         {error ||
-                            "ბმული არასწორია, გამოყენებულია ან ვადა გაუვიდა. მოითხოვე ახალი ბმული."}
+                            "ბმული არასწორია, გამოყენებულია ან ვადა გაუვიდა. მოითხოვეთ ახალი ბმული."}
                     </p>
 
                     <Link
@@ -224,7 +224,7 @@ export default function ResetPasswordForm() {
             ) : (
                 <>
                     <p className="mt-2 text-sm text-text-secondary">
-                        შექმენი ანგარიშის ახალი პაროლი.
+                        შექმენით ანგარიშის ახალი პაროლი.
                     </p>
 
                     <form
@@ -241,7 +241,7 @@ export default function ResetPasswordForm() {
                         >
                             {([
                                 ["newPassword", "ახალი პაროლი"],
-                                ["confirmPassword", "გაიმეორე ახალი პაროლი"],
+                                ["confirmPassword", "გაიმეორეთ ახალი პაროლი"],
                             ] as const).map(([field, label]) => (
                                 <div key={field} className="min-w-0">
                                     <label

@@ -46,7 +46,7 @@ function failure(cause: unknown) {
     return json({
         success: false,
         message:
-            "ბიზნესის პარამეტრების დამუშავების შედეგი ვერ დადასტურდა. ხელახლა სცადე.",
+            "ბიზნესის პარამეტრების დამუშავების შედეგი ვერ დადასტურდა. ხელახლა სცადეთ.",
         field: "form",
     }, 500);
 }
@@ -74,7 +74,7 @@ async function getContext() {
 
     if (!user) {
         throw new BusinessSettingsError(
-            "გაიარე ავტორიზაცია.",
+            "გაიარეთ ავტორიზაცია.",
             401,
         );
     }
@@ -115,7 +115,7 @@ async function readBusiness(
         !["OWNER", "ADMIN"].includes(access.role)
     ) {
         throw new BusinessSettingsError(
-            "ბიზნესის პარამეტრებზე წვდომა არ გაქვს.",
+            "ბიზნესის პარამეტრებზე წვდომა არ გაქვთ.",
             403,
         );
     }
@@ -305,7 +305,7 @@ export async function PATCH(request: Request) {
                         input.expectedUpdatedAt.getTime()
                     ) {
                         throw new BusinessSettingsError(
-                            "ბიზნესის ინფორმაცია სხვა ფანჯრიდან შეიცვალა. განაახლე მონაცემები და ცვლილებები გადაამოწმე.",
+                            "ბიზნესის ინფორმაცია სხვა ფანჯრიდან შეიცვალა. განაახლეთ მონაცემები და ცვლილებები გადაამოწმეთ.",
                             409,
                         );
                     }

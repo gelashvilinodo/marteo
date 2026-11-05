@@ -14,7 +14,7 @@ export async function POST(request: Request) {
             throw new OrderValidationError("მოთხოვნის წყარო დაუშვებელია.", 403);
         }
         const user = await getCurrentUser();
-        if (!user) throw new OrderValidationError("ფოტოს ასატვირთად შედი ანგარიშში.", 401);
+        if (!user) throw new OrderValidationError("ფოტოს ასატვირთად შედით ანგარიშში.", 401);
         const prisma = createPrismaClient();
         let businessId: string;
         try {
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
         const form = await request.formData();
         const file = form.get("file");
         if (!(file instanceof File) || !file.size) {
-            throw new OrderValidationError("აირჩიე პროდუქტის ფოტო.");
+            throw new OrderValidationError("აირჩიეთ პროდუქტის ფოტო.");
         }
         const thumbnail = form.get("thumbnail");
         if (thumbnail !== null && !(thumbnail instanceof File)) throw new OrderValidationError("მცირე ფოტოს მონაცემები არასწორია.");

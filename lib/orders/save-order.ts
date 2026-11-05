@@ -27,7 +27,7 @@ export async function saveOrder(raw: unknown) {
     const user = await getCurrentUser();
 
     if (!user) {
-        fail("შეკვეთის შესანახად გაიარე ავტორიზაცია.", 401);
+        fail("შეკვეთის შესანახად გაიარეთ ავტორიზაცია.", 401);
     }
 
     const data = validateOrder(raw);
@@ -42,7 +42,7 @@ export async function saveOrder(raw: unknown) {
         }
 
         if (!canManageBusinessArea(membership, "ORDERS")) {
-            fail("ამ მოქმედების უფლება არ გაქვს.", 403);
+            fail("ამ მოქმედების უფლება არ გაქვთ.", 403);
         }
 
         const businessId = membership.businessId;

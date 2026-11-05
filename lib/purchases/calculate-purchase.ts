@@ -14,7 +14,7 @@ function toCents(value: string, label: string): bigint {
 
     if (!/^\d{1,10}(\.\d{1,2})?$/.test(normalized)) {
         throw new Error(
-            `${label}: მიუთითე არაუარყოფითი თანხა, მაქსიმუმ ორი ათწილადით.`,
+            `${label}: მიუთითეთ არაუარყოფითი თანხა, მაქსიმუმ ორი ათწილადით.`,
         );
     }
 
@@ -50,7 +50,7 @@ export function calculatePurchase(
     input: PurchaseCalculationInput,
 ) {
     if (input.items.length === 0) {
-        throw new Error("დაამატე მინიმუმ ერთი პროდუქტი.");
+        throw new Error("დაამატეთ მინიმუმ ერთი პროდუქტი.");
     }
 
     if (input.items.length > 200) {

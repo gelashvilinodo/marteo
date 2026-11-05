@@ -26,7 +26,7 @@ export async function buildWeeklyDigest(prisma: Client, businessId: string, now:
     const restock = insights.restock.filter((row) => row.planned === null);
     if (restock.length > 0) {
         const rows = restock.slice(0, 3);
-        lines.push(`${count(restock.length, "პროდუქტი")} მალე ამოიწურება${purchasePlan ? " — ქვემოთ შეგიძლია პირდაპირ შესაძენ სიაში დაამატო" : ""}.`);
+        lines.push(`${count(restock.length, "პროდუქტი")} მალე ამოიწურება${purchasePlan ? " — ქვემოთ შეგიძლიათ პირდაპირ შესაძენ სიაში დაამატოთ" : ""}.`);
         cards.push({
             kind: "stock",
             total: rows.length,
@@ -38,7 +38,7 @@ export async function buildWeeklyDigest(prisma: Client, businessId: string, now:
 
     if (insights.idle.length > 0) {
         const rows = insights.idle.slice(0, 3);
-        lines.push(`${count(insights.idle.length, "პროდუქტი")} 60+ დღეა არ იყიდება${insights.idleValueCents > 0 ? `, მათში გაჩერებულია **${money(insights.idleValueCents)}**` : ""}. იფიქრე ფასდაკლებაზე ან რეკლამაზე.`);
+        lines.push(`${count(insights.idle.length, "პროდუქტი")} 60+ დღეა არ იყიდება${insights.idleValueCents > 0 ? `, მათში გაჩერებულია **${money(insights.idleValueCents)}**` : ""}. იფიქრეთ ფასდაკლებაზე ან რეკლამაზე.`);
         cards.push({
             kind: "stock",
             total: rows.length,
@@ -77,17 +77,17 @@ export async function buildWeeklyDigest(prisma: Client, businessId: string, now:
 
     if (insights.returns.length > 0) {
         const top = insights.returns[0];
-        lines.push(`**${top.item.name}** ხშირად ბრუნდება (${top.ratePercent}%, ძირითადად: ${top.topReason}) — გადახედე აღწერას ან ზომებს.`);
+        lines.push(`**${top.item.name}** ხშირად ბრუნდება (${top.ratePercent}%, ძირითადად: ${top.topReason}) — გადახედეთ აღწერას ან ზომებს.`);
     }
 
     if (insights.margins.length > 0 && lines.length < 5) {
-        lines.push(`${count(insights.margins.length, "პროდუქტს")} 20%-ზე დაბალი მარჟა აქვს — შეამოწმე ფასები.`);
+        lines.push(`${count(insights.margins.length, "პროდუქტს")} 20%-ზე დაბალი მარჟა აქვს — შეამოწმეთ ფასები.`);
     }
 
     // კალენდარი: ვადაგადაცილებული პოსტები და პიკის დღეები პოსტის გარეშე.
     if (content.overdue.length > 0) {
         const rows = content.overdue.slice(0, 3);
-        lines.push(`${count(content.overdue.length, "პოსტი")} ვადაგადაცილებულია კონტენტ-კალენდარში — გამოაქვეყნე ან გადაიტანე.`);
+        lines.push(`${count(content.overdue.length, "პოსტი")} ვადაგადაცილებულია კონტენტ-კალენდარში — გამოაქვეყნეთ ან გადაიტანეთ.`);
         cards.push({
             kind: "content",
             total: rows.length,
@@ -98,9 +98,9 @@ export async function buildWeeklyDigest(prisma: Client, businessId: string, now:
 
     if (content.uncoveredPeakDays.length > 0 && lines.length < 5) {
         const days = content.uncoveredPeakDays.map((day) => `**${day.weekday}ს**`).join(" და ");
-        lines.push(`${days} ყველაზე მეტი შეკვეთა მოდის, ამ კვირაში კი ამ დღეს პოსტი არ გაქვს დაგეგმილი.`);
+        lines.push(`${days} ყველაზე მეტი შეკვეთა მოდის, ამ კვირაში კი ამ დღეს პოსტი არ გაქვთ დაგეგმილი.`);
     } else if (content.nothingPlanned && lines.length < 5) {
-        lines.push("მომდევნო 7 დღეში კონტენტ-კალენდარში არაფერი გაქვს დაგეგმილი.");
+        lines.push("მომდევნო 7 დღეში კონტენტ-კალენდარში არაფერი გაქვთ დაგეგმილი.");
     }
 
     const [bestDay] = insights.timing.weekdays;
@@ -112,7 +112,7 @@ export async function buildWeeklyDigest(prisma: Client, businessId: string, now:
     if (lines.length === 0) return null;
 
     return {
-        text: `კვირის მიმოხილვა — შენი მონაცემებით:\n\n${lines.slice(0, 5).map((line) => `• ${line}`).join("\n")}\n\nდეტალებისთვის მკითხე, მაგალითად: „რა შევიძინო შემდეგ პარტიაში?“`,
+        text: `კვირის მიმოხილვა — თქვენი მონაცემებით:\n\n${lines.slice(0, 5).map((line) => `• ${line}`).join("\n")}\n\nდეტალებისთვის მკითხეთ, მაგალითად: „რა შევიძინო შემდეგ პარტიაში?“`,
         cards: mergeCardGroups(cards),
     };
 }

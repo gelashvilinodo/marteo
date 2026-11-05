@@ -58,7 +58,7 @@ export default function CookieConsent() {
                             ქუქი-ფაილები
                         </h2>
                         <p id="cookie-consent-text" className="mt-1 text-sm leading-relaxed text-text-secondary">
-                            ქუქი-ფაილებით ვიგებთ, როგორ იყენებ საიტს, და მართეოს შენთვის უფრო მოსახერხებელს ვხდით.{" "}
+                            ქუქი-ფაილებით ვიგებთ, როგორ იყენებთ საიტს, და მართეოს თქვენთვის უფრო მოსახერხებელს ვხდით.{" "}
                             <Link href="/cookies" className="font-medium text-accent hover:underline">
                                 დეტალურად
                             </Link>

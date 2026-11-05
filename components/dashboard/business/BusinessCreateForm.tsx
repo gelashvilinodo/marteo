@@ -77,7 +77,7 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "ფოტო ვერ დამუშავდა. აირჩიე სხვა ფოტო."
+                    : "ფოტო ვერ დამუშავდა. აირჩიეთ სხვა ფოტო."
             );
         } finally {
             setPreparingLogo(false);

@@ -47,7 +47,7 @@ export async function POST(request: Request) {
             !/^[a-f0-9]{64}$/.test(body.authorization)
         ) {
             throw new PhoneChangeError(
-                "ჯერ დაადასტურე მიმდინარე პაროლი.",
+                "ჯერ დაადასტურეთ მიმდინარე პაროლი.",
                 403,
             );
         }
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
             !/^\d{6}$/.test(body.code)
         ) {
             throw new PhoneChangeError(
-                "შეიყვანე ექვსნიშნა კოდი.",
+                "შეიყვანეთ ექვსნიშნა კოდი.",
                 422,
             );
         }
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
                     current.sessionTokenHash !== initial.sessionTokenHash
                 ) {
                     throw new PhoneChangeError(
-                        "სესია შეიცვალა. თავიდან გახსენი ფანჯარა.",
+                        "სესია შეიცვალა. თავიდან გახსენით ფანჯარა.",
                         409,
                     );
                 }
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
                         hashPhoneChangeValue(current.user.password)
                 ) {
                     throw new PhoneChangeError(
-                        "მოთხოვნა აღარ მოქმედებს. თავიდან დაადასტურე პაროლი.",
+                        "მოთხოვნა აღარ მოქმედებს. თავიდან დაადასტურეთ პაროლი.",
                         409,
                     );
                 }
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
                     }
 
                     throw new PhoneChangeError(
-                        "მოთხოვნა უკვე დასრულებულია ან გაუქმებულია. თავიდან დაადასტურე პაროლი.",
+                        "მოთხოვნა უკვე დასრულებულია ან გაუქმებულია. თავიდან დაადასტურეთ პაროლი.",
                         409,
                     );
                 }
@@ -143,14 +143,14 @@ export async function POST(request: Request) {
                     pending.previousPhone !== current.user.phone
                 ) {
                     throw new PhoneChangeError(
-                        "კოდის ვადა ამოიწურა ან ანგარიშის მონაცემები შეიცვალა. თავიდან დაადასტურე პაროლი.",
+                        "კოდის ვადა ამოიწურა ან ანგარიშის მონაცემები შეიცვალა. თავიდან დაადასტურეთ პაროლი.",
                         409,
                     );
                 }
 
                 if (pending.attempts >= PHONE_CHANGE_MAX_ATTEMPTS) {
                     throw new PhoneChangeError(
-                        "კოდის მცდელობები ამოიწურა. თავიდან დაადასტურე პაროლი.",
+                        "კოდის მცდელობები ამოიწურა. თავიდან დაადასტურეთ პაროლი.",
                         409,
                     );
                 }
@@ -173,7 +173,7 @@ export async function POST(request: Request) {
                         message:
                             remaining > 0
                                 ? `კოდი არასწორია. დარჩენილია ${remaining} მცდელობა.`
-                                : "კოდის მცდელობები ამოიწურა. თავიდან დაადასტურე პაროლი.",
+                                : "კოდის მცდელობები ამოიწურა. თავიდან დაადასტურეთ პაროლი.",
                     };
                 }
 
@@ -184,7 +184,7 @@ export async function POST(request: Request) {
 
                 if (existing && existing.id !== current.user.id) {
                     throw new PhoneChangeError(
-                        "ამ ნომრის გამოყენება შეუძლებელია. მიუთითე სხვა ნომერი.",
+                        "ამ ნომრის გამოყენება შეუძლებელია. მიუთითეთ სხვა ნომერი.",
                         422,
                     );
                 }
@@ -257,7 +257,7 @@ export async function POST(request: Request) {
                 {
                     success: false,
                     message:
-                        "ამ ნომრის გამოყენება შეუძლებელია. მიუთითე სხვა ნომერი.",
+                        "ამ ნომრის გამოყენება შეუძლებელია. მიუთითეთ სხვა ნომერი.",
                 },
                 422,
             );

@@ -98,7 +98,7 @@ export default function BusinessSettingsForm({
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "გადაამოწმე შევსებული ველები.",
+                    : "გადაამოწმეთ შევსებული ველები.",
             );
             setErrorField(
                 cause instanceof BusinessSettingsError
@@ -150,7 +150,7 @@ export default function BusinessSettingsForm({
 
                 throw new Error(
                     body.message ||
-                    "შენახვის შედეგი ვერ დადასტურდა. ხელახლა სცადე.",
+                    "შენახვის შედეგი ვერ დადასტურდა. ხელახლა სცადეთ.",
                 );
             }
 
@@ -169,7 +169,7 @@ export default function BusinessSettingsForm({
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "შენახვა ვერ დადასტურდა. ხელახლა სცადე.",
+                    : "შენახვა ვერ დადასტურდა. ხელახლა სცადეთ.",
             );
         } finally {
             running.current = false;
@@ -236,7 +236,7 @@ export default function BusinessSettingsForm({
             ) {
                 throw new Error(
                     body.message ||
-                    "ლოგოს შენახვის შედეგი ვერ დადასტურდა. განაახლე მონაცემები და გადაამოწმე ლოგო.",
+                    "ლოგოს შენახვის შედეგი ვერ დადასტურდა. განაახლეთ მონაცემები და გადაამოწმეთ ლოგო.",
                 );
             }
 
@@ -265,7 +265,7 @@ export default function BusinessSettingsForm({
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "ლოგოს შენახვის შედეგი ვერ დადასტურდა. განაახლე მონაცემები და გადაამოწმე ლოგო.",
+                    : "ლოგოს შენახვის შედეგი ვერ დადასტურდა. განაახლეთ მონაცემები და გადაამოწმეთ ლოგო.",
             );
         } finally {
             running.current = false;
@@ -329,7 +329,7 @@ export default function BusinessSettingsForm({
             );
             setSaved(latest);
             setNotice(
-                "მონაცემები განახლდა. შენი ცვლილებები შენარჩუნებულია - შენახვამდე გადაამოწმე.",
+                "მონაცემები განახლდა. თქვენი ცვლილებები შენარჩუნებულია - შენახვამდე გადაამოწმეთ.",
             );
         } catch (cause: unknown) {
             if (!mounted.current || current.signal.aborted) return;
@@ -488,7 +488,7 @@ export default function BusinessSettingsForm({
                             id="business-phone-help"
                             className="block text-xs leading-relaxed text-text-secondary"
                         >
-                            არასავალდებულო - მიუთითე ბიზნესის
+                            არასავალდებულო - მიუთითეთ ბიზნესის
                             საკონტაქტო ნომერი.
                         </span>
                     </label>

@@ -14,7 +14,7 @@ export default function DeleteBusinessButton({ businessId, name }: { businessId:
     const [error, setError] = useState("");
 
     const remove = async () => {
-        if (typed.trim() !== name.trim()) { setError("ზუსტად აკრიფე ბიზნესის სახელი."); return; }
+        if (typed.trim() !== name.trim()) { setError("ზუსტად აკრიფეთ ბიზნესის სახელი."); return; }
         setBusy(true);
         setError("");
         try {
@@ -38,7 +38,7 @@ export default function DeleteBusinessButton({ businessId, name }: { businessId:
         <ConfirmDialog open={open} danger title="ბიზნესის წაშლა" confirmLabel="სამუდამოდ წაშლა" cancelLabel="დატოვება" busy={busy} error={error}
             onConfirm={() => void remove()} onClose={() => { if (!busy) setOpen(false); }}>
             <span className="block">„{name}“ და მისი ყველა მონაცემი (შეკვეთები, მომხმარებლები, მარაგი, ფოტოები) სამუდამოდ წაიშლება. ამის დაბრუნება შეუძლებელია.</span>
-            <label className="mt-3 block text-xs text-text-secondary">დასადასტურებლად აკრიფე ბიზნესის სახელი
+            <label className="mt-3 block text-xs text-text-secondary">დასადასტურებლად აკრიფეთ ბიზნესის სახელი
                 <input value={typed} onChange={event => setTyped(event.target.value)} autoComplete="off"
                     className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-3 text-base text-text-primary outline-none transition focus:border-danger sm:text-sm" />
             </label>

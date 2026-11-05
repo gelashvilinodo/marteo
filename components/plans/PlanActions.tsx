@@ -13,7 +13,7 @@ async function send(body: Record<string, unknown>) {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     });
     const data = await response.json().catch(() => ({})) as { message?: string };
-    if (!response.ok) throw new Error(data.message || "გეგმა ვერ შეიცვალა. სცადე ხელახლა.");
+    if (!response.ok) throw new Error(data.message || "გეგმა ვერ შეიცვალა. სცადეთ ხელახლა.");
     return data.message ?? "";
 }
 
@@ -64,7 +64,7 @@ export function CancelPlanButton({ canceled, expiresAt }: { canceled: boolean; e
         <Notice text={notice} />
         <ConfirmDialog open={action.open} danger title="გეგმის გაუქმება" confirmLabel="გეგმის გაუქმება" cancelLabel="დატოვება" busy={action.busy} error={action.error}
             onConfirm={() => void action.run({ action: "cancel" })} onClose={() => action.setOpen(false)}>
-            {until ? `გეგმა ${until}-მდე ჩვეულებრივ იმუშავებს, მერე ბიზნესი მხოლოდ ნახვის რეჟიმში გადავა. მონაცემები არ წაიშლება და ვადამდე გაგრძელებაც შეგიძლია.` : "გეგმა გაუქმდება. მონაცემები არ წაიშლება."}
+            {until ? `შემდეგი თვის თანხა აღარ ჩამოიჭრება. გეგმა ${until}-მდე ჩვეულებრივ იმუშავებს, მერე ბიზნესი მხოლოდ ნახვის რეჟიმში გადავა. მონაცემები არ წაიშლება და ვადამდე გაგრძელებაც შეგიძლიათ.` : "გეგმა გაუქმდება. მონაცემები არ წაიშლება."}
         </ConfirmDialog>
     </div>;
 }
@@ -93,7 +93,7 @@ function MemberPicker({ title, group, limit, keep, toggle }: { title: string; gr
             {group.map(member => <label key={member.id} className="flex cursor-pointer items-center gap-2 text-text-primary">
                 <input type="checkbox" checked={keep.has(member.id)} disabled={member.isYou || (!keep.has(member.id) && chosen >= limit)}
                     onChange={() => toggle(member.id)} className="h-4 w-4 accent-[var(--marteo-accent)]" />
-                {member.name}{member.isYou ? " (შენ)" : ""}
+                {member.name}{member.isYou ? " (თქვენ)" : ""}
             </label>)}
         </span>
     </fieldset>;
@@ -115,14 +115,14 @@ export function DowngradeButton({ tier, quote, team, className, children }: { ti
         return next;
     });
     const confirm = () => {
-        if (askMode && !mode) { action.fail("აირჩიე მიმართულება: იმპორტი ან წარმოება."); return; }
+        if (askMode && !mode) { action.fail("აირჩიეთ მიმართულება: იმპორტი ან წარმოება."); return; }
         void action.run({ action: "downgrade", plan: tier, keep: [...keep], ...(askMode ? { mode } : {}) });
     };
     return <>
         <button type="button" onClick={() => { setKeep(initialKeep(team, tier)); action.setOpen(true); }} className={className}>{children}</button>
         <ConfirmDialog open={action.open} title={`გადასვლა ${PLAN_ADJECTIVES[tier]} გეგმაზე`} confirmLabel="გადასვლა" busy={action.busy} error={action.error}
             onConfirm={confirm} onClose={() => action.setOpen(false)}>
-            <span className="block">ახალი გეგმა დღესვე ჩაირთვება და დამატებით არაფერს გადაიხდი.</span>
+            <span className="block">ახალი გეგმა დღესვე ჩაირთვება და დამატებით არაფერს გადაიხდით.</span>
             {quote && <span className="mt-2 block">
                 დაუხარჯავი ნაშთი <b className="font-medium text-text-primary">{quote.credit.toFixed(2)} ₾</b> ახალ გეგმაზე {quote.days} დღეს ფარავს:
                 {" "}გეგმა იმოქმედებს <b className="font-medium text-text-primary">{formatDay(quote.expiresAt)}</b>-მდე.

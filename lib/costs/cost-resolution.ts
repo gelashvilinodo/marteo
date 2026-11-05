@@ -146,7 +146,7 @@ export async function saveMissingCosts(tx: Client, businessId: string, raw: unkn
     const input = readCostInput(raw);
     const preview = await getCostPreview(tx, businessId, input.scope);
     if (preview.token !== input.token)
-        throw new CostInputError("მონაცემები შეიცვალა. განაახლე სია და გადაამოწმე თანხები.", 409);
+        throw new CostInputError("მონაცემები შეიცვალა. განაახლეთ სია და გადაამოწმეთ თანხები.", 409);
     const allowed = new Map(preview.rows.map(row => [row.key, row]));
     const stock: Array<{id:string; unitCost:string}> = [];
     const historical: Array<{id:string; orderId:string; unitCost:string}> = [];

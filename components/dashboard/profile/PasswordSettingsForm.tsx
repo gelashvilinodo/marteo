@@ -37,7 +37,7 @@ const emptyDraft: PasswordDraft = {
 const fields = [
     ["currentPassword", "მიმდინარე პაროლი", "current-password"],
     ["newPassword", "ახალი პაროლი", "new-password"],
-    ["confirmPassword", "გაიმეორე ახალი პაროლი", "new-password"],
+    ["confirmPassword", "გაიმეორეთ ახალი პაროლი", "new-password"],
 ] as const;
 
 export default function PasswordSettingsForm() {
@@ -140,7 +140,7 @@ export default function PasswordSettingsForm() {
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "გადაამოწმე შევსებული ველები.",
+                    : "გადაამოწმეთ შევსებული ველები.",
             );
             focusField(field);
         }
@@ -158,7 +158,7 @@ export default function PasswordSettingsForm() {
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "გადაამოწმე შევსებული ველები.",
+                    : "გადაამოწმეთ შევსებული ველები.",
             );
             return;
         }
@@ -236,7 +236,7 @@ export default function PasswordSettingsForm() {
 
                 throw new Error(
                     body.message ||
-                    "შენახვის შედეგი ვერ დადასტურდა. იგივე მონაცემებით ხელახლა სცადე.",
+                    "შენახვის შედეგი ვერ დადასტურდა. იგივე მონაცემებით ხელახლა სცადეთ.",
                 );
             }
 
@@ -260,10 +260,10 @@ export default function PasswordSettingsForm() {
 
             setError(
                 current.signal.aborted
-                    ? "პასუხის ლოდინის დრო ამოიწურა. იგივე მონაცემებითა და გამოსვლის არჩევანით ხელახლა სცადე."
+                    ? "პასუხის ლოდინის დრო ამოიწურა. იგივე მონაცემებითა და გამოსვლის არჩევანით ხელახლა სცადეთ."
                     : cause instanceof Error
                         ? cause.message
-                        : "შენახვის შედეგი ვერ დადასტურდა. ხელახლა სცადე.",
+                        : "შენახვის შედეგი ვერ დადასტურდა. ხელახლა სცადეთ.",
             );
         } finally {
             window.clearTimeout(timeout);
@@ -299,7 +299,7 @@ export default function PasswordSettingsForm() {
                             პაროლის შეცვლა
                         </h2>
                         <p className="mt-1 text-xs text-text-secondary">
-                            გამოიყენე ახალი პაროლი ანგარიშის დასაცავად.
+                            გამოიყენეთ ახალი პაროლი ანგარიშის დასაცავად.
                         </p>
                     </div>
                 </div>
@@ -420,7 +420,7 @@ export default function PasswordSettingsForm() {
                     href="/forgot-password"
                     className="mt-2 inline-flex min-h-10 items-center text-sm text-accent hover:text-accent-hover"
                 >
-                    დაგავიწყდა პაროლი?
+                    დაგავიწყდათ პაროლი?
                 </Link>
 
                 {error && (
@@ -460,7 +460,7 @@ export default function PasswordSettingsForm() {
                     {busy
                         ? "მუშავდება…"
                         : waitSeconds > 0
-                            ? `სცადე ${waitSeconds} წამში`
+                            ? `სცადეთ ${waitSeconds} წამში`
                             : "პაროლის განახლება"}
                 </button>
             </form>
@@ -487,7 +487,7 @@ export default function PasswordSettingsForm() {
             >
                 <div className="flex items-start justify-between gap-3">
                     <h2 id={titleId} className="font-semibold">
-                        გსურს სხვა მოწყობილობებიდან გამოსვლა?
+                        გსურთ სხვა მოწყობილობებიდან გამოსვლა?
                     </h2>
 
                     <button
@@ -507,7 +507,7 @@ export default function PasswordSettingsForm() {
 
                 <p className="mt-3 text-sm text-text-secondary">
                     არჩევის შემდეგ პაროლი შეიცვლება.
-                    მიმდინარე მოწყობილობაზე შესული დარჩები.
+                    მიმდინარე მოწყობილობაზე შესული დარჩებით.
                 </p>
 
                 <div className="mt-5 grid gap-2">

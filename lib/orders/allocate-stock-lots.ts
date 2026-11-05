@@ -119,7 +119,7 @@ export async function allocateStockLots(
 
         if (unitCost === null) {
             throw new OrderValidationError(
-                `${input.name}: მარაგის თვითღირებულება უცნობია. ამ პროდუქტის ველში მიუთითე ერთი ერთეულის თვითღირებულება და ხელახლა შეინახე შეკვეთა.`,
+                `${input.name}: მარაგის თვითღირებულება უცნობია. ამ პროდუქტის ველში მიუთითეთ ერთი ერთეულის თვითღირებულება და ხელახლა შეინახეთ შეკვეთა.`,
                 422,
             );
         }
@@ -131,7 +131,7 @@ export async function allocateStockLots(
             !unitCost.mul(100).isInteger()
         ) {
             throw new OrderValidationError(
-                `${input.name}: თვითღირებულება მიუთითე არაუარყოფითი თანხით, თეთრების სიზუსტით.`,
+                `${input.name}: თვითღირებულება მიუთითეთ არაუარყოფითი თანხით, თეთრების სიზუსტით.`,
                 422,
             );
         }

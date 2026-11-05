@@ -96,7 +96,7 @@ export default function PartnersPage() {
                         </ul>
 
                         <p className="mt-6 border-l-2 border-accent pl-4 text-[15px] font-semibold text-text-primary">
-                            მართეო WebMint-ის ნამუშევარია. შემდეგი შეიძლება შენი იდეა იყოს.
+                            მართეო WebMint-ის ნამუშევარია. შემდეგი შეიძლება თქვენი იდეა იყოს.
                         </p>
 
                         <a
@@ -105,7 +105,7 @@ export default function PartnersPage() {
                             rel="noopener noreferrer"
                             className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover sm:w-fit"
                         >
-                            ეწვიე WebMint-ს
+                            ეწვიეთ WebMint-ს
                             <Icon icon="solar:arrow-right-up-linear" className="h-4 w-4" />
                         </a>
                     </div>
@@ -119,16 +119,16 @@ export default function PartnersPage() {
                         <Icon icon="solar:hand-shake-bold-duotone" className="h-7 w-7" />
                     </span>
                     <h2 id="partners-join" className="mt-4 text-xl font-bold text-text-primary sm:text-2xl">
-                        გახდი ჩვენი პარტნიორი
+                        გახდით ჩვენი პარტნიორი
                     </h2>
                     <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-text-secondary sm:text-[15px]">
-                        თუ გინდა, ერთად დავეხმაროთ ქართულ ბიზნესს ზრდაში, მოგვწერე.
+                        თუ გინდათ, ერთად დავეხმაროთ ქართულ ბიზნესს ზრდაში, მოგვწერეთ.
                     </p>
                     <Link
                         href="/contact"
                         className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-surface px-5 text-sm font-semibold text-text-primary transition-colors hover:border-accent/40 hover:text-accent"
                     >
-                        დაგვიკავშირდი
+                        დაგვიკავშირდით
                     </Link>
                 </section>
             </div>

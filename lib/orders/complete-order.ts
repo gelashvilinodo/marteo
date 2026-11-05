@@ -27,7 +27,7 @@ export async function completeOrder(
     input: CompletionInput,
 ) {
     if (order.paymentStatus === "UNKNOWN") {
-        fail("ამ შეკვეთაზე გადახდა დაუზუსტებელია. დასრულებამდე მიუთითე რეალურად გადახდილი თანხა.");
+        fail("ამ შეკვეთაზე გადახდა დაუზუსტებელია. დასრულებამდე მიუთითეთ რეალურად გადახდილი თანხა.");
     }
 
     const { receivedQuantities, remaining } = await completionBalance(tx, order);
@@ -41,7 +41,7 @@ export async function completeOrder(
 
     if (remaining.gt(0)) {
         if (input.confirmFullPayment !== true) {
-            fail(`დარჩენილია ${remaining.toFixed(2)} ₾. დასრულებამდე დაადასტურე ამ თანხის რეალურად მიღება.`);
+            fail(`დარჩენილია ${remaining.toFixed(2)} ₾. დასრულებამდე დაადასტურეთ ამ თანხის რეალურად მიღება.`);
         }
 
         const method = input.completionPaymentMethod;
@@ -51,7 +51,7 @@ export async function completeOrder(
             method !== "BANK_TRANSFER" &&
             method !== "CARD"
         ) {
-            fail("აირჩიე დარჩენილი თანხის გადახდის მეთოდი.");
+            fail("აირჩიეთ დარჩენილი თანხის გადახდის მეთოდი.");
         }
 
         if (

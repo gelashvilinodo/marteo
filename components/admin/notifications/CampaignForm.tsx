@@ -62,7 +62,7 @@ export default function CampaignForm({ id, initial }: { id?: string; initial: Ca
 
     async function submit(event: React.FormEvent) {
         event.preventDefault();
-        if (scheduled && !values.deliverAt) { setError("მიუთითე გაგზავნის დრო."); return; }
+        if (scheduled && !values.deliverAt) { setError("მიუთითეთ გაგზავნის დრო."); return; }
         if (!scheduled && !window.confirm(`შეტყობინება ახლავე გაეგზავნება ${recipients ?? "?"} მომხმარებელს. გავაგრძელო?`)) return;
         setBusy(true);
         setError("");
@@ -107,7 +107,7 @@ export default function CampaignForm({ id, initial }: { id?: string; initial: Ca
                             {mode.value === "HYBRID" ? "ორივე (იმპორტი + წარმოება)" : mode.label}
                         </label>)}
                     </div>
-                    <p className="mt-1 text-xs text-text-secondary">თუ არცერთს მონიშნავ, ყველა ტიპს გაეგზავნება.</p>
+                    <p className="mt-1 text-xs text-text-secondary">თუ არცერთს მონიშნავთ, ყველა ტიპს გაეგზავნება.</p>
                 </fieldset>
                 <fieldset>
                     <legend className="text-sm text-text-secondary">პაკეტი</legend>

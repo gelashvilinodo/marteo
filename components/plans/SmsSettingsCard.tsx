@@ -70,7 +70,7 @@ export default function SmsSettingsCard({ initial, preview }: { initial: SmsUsag
                     <p className="mt-2 text-xs text-text-secondary">ვადა არ გასდის. {sms.planIncluded > 0 ? "იხარჯება გეგმის SMS-ის მერე." : ""}</p>
                 </div>
             </div>
-            {empty && <p role="status" className="mt-3 rounded-xl bg-warning/10 p-3 text-sm text-text-primary">SMS ამოიწურა: მომხმარებლებს შეტყობინება აღარ ეგზავნება. შეიძინე პაკეტი.</p>}
+            {empty && <p role="status" className="mt-3 rounded-xl bg-warning/10 p-3 text-sm text-text-primary">SMS ამოიწურა: მომხმარებლებს შეტყობინება აღარ ეგზავნება. შეიძინეთ პაკეტი.</p>}
             <div className="mt-4">
                 <p className="text-sm font-medium text-text-primary">SMS პაკეტები</p>
                 <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -83,7 +83,7 @@ export default function SmsSettingsCard({ initial, preview }: { initial: SmsUsag
                 </ul>
                 {packNotice && <p role="status" className="mt-3 flex items-start gap-2 rounded-xl bg-accent/10 p-3 text-sm text-text-primary">
                     <Icon icon="solar:info-circle-bold-duotone" className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
-                    ბარათით ყიდვა მალე ჩაირთვება. მანამდე პაკეტის დასამატებლად მოგვწერე დახმარების ჩატში.
+                    ბარათით ყიდვა მალე ჩაირთვება. მანამდე პაკეტის დასამატებლად მოგვწერეთ დახმარების ჩატში.
                 </p>}
             </div>
         </>}

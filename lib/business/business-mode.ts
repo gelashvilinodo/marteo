@@ -12,5 +12,5 @@ export function hasBusinessFeature(mode:BusinessMode, feature:BusinessFeature) {
     return mode==='HYBRID'||(feature==='imports'?mode==='IMPORT':mode==='MANUFACTURING');
 }
 export function businessFeatureMessage(feature:BusinessFeature) {
-    return feature==='manufacturing'?'წარმოების ფუნქციებისთვის ბიზნესის პარამეტრებში აირჩიე „წარმოება“ ან „ორივე“.':'ამ შესყიდვებისთვის ბიზნესის პარამეტრებში აირჩიე „იმპორტი“ ან „ორივე“.';
+    return feature==='manufacturing'?'წარმოების ფუნქციებისთვის ბიზნესის პარამეტრებში აირჩიეთ „წარმოება“ ან „ორივე“.':'ამ შესყიდვებისთვის ბიზნესის პარამეტრებში აირჩიეთ „იმპორტი“ ან „ორივე“.';
 }

@@ -24,7 +24,7 @@ export const FEATURE_LABELS: Record<PlanFeature, string> = {
 };
 
 const LOCK_TITLES: Record<string, string> = {
-    NO_PLAN: "აირჩიე გეგმა",
+    NO_PLAN: "აირჩიეთ გეგმა",
     TRIAL_ENDED: "საცდელი პერიოდი დასრულდა",
     PAYMENT_FAILED: "გადახდა ვერ შესრულდა",
     EXPIRED: "გეგმის ვადა ამოიწურა",
@@ -42,7 +42,7 @@ function texts(request: UpgradeRequest, plan: PlanState) {
     }
     return {
         title: LOCK_TITLES[plan.lockReason ?? "NO_PLAN"],
-        text: "შენი მონაცემები შენახულია და მათი ნახვა ახლაც შეგიძლია. დამატებისა და ცვლილებისთვის აირჩიე გეგმა.",
+        text: "თქვენი მონაცემები შენახულია და მათი ნახვა ახლაც შეგიძლიათ. დამატებისა და ცვლილებისთვის აირჩიეთ გეგმა.",
     };
 }
 
@@ -74,7 +74,7 @@ export default function PlanUpgradeDialog({ request, plan, isOwner, onClose }: {
                 <div className="min-w-0 flex-1">
                     <h2 id="plan-dialog-title" className="text-lg font-semibold">{content.title}</h2>
                     <p className="mt-1 text-sm leading-6 text-text-secondary">
-                        {isOwner ? content.text : "ეს ფუნქცია ამ ბიზნესში ხელმისაწვდომი არ არის. მიმართე ბიზნესის მფლობელს."}
+                        {isOwner ? content.text : "ეს ფუნქცია ამ ბიზნესში ხელმისაწვდომი არ არის. მიმართეთ ბიზნესის მფლობელს."}
                     </p>
                 </div>
                 <button type="button" onClick={() => ref.current?.close()} aria-label="ფანჯრის დახურვა"

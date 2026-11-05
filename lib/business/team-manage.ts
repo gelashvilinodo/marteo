@@ -4,8 +4,8 @@ import type { createPrismaClient } from "@/lib/prisma";
 import { runInBackground, sendPushToUsers } from "@/lib/push/web-push";
 import { createPrismaClient as newClient } from "@/lib/prisma";
 import { isBusinessPermission, type BusinessPermission } from "./permissions";
-import { PERMISSION_OPTIONS, TEAM_LIMITS, type TeamRequestView } from "./team";
-import { readPlan, TeamError } from "./team-server";
+import { PERMISSION_OPTIONS, planPermissions, TEAM_LIMITS, type TeamRequestView } from "./team";
+import { PLAN_PERMISSION_ERROR, readPlan, TeamError } from "./team-server";
 
 type Db = ReturnType<typeof createPrismaClient>;
 type Tx = Parameters<Parameters<Db["$transaction"]>[0]>[0];
@@ -102,7 +102,7 @@ function readPermissions(body: Record<string, unknown>) {
     const raw = Array.isArray(body.permissions) ? body.permissions : [];
     if (!raw.every(isBusinessPermission)) throw new TeamError("უფლებების სია არასწორია.");
     const permissions = PERMISSION_OPTIONS.map(option => option.value).filter(value => raw.includes(value)) as BusinessPermission[];
-    if (!permissions.length) throw new TeamError("მონიშნე ერთი უფლება მაინც.");
+    if (!permissions.length) throw new TeamError("მონიშნეთ ერთი უფლება მაინც.");
     return { permissions, readOnly: body.readOnly === true };
 }
 
@@ -111,10 +111,15 @@ export async function updateStaffAccess(db: Db, businessId: string, actorId: str
     await db.$transaction(async tx => {
         await lockBusiness(tx, businessId);
         await requireOwner(tx, businessId, actorId);
-        const target = await tx.businessMembership.findFirst({ where: { id: membershipId, businessId }, select: { role: true } });
+        const target = await tx.businessMembership.findFirst({ where: { id: membershipId, businessId }, select: { role: true, permissions: true } });
         if (!target) throw new TeamError("წევრი ვერ მოიძებნა.", 404);
         if (target.role === "OWNER") throw new TeamError("თანამფლობელის უფლებები არ იცვლება.", 403);
-        await tx.businessMembership.update({ where: { id: membershipId }, data: input });
+        const allowed = planPermissions(await readPlan(tx, businessId, new Date()));
+        if (input.permissions.some(permission => !allowed.includes(permission))) throw new TeamError(PLAN_PERMISSION_ERROR, 403);
+        // გეგმაში არშემავალი უფლებები (მაგ. სტარტზე მარაგი) ინახება და გეგმის აწევისას ბრუნდება.
+        const kept = target.permissions.filter(permission => isBusinessPermission(permission) && !allowed.includes(permission));
+        const permissions = PERMISSION_OPTIONS.map(option => option.value).filter(value => input.permissions.includes(value) || kept.includes(value));
+        await tx.businessMembership.update({ where: { id: membershipId }, data: { ...input, permissions } });
     });
 }
 
@@ -126,10 +131,10 @@ export async function leaveBusiness(db: Db, businessId: string, userId: string) 
             where: { userId_businessId: { userId, businessId } },
             select: { id: true, role: true, user: { select: { firstName: true, lastName: true, email: true } }, business: { select: { name: true } } },
         });
-        if (!member) throw new TeamError("ამ ბიზნესის წევრი აღარ ხარ.", 404);
+        if (!member) throw new TeamError("ამ ბიზნესის წევრი აღარ ხართ.", 404);
         const owners = await activeOwners(tx, businessId);
         if (member.role === "OWNER" && owners.length <= 1 && owners.some(owner => owner.userId === userId)) {
-            throw new TeamError("შენ ერთადერთი მფლობელი ხარ. ბიზნესის დატოვება მხოლოდ მისი წაშლით შეიძლება.", 409);
+            throw new TeamError("თქვენ ერთადერთი მფლობელი ხართ. ბიზნესის დატოვება მხოლოდ მისი წაშლით შეიძლება.", 409);
         }
         await tx.businessMembership.delete({ where: { id: member.id } });
         // მის შესახებ ღია მოთხოვნებს აზრი აღარ აქვს.
@@ -140,8 +145,8 @@ export async function leaveBusiness(db: Db, businessId: string, userId: string) 
         await tx.businessConsentVote.deleteMany({ where: { userId, request: { businessId, status: "PENDING" } } });
         const remaining = owners.filter(owner => owner.userId !== userId).map(owner => owner.userId);
         notices.push({
-            userIds: remaining, businessId, title: "წევრმა დატოვა ბიზნესი",
-            body: `ბიზნესი „${member.business.name}“ დატოვა: ${fullName(member.user)}.`,
+            userIds: remaining, businessId, title: "წევრმა ბიზნესი დატოვა",
+            body: `${fullName(member.user)} ბიზნესის „${member.business.name}“ გუნდს გამოეთიშა.`,
             actionUrl: SETTINGS_URL, key: `team-left:${member.id}`,
         });
         await writeNotices(tx, notices);
@@ -182,12 +187,12 @@ async function settle(tx: Tx, requestId: string): Promise<Notice[]> {
         const notices: Notice[] = [
             {
                 userIds: owners.map(owner => owner.userId), businessId: request.businessId, title: "წევრი გუნდიდან გავიდა",
-                body: `${request.targetName ?? "წევრი"} აღარ არის ბიზნესის „${request.business.name}“ წევრი.`,
+                body: `ყველა მფლობელი დაეთანხმა: ${request.targetName ?? "წევრი"} ბიზნესის „${request.business.name}“ გუნდის წევრი აღარ არის.`,
                 actionUrl: SETTINGS_URL, key: `consent-done:${request.id}`,
             },
             {
                 userIds: [request.targetUserId!], businessId: null, title: "ბიზნესზე წვდომა დასრულდა",
-                body: `ბიზნესის „${request.business.name}“ მფლობელებმა გუნდიდან გაგიყვანეს.`,
+                body: `ბიზნესის „${request.business.name}“ მფლობელებმა გუნდის შემადგენლობა შეცვალეს და ამ ბიზნესზე წვდომა აღარ გაქვთ. მადლობა თანამშრომლობისთვის!`,
                 actionUrl: null, key: `consent-removed:${request.id}`,
             },
         ];
@@ -199,7 +204,7 @@ async function settle(tx: Tx, requestId: string): Promise<Notice[]> {
     await tx.business.delete({ where: { id: request.businessId } });
     const notices: Notice[] = [{
         userIds: members.map(member => member.userId), businessId: null, title: "ბიზნესი წაიშალა",
-        body: `ბიზნესი „${request.business.name}“ ყველა მფლობელის თანხმობით წაიშალა.`,
+        body: `ბიზნესი „${request.business.name}“ ყველა მფლობელის თანხმობით წაიშალა. მადლობა, რომ მართეოთი სარგებლობდით.`,
         actionUrl: null, key: `business-deleted:${request.id}`,
     }];
     await writeNotices(tx, notices);
@@ -234,8 +239,8 @@ async function openRequest(db: Db, businessId: string, actorId: string, kind: "R
         }
         const others = (await activeOwners(tx, businessId)).filter(owner => owner.userId !== actorId).map(owner => owner.userId);
         const ask: Notice = {
-            userIds: others, businessId, title: kind === "DELETE_BUSINESS" ? "ბიზნესის წაშლა თანხმობას ელოდება" : "წევრის გაშვება თანხმობას ელოდება",
-            body: `${fullName(actor.user)} ითხოვს თანხმობას: ${target.text(request.business.name)} ეთანხმები?`,
+            userIds: others, businessId, title: kind === "DELETE_BUSINESS" ? "ბიზნესის წაშლა თქვენს თანხმობას ელოდება" : "წევრის გაშვება თქვენს თანხმობას ელოდება",
+            body: `${fullName(actor.user)} თქვენს თანხმობას ითხოვს: ${target.text(request.business.name)} გთხოვთ, გადახედოთ და უპასუხოთ.`,
             actionUrl: SETTINGS_URL, key: `consent-ask:${request.id}`,
         };
         await writeNotices(tx, [ask]);
@@ -286,8 +291,8 @@ export async function voteOnRequest(db: Db, businessId: string, actorId: string,
             await tx.businessConsentRequest.update({ where: { id: requestId }, data: { status: "REJECTED", resolvedAt: new Date() } });
             const owners = (await activeOwners(tx, businessId)).map(owner => owner.userId).filter(id => id !== actorId);
             const notice: Notice = {
-                userIds: owners, businessId, title: "მოთხოვნა უარყოფილია",
-                body: `${fullName(actor.user)} არ დაეთანხმა მოთხოვნას: ${request.kind === "DELETE_BUSINESS" ? "ბიზნესის წაშლა" : `გუნდიდან გავიდეს ${request.targetName ?? "წევრი"}`}.`,
+                userIds: owners, businessId, title: "მოთხოვნა არ დადასტურდა",
+                body: `${fullName(actor.user)} არ დაეთანხმა მოთხოვნას (${request.kind === "DELETE_BUSINESS" ? "ბიზნესის წაშლა" : `გუნდიდან გავიდეს ${request.targetName ?? "წევრი"}`}), ამიტომ ის გაუქმდა.`,
                 actionUrl: SETTINGS_URL, key: `consent-rejected:${requestId}`,
             };
             await writeNotices(tx, [notice]);

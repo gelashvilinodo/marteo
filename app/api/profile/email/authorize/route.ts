@@ -26,7 +26,7 @@ export async function POST(request: Request) {
             body.password.length === 0
         ) {
             throw new EmailChangeError(
-                "შეიყვანე მიმდინარე პაროლი.",
+                "შეიყვანეთ მიმდინარე პაროლი.",
                 422,
             );
         }
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
                     current.sessionTokenHash !== initial.sessionTokenHash
                 ) {
                     throw new EmailChangeError(
-                        "სესია შეიცვალა. თავიდან გახსენი ფანჯარა.",
+                        "სესია შეიცვალა. თავიდან გახსენით ფანჯარა.",
                         409,
                     );
                 }
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
                     );
 
                     throw new EmailChangeError(
-                        "პაროლის შემოწმების მცდელობები ამოიწურა. ცოტა მოგვიანებით სცადე.",
+                        "პაროლის შემოწმების მცდელობები ამოიწურა. ცოტა მოგვიანებით სცადეთ.",
                         429,
                         retryAfter,
                     );
@@ -163,7 +163,7 @@ export async function POST(request: Request) {
                     attempt.expiresAt <= now
                 ) {
                     throw new EmailChangeError(
-                        "ანგარიშის მონაცემები შეიცვალა. თავიდან დაადასტურე პაროლი.",
+                        "ანგარიშის მონაცემები შეიცვალა. თავიდან დაადასტურეთ პაროლი.",
                         409,
                     );
                 }

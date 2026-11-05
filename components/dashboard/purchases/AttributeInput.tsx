@@ -134,7 +134,7 @@ export default function AttributeInput({
                     required={required}
                     maxLength={maxLength}
                     autoComplete="off"
-                    placeholder="აირჩიე ან ჩაწერე"
+                    placeholder="აირჩიეთ ან ჩაწერეთ"
                     onChange={(event) => {
                         setReviewedValue(null);
                         onChange(event.target.value);
@@ -152,7 +152,7 @@ export default function AttributeInput({
             {similarOptions.length > 0 && (
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2">
                     <p className="text-xs text-text-secondary">
-                        მსგავსი მნიშვნელობა უკვე გაქვს:
+                        მსგავსი მნიშვნელობა უკვე გაქვთ:
                     </p>
 
                     <div className="mt-1.5 flex flex-wrap gap-1.5">

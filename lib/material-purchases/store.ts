@@ -7,12 +7,12 @@ type Tx = Prisma.TransactionClient;
 export async function lockBusiness(tx: Tx, businessId: string, userId: string) {
     await tx.$queryRaw`SELECT id FROM "Business" WHERE id = ${businessId} FOR UPDATE`;
     const member = await tx.businessMembership.findUnique({where:{userId_businessId:{userId,businessId}}});
-    if (!canManageBusinessArea(member, "PURCHASES")) throw new MaterialError("პარტიის მართვის უფლება არ გაქვს.",403);
+    if (!canManageBusinessArea(member, "PURCHASES")) throw new MaterialError("პარტიის მართვის უფლება არ გაქვთ.",403);
 }
 export async function writable(tx:Tx,businessId:string,id:string,version:string) {
     const old = await tx.materialPurchase.findFirst({where:{id,businessId,deletedAt:null},include:{items:true}});
     if (!old) throw new MaterialError("პარტია ვერ მოიძებნა.",404);
-    if (old.updatedAt.toISOString()!==version) throw new MaterialError("პარტია შეიცვალა. განაახლე სია და გახსენი თავიდან.",409);
+    if (old.updatedAt.toISOString()!==version) throw new MaterialError("პარტია შეიცვალა. განაახლეთ სია და გახსენით თავიდან.",409);
     if (old.items.some(i=>!i.remainingQuantity.equals(i.quantity)||!i.remainingCost.equals(i.totalCost))) throw new MaterialError("მასალა უკვე გამოყენებულია. პარტიის შეცვლა ან წაშლა დაუშვებელია.",409);
     if(await tx.materialOrderAllocation.count({where:{purchaseItemId:{in:old.items.map(i=>i.id)}}}))throw new MaterialError("მასალა შეკვეთაში უკვე გამოყენებულია. პარტიის შეცვლა ან წაშლა დაუშვებელია.",409);
     return old;

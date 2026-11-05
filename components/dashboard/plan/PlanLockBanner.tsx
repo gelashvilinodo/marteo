@@ -19,9 +19,9 @@ export default function PlanLockBanner() {
             <span className="min-w-0 flex-1">მხოლოდ ნახვის რეჟიმი: მონაცემები შენახულია, მაგრამ დამატება და ცვლილება დაბლოკილია.</span>
             {isOwner
                 ? <button type="button" onClick={() => openUpgrade()} className="inline-flex min-h-9 items-center gap-1.5 rounded-xl bg-accent px-3 text-sm font-semibold text-white transition hover:bg-accent-hover">
-                    <Icon icon="solar:crown-bold" className="h-4 w-4" aria-hidden="true" />აირჩიე გეგმა
+                    <Icon icon="solar:crown-bold" className="h-4 w-4" aria-hidden="true" />აირჩიეთ გეგმა
                 </button>
-                : <span className="text-text-secondary">მიმართე ბიზნესის მფლობელს.</span>}
+                : <span className="text-text-secondary">მიმართეთ ბიზნესის მფლობელს.</span>}
         </div>;
     }
 

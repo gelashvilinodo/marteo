@@ -109,7 +109,7 @@ export default function InventoryDeleteDialog({
                 if (active) {
                     setError(
                         controller.signal.aborted
-                            ? "ჩატვირთვის დრო ამოიწურა. სცადე ხელახლა."
+                            ? "ჩატვირთვის დრო ამოიწურა. სცადეთ ხელახლა."
                             : cause instanceof Error
                                 ? cause.message
                                 : "მარაგი ვერ ჩაიტვირთა.",
@@ -136,7 +136,7 @@ export default function InventoryDeleteDialog({
         if (
             requestRef.current &&
             !window.confirm(
-                "წაშლის შედეგი ჯერ დაუდასტურებელია. დახურვის შემდეგ გადაამოწმე მარაგი. დახურო ფანჯარა?",
+                "წაშლის შედეგი ჯერ დაუდასტურებელია. დახურვის შემდეგ გადაამოწმეთ მარაგი. დახუროთ ფანჯარა?",
             )
         ) {
             return;
@@ -201,7 +201,7 @@ export default function InventoryDeleteDialog({
             setUncertain(requestRef.current !== null);
             setError(
                 controller.signal.aborted
-                    ? "წაშლის შედეგი დაუდასტურებელია. დააჭირე „შედეგის გადამოწმებას“ - იგივე მოქმედება ორჯერ არ შესრულდება."
+                    ? "წაშლის შედეგი დაუდასტურებელია. დააჭირეთ „შედეგის გადამოწმებას“ - იგივე მოქმედება ორჯერ არ შესრულდება."
                     : cause instanceof Error
                         ? cause.message
                         : "წაშლის შედეგი ვერ დადასტურდა.",
@@ -305,7 +305,7 @@ export default function InventoryDeleteDialog({
                                                 შეცდომით დავამატე
                                             </span>
                                             <span className="mt-1 block text-xs leading-relaxed text-text-secondary">
-                                                გაასწორე პროდუქტი ან რაოდენობა
+                                                გაასწორეთ პროდუქტი ან რაოდენობა
                                                 შესყიდვაში. დამატებითი ხარჯი არ
                                                 ჩაითვლება.
                                             </span>
@@ -336,8 +336,8 @@ export default function InventoryDeleteDialog({
                                 {choice === "mistake" && (
                                     <div className="space-y-2">
                                         <p className="text-xs text-text-secondary">
-                                            აირჩიე შესყიდვა და მის გვერდზე
-                                            დააჭირე რედაქტირების ღილაკს.
+                                            აირჩიეთ შესყიდვა და მის გვერდზე
+                                            დააჭირეთ რედაქტირების ღილაკს.
                                         </p>
 
                                         {impact.purchases.map(purchase => {

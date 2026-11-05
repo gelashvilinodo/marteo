@@ -46,7 +46,7 @@ function state(value: unknown): OrderState {
 }
 export async function mutateOrder(orderId: string, kind: MutationKind, raw: unknown) {
     const user = await getCurrentUser();
-    if (!user) fail("გაიარე ავტორიზაცია.", 401);
+    if (!user) fail("გაიარეთ ავტორიზაცია.", 401);
     const body = object(raw);
     if (typeof body.requestId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.requestId)) fail("მოთხოვნის კოდი არასწორია.");
     const requestId = body.requestId.toLowerCase();
@@ -56,7 +56,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
         const membership = await findActiveMembership(prisma, user.id);
         if (!membership) fail("ბიზნესი ვერ მოიძებნა.", 403);
         if (!canManageBusinessArea(membership, "ORDERS")) {
-            fail("ამ მოქმედების უფლება არ გაქვს.", 403);
+            fail("ამ მოქმედების უფლება არ გაქვთ.", 403);
         }
 
         const businessId = membership.businessId;
@@ -68,7 +68,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
             if (!order) fail("შეკვეთა ვერ მოიძებნა.", 404);
             const previous = await tx.orderMutation.findUnique({ where: { orderId_requestId: { orderId, requestId } } });
             if (previous) {
-                if (previous.fingerprint !== hash) fail("იგივე მოთხოვნის კოდი განსხვავებულ მონაცემებზე გამოიყენე. შექმენი ახალი მოთხოვნა.", 409);
+                if (previous.fingerprint !== hash) fail("იგივე მოთხოვნის კოდი განსხვავებულ მონაცემებზე გამოიყენეთ. შექმენით ახალი მოთხოვნა.", 409);
                 return previous.result;
             }
             if (order.deletedAt) fail("შეკვეთა წაშლილია.", 404);
@@ -103,7 +103,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
 
                 if (!completingAfterReturn) {
                     fail(
-                        "ამ შეკვეთაზე დაბრუნება მიმდინარეობს ან უკვე აღრიცხულია. გამოიყენე დაბრუნების შესაბამისი მოქმედება.",
+                        "ამ შეკვეთაზე დაბრუნება მიმდინარეობს ან უკვე აღრიცხულია. გამოიყენეთ დაბრუნების შესაბამისი მოქმედება.",
                         409,
                     );
                 }
@@ -125,7 +125,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                 changed = true;
             } else if (kind === "edit") {
                 if (order.status === "COMPLETED" || order.status === "RETURNED") {
-                    fail("ამ შეკვეთაზე გამოიყენე გადაცვლის შესაბამისი მოქმედება.", 409);
+                    fail("ამ შეკვეთაზე გამოიყენეთ გადაცვლის შესაბამისი მოქმედება.", 409);
                 }
                 const data = validateOrder({ ...object(body.order), clientRequestId: requestId, status: order.status }, "edit");
                 // გეგმაში მარაგი ან ფოტო თუ არ შედის, ძველი პროდუქტები რჩება, ახლის დამატება კი არ შეიძლება.
@@ -203,7 +203,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
 
                         if (!unchanged) {
                             fail(
-                                "მომხმარებელთან დარჩენილი პროდუქტი ამ ფორმიდან არ იცვლება. გამოიყენე დაბრუნება ან გადაცვლა.",
+                                "მომხმარებელთან დარჩენილი პროდუქტი ამ ფორმიდან არ იცვლება. გამოიყენეთ დაბრუნება ან გადაცვლა.",
                                 409,
                             );
                         }
@@ -279,7 +279,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                 const delta = data.paidAmount.minus(paidBefore);
                 if (delta.isNegative()) {
                     fail(
-                        "გადახდილი თანხის შემცირებისთვის გამოიყენე თანხის დაბრუნების დადასტურება.",
+                        "გადახდილი თანხის შემცირებისთვის გამოიყენეთ თანხის დაბრუნების დადასტურება.",
                         409,
                     );
                 }
@@ -297,14 +297,14 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                 if (delta.greaterThan(0)) {
                     if (order.paymentStatus === "UNKNOWN") {
                         fail(
-                            "ამ შეკვეთაზე წინა გადახდა დაუზუსტებელია. ახალი თანხის დამატებამდე ჯერ უკვე მიღებული თანხა დააზუსტე.",
+                            "ამ შეკვეთაზე წინა გადახდა დაუზუსტებელია. ახალი თანხის დამატებამდე ჯერ უკვე მიღებული თანხა დააზუსტეთ.",
                             422,
                         );
                     }
 
                     if (data.paymentMethod === "UNKNOWN") {
                         fail(
-                            "ახალი თანხის მიღებისთვის აირჩიე გადახდის მეთოდი.",
+                            "ახალი თანხის მიღებისთვის აირჩიეთ გადახდის მეთოდი.",
                             422,
                         );
                     }
@@ -376,7 +376,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
             } else if (kind === "return") {
                 if (body.action === "request") {
                     if (!Array.isArray(body.items)) {
-                        fail("აირჩიე დასაბრუნებელი პროდუქტები.", 422);
+                        fail("აირჩიეთ დასაბრუნებელი პროდუქტები.", 422);
                     }
 
                     await requestOrderReturn(
@@ -398,7 +398,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
 
                     if (body.confirmReceived !== true) {
                         fail(
-                            "დაადასტურე, რომ მონიშნული პროდუქტები ფიზიკურად მიიღე.",
+                            "დაადასტურეთ, რომ მონიშნული პროდუქტები ფიზიკურად მიიღეთ.",
                             422,
                         );
                     }
@@ -425,7 +425,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                     // რომლებსაც ახალი დაბრუნების ისტორია არ აქვთ.
                     if (hasReturnHistory > 0) {
                         fail(
-                            "ამ შეკვეთაზე გამოიყენე კონკრეტული დაბრუნების მოთხოვნის დადასტურება.",
+                            "ამ შეკვეთაზე გამოიყენეთ კონკრეტული დაბრუნების მოთხოვნის დადასტურება.",
                             409,
                         );
                     }
@@ -439,7 +439,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
 
                     if (body.stockReturned !== true) {
                         fail(
-                            "დაადასტურე, რომ პროდუქტი ფიზიკურად დაბრუნდა.",
+                            "დაადასტურეთ, რომ პროდუქტი ფიზიკურად დაბრუნდა.",
                             422,
                         );
                     }
@@ -472,7 +472,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                 }
             } else if (kind === "delete") {
                 if (body.confirmDeletion !== true) {
-                    fail("დაადასტურე შეკვეთის წაშლის მოთხოვნა.", 422);
+                    fail("დაადასტურეთ შეკვეთის წაშლის მოთხოვნა.", 422);
                 }
 
                 const pendingReturns = await tx.orderReturn.count({
@@ -509,7 +509,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                         );
                     } else {
                         if (!pendingReturns) {
-                            fail("აირჩიე დასაბრუნებელი ნივთები ან შექმენი დაბრუნების მოთხოვნა.", 422);
+                            fail("აირჩიეთ დასაბრუნებელი ნივთები ან შექმენით დაბრუნების მოთხოვნა.", 422);
                         }
                         await tx.order.update({
                             where: { id: orderId },
@@ -522,7 +522,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                     changed = true;
                 } else {
                     if (pendingReturns > 0) {
-                        fail("შეკვეთა დაბრუნების მოლოდინშია. ჯერ დაადასტურე ნივთების მიღება.", 409);
+                        fail("შეკვეთა დაბრუნების მოლოდინშია. ჯერ დაადასტურეთ ნივთების მიღება.", 409);
                     }
 
                     let restored = false;
@@ -535,13 +535,13 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                             if (body.mode === "NO_RETURN") {
                                 if (body.confirmNoReturn !== true) {
                                     fail(
-                                        "დაადასტურე, რომ მომხმარებელთან დარჩენილი ნივთები აღარ დაბრუნდება და მარაგს არ დაემატება.",
+                                        "დაადასტურეთ, რომ მომხმარებელთან დარჩენილი ნივთები აღარ დაბრუნდება და მარაგს არ დაემატება.",
                                         422,
                                     );
                                 }
                             } else if (body.mode !== "RECEIVED") {
                                 fail(
-                                    "შეკვეთაში მომხმარებელთან დარჩენილი ნივთებია. ჯერ დაადასტურე მათი დაბრუნება ან მიუთითე, რომ დაბრუნება აღარ იგეგმება.",
+                                    "შეკვეთაში მომხმარებელთან დარჩენილი ნივთებია. ჯერ დაადასტურეთ მათი დაბრუნება ან მიუთითეთ, რომ დაბრუნება აღარ იგეგმება.",
                                     422,
                                 );
                             }
@@ -559,14 +559,14 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                             !restored
                         ) {
                             fail(
-                                "ჯერ დაბრუნების ფანჯარაში დაადასტურე მომხმარებელთან დარჩენილი ნივთების ფიზიკური მიღება.",
+                                "ჯერ დაბრუნების ფანჯარაში დაადასტურეთ მომხმარებელთან დარჩენილი ნივთების ფიზიკური მიღება.",
                                 422,
                             );
                         }
                     } else if (order.status !== "COMPLETED" && !order.stockReturnedAt) {
                         if (body.mode === "NO_RETURN") {
                             if (body.confirmNoReturn !== true) {
-                                fail("დაადასტურე, რომ დარჩენილი ნივთები აღარ დაბრუნდება და მარაგს არ დაემატება.", 422);
+                                fail("დაადასტურეთ, რომ დარჩენილი ნივთები აღარ დაბრუნდება და მარაგს არ დაემატება.", 422);
                             }
                         } else if (body.mode === "RECEIVED") {
                             const received = await tx.orderReturn.findMany({
@@ -579,10 +579,10 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
                                 ), 0) === item.quantity,
                             );
                             if (!fullyReceived) {
-                                fail("ჯერ დაბრუნების ფანჯარაში დაადასტურე ყველა დასაბრუნებელი ნივთის მიღება. თუ დარჩენილი ნივთები აღარ დაბრუნდება, აირჩიე შესაბამისი ვარიანტი.", 422);
+                                fail("ჯერ დაბრუნების ფანჯარაში დაადასტურეთ ყველა დასაბრუნებელი ნივთის მიღება. თუ დარჩენილი ნივთები აღარ დაბრუნდება, აირჩიეთ შესაბამისი ვარიანტი.", 422);
                             }
                         } else {
-                            fail("მიუთითე: ნივთები დაბრუნდა, დაბრუნებას ველოდებით თუ დაბრუნება აღარ იგეგმება.", 422);
+                            fail("მიუთითეთ: ნივთები დაბრუნდა, დაბრუნებას ველოდებით თუ დაბრუნება აღარ იგეგმება.", 422);
                         }
                     }
 
@@ -619,7 +619,7 @@ export async function mutateOrder(orderId: string, kind: MutationKind, raw: unkn
             } else if (kind === "cancel-deletion") {
                 if (body.confirmCancelDeletion !== true) {
                     fail(
-                        "დაადასტურე წაშლის მოთხოვნის გაუქმება.",
+                        "დაადასტურეთ წაშლის მოთხოვნის გაუქმება.",
                         422,
                     );
                 }

@@ -91,7 +91,7 @@ export function normalizeCustomerPhone(value: string): string {
     }
 
     if (!/^[1-9]\d{7,14}$/.test(digits)) {
-        fail("მიუთითე სწორი ტელეფონის ნომერი.");
+        fail("მიუთითეთ სწორი ტელეფონის ნომერი.");
     }
 
     return `+${digits}`;
@@ -102,13 +102,13 @@ function money(
     label: string,
 ): Prisma.Decimal {
     if (typeof value !== "string") {
-        fail(`${label}: მიუთითე თანხა.`);
+        fail(`${label}: მიუთითეთ თანხა.`);
     }
 
     const normalized = value.trim().replace(",", ".");
 
     if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) {
-        fail(`${label}: მიუთითე თანხა მაქსიმუმ ორი ათწილადით.`);
+        fail(`${label}: მიუთითეთ თანხა მაქსიმუმ ორი ათწილადით.`);
     }
 
     const amount = new Prisma.Decimal(normalized);
@@ -147,7 +147,7 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
 
     // დასრულება მხოლოდ სტატუსის ცვლილებით ხდება, სადაც თანხის სრული მიღება დასტურდება.
     if (mode === "create" && data.status === "COMPLETED") {
-        fail("ახალი შეკვეთა დასრულებულად ვერ შეიქმნება. დაასრულე სტატუსის შეცვლით, თანხის მიღების დადასტურების შემდეგ.");
+        fail("ახალი შეკვეთა დასრულებულად ვერ შეიქმნება. დაასრულეთ სტატუსის შეცვლით, თანხის მიღების დადასტურების შემდეგ.");
     }
 
     if (
@@ -160,7 +160,7 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
     }
 
     if (!Array.isArray(data.items) || data.items.length === 0) {
-        fail("შეკვეთაში დაამატე მინიმუმ ერთი პროდუქტი.");
+        fail("შეკვეთაში დაამატეთ მინიმუმ ერთი პროდუქტი.");
     }
 
     const items: OrderProduct[] = data.items.map(
@@ -193,11 +193,11 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
                 fail(`${label}: რაოდენობა უნდა იყოს დადებითი მთელი რიცხვი.`);
             }
 
-            if(item.source === "MATERIAL" && item.condition!=="GOOD")fail("მასალის გაყიდვისას აირჩიე დაუზიანებელი ნაშთი.");
+            if(item.source === "MATERIAL" && item.condition!=="GOOD")fail("მასალის გაყიდვისას აირჩიეთ დაუზიანებელი ნაშთი.");
             const name = text(item.name, `${label}, სახელი`);
 
             if (!name) {
-                fail(`${label}: მიუთითე სახელი.`);
+                fail(`${label}: მიუთითეთ სახელი.`);
             }
 
             const inventoryItemId =
@@ -206,7 +206,7 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
                     : null;
 
             if (item.source === "INVENTORY" && !inventoryItemId) {
-                fail(`${label}: აირჩიე პროდუქტი მარაგიდან.`);
+                fail(`${label}: აირჩიეთ პროდუქტი მარაგიდან.`);
             }
 
             return {
@@ -214,7 +214,7 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
                     mode === "edit"
                         ? text(item.orderItemId, `${label}, ჩანაწერის კოდი`) || undefined
                         : undefined,
-                materialId: item.source === "MATERIAL" ? text(item.materialId,label) || fail(`${label}: აირჩიე მასალა მარაგიდან.`) : null,
+                materialId: item.source === "MATERIAL" ? text(item.materialId,label) || fail(`${label}: აირჩიეთ მასალა მარაგიდან.`) : null,
                 unit: item.source === "MATERIAL" ? text(item.unit,label) : "PCS",
                 source: item.source,
                 inventoryItemId,

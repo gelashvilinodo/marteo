@@ -28,7 +28,7 @@ async function post(request: Request) {
         const limited = rateLimitResponse(error);
         if (limited) return limited;
         console.error("Business delete failed", error instanceof Error ? error.message : "UnknownError");
-        return NextResponse.json({ success: false, message: "ბიზნესის წაშლა ვერ მოხერხდა. სცადე ხელახლა." }, { status: 500 });
+        return NextResponse.json({ success: false, message: "ბიზნესის წაშლა ვერ მოხერხდა. სცადეთ ხელახლა." }, { status: 500 });
     } finally {
         await db.$disconnect();
     }

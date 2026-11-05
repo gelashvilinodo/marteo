@@ -228,7 +228,7 @@ selected_movements AS (
                     WHEN COUNT(*) FILTER (
                         WHERE source = 'financial'
                     ) > 0
-                    THEN 'გაყიდვის თანხა; გადახდები იხილე დეტალებში'
+                    THEN 'გაყიდვის თანხა; გადახდები იხილეთ დეტალებში'
                     ELSE 'მიღებული თანხა, დაბრუნებების გამოკლებით'
                 END AS title,
 

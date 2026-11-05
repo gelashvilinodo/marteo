@@ -22,7 +22,7 @@ export const PLAN_UNAVAILABLE = "შესაძენი სია ჯერ �
 export async function withPurchasePlan(handler: Handler, unavailable?: () => Response) {
     const context = await getPgDashboardContext();
 
-    if (!context) return orderJson({ success: false, message: "გაიარე ავტორიზაცია." }, 401);
+    if (!context) return orderJson({ success: false, message: "გაიარეთ ავტორიზაცია." }, 401);
     if (!context.membership) return orderJson({ success: false, message: "ბიზნესი ვერ მოიძებნა." }, 403);
     if (!hasBusinessFeature(context.membership.business.mode, "imports")) {
         return orderJson({ success: false, message: "შესაძენი სია ამ ბიზნესისთვის მიუწვდომელია." }, 403);
@@ -42,7 +42,7 @@ export async function withPurchasePlan(handler: Handler, unavailable?: () => Res
         }
 
         console.error("Purchase plan request failed", error instanceof Error ? error.name : "UnknownError");
-        return orderJson({ success: false, message: "შესაძენი სია ვერ განახლდა. სცადე ხელახლა." }, 500);
+        return orderJson({ success: false, message: "შესაძენი სია ვერ განახლდა. სცადეთ ხელახლა." }, 500);
     } finally {
         await prisma.$disconnect();
     }

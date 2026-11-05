@@ -124,7 +124,7 @@ export default function InventoryPicker({
     function resetProduct() {
         if (
             window.confirm(
-                "გადახვიდე ახალ პროდუქტზე? ამ ბარათში შევსებული მონაცემები გასუფთავდება.",
+                "გადახვიდეთ ახალ პროდუქტზე? ამ ბარათში შევსებული მონაცემები გასუფთავდება.",
             )
         ) {
             onChange("");

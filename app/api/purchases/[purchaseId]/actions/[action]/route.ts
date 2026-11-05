@@ -94,7 +94,7 @@ export async function POST(
                 body.usedQuantity < 0
             ) {
                 return errorResponse(
-                    "ხელახლა გახსენი წაშლის დადასტურების ფანჯარა.",
+                    "ხელახლა გახსენით წაშლის დადასტურების ფანჯარა.",
                     400,
                 );
             }
@@ -135,7 +135,7 @@ export async function POST(
         console.error("Purchase action failed", error);
 
         return errorResponse(
-            "მოქმედების შედეგი ვერ დადასტურდა. განაახლე სია და გადაამოწმე პარტიის მდგომარეობა.",
+            "მოქმედების შედეგი ვერ დადასტურდა. განაახლეთ სია და გადაამოწმეთ პარტიის მდგომარეობა.",
             500,
         );
     }
@@ -169,7 +169,7 @@ export async function GET(
         const user = await getCurrentUser();
 
         if (!user) {
-            return errorResponse("გაიარე ავტორიზაცია.", 401);
+            return errorResponse("გაიარეთ ავტორიზაცია.", 401);
         }
 
         prisma = createPrismaClient();
@@ -217,7 +217,7 @@ export async function GET(
         console.error("Purchase deletion preview failed", error);
 
         return errorResponse(
-            "წაშლის მონაცემები ვერ ჩაიტვირთა. სცადე ხელახლა.",
+            "წაშლის მონაცემები ვერ ჩაიტვირთა. სცადეთ ხელახლა.",
             500,
         );
     } finally {

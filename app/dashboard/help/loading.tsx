@@ -101,7 +101,7 @@ export default function HelpLoading() {
                 <section className="rounded-3xl border border-border bg-surface p-4">
                     <h2 className="text-sm font-semibold text-text-primary">სხვა არხები</h2>
                     <p className="mt-1 text-xs leading-5 text-text-secondary">
-                        გირჩევნია სხვაგან მოგვწერო? აირჩიე შენთვის მოსახერხებელი.
+                        გირჩევნიათ სხვაგან მოგვწეროთ? აირჩიეთ თქვენთვის მოსახერხებელი.
                     </p>
 
                     <div

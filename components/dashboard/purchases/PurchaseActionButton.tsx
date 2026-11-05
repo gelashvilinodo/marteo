@@ -126,7 +126,7 @@ export default function PurchaseActionButton({
 
             setError(
                 controller.signal.aborted
-                    ? "ჩატვირთვის დრო ამოიწურა. სცადე ხელახლა."
+                    ? "ჩატვირთვის დრო ამოიწურა. სცადეთ ხელახლა."
                     : caught instanceof Error
                         ? caught.message
                         : "მონაცემები ვერ ჩაიტვირთა.",
@@ -199,7 +199,7 @@ export default function PurchaseActionButton({
                 throw new Error(
                     typeof body?.error === "string"
                         ? body.error
-                        : "შედეგი ვერ დადასტურდა. განაახლე სია და გადაამოწმე პარტია.",
+                        : "შედეგი ვერ დადასტურდა. განაახლეთ სია და გადაამოწმეთ პარტია.",
                 );
             }
 
@@ -211,10 +211,10 @@ export default function PurchaseActionButton({
 
             setError(
                 controller.signal.aborted
-                    ? "პასუხის მოლოდინის დრო ამოიწურა. განაახლე სია და გადაამოწმე, პარტია ხომ არ წაიშალა."
+                    ? "პასუხის მოლოდინის დრო ამოიწურა. განაახლეთ სია და გადაამოწმეთ, პარტია ხომ არ წაიშალა."
                     : caught instanceof Error
                         ? caught.message
-                        : "შედეგი ვერ დადასტურდა. გადაამოწმე პარტია.",
+                        : "შედეგი ვერ დადასტურდა. გადაამოწმეთ პარტია.",
             );
         } finally {
             clearTimeout(timeout);

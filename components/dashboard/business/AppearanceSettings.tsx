@@ -92,7 +92,7 @@ export default function AppearanceSettings() {
             </h2>
 
             <p className="mt-2 text-sm text-text-secondary">
-                აირჩიე სასურველი რეჟიმი. „სისტემის“ არჩევისას
+                აირჩიეთ სასურველი რეჟიმი. „სისტემის“ არჩევისას
                 საიტი მოწყობილობის რეჟიმს მიჰყვება.
             </p>
 

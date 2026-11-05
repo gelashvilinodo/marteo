@@ -17,7 +17,7 @@ export async function consumeOrderMaterial(tx:Tx,businessId:string,materialId:st
     for(const lot of lots){if(needed.isZero())break;const take=Prisma.Decimal.min(needed,Prisma.Decimal.max(lot.remainingQuantity.minus(lot.defectiveQuantity),0));if(take.lte(0))continue;const cost=materialCost(lot.remainingCost,lot.remainingQuantity,take);
         await tx.materialPurchaseItem.update({where:{id:lot.id},data:{remainingQuantity:{decrement:take},remainingCost:{decrement:cost}}});allocations.push({materialId,purchaseItemId:lot.id,quantity:take,totalCost:cost});totalCost=totalCost.plus(cost);needed=needed.minus(take);
     }
-    if(needed.gt(0))throw new OrderValidationError('მასალის პარტიების ნაშთი შეიცვალა. განაახლე მონაცემები.',409);
+    if(needed.gt(0))throw new OrderValidationError('მასალის პარტიების ნაშთი შეიცვალა. განაახლეთ მონაცემები.',409);
     await tx.material.update({where:{id:materialId},data:{currentStock:{decrement:quantity}}});return {material,allocations,totalCost};
 }
 export async function restoreMaterialAllocations(tx:Tx,businessId:string,materialId:string,allocations:Allocation[],quantity:number,condition:'GOOD'|'DEFECTIVE'){

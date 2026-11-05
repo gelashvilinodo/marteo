@@ -48,11 +48,11 @@ export async function readPurchaseFile(file: File, signal?: AbortSignal): Promis
     }
 
     if (sheet.rows.length > MAX_ROWS) {
-        throw new Error(`ფაილში ${sheet.rows.length} რიგია. ერთ ჯერზე მაქსიმუმ ${MAX_ROWS} რიგი მუშავდება; დაყავი ფაილი.`);
+        throw new Error(`ფაილში ${sheet.rows.length} რიგია. ერთ ჯერზე მაქსიმუმ ${MAX_ROWS} რიგი მუშავდება; დაყავით ფაილი.`);
     }
 
     if (new TextEncoder().encode(JSON.stringify(sheet.rows)).byteLength > MAX_BYTES) {
-        throw new Error("ფაილის ცხრილი ძალიან დიდია. დატოვე მხოლოდ საჭირო სვეტები ან დაყავი ფაილი.");
+        throw new Error("ფაილის ცხრილი ძალიან დიდია. დატოვეთ მხოლოდ საჭირო სვეტები ან დაყავით ფაილი.");
     }
 
     return { rows: sheet.rows, photoCount };

@@ -10,7 +10,7 @@ export async function GET() {
     const accessDenied = await apiAccessDenied("MEMBER", "view"); if (accessDenied) return accessDenied;
     try {
         const context = await getPgDashboardContext();
-        if (!context) return json({ error: "გაიარე ავტორიზაცია." }, 401);
+        if (!context) return json({ error: "გაიარეთ ავტორიზაცია." }, 401);
         return json({ unread: await getUnreadNotificationCount(context.user.id, context.membership?.businessId ?? null) });
     } catch (error) {
         console.error("Unread notifications failed", { type: error instanceof Error ? error.name : "unknown" });

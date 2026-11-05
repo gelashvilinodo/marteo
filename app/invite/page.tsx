@@ -15,7 +15,7 @@ export default function InvitePage() {
     return (
         <AuthShell
             heading={<>ერთი გუნდი.<br />ერთი ბიზნესი.</>}
-            text="შეუერთდი გუნდს და მართე ბიზნესი ერთად."
+            text="შეუერთდით გუნდს და მართეთ ბიზნესი ერთად."
         >
             <InviteAcceptForm />
         </AuthShell>

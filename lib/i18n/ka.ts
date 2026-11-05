@@ -11,7 +11,7 @@ export const ka = {
       title: "მოგესალმებით MARTEO-ში",
       submit: "შესვლა",
       register: "რეგისტრაცია",
-      forgotPassword: "დაგავიწყდა პაროლი?",
+      forgotPassword: "დაგავიწყდათ პაროლი?",
     },
 
     register: {

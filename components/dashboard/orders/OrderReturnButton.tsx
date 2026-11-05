@@ -78,15 +78,15 @@ export default function OrderReturnButton({
 
         if (exchangeUploading) {
             window.alert(
-                "ფოტო ჯერ იტვირთება. დაელოდე დასრულებას ან შეწყვიტე ატვირთვა.",
+                "ფოტო ჯერ იტვირთება. დაელოდეთ დასრულებას ან შეწყვიტეთ ატვირთვა.",
             );
             return false;
         }
 
         return !(dirty || pending) || window.confirm(
             pending
-                ? "შედეგი დაუდასტურებელია. იგივე მოთხოვნის ხელახლა ცდა ამ ფანჯრიდან შეგიძლია. დახურო?"
-                : "ცვლილებები შენახული არ არის. დახურო და დაკარგო ცვლილებები?",
+                ? "შედეგი დაუდასტურებელია. იგივე მოთხოვნის ხელახლა ცდა ამ ფანჯრიდან შეგიძლიათ. დახუროთ?"
+                : "ცვლილებები შენახული არ არის. დახუროთ და დაკარგოთ ცვლილებები?",
         );
     }
     function leave() {
@@ -209,13 +209,13 @@ export default function OrderReturnButton({
         } catch (cause: unknown) {
             const definite = cause instanceof OrderActionError && cause.status < 500;
             if (definite) setPending(null);
-            setError(definite && cause instanceof Error ? cause.message : "შედეგი დაუდასტურებელია. იგივე მოთხოვნით სცადე ხელახლა.");
+            setError(definite && cause instanceof Error ? cause.message : "შედეგი დაუდასტურებელია. იგივე მოთხოვნით სცადეთ ხელახლა.");
         } finally { saveController.current = null; running.current = false; setSaving(false); }
     }
     function submit() {
         if (!order || !order.canRequestReturn || pending) return;
         const selected = choices.filter(item => item.selected);
-        if (!selected.length) { setError("მონიშნე დასაბრუნებელი პროდუქტი."); return; }
+        if (!selected.length) { setError("მონიშნეთ დასაბრუნებელი პროდუქტი."); return; }
         for (const choice of selected) {
             const item = order.items.find(value => value.id === choice.orderItemId);
             const quantity = Number(choice.quantityText.replace(",","."));
@@ -226,8 +226,8 @@ setError(
     available === 0
         ? `${item?.name ?? "პროდუქტი"}: დასაბრუნებელი ერთეული აღარ დარჩა.`
         : available === 1
-            ? `${item?.name ?? "პროდუქტი"}: დასაბრუნებლად დარჩენილია მხოლოდ 1 ერთეული. მიუთითე 1.`
-            : `${item?.name ?? "პროდუქტი"}: მიუთითე მთელი რაოდენობა 1-დან ${available}-მდე.`,
+            ? `${item?.name ?? "პროდუქტი"}: დასაბრუნებლად დარჩენილია მხოლოდ 1 ერთეული. მიუთითეთ 1.`
+            : `${item?.name ?? "პროდუქტი"}: მიუთითეთ მთელი რაოდენობა 1-დან ${available}-მდე.`,
 );
 return;
             }
@@ -239,9 +239,9 @@ return;
     }
     function receive(entry: Order["returns"][number]) {
         if (!order || pending || saving) return;
-        if (dirty && !window.confirm("ახალი მოთხოვნის შეუნახავი ცვლილებები დაიკარგება. გააგრძელო?")) return;
+        if (dirty && !window.confirm("ახალი მოთხოვნის შეუნახავი ცვლილებები დაიკარგება. გააგრძელოთ?")) return;
         const names = entry.items.map(item => `${item.name} - ${item.quantity} (${item.condition === "DEFECTIVE" ? "წუნდებული" : "დაუზიანებელი"})`).join("\n");
-        if (!window.confirm(`ადასტურებ, რომ ფიზიკურად მიიღე ეს ნივთები მითითებული მდგომარეობით?\n\n${names}\n\nმარაგიდან გაყიდული ნივთები შესაბამის მარაგს დაემატება.`)) return;
+        if (!window.confirm(`ადასტურებთ, რომ ფიზიკურად მიიღეთ ეს ნივთები მითითებული მდგომარეობით?\n\n${names}\n\nმარაგიდან გაყიდული ნივთები შესაბამის მარაგს დაემატება.`)) return;
         void send({ requestId: crypto.randomUUID(), action: "receive", returnId: entry.id, expectedVersion: order.expectedVersion, confirmReceived: true });
     }
     const blocked =
@@ -300,7 +300,7 @@ return;
                                     if (
                                         dirty &&
                                         !window.confirm(
-                                            "ახალი დაბრუნების შეუნახავი ცვლილებები დაიკარგება. გადახვიდე გადაცვლაზე?",
+                                            "ახალი დაბრუნების შეუნახავი ცვლილებები დაიკარგება. გადახვიდეთ გადაცვლაზე?",
                                         )
                                     ) {
                                         return false;
@@ -414,8 +414,8 @@ return;
                                         {entry.status === "PENDING" && (
                                             <>
                                                 <p className="mt-2 text-xs text-text-secondary">
-                                                    მიღება დაადასტურე მხოლოდ მაშინ, როცა
-                                                    ჩამოთვლილი ნივთები ფიზიკურად დაგიბრუნდება.
+                                                    მიღება დაადასტურეთ მხოლოდ მაშინ, როცა
+                                                    ჩამოთვლილი ნივთები ფიზიკურად დაგიბრუნდებათ.
                                                 </p>
 
                                                 <button
@@ -439,11 +439,11 @@ return;
                         {order.canRequestReturn && !exchangeEditing && <fieldset disabled={blocked} className="min-w-0 space-y-3 disabled:opacity-60"><legend className="mb-3 text-sm font-semibold">ახალი დაბრუნების მოთხოვნა</legend>{order.items.length > 1 && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={allSelected} onChange={event => { setChoices(current => current.map(item => ({ ...item, selected: event.target.checked }))); setDirty(true); }} className="h-4 w-4 accent-[var(--marteo-accent)]" />ყველას მონიშვნა</label>}{choices.map(choice => {
                             const item = order.items.find(value => value.id === choice.orderItemId)!;
                             return <article key={item.id} className={`min-w-0 rounded-xl border bg-surface p-3 ${choice.selected ? "border-accent" : "border-border"}`}><div className="flex items-center gap-3">{order.items.length > 1 && <input type="checkbox" checked={choice.selected} onChange={event => patch(item.id, { selected: event.target.checked })} aria-label={`${item.name} - მონიშვნა`} className="h-4 w-4 shrink-0 accent-[var(--marteo-accent)]" />}{item.imageUrl ? <Image src={item.imageUrl} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-xl object-cover" /> : <Icon icon="solar:box-linear" className="h-12 w-12 shrink-0 rounded-xl bg-background p-3 text-text-secondary" />}<div className="min-w-0"><p className="break-words text-sm font-medium">{item.name}</p><p className="text-xs text-text-secondary">{[item.color, item.size].filter(Boolean).join(" · ")}</p><p className="text-xs text-text-secondary">დასაბრუნებელი: {quantityLabel(item.returnableQuantity,item.unit)}</p></div></div>{choice.selected && <div className="mt-3 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3"><label className="min-w-0"><span className="mb-1 block text-xs text-text-secondary">რაოდენობა</span><input aria-label={`${item.name} - რაოდენობა`} inputMode={item.source==="MATERIAL"?"decimal":"numeric"} value={choice.quantityText} onChange={event => patch(item.id, { quantityText: event.target.value })} className={field} /></label><label className="min-w-0"><span className="mb-1 block text-xs text-text-secondary">მიზეზი</span><select aria-label={`${item.name} - მიზეზი`} value={choice.reason} onChange={event => patch(item.id, { reason: event.target.value as Choice["reason"] })} className={field}><option value="OTHER">სხვა</option><option value="DEFECT">წუნი</option><option value="EXCHANGE">გადაცვლა</option></select></label><label className="min-w-0"><span className="mb-1 block text-xs text-text-secondary">მდგომარეობა</span><select aria-label={`${item.name} - მდგომარეობა`} value={choice.condition} onChange={event => patch(item.id, { condition: event.target.value as Choice["condition"] })} className={field}><option value="GOOD">დაუზიანებელი</option><option value="DEFECTIVE">წუნდებული</option></select></label><label className="min-w-0 sm:col-span-3"><span className="mb-1 block text-xs text-text-secondary">განმარტება</span><textarea aria-label={`${item.name} - განმარტება`} value={choice.note ?? ""} onChange={event => patch(item.id, { note: event.target.value })} className="min-h-20 w-full min-w-0 rounded-xl border border-border bg-background p-3 text-[16px] outline-none focus:border-accent" /></label></div>}</article>;
-                        })}<p className="text-xs text-text-secondary">მოთხოვნის შექმნა მარაგს არ ცვლის. მდგომარეობა მიუთითე იმის მიხედვით, თუ როგორ უნდა დაბრუნდეს ნივთი მარაგში.</p></fieldset>}
+                        })}<p className="text-xs text-text-secondary">მოთხოვნის შექმნა მარაგს არ ცვლის. მდგომარეობა მიუთითეთ იმის მიხედვით, თუ როგორ უნდა დაბრუნდეს ნივთი მარაგში.</p></fieldset>}
                         {!order.canRequestReturn && !order.canExchange && !order.returns.some(entry => entry.status === "PENDING") && <p className="text-sm text-text-secondary">ამ შეკვეთაზე ახალი დაბრუნების მოთხოვნა ხელმისაწვდომი არ არის.</p>}
                     </>}
                 </div>
-                <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border bg-surface p-4">{saving && <button type="button" onClick={() => saveController.current?.abort()} className="text-xs text-text-secondary underline">შეაჩერე ლოდინი</button>}<button type="button" disabled={saving} onClick={() => { if (canLeave()) leave(); }} className="h-11 rounded-xl border border-border px-3 text-sm disabled:opacity-40">დახურვა</button>{pending ? <button type="button" disabled={saving} onClick={() => void send(pending, pendingAction)} className="inline-flex h-11 items-center gap-2 rounded-xl bg-success px-3 text-sm font-semibold text-white disabled:opacity-50"><Icon icon="solar:refresh-linear" className={`h-5 w-5 ${saving ? "animate-spin" : ""}`} />{saving ? "ინახება…" : "ხელახლა ცდა"}</button> : order?.canRequestReturn && !exchangeEditing && <button type="button" disabled={blocked} onClick={submit} className="inline-flex h-11 items-center gap-2 rounded-xl bg-success px-3 text-sm font-semibold text-white disabled:opacity-50"><Icon icon="solar:undo-left-round-linear" className="h-5 w-5" />მოთხოვნის შენახვა</button>}</footer>
+                <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border bg-surface p-4">{saving && <button type="button" onClick={() => saveController.current?.abort()} className="text-xs text-text-secondary underline">შეაჩერეთ ლოდინი</button>}<button type="button" disabled={saving} onClick={() => { if (canLeave()) leave(); }} className="h-11 rounded-xl border border-border px-3 text-sm disabled:opacity-40">დახურვა</button>{pending ? <button type="button" disabled={saving} onClick={() => void send(pending, pendingAction)} className="inline-flex h-11 items-center gap-2 rounded-xl bg-success px-3 text-sm font-semibold text-white disabled:opacity-50"><Icon icon="solar:refresh-linear" className={`h-5 w-5 ${saving ? "animate-spin" : ""}`} />{saving ? "ინახება…" : "ხელახლა ცდა"}</button> : order?.canRequestReturn && !exchangeEditing && <button type="button" disabled={blocked} onClick={submit} className="inline-flex h-11 items-center gap-2 rounded-xl bg-success px-3 text-sm font-semibold text-white disabled:opacity-50"><Icon icon="solar:undo-left-round-linear" className="h-5 w-5" />მოთხოვნის შენახვა</button>}</footer>
             </div>
         </dialog>
     </>;

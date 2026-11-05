@@ -44,7 +44,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
                     </Link>
 
                     <section className="text-center">
-                        <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">აირჩიე გეგმა „{membership.business.name}“-სთვის</h1>
+                        <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">აირჩიეთ გეგმა „{membership.business.name}“-სთვის</h1>
                         <p className="mx-auto mt-2 max-w-2xl text-sm text-text-secondary sm:text-base">
                             ახლა: {planTitle(plan)}{plan.tier === "TRIAL" && plan.expiresAt ? `, დარჩა ${daysLeft(plan.expiresAt)} დღე` : ""}.
                             {" "}გეგმის შეცვლისას გადახდილი თანხა არ იკარგება.
@@ -56,7 +56,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
 
                     <PlanCards inset current={current} focus={focus} action={card => {
                         const price = prices[card.tier];
-                        if (card.tier === current) return <span className="inline-flex min-h-11 items-center justify-center rounded-xl border border-success/30 bg-success/10 px-4 text-sm font-semibold text-success">შენი მიმდინარე გეგმა</span>;
+                        if (card.tier === current) return <span className="inline-flex min-h-11 items-center justify-center rounded-xl border border-success/30 bg-success/10 px-4 text-sm font-semibold text-success">თქვენი მიმდინარე გეგმა</span>;
                         const primary = (focus ?? "PRO") === card.tier;
                         const buttonClass = `inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition ${primary ? "bg-accent text-white hover:bg-accent-hover" : "border border-border bg-background text-text-primary hover:border-accent/40 hover:text-accent"}`;
                         const quote = quotes?.[card.tier] ?? null;
@@ -65,9 +65,9 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
                             {quote?.kind === "downgrade"
                                 ? <DowngradeButton tier={card.tier} quote={quote} team={team!} className={buttonClass}>გადასვლა {PLAN_ONTO[card.tier]}</DowngradeButton>
                                 : <Link href={`/dashboard/plans/checkout?plan=${card.tier.toLowerCase()}`} className={buttonClass}>
-                                    {quote?.kind === "upgrade" ? `გადასვლა ${PLAN_ONTO[card.tier]}` : `აირჩიე ${PLAN_LABELS[card.tier]}`}<Icon icon="solar:arrow-right-linear" className="h-4 w-4" aria-hidden="true" />
+                                    {quote?.kind === "upgrade" ? `გადასვლა ${PLAN_ONTO[card.tier]}` : `აირჩიეთ ${PLAN_LABELS[card.tier]}`}<Icon icon="solar:arrow-right-linear" className="h-4 w-4" aria-hidden="true" />
                                 </Link>}
-                            {quote?.kind === "upgrade" && quote.credit > 0 && <p className="text-xs text-text-secondary">დღეს გადაიხდი {quote.amountDue.toFixed(2)} ₾ (ნაშთი {quote.credit.toFixed(2)} ₾ ჩაითვლება)</p>}
+                            {quote?.kind === "upgrade" && quote.days > 0 && <p className="text-xs text-text-secondary">მიმდინარე გეგმის ნაშთი ახალ გეგმას {quote.days} დღედ დაემატება</p>}
                             {quote?.kind === "downgrade" && <p className="text-xs text-text-secondary">ნაშთი {quote.days} დღეს ფარავს, გადახდა არ სჭირდება</p>}
                         </div>;
                     }} />

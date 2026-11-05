@@ -103,10 +103,10 @@ export default function DeferredHomePurchaseButton() {
 
             setError(
                 controller.signal.aborted
-                    ? "ჩატვირთვის დრო ამოიწურა. სცადე ხელახლა."
+                    ? "ჩატვირთვის დრო ამოიწურა. სცადეთ ხელახლა."
                     : cause instanceof Error
                         ? cause.message
-                        : "პარტიის ფორმა ვერ ჩაიტვირთა. სცადე ხელახლა.",
+                        : "პარტიის ფორმა ვერ ჩაიტვირთა. სცადეთ ხელახლა.",
             );
         } finally {
             clearTimeout(timeout);

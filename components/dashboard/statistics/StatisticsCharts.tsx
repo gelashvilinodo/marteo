@@ -102,7 +102,7 @@ export default function StatisticsCharts({
                 </h2>
 
                 <p className="mt-3 text-xs text-text-secondary">
-                    {bucketLabel}. რაოდენობის სანახავად დააჭირე სვეტს.
+                    {bucketLabel}. რაოდენობის სანახავად დააჭირეთ სვეტს.
                 </p>
 
                 <div className="mt-5 grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] gap-2">

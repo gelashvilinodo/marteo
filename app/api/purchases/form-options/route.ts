@@ -13,7 +13,7 @@ export async function GET() {
 
     if (!context) {
         return orderJson(
-            { success: false, message: "გაიარე ავტორიზაცია." },
+            { success: false, message: "გაიარეთ ავტორიზაცია." },
             401,
         );
     }
@@ -44,7 +44,7 @@ export async function GET() {
             {
                 success: false,
                 message:
-                    "პარტიის ფორმის მონაცემები ვერ ჩაიტვირთა. სცადე ხელახლა.",
+                    "პარტიის ფორმის მონაცემები ვერ ჩაიტვირთა. სცადეთ ხელახლა.",
             },
             500,
         );

@@ -44,7 +44,7 @@ function text(
     required = false,
 ): string {
     if (value === undefined || value === null) {
-        if (required) fail(`შეავსე ველი: ${label}.`);
+        if (required) fail(`შეავსეთ ველი: ${label}.`);
         return "";
     }
 
@@ -55,7 +55,7 @@ function text(
     const result = value.normalize("NFC").trim();
 
     if (required && !result) {
-        fail(`შეავსე ველი: ${label}.`);
+        fail(`შეავსეთ ველი: ${label}.`);
     }
 
     if (result.length > maxLength) {
@@ -76,7 +76,7 @@ function money(
 
     if (!/^\d{1,10}(\.\d{1,2})?$/.test(result)) {
         fail(
-            `${label}: მიუთითე არაუარყოფითი თანხა, მაქსიმუმ ორი ათწილადით.`,
+            `${label}: მიუთითეთ არაუარყოფითი თანხა, მაქსიმუმ ორი ათწილადით.`,
         );
     }
 
@@ -96,7 +96,7 @@ function purchaseDate(value: unknown): string {
         !Number.isFinite(parsed.getTime()) ||
         parsed.toISOString().slice(0, 10) !== result
     ) {
-        fail("მიუთითე სწორი თარიღი.");
+        fail("მიუთითეთ სწორი თარიღი.");
     }
 
     return result;
@@ -197,13 +197,13 @@ export function validatePurchase(value: unknown) {
             (defectiveQuantity > 0 || defectNote)
         ) {
             fail(
-                `${label}: წუნდებული რაოდენობა და აღწერა პარტიის მიღებისას მიუთითე.`,
+                `${label}: წუნდებული რაოდენობა და აღწერა პარტიის მიღებისას მიუთითეთ.`,
             );
         }
 
         if (defectiveQuantity === 0 && defectNote) {
             fail(
-                `${label}: წუნის აღწერისთვის მიუთითე წუნდებული რაოდენობაც.`,
+                `${label}: წუნის აღწერისთვის მიუთითეთ წუნდებული რაოდენობაც.`,
             );
         }
 

@@ -73,7 +73,7 @@ function failure(cause: unknown) {
         {
             success: false,
             message:
-                "მოთხოვნის შედეგი ვერ დადასტურდა. განაახლე პროფილის მონაცემები და გადაამოწმე.",
+                "მოთხოვნის შედეგი ვერ დადასტურდა. განაახლეთ პროფილის მონაცემები და გადაამოწმეთ.",
             field: "form",
         },
         500,
@@ -162,7 +162,7 @@ export async function GET() {
 
         if (!user) {
             throw new ProfileSettingsError(
-                "გაიარე ავტორიზაცია.",
+                "გაიარეთ ავტორიზაცია.",
                 401,
             );
         }
@@ -198,7 +198,7 @@ export async function PATCH(request: Request) {
 
         if (!user) {
             throw new ProfileSettingsError(
-                "გაიარე ავტორიზაცია.",
+                "გაიარეთ ავტორიზაცია.",
                 401,
             );
         }
@@ -226,7 +226,7 @@ export async function PATCH(request: Request) {
 
                 if (!current || current.status !== "ACTIVE") {
                     throw new ProfileSettingsError(
-                        "გაიარე ავტორიზაცია.",
+                        "გაიარეთ ავტორიზაცია.",
                         401,
                     );
                 }
@@ -245,7 +245,7 @@ export async function PATCH(request: Request) {
                     input.expectedUpdatedAt.getTime()
                 ) {
                     throw new ProfileSettingsError(
-                        "პროფილის მონაცემები შეიცვალა. განაახლე მონაცემები და ხელახლა შეინახე ცვლილებები.",
+                        "პროფილის მონაცემები შეიცვალა. განაახლეთ მონაცემები და ხელახლა შეინახეთ ცვლილებები.",
                         409,
                     );
                 }

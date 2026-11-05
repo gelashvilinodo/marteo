@@ -19,7 +19,7 @@ async function handle(request: Request, saving: boolean) {
             throw new CostInputError("მოთხოვნის წყარო ან ფორმატი არასწორია.", 403);
         const context = await getPgDashboardContext();
         if (!context?.membership)
-            throw new CostInputError("გაიარე ავტორიზაცია.", 401);
+            throw new CostInputError("გაიარეთ ავტორიზაცია.", 401);
         const { businessId } = context.membership;
         let body: unknown;
         if (saving) {
@@ -49,7 +49,7 @@ async function handle(request: Request, saving: boolean) {
                 }
             });
             if (!canManageBusinessArea(access, "FINANCE"))
-                throw new CostInputError("თვითღირებულების შესაცვლელად შესაბამისი უფლება არ გაქვს.", 403);
+                throw new CostInputError("თვითღირებულების შესაცვლელად შესაბამისი უფლება არ გაქვთ.", 403);
             return saving ? saveMissingCosts(tx, businessId, body) : getCostPreview(tx, businessId, scope);
         }, {
             maxWait: 10000,
@@ -69,7 +69,7 @@ async function handle(request: Request, saving: boolean) {
         console.error("Cost resolution failed", e instanceof Error ? e.name : "UnknownError");
         return json({
             success: false,
-            message: "შენახვის შედეგი ვერ დადასტურდა. განაახლე სია და გადაამოწმე მონაცემები."
+            message: "შენახვის შედეგი ვერ დადასტურდა. განაახლეთ სია და გადაამოწმეთ მონაცემები."
         }, 500);
     }
     finally {

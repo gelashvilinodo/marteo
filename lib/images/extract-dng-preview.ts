@@ -4,7 +4,7 @@ export async function extractDngPreview(file: Blob): Promise<Blob> {
     const view = new DataView(buffer);
     const bytes = new Uint8Array(buffer);
     const fail = () => new Error(
-        "ამ DNG ფოტოში გამოსადეგი JPEG პრევიუ ვერ მოიძებნა. აირჩიე სხვა ფოტო.",
+        "ამ DNG ფოტოში გამოსადეგი JPEG პრევიუ ვერ მოიძებნა. აირჩიეთ სხვა ფოტო.",
     );
     if (bytes.length < 8) throw fail();
     const little = bytes[0] === 73 && bytes[1] === 73;

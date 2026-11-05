@@ -32,7 +32,7 @@ export function hashPhoneChangeCode(
 export function normalizeProfilePhone(value: unknown): string {
     if (typeof value !== "string") {
         throw new EmailChangeError(
-            "მიუთითე ახალი ტელეფონის ნომერი.",
+            "მიუთითეთ ახალი ტელეფონის ნომერი.",
             422,
         );
     }
@@ -40,7 +40,7 @@ export function normalizeProfilePhone(value: unknown): string {
     const normalized = normalizePhone(value);
     if (!isAllowedSmsPhone(normalized)) {
         throw new EmailChangeError(
-            "მიუთითე მხარდაჭერილი მობილური ნომერი, მაგალითად +995599123456.",
+            "მიუთითეთ მხარდაჭერილი მობილური ნომერი, მაგალითად +995599123456.",
             422,
         );
     }
@@ -67,7 +67,7 @@ export function phoneChangeFailure(cause: unknown) {
         {
             success: false,
             message:
-                "მოთხოვნის შედეგი ვერ დადასტურდა. სცადე ხელახლა.",
+                "მოთხოვნის შედეგი ვერ დადასტურდა. სცადეთ ხელახლა.",
         },
         500,
     );

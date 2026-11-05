@@ -82,7 +82,7 @@ export type AiUsageReservation = { id: string; kind: Kind; meter: AiUsageMeter; 
 function limitMessage(quota: AiQuota, files: boolean) {
     const [used, limit] = files ? [quota.files.used, quota.files.limit ?? 0] : [quota.used, quota.limit];
     const what = files ? "ფაილიდან შესყიდვის" : "AI-ის";
-    if (quota.trial) return `საცდელი პერიოდის ${limit} AI კითხვა ამოიწურა. მეტისთვის აირჩიე გეგმა.`;
+    if (quota.trial) return `საცდელი პერიოდის ${limit} AI კითხვა ამოიწურა. მეტისთვის აირჩიეთ გეგმა.`;
     const reset = quota.resetsAt ? ` ლიმიტი განახლდება ${formatResetDay(quota.resetsAt)}.` : "";
     return `ამ პერიოდის ${what} ლიმიტი ამოიწურა (${used}/${limit}).${reset}`;
 }
@@ -97,7 +97,7 @@ export async function startAiUsage(prisma: PrismaClient, input: { businessId: st
     const reservation = await prisma.$transaction(async tx => {
         await tx.$queryRaw`SELECT id FROM "Business" WHERE id = ${input.businessId} FOR UPDATE`;
         const quota = await getAiQuota(tx, input.businessId);
-        if (quota.disabled) throw new AiChatError("მართეო AI ამ ბიზნესისთვის გამორთულია. დაგვიკავშირდი დახმარების ჩათში.", 403);
+        if (quota.disabled) throw new AiChatError("მართეო AI ამ ბიზნესისთვის გამორთულია. დაგვიკავშირდით დახმარების ჩათში.", 403);
         const file = input.kind === "PURCHASE_DRAFT" && !quota.files.shared;
         if (file ? quota.files.limit !== null && quota.files.used >= quota.files.limit : quota.used >= quota.limit) {
             throw new AiChatError(limitMessage(quota, file), 429);

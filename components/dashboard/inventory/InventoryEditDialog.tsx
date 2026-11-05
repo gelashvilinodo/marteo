@@ -128,7 +128,7 @@ export default function InventoryEditDialog({
                 if (active) {
                     setError(
                         controller.signal.aborted
-                            ? "ჩატვირთვის დრო ამოიწურა. სცადე ხელახლა."
+                            ? "ჩატვირთვის დრო ამოიწურა. სცადეთ ხელახლა."
                             : cause instanceof Error
                                 ? cause.message
                                 : "პროდუქტი ვერ ჩაიტვირთა.",
@@ -155,7 +155,7 @@ export default function InventoryEditDialog({
         if (
             dirtyRef.current &&
             !window.confirm(
-                "ცვლილებები შენახული არ არის. დახურავ ფანჯარას და დაკარგავ შეყვანილ მონაცემებს?",
+                "ცვლილებები შენახული არ არის. დახურავთ ფანჯარას და დაკარგავთ შეყვანილ მონაცემებს?",
             )
         ) {
             return;
@@ -184,7 +184,7 @@ export default function InventoryEditDialog({
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "გადაამოწმე შეყვანილი მონაცემები.",
+                    : "გადაამოწმეთ შეყვანილი მონაცემები.",
             );
             return;
         }
@@ -212,7 +212,7 @@ export default function InventoryEditDialog({
             if (!response.ok || !result.success) {
                 throw new Error(
                     result.message ||
-                    "შენახვა ვერ დადასტურდა. გადაამოწმე პროდუქტი.",
+                    "შენახვა ვერ დადასტურდა. გადაამოწმეთ პროდუქტი.",
                 );
             }
 
@@ -221,10 +221,10 @@ export default function InventoryEditDialog({
         } catch (cause) {
             setError(
                 controller.signal.aborted
-                    ? "შენახვის შედეგი დაუდასტურებელია. შეყვანილი მონაცემები შენარჩუნებულია; გადაამოწმე პროდუქტი."
+                    ? "შენახვის შედეგი დაუდასტურებელია. შეყვანილი მონაცემები შენარჩუნებულია; გადაამოწმეთ პროდუქტი."
                     : cause instanceof Error
                         ? cause.message
-                        : "შენახვის შედეგი ვერ დადასტურდა. გადაამოწმე პროდუქტი.",
+                        : "შენახვის შედეგი ვერ დადასტურდა. გადაამოწმეთ პროდუქტი.",
             );
         } finally {
             clearTimeout(timer);

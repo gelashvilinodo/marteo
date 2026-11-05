@@ -108,7 +108,7 @@ export default async function BusinessSettingsPage() {
                         </h2>
 
                         <p className="mt-2 text-sm text-text-secondary">
-                            გადმოიტანე მომხმარებლები, პროდუქტები,
+                            გადმოიტანეთ მომხმარებლები, პროდუქტები,
                             მარაგები და ძველი შეკვეთები ფაილიდან.
                         </p>
 
@@ -140,9 +140,9 @@ export default async function BusinessSettingsPage() {
                         </h2>
 
                         <p className="mt-2 text-sm text-text-secondary">
-                            შექმენი კიდევ ერთი ბიზნესი იმავე ანგარიშით. თითოეულს
+                            შექმენით კიდევ ერთი ბიზნესი იმავე ანგარიშით. თითოეულს
                             ცალკე შეკვეთები, მარაგი და ანალიტიკა აქვს, ხოლო მათ
-                            შორის გადართვა პროფილის მენიუდან შეგიძლია.
+                            შორის გადართვა პროფილის მენიუდან შეგიძლიათ.
                         </p>
 
                         <PlanGatedLink

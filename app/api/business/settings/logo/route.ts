@@ -43,7 +43,7 @@ async function readBusiness(
         !["OWNER", "ADMIN"].includes(membership.role)
     ) {
         throw new BusinessSettingsError(
-            "ბიზნესის პარამეტრებზე წვდომა არ გაქვს.",
+            "ბიზნესის პარამეტრებზე წვდომა არ გაქვთ.",
             403,
         );
     }
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
 
         if (!user) {
             throw new BusinessSettingsError(
-                "გაიარე ავტორიზაცია.",
+                "გაიარეთ ავტორიზაცია.",
                 401,
             );
         }
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
                 expectedUpdatedAt
         ) {
             throw new BusinessSettingsError(
-                "განაახლე ბიზნესის მონაცემები და სცადე ხელახლა.",
+                "განაახლეთ ბიზნესის მონაცემები და სცადეთ ხელახლა.",
                 409,
             );
         }
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
             expectedUpdatedAt
         ) {
             throw new BusinessSettingsError(
-                "ბიზნესის მონაცემები შეიცვალა. განაახლე მონაცემები და ხელახლა აირჩიე ლოგო.",
+                "ბიზნესის მონაცემები შეიცვალა. განაახლეთ მონაცემები და ხელახლა აირჩიეთ ლოგო.",
                 409,
             );
         }
@@ -157,7 +157,7 @@ export async function POST(request: Request) {
                     expectedUpdatedAt
                 ) {
                     throw new BusinessSettingsError(
-                        "ატვირთვისას ბიზნესის მონაცემები შეიცვალა. განაახლე მონაცემები და ხელახლა აირჩიე ლოგო.",
+                        "ატვირთვისას ბიზნესის მონაცემები შეიცვალა. განაახლეთ მონაცემები და ხელახლა აირჩიეთ ლოგო.",
                         409,
                     );
                 }
@@ -201,7 +201,7 @@ export async function POST(request: Request) {
             {
                 success: false,
                 message:
-                    "ლოგოს შენახვის შედეგი ვერ დადასტურდა. განაახლე მონაცემები და გადაამოწმე ლოგო.",
+                    "ლოგოს შენახვის შედეგი ვერ დადასტურდა. განაახლეთ მონაცემები და გადაამოწმეთ ლოგო.",
                 field: "form",
             },
             500,

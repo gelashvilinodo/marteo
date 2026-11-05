@@ -134,7 +134,7 @@ export function Status({
             setError(
                 definiteFailure
                     ? cause.message
-                    : "შედეგი დაუდასტურებელია. დააჭირე ხელახლა ცდას.",
+                    : "შედეგი დაუდასტურებელია. დააჭირეთ ხელახლა ცდას.",
             );
 
             if (
@@ -172,7 +172,7 @@ export function Status({
         let stockReturned = false;
 
         if (next === "CANCELED") {
-            if (!window.confirm("გააუქმო შეკვეთა?")) return;
+            if (!window.confirm("გააუქმოთ შეკვეთა?")) return;
 
             if (current.status === "SHIPPED") {
                 stockReturned = window.confirm(
@@ -287,7 +287,7 @@ export function Status({
                 <p className="mt-3 text-sm text-text-secondary">
                     დასრულების შემდეგ შეკვეთის რედაქტირება აღარ იქნება
                     შესაძლებელი. დასრულებულ შეკვეთაზე დაბრუნებასა და
-                    გადაცვლას შესაბამისი მოქმედებებით შეძლებ.
+                    გადაცვლას შესაბამისი მოქმედებებით შეძლებთ.
                 </p>
 
                 {order.missingManualCosts.length > 0 && (
@@ -301,8 +301,8 @@ export function Status({
 
                         <p className="text-xs leading-relaxed text-text-secondary">
                             ამ პროდუქტებზე ხარჯი ჯერ არ არის მითითებული.
-                            დასრულებისთვის შეიყვანე, რა დაგიჯდა ერთი ნივთი.
-                            თუ ხარჯი ნამდვილად არ გქონია, ჩაწერე 0.
+                            დასრულებისთვის შეიყვანეთ, რა დაგიჯდათ ერთი ნივთი.
+                            თუ ხარჯი ნამდვილად არ გქონიათ, ჩაწერეთ 0.
                         </p>
 
                         {order.missingManualCosts.map(item => (
@@ -628,7 +628,7 @@ export function OrderDetailsBody({
                         <span>
                             შეკვეთაზე გადაცვლა შესრულებულია. წინა ნივთების
                             დაბრუნების ისტორია შენახულია - მის სანახავად
-                            სტატუსის მენიუში აირჩიე „დაბრუნების მართვა“.
+                            სტატუსის მენიუში აირჩიეთ „დაბრუნების მართვა“.
                         </span>
                     </p>
                 )}
@@ -684,7 +684,7 @@ export function OrderDetailsBody({
                             წაშლა მოთხოვნილია.
                             {order.pendingReturnQuantity > 0
                                 ? " ჯერ ველოდებით ნივთების დაბრუნებას; მიღების შემდეგ წაშლის დადასტურებას შემოგთავაზებთ."
-                                : " დაბრუნების მოლოდინი დასრულებულია. შეკვეთის წაშლა შეგიძლია წაშლის ღილაკიდან დაადასტურო."}
+                                : " დაბრუნების მოლოდინი დასრულებულია. შეკვეთის წაშლა შეგიძლიათ წაშლის ღილაკიდან დაადასტუროთ."}
                         </span>
                     </p>
                 )}
@@ -800,8 +800,8 @@ export function OrderDetailsBody({
                                 </p>
 
                                 <p className="mt-2 text-xs text-text-secondary">
-                                    ჯერ დაუბრუნე თანხა მომხმარებელს, შემდეგ
-                                    დაადასტურე.
+                                    ჯერ დაუბრუნეთ თანხა მომხმარებელს, შემდეგ
+                                    დაადასტურეთ.
                                 </p>
                             </div>
                         </div>

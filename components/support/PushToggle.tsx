@@ -31,12 +31,12 @@ async function saveSubscription(subscription: PushSubscription) {
 type Delivery = { devices: number; sent: number; removed: number; failed: number; unconfigured?: boolean };
 
 function describeDelivery(delivery: Delivery) {
-    if (delivery.unconfigured) return "სერვერზე შეტყობინებების გაგზავნა ჯერ არ არის გამართული. შენს მოწყობილობაზე ყველაფერი რიგზეა, მალე ჩაირთვება.";
-    if (!delivery.devices) return "ეს მოწყობილობა სერვერზე არ არის დარეგისტრირებული. გამორთე და ხელახლა ჩართე.";
-    if (!delivery.sent && delivery.failed) return "შეტყობინების სერვისმა უარი თქვა. გამორთე და ხელახლა ჩართე.";
-    if (!delivery.sent) return "მოწყობილობის გამოწერა ვადაგასულია და წაიშალა. ხელახლა ჩართე.";
+    if (delivery.unconfigured) return "სერვერზე შეტყობინებების გაგზავნა ჯერ არ არის გამართული. თქვენს მოწყობილობაზე ყველაფერი რიგზეა, მალე ჩაირთვება.";
+    if (!delivery.devices) return "ეს მოწყობილობა სერვერზე არ არის დარეგისტრირებული. გამორთეთ და ხელახლა ჩართეთ.";
+    if (!delivery.sent && delivery.failed) return "შეტყობინების სერვისმა უარი თქვა. გამორთეთ და ხელახლა ჩართეთ.";
+    if (!delivery.sent) return "მოწყობილობის გამოწერა ვადაგასულია და წაიშალა. ხელახლა ჩართეთ.";
     const skipped = delivery.failed ? ` ${delivery.failed} ძველმა მოწყობილობამ უარი თქვა.` : "";
-    return `გაიგზავნა (${delivery.sent} მოწყობილობა).${skipped} თუ არ გამოჩნდა, შეამოწმე სისტემის შეტყობინებების პარამეტრები და „არ შემაწუხო“ რეჟიმი.`;
+    return `გაიგზავნა (${delivery.sent} მოწყობილობა).${skipped} თუ არ გამოჩნდა, შეამოწმეთ სისტემის შეტყობინებების პარამეტრები და „არ შემაწუხო“ რეჟიმი.`;
 }
 
 // A subscription made with an older server key can never receive pushes again.
@@ -112,11 +112,11 @@ export default function PushToggle({ publicKey, tone = "dark" }: { publicKey: st
             const brave = "brave" in navigator;
             setMessage(step === "subscribe"
                 ? brave
-                    ? "Brave შეტყობინებებს ბლოკავს. გახსენი brave://settings/privacy, ჩართე „Use Google services for push messaging“, გადატვირთე ბრაუზერი და სცადე ხელახლა."
-                    : "ბრაუზერმა შეტყობინებების სერვისთან დაკავშირება ვერ შეძლო. სცადე Chrome-ით ან Safari-ით."
+                    ? "Brave შეტყობინებებს ბლოკავს. გახსენით brave://settings/privacy, ჩართეთ „Use Google services for push messaging“, გადატვირთეთ ბრაუზერი და სცადეთ ხელახლა."
+                    : "ბრაუზერმა შეტყობინებების სერვისთან დაკავშირება ვერ შეძლო. სცადეთ Chrome-ით ან Safari-ით."
                 : step === "save"
-                    ? "ბრაუზერში ჩაირთო, მაგრამ სერვერზე შენახვა ვერ მოხერხდა. სცადე ხელახლა."
-                    : "შეტყობინებების სერვისი ვერ ჩაირთო. განაახლე გვერდი და სცადე ხელახლა.");
+                    ? "ბრაუზერში ჩაირთო, მაგრამ სერვერზე შენახვა ვერ მოხერხდა. სცადეთ ხელახლა."
+                    : "შეტყობინებების სერვისი ვერ ჩაირთო. განაახლეთ გვერდი და სცადეთ ხელახლა.");
         }
     };
 
@@ -148,13 +148,13 @@ export default function PushToggle({ publicKey, tone = "dark" }: { publicKey: st
         : "border-border bg-surface text-text-primary hover:bg-background";
 
     if (state === "unsupported") return <p className={`rounded-xl border px-3 py-2 text-[11px] leading-5 ${base}`}>
-        ეს ბრაუზერი შეტყობინებებს არ უჭერს მხარს. სცადე Chrome, Safari ან ტელეფონზე დამატებული მართეო.
+        ეს ბრაუზერი შეტყობინებებს არ უჭერს მხარს. სცადეთ Chrome, Safari ან ტელეფონზე დამატებული მართეო.
     </p>;
     if (state === "install") return <p className={`rounded-xl border px-3 py-2 text-[11px] leading-5 ${base}`}>
-        შეტყობინებებისთვის Safari-ში დააჭირე „გაზიარებას“ → „Add to Home Screen“ და გახსენი მართეო იქიდან.
+        შეტყობინებებისთვის Safari-ში დააჭირეთ „გაზიარებას“ → „Add to Home Screen“ და გახსენით მართეო იქიდან.
     </p>;
     if (state === "denied") return <p className={`rounded-xl border px-3 py-2 text-[11px] leading-5 ${base}`}>
-        შეტყობინებები დაბლოკილია. ჩართე მოწყობილობის პარამეტრებში.
+        შეტყობინებები დაბლოკილია. ჩართეთ მოწყობილობის პარამეტრებში.
     </p>;
 
     return <div>

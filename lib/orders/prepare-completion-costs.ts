@@ -46,7 +46,7 @@ export async function prepareCompletionCosts(
             typeof data.orderItemId !== "string" ||
             typeof data.unitCost !== "string"
         ) {
-            fail("მიუთითე პროდუქტი და მისი თვითღირებულება.");
+            fail("მიუთითეთ პროდუქტი და მისი თვითღირებულება.");
         }
 
         if (
@@ -59,7 +59,7 @@ export async function prepareCompletionCosts(
         const text = data.unitCost.trim().replace(",", ".");
 
         if (!/^\d+(?:\.\d{1,2})?$/.test(text)) {
-            fail("თვითღირებულება მიუთითე თეთრების სიზუსტით.");
+            fail("თვითღირებულება მიუთითეთ თეთრების სიზუსტით.");
         }
 
         const amount = new Prisma.Decimal(text);
@@ -77,9 +77,9 @@ export async function prepareCompletionCosts(
 
     if (notProvided.length > 0) {
         fail(
-            `დასრულებამდე მიუთითე ერთი ერთეულის თვითღირებულება: ${
+            `დასრულებამდე მიუთითეთ ერთი ერთეულის თვითღირებულება: ${
                 notProvided.map(item => item.name).join(", ")
-            }. თუ ხარჯი ნამდვილად არ გქონია, ჩაწერე 0.`,
+            }. თუ ხარჯი ნამდვილად არ გქონიათ, ჩაწერეთ 0.`,
         );
     }
 
@@ -105,7 +105,7 @@ export async function prepareCompletionCosts(
         });
 
         if (result.count !== 1) {
-            fail("პროდუქტი უკვე შეიცვალა. განაახლე შეკვეთა.");
+            fail("პროდუქტი უკვე შეიცვალა. განაახლეთ შეკვეთა.");
         }
 
         // ფინანსური გამოთვლა იმავე ახალ მონაცემებს იყენებს.

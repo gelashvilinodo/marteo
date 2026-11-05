@@ -14,7 +14,7 @@ export type SupportChannel = { id: string; label: string; hint: string; icon: st
 
 export const SUPPORT_CHANNELS: SupportChannel[] = [
     { id: "instagram", label: "Instagram", hint: "პირდაპირი შეტყობინება", icon: "skill-icons:instagram", href: MARTEO_CONTACTS.instagramChat },
-    { id: "messenger", label: "Messenger", hint: "Facebook-ით მოგვწერე", icon: "logos:messenger", href: MARTEO_CONTACTS.messengerChat },
+    { id: "messenger", label: "Messenger", hint: "Facebook-ით მოგვწერეთ", icon: "logos:messenger", href: MARTEO_CONTACTS.messengerChat },
     { id: "email", label: "ელ-ფოსტა", hint: MARTEO_CONTACTS.email, icon: "solar:letter-bold-duotone", href: `mailto:${MARTEO_CONTACTS.email}` },
 ];
 

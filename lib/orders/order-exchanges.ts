@@ -23,7 +23,7 @@ export async function exchangeOrderProducts(
         fail("გადაცვლა შესაძლებელია გაგზავნილი ან მიღებული შეკვეთის დაბრუნების შემდეგ.");
     }
     if (order.deleteRequestedAt) {
-        fail("შეკვეთაზე წაშლის მოთხოვნა არსებობს. გადაცვლამდე გააუქმე წაშლის მოთხოვნა.");
+        fail("შეკვეთაზე წაშლის მოთხოვნა არსებობს. გადაცვლამდე გააუქმეთ წაშლის მოთხოვნა.");
     }
     if (order.stockReturnedAt) {
         fail("ამ შეკვეთის მარაგი უკვე მთლიანად დაბრუნებულია სხვა მოქმედებით.");
@@ -39,7 +39,7 @@ export async function exchangeOrderProducts(
     if (!returns.some(entry =>
         entry.items.some(item => item.reason === "EXCHANGE")
     )) {
-        fail("ჯერ შექმენი დაბრუნების მოთხოვნა გადაცვლის მიზეზით.");
+        fail("ჯერ შექმენით დაბრუნების მოთხოვნა გადაცვლის მიზეზით.");
     }
 
     // Validate only replacement products; customer, delivery and payments stay intact.

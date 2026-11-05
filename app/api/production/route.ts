@@ -15,18 +15,18 @@ const json=(body:unknown,status=200)=>NextResponse.json(body,{status,headers:{'C
 export async function GET(request:Request){
     const accessDenied = await apiAccessDenied("PRODUCTION", "view"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('manufacturing');if(denied)return denied;
-try{const user=await getCurrentUser();if(!user)return json({error:'გაიარე ავტორიზაცია.'},401);const member=await getCurrentBusiness();if(!member)return json({error:'ბიზნესი ვერ მოიძებნა.'},403);return costSafeJson(await getProductionSnapshot(member.businessId,Object.fromEntries(new URL(request.url).searchParams),user.id));}catch(e){console.error('Production read failed',e instanceof Error?e.name:'Unknown');return json({error:'წარმოებები ვერ ჩაიტვირთა. სცადე ხელახლა.'},500);}}
+try{const user=await getCurrentUser();if(!user)return json({error:'გაიარეთ ავტორიზაცია.'},401);const member=await getCurrentBusiness();if(!member)return json({error:'ბიზნესი ვერ მოიძებნა.'},403);return costSafeJson(await getProductionSnapshot(member.businessId,Object.fromEntries(new URL(request.url).searchParams),user.id));}catch(e){console.error('Production read failed',e instanceof Error?e.name:'Unknown');return json({error:'წარმოებები ვერ ჩაიტვირთა. სცადეთ ხელახლა.'},500);}}
 export async function POST(request:Request){
     const accessDenied = await apiAccessDenied("PRODUCTION", "edit"); if (accessDenied) return accessDenied;
     const denied=await businessFeatureDenied('manufacturing');if(denied)return denied;
 
     if(request.headers.get('origin')!==new URL(request.url).origin)return json({error:'მოთხოვნის წყარო დაუშვებელია.'},403);
-    const user=await getCurrentUser();if(!user)return json({error:'გაიარე ავტორიზაცია.'},401);
-    const member=await getCurrentBusiness();if(!member)return json({error:'წარმოების მართვის უფლება არ გაქვს.'},403);
+    const user=await getCurrentUser();if(!user)return json({error:'გაიარეთ ავტორიზაცია.'},401);
+    const member=await getCurrentBusiness();if(!member)return json({error:'წარმოების მართვის უფლება არ გაქვთ.'},403);
     const db=createPrismaClient(),uploaded:{path:string;url:string}[]=[];
     async function cleanup(){if(!uploaded.length)return;const urls=uploaded.map(i=>i.url);const [outputs,inventory]=await Promise.all([db.productionOutput.findMany({where:{production:{businessId:member!.businessId},imageUrl:{in:urls}},select:{imageUrl:true}}),db.inventoryItem.findMany({where:{businessId:member!.businessId,imageUrl:{in:urls}},select:{imageUrl:true}})]);await removeUncommittedProductImages(member!.businessId,uploaded.filter(u=>![...outputs,...inventory].some(i=>i.imageUrl===u.url)).map(u=>u.path));}
     try{
-        const fresh=await db.businessMembership.findUnique({where:{userId_businessId:{userId:user.id,businessId:member.businessId}}});if(!canManageBusinessArea(fresh,'PRODUCTION'))throw new ProductionError('წარმოების მართვის უფლება არ გაქვს.',403);
+        const fresh=await db.businessMembership.findUnique({where:{userId_businessId:{userId:user.id,businessId:member.businessId}}});if(!canManageBusinessArea(fresh,'PRODUCTION'))throw new ProductionError('წარმოების მართვის უფლება არ გაქვთ.',403);
         const {payload,purchase,imageChanges}=await readPurchaseForm(request),input=readProduction({...purchase,requestId:payload.requestId,id:payload.id,version:payload.version});
         if(imageChanges.length!==Math.max(1,input.outputs.length))throw new ProductionError('ფოტოების რაოდენობა არასწორია.');
         const images=new Map<string,string>(),removed=new Set<string>();
@@ -37,7 +37,7 @@ export async function POST(request:Request){
         if(e instanceof ProductionError||e instanceof PurchaseFormError)return json({error:e.message},e.status);
         if(e instanceof ProductImageError)return json({error:e.message},422);
         if(e instanceof SyntaxError)return json({error:'მოთხოვნის ფორმატი არასწორია.'},400);
-        if(e&&typeof e==='object'&&'code' in e&&e.code==='P2034')return json({error:'ნაშთი პარალელურად შეიცვალა. სცადე შენახვა ხელახლა.'},409);
-        console.error('Production save failed',e instanceof Error?e.name:'Unknown');return json({error:'შენახვის შედეგი ვერ დადასტურდა. ფორმა შეინახე გახსნილი და სცადე ხელახლა.'},500);
+        if(e&&typeof e==='object'&&'code' in e&&e.code==='P2034')return json({error:'ნაშთი პარალელურად შეიცვალა. სცადეთ შენახვა ხელახლა.'},409);
+        console.error('Production save failed',e instanceof Error?e.name:'Unknown');return json({error:'შენახვის შედეგი ვერ დადასტურდა. ფორმა შეინახეთ გახსნილი და სცადეთ ხელახლა.'},500);
     }finally{await db.$disconnect();}
 }
