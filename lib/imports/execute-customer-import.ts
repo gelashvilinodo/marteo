@@ -6,7 +6,7 @@ import { OrderValidationError } from "@/lib/orders/order-validation-error";
 import { validateImportDraftFile } from "./validate-import-draft-file";
 import { validateImportDraftSettings } from "./validate-import-draft-settings";
 import { checkDraftCustomers } from "./check-draft-customers";
-import { applyImportedCustomer } from "./apply-imported-customer";
+import { applyImportedCustomers } from "./apply-imported-customer";
 
 import type {
     PreparedImportCustomer,
@@ -219,13 +219,13 @@ export async function executeCustomerImport(
 
     if (saved.revision !== expectedRevision) {
         fail(
-            "მონახაზი შეიცვალა. მომხმარებლების იმპორტის გეგმა ხელახლა შეამოწმე.",
+            "მონახაზი შეიცვალა. მომხმარებლების იმპორტის გეგმა ხელახლა შეამოწმეთ.",
             409,
         );
     }
 
     if (saved.settings === null) {
-        fail("ჯერ შეინახე მონახაზის არჩევანი.");
+        fail("ჯერ შეინახეთ მონახაზის არჩევანი.");
     }
 
     const settings = validateImportDraftSettings(
@@ -320,7 +320,7 @@ export async function executeCustomerImport(
         checked.prepared.excludedRecords.length === 0
     ) {
         fail(
-            "შესანახი მომხმარებლები არ არის. გადაამოწმე ფურცლების არჩევანი და გამოტოვებული ჩანაწერები.",
+            "შესანახი მომხმარებლები არ არის. გადაამოწმეთ ფურცლების არჩევანი და გამოტოვებული ჩანაწერები.",
         );
     }
 
@@ -351,11 +351,11 @@ export async function executeCustomerImport(
         }
     }
 
-    async function writeRecord(
+    function recordRow(
         record: PreparedImportCustomer,
         status: "IMPORTED" | "SKIPPED",
         result: unknown,
-    ) {
+    ): Prisma.ImportRecordCreateManyInput {
         const rawRow = sourceRows.get(record.key);
 
         if (!rawRow) {
@@ -371,8 +371,20 @@ export async function executeCustomerImport(
             record.key,
         ]);
 
-        const values = {
+        return {
+            jobId: draftId,
+            recordKey,
+            type: "CUSTOMER",
             status,
+            provenance: json({
+                sourceRecordKey: record.key,
+                clientFileId: record.fileId,
+                fileName: record.fileName,
+                sheetName: record.sheetName,
+                rowNumber: record.rowNumber,
+                sourceCode: record.sourceCode,
+            }),
+            rawData: json(rawRow),
             normalizedData: record.data === null
                 ? Prisma.JsonNull
                 : json(record.data),
@@ -387,61 +399,44 @@ export async function executeCustomerImport(
             issues: json(record.issues),
             result: json(result),
         };
-
-        await tx.importRecord.upsert({
-            where: {
-                jobId_recordKey: {
-                    jobId: draftId,
-                    recordKey,
-                },
-            },
-            create: {
-                jobId: draftId,
-                recordKey,
-                type: "CUSTOMER",
-                provenance: json({
-                    sourceRecordKey: record.key,
-                    clientFileId: record.fileId,
-                    fileName: record.fileName,
-                    sheetName: record.sheetName,
-                    rowNumber: record.rowNumber,
-                    sourceCode: record.sourceCode,
-                }),
-                rawData: json(rawRow),
-                ...values,
-            },
-            update: values,
-        });
     }
 
-    let createdCount = 0;
-    let linkedCount = 0;
+    const applied = await applyImportedCustomers({
+        tx,
+        businessId,
+        items: checked.plan.items,
+        existingLinks: settings.existingCustomerLinks,
+    });
 
-    for (const item of checked.plan.items) {
-        const phone = item.record.data?.phone;
+    const createdCount = applied.filter(
+        item => item.action === "CREATE",
+    ).length;
+    const linkedCount = applied.length - createdCount;
 
-        const applied = await applyImportedCustomer({
-            tx,
-            businessId,
-            item,
-            existingLink: phone
-                ? settings.existingCustomerLinks[phone] ?? null
-                : null,
-        });
+    const records = [
+        ...checked.plan.items.map((item, index) =>
+            recordRow(item.record, "IMPORTED", applied[index]),
+        ),
+        ...checked.prepared.excludedRecords.map(record =>
+            recordRow(record, "SKIPPED", {
+                reason: "EXCLUDED_BY_USER",
+            }),
+        ),
+    ];
 
-        if (applied.action === "CREATE") createdCount++;
-        else linkedCount++;
+    // წინა, დაუსრულებელი ცდის ჩანაწერებს ახლით ვცვლით.
+    await tx.importRecord.deleteMany({
+        where: {
+            jobId: draftId,
+            recordKey: {
+                in: records.map(record => record.recordKey),
+            },
+        },
+    });
 
-        await writeRecord(
-            item.record,
-            "IMPORTED",
-            applied,
-        );
-    }
-
-    for (const record of checked.prepared.excludedRecords) {
-        await writeRecord(record, "SKIPPED", {
-            reason: "EXCLUDED_BY_USER",
+    for (let index = 0; index < records.length; index += 500) {
+        await tx.importRecord.createMany({
+            data: records.slice(index, index + 500),
         });
     }
 

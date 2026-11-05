@@ -86,7 +86,7 @@ export async function readImportPhotoRequest(
         if (cause instanceof OrderValidationError) throw cause;
 
         fail(
-            "ფოტოს მოთხოვნის წაკითხვა შეწყდა. სცადე ხელახლა.",
+            "ფოტოს მოთხოვნის წაკითხვა შეწყდა. სცადეთ ხელახლა.",
             400,
         );
     } finally {

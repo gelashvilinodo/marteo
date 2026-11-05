@@ -46,7 +46,7 @@ export async function POST(
 
         if (!user) {
             throw new OrderValidationError(
-                "გაიარე ავტორიზაცია.",
+                "გაიარეთ ავტორიზაცია.",
                 401,
             );
         }

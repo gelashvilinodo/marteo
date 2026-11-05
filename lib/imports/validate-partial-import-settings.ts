@@ -21,7 +21,7 @@ export function validatePartialImportSettings(input: {
     if (input.completed.products) protectedFields.push("productMappings", "productEdits", "excludedProductKeys", "existingProductLinks", "productDuplicateDecisions", "productPhotoDecisions", "productStockDate", "productStockPolicy");
     if (input.completed.orders) protectedFields.push("orderMappings", "orderEdits", "orderOptions", "excludedOrderKeys", "orderGroupingConfirmations", "orderCustomerDecisions", "skipOrderCustomers");
     if (protectedFields.some(field => stable(saved[field]) !== stable(next[field]))) {
-        throw new Error("უკვე გადმოტანილი კატეგორიის მონაცემები ამ მონახაზში აღარ იცვლება. შეგიძლია გაასწორო დარჩენილი კატეგორიები.");
+        throw new Error("უკვე გადმოტანილი კატეგორიის მონაცემები ამ მონახაზში აღარ იცვლება. შეგიძლიათ გაასწოროთ დარჩენილი კატეგორიები.");
     }
     return next;
 }

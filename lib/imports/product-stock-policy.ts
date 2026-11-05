@@ -84,7 +84,7 @@ export function calculateImportedStock({
 
     if (checkedPolicy === null) {
         throw new ImportDraftFileError(
-            "აირჩიე, როგორ გამოვიყენოთ არსებული პროდუქტის ნაშთი.",
+            "აირჩიეთ, როგორ გამოვიყენოთ არსებული პროდუქტის ნაშთი.",
         );
     }
 

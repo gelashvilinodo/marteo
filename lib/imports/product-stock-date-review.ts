@@ -18,7 +18,7 @@ export function getProductStockDateReview(
     if (affectedCount > 0) {
         try {
             if (validateProductStockDate(value) === null) {
-                error = "აირჩიე, რომელ დღეს არსებულ ნაშთს ტვირთავ. თარიღი ყველა პროდუქტისთვის ერთხელ ივსება.";
+                error = "აირჩიეთ, რომელ დღეს არსებულ ნაშთს ტვირთავთ. თარიღი ყველა პროდუქტისთვის ერთხელ ივსება.";
             }
         } catch (cause) {
             error = cause instanceof Error ? cause.message : "მარაგის თარიღი გადასამოწმებელია.";

@@ -141,10 +141,7 @@ export default function CustomerColumnMapping({
                     </label>
 
                     <p className="text-sm text-text-secondary">
-                        ტელეფონი და მისამართი აუცილებელია.
-                        სახელსა და გვარსაც გადმოვიტანთ, თუ ფაილში არის.
-                        მათი არქონა შეცდომა არ არის.
-                        კოდიც არასავალდებულოა.
+                        საჭიროა ტელეფონი და მისამართი. დანარჩენი არასავალდებულოა.
                     </p>
 
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -203,17 +200,17 @@ export default function CustomerColumnMapping({
                                     {item.column === null && (
                                         <span className="block text-xs text-text-secondary">
                                             {item.status === "AMBIGUOUS"
-                                                ? "რამდენიმე შესაძლო სვეტი ვიპოვეთ. აირჩიე შესაბამისი."
+                                                ? "რამდენიმე შესაძლო სვეტი ვიპოვეთ. აირჩიეთ შესაბამისი."
                                                 : item.required
-                                                    ? "სვეტი ავტომატურად ვერ ამოვიცანით. აირჩიე შესაბამისი სათაური."
-                                                    : "შეგიძლია დატოვო შეუვსებელი."}
+                                                    ? "სვეტი ავტომატურად ვერ ამოვიცანით. აირჩიეთ შესაბამისი სათაური."
+                                                    : "შეგიძლიათ დატოვოთ შეუვსებელი."}
                                         </span>
                                     )}
 
                                     {conflict && (
                                         <span className="block text-xs text-danger">
                                             ეს სვეტი სხვა ველისთვისაც
-                                            არის არჩეული. გადაამოწმე
+                                            არის არჩეული. გადაამოწმეთ
                                             შესაბამისობა.
                                         </span>
                                     )}
@@ -227,7 +224,7 @@ export default function CustomerColumnMapping({
                             დასაკავშირებელია:{" "}
                             {missing.map(item => item.label).join(", ")}.
                             ეს ჯერ არ ნიშნავს, რომ მონაცემები ფაილში
-                            არ არის - გადაამოწმე სათაურების რიგი
+                            არ არის - გადაამოწმეთ სათაურების რიგი
                             და სვეტები.
                         </p>
                     )}

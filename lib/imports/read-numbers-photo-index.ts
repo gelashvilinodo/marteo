@@ -54,7 +54,7 @@ export function readNumbersPhotoIndex(
 
         if (decodedByteSize > MAX_TOTAL_DECODED_BYTES) {
             throw new Error(
-                "Numbers-ის გახსნილი მონაცემების საერთო ზომა ძალიან დიდია. დაყავი ფაილი რამდენიმე ნაწილად.",
+                "Numbers-ის გახსნილი მონაცემების საერთო ზომა ძალიან დიდია. დაყავით ფაილი რამდენიმე ნაწილად.",
             );
         }
 

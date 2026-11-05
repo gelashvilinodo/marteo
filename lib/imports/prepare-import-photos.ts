@@ -92,7 +92,7 @@ export async function prepareImportPhotos(
                     (
                         cause instanceof Error
                             ? cause.message
-                            : "აირჩიე ფოტო ხელახლა."
+                            : "აირჩიეთ ფოტო ხელახლა."
                     ),
                 sheetName: photo.sheetName,
                 rowNumber: photo.rowNumber,

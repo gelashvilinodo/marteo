@@ -9,6 +9,9 @@ import type {
 import {
     resolveOrderColumns,
 } from "@/lib/imports/resolve-order-columns";
+import {
+    detectOrderCourierInclusion,
+} from "@/lib/imports/detect-order-courier-inclusion";
 
 export default function OrderColumnMapping({
     sheet,
@@ -57,6 +60,17 @@ export default function OrderColumnMapping({
         column => column.status === "SELECTED",
     ).length;
 
+    const courier = detectOrderCourierInclusion(sheet, mapping);
+
+    const courierDiffers =
+        courier.checkedOrders > 0 &&
+        (
+            courier.orderTotalIncludesCourier !==
+                (mapping.orderTotalIncludesCourier === true) ||
+            courier.paidAmountIncludesCourier !==
+                (mapping.paidAmountIncludesCourier === true)
+        );
+
     const inputClass =
         "min-h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-base text-text-primary";
 
@@ -68,11 +82,7 @@ export default function OrderColumnMapping({
 
             <div className="space-y-3 rounded-xl border border-border p-3">
                 <p className="text-sm text-text-secondary">
-                    საკურიერო თანხა გაყიდვაში არ ჩაითვლება.
-                    მონიშნე მხოლოდ მაშინ, თუ ამ ფურცლის შესაბამის
-                    თანხაში საკურიეროც გაერთიანებულია.
-                    მის გამოსაკლებად ფაილში ცალკე მითითებული
-                    საკურიერო თანხა დაგვჭირდება.
+                    მონიშნეთ, თუ ამ თანხებში საკურიეროც შედის. ის გაყიდვაში არ ჩაითვლება.
                 </p>
 
                 <label className="flex items-start gap-3 text-sm">
@@ -110,6 +120,41 @@ export default function OrderColumnMapping({
                         გადახდილ თანხაში საკურიეროც შედის
                     </span>
                 </label>
+
+                {courier.checkedOrders > 0 && !courierDiffers && (
+                    <p className="text-xs text-text-secondary">
+                        მონიშვნები ფაილის თანხებს შეესაბამება
+                        ({courier.checkedOrders} შეკვეთა საკურიეროთი).
+                    </p>
+                )}
+
+                {courierDiffers && (
+                    <div className="space-y-2 rounded-lg bg-background p-3 text-sm">
+                        <p>
+                            ფაილის თანხების მიხედვით
+                            ({courier.checkedOrders} შეკვეთა საკურიეროთი)
+                            {courier.orderTotalIncludesCourier
+                                ? " შეკვეთის თანხაში საკურიეროც შედის"
+                                : " შეკვეთის თანხაში საკურიერო არ შედის"}
+                            {courier.paidAmountIncludesCourier
+                                ? ", გადახდილ თანხაშიც."
+                                : ", გადახდილ თანხაში კი არა."}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => onChange({
+                                ...mapping,
+                                orderTotalIncludesCourier:
+                                    courier.orderTotalIncludesCourier,
+                                paidAmountIncludesCourier:
+                                    courier.paidAmountIncludesCourier,
+                            })}
+                            className="min-h-10 rounded-lg border border-border px-3 text-xs"
+                        >
+                            ფაილის მიხედვით მონიშვნა
+                        </button>
+                    </div>
+                )}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -157,7 +202,7 @@ export default function OrderColumnMapping({
             {!header && (
                 <p role="alert" className="text-sm text-danger">
                     სათაურების არჩეული რიგი ვერ მოიძებნა.
-                    აირჩიე შესაბამისი რიგი.
+                    აირჩიეთ შესაბამისი რიგი.
                 </p>
             )}
 
@@ -171,10 +216,7 @@ export default function OrderColumnMapping({
                 </summary>
 
                 <p className="text-sm text-text-secondary">
-                    სვეტის არჩაურჩევლობა მონაცემის არქონას არ ნიშნავს.
-                    გამოტოვებული ინფორმაცია შემდეგ ეტაპზე საერთო
-                    არჩევანით ან შესწორებით შეივსება. შეკვეთის კოდი
-                    და თვითღირებულება სავალდებულო არ არის.
+                    აკლია სვეტი? არაუშავს - შემდეგ ერთხელ შევავსებთ.
                 </p>
 
                 <div className="grid gap-4 sm:grid-cols-2">

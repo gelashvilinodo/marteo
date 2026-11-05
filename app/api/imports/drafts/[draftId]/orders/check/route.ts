@@ -42,7 +42,7 @@ export async function POST(
     const accessDenied = await apiAccessDenied("OWNER", "edit", { feature: "fileImport" }); if (accessDenied) return accessDenied;
     try {
         const user = await getCurrentUser();
-        if (!user) fail("გაიარე ავტორიზაცია.", 401);
+        if (!user) fail("გაიარეთ ავტორიზაცია.", 401);
 
         const membership = await getCurrentBusiness();
 
@@ -134,7 +134,7 @@ export async function POST(
 
                     if (saved.revision !== expectedRevision) {
                         fail(
-                            "მონახაზი შეიცვალა. ხელახლა გახსენი და შემოწმება თავიდან გაუშვი.",
+                            "მონახაზი შეიცვალა. ხელახლა გახსენით და შემოწმება თავიდან გაუშვით.",
                             409,
                         );
                     }
@@ -157,7 +157,7 @@ export async function POST(
 
                     if (saved.settings === null) {
                         fail(
-                            "ჯერ შეინახე მონახაზის არჩევანები და შესწორებები.",
+                            "ჯერ შეინახეთ მონახაზის არჩევანები და შესწორებები.",
                         );
                     }
 
@@ -243,7 +243,7 @@ export async function POST(
         return json({
             success: false,
             message:
-                "შეკვეთების სერვერული შემოწმება ვერ დასრულდა. სცადე ხელახლა.",
+                "შეკვეთების სერვერული შემოწმება ვერ დასრულდა. სცადეთ ხელახლა.",
         }, 500);
     }
 }

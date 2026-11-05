@@ -93,6 +93,7 @@ export function prepareImportOrderGroup(input: {
     const status = resolveImportOrderGroupStatus({
         rows: input.rows,
         fallback: input.options.missingStatus,
+        statusMap: input.options.statusMap,
     });
 
     if (status.kind === "SKIPPED") {
@@ -256,8 +257,8 @@ export function prepareImportOrderGroup(input: {
     ) {
         messages.push(
             "შეკვეთა დასრულებულად არის მითითებული, მაგრამ სრული " +
-            "გადახდა ვერ დასტურდება. მიუთითე გადახდილი თანხა, " +
-            "აირჩიე შესაბამისი საერთო წესი ან შეასწორე შეკვეთის სტატუსი.",
+            "გადახდა ვერ დასტურდება. მიუთითეთ გადახდილი თანხა, " +
+            "აირჩიეთ შესაბამისი საერთო წესი ან შეასწორეთ შეკვეთის სტატუსი.",
         );
     }
 

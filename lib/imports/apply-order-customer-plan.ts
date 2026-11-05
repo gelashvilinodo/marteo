@@ -89,6 +89,53 @@ export async function applyOrderCustomerPlan(input: {
     let linkedCount = 0;
     let skippedCount = 0;
 
+    // ახალ მომხმარებლებს ერთად ვქმნით: თითო მოთხოვნა
+    // დიდ ფაილზე ტრანზაქციის ტაიმაუტს იწვევდა.
+    const creates: {
+        phone: string;
+        address: string;
+        firstName: string | null;
+        lastName: string | null;
+    }[] = [];
+
+    for (const item of items) {
+        if (item.action !== "CREATE") continue;
+
+        const validated = validateImportCustomer(item.data);
+
+        if (
+            !validated.valid ||
+            validated.data.phone !== item.phone
+        ) {
+            fail(
+                `${item.phone}: ახალი მომხმარებლის მონაცემები ვერ დადასტურდა.`,
+            );
+        }
+
+        creates.push({
+            phone: validated.data.phone,
+            address: validated.data.address,
+            firstName: validated.data.firstName,
+            lastName: validated.data.lastName,
+        });
+    }
+
+    const createdByPhone = new Map<string, string>();
+
+    for (let index = 0; index < creates.length; index += 500) {
+        const created = await tx.customer.createManyAndReturn({
+            data: creates.slice(index, index + 500).map(data => ({
+                businessId,
+                ...data,
+            })),
+            select: { id: true, phone: true },
+        });
+
+        for (const customer of created) {
+            createdByPhone.set(customer.phone, customer.id);
+        }
+    }
+
     for (const item of items) {
         let customerId: string | null = null;
 
@@ -103,36 +150,20 @@ export async function applyOrderCustomerPlan(input: {
                 customer.updatedAt.toISOString() !== item.customerUpdatedAt
             ) {
                 fail(
-                    `${item.phone}: არჩეული მომხმარებელი შეიცვალა. ხელახლა შეამოწმე დამთხვევა.`,
+                    `${item.phone}: არჩეული მომხმარებელი შეიცვალა. ხელახლა შეამოწმეთ დამთხვევა.`,
                 );
             }
 
             customerId = customer.id;
             linkedCount++;
         } else if (item.action === "CREATE") {
-            const validated = validateImportCustomer(item.data);
+            const created = createdByPhone.get(item.phone);
 
-            if (
-                !validated.valid ||
-                validated.data.phone !== item.phone
-            ) {
-                fail(
-                    `${item.phone}: ახალი მომხმარებლის მონაცემები ვერ დადასტურდა.`,
-                );
+            if (!created) {
+                throw new Error("Created order customer is missing");
             }
 
-            const customer = await tx.customer.create({
-                data: {
-                    businessId,
-                    phone: validated.data.phone,
-                    address: validated.data.address,
-                    firstName: validated.data.firstName,
-                    lastName: validated.data.lastName,
-                },
-                select: { id: true },
-            });
-
-            customerId = customer.id;
+            customerId = created;
             createdCount++;
         } else if (item.action === "SKIP") {
             skippedCount++;

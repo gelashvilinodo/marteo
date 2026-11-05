@@ -77,7 +77,7 @@ export function validateImportDate(
     ) {
         return fail(
             "DATE_REQUIRED",
-            "აირჩიე თარიღი ან გამოიყენე ჯგუფისთვის მითითებული თარიღი.",
+            "აირჩიეთ თარიღი ან გამოიყენეთ ჯგუფისთვის მითითებული თარიღი.",
         );
     }
 
@@ -150,7 +150,7 @@ export function validateImportDate(
     if (!options.textOrder) {
         return fail(
             "DATE_ORDER_REQUIRED",
-            "დაადასტურე თარიღის თანმიმდევრობა: დღე/თვე/წელი თუ თვე/დღე/წელი.",
+            "დაადასტურეთ თარიღის თანმიმდევრობა: დღე/თვე/წელი თუ თვე/დღე/წელი.",
         );
     }
 

@@ -300,8 +300,8 @@ export default function ImportRowPhotoChoices({
                         <p key={message}>{message}</p>
                     ))}
                     <p className="text-text-secondary">
-                        შეგიძლია რიგებისთვის ფოტოები აირჩიო,
-                        ან ზემოთ მთელი ფაილის ფოტოები გამოტოვო.
+                        შეგიძლიათ რიგებისთვის ფოტოები აირჩიოთ,
+                        ან ზემოთ მთელი ფაილის ფოტოები გამოტოვოთ.
                     </p>
                 </div>
             )}
@@ -342,7 +342,7 @@ export default function ImportRowPhotoChoices({
                             {resolved.stale && (
                                 <p className="text-xs text-danger">
                                     წინა არჩევანი მოძველებულია.
-                                    დაადასტურე ხელახლა.
+                                    დაადასტურეთ ხელახლა.
                                 </p>
                             )}
 
@@ -425,7 +425,7 @@ export default function ImportRowPhotoChoices({
                             </div>
 
                             <p className="text-xs text-text-secondary">
-                                არჩევანის შემდეგ მონახაზი ხელახლა შეინახე.
+                                არჩევანის შემდეგ მონახაზი ხელახლა შეინახეთ.
                             </p>
                         </section>
                     );

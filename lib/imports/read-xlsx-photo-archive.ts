@@ -55,7 +55,7 @@ export function readXlsxPhotoArchive(
 
             if (totalBytes > MAX_TOTAL_BYTES) {
                 throw new Error(
-                    "Excel-ში ჩაშენებული ფოტოების საერთო ზომა ძალიან დიდია. დაყავი ფაილი რამდენიმე ნაწილად.",
+                    "Excel-ში ჩაშენებული ფოტოების საერთო ზომა ძალიან დიდია. დაყავით ფაილი რამდენიმე ნაწილად.",
                 );
             }
 

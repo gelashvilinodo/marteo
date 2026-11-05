@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     try {
         const user = await getCurrentUser();
 
-        if (!user) fail("გაიარე ავტორიზაცია.", 401);
+        if (!user) fail("გაიარეთ ავტორიზაცია.", 401);
 
         const membership = await getCurrentBusiness();
 
@@ -200,7 +200,7 @@ export async function POST(request: Request) {
             {
                 success: false,
                 message:
-                    "არსებული პროდუქტების შემოწმება ვერ დასრულდა. ეს ფაილის შეცდომას არ ნიშნავს. მონაცემები არ შეცვლილა - სცადე ხელახლა.",
+                    "არსებული პროდუქტების შემოწმება ვერ დასრულდა. ეს ფაილის შეცდომას არ ნიშნავს. მონაცემები არ შეცვლილა - სცადეთ ხელახლა.",
             },
             500,
         );

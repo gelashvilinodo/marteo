@@ -51,7 +51,7 @@ export function readNumbersPhotoArchive(
 
             if (totalBytes > MAX_TOTAL_BYTES) {
                 throw new Error(
-                    "Numbers-ის შიდა მონაცემების საერთო ზომა ძალიან დიდია. დაყავი ფაილი რამდენიმე ნაწილად.",
+                    "Numbers-ის შიდა მონაცემების საერთო ზომა ძალიან დიდია. დაყავით ფაილი რამდენიმე ნაწილად.",
                 );
             }
 

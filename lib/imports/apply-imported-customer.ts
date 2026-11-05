@@ -30,26 +30,45 @@ export type AppliedImportCustomer = {
     phone: string;
 };
 
-// გამოიძახე მხოლოდ ავტორიზებულ ტრანზაქციაში:
-// ბიზნესი დაბლოკილი და იმპორტის გეგმა ხელახლა შემოწმებული უნდა იყოს.
-export async function applyImportedCustomer({
-    tx,
-    businessId,
-    item,
-    existingLink = null,
-}: {
-    tx: Prisma.TransactionClient;
-    businessId: string;
-    item: CustomerImportPlanItem;
-    existingLink?: ImportExistingCustomerLink | null;
-}): Promise<AppliedImportCustomer> {
+type CheckedImportCustomer =
+    | {
+        action: "CREATE";
+        item: CustomerImportPlanItem;
+        data: {
+            phone: string;
+            address: string;
+            firstName: string | null;
+            lastName: string | null;
+        };
+    }
+    | {
+        action: "LINK";
+        item: CustomerImportPlanItem;
+        phone: string;
+        link: ImportExistingCustomerLink;
+    };
+
+function failFor(
+    item: CustomerImportPlanItem,
+    message: string,
+    status = 422,
+): never {
     const record = item.record;
 
-    function fail(message: string, status = 422): never {
-        throw new OrderValidationError(
-            `${record.fileName} / ${record.sheetName} - რიგი ${record.rowNumber}: ${message}`,
-            status,
-        );
+    throw new OrderValidationError(
+        `${record.fileName} / ${record.sheetName} - რიგი ${record.rowNumber}: ${message}`,
+        status,
+    );
+}
+
+function checkImportedCustomer(
+    businessId: string,
+    item: CustomerImportPlanItem,
+    existingLink: ImportExistingCustomerLink | null,
+): CheckedImportCustomer {
+    const record = item.record;
+    function fail(message: string, status?: number): never {
+        failFor(item, message, status);
     }
 
     if (
@@ -83,24 +102,15 @@ export async function applyImportedCustomer({
             fail("ახალი მომხმარებლის გეგმაში არსებული მომხმარებლის კოდია მითითებული.");
         }
 
-        const customer = await tx.customer.create({
+        return {
+            action: "CREATE",
+            item,
             data: {
-                businessId,
                 phone: data.phone,
                 address: data.address,
                 firstName: data.firstName,
                 lastName: data.lastName,
             },
-            select: {
-                id: true,
-                phone: true,
-            },
-        });
-
-        return {
-            action: "CREATE",
-            customerId: customer.id,
-            phone: customer.phone,
         };
     }
 
@@ -117,47 +127,140 @@ export async function applyImportedCustomer({
         );
     }
 
-    const existing = await tx.customer.findFirst({
-        where: {
-            id: item.customerId,
+    return {
+        action: "LINK",
+        item,
+        phone: data.phone,
+        link: existingLink,
+    };
+}
+
+// გამოიძახე მხოლოდ ავტორიზებულ ტრანზაქციაში:
+// ბიზნესი დაბლოკილი და იმპორტის გეგმა ხელახლა შემოწმებული უნდა იყოს.
+// ჯერ ყველა ჩანაწერს ვამოწმებთ, შემდეგ ბაზაში რამდენიმე
+// ჯგუფურ მოთხოვნად ვწერთ, რომ დიდი ფაილი ტაიმაუტზე არ გავიდეს.
+export async function applyImportedCustomers({
+    tx,
+    businessId,
+    items,
+    existingLinks,
+}: {
+    tx: Prisma.TransactionClient;
+    businessId: string;
+    items: readonly CustomerImportPlanItem[];
+    existingLinks: Readonly<
+        Record<string, ImportExistingCustomerLink | null>
+    >;
+}): Promise<AppliedImportCustomer[]> {
+    const checked = items.map(item => {
+        const phone = item.record.data?.phone;
+
+        return checkImportedCustomer(
             businessId,
-        },
-        select: {
-            id: true,
-            phone: true,
-            deletedAt: true,
-            updatedAt: true,
-        },
+            item,
+            phone ? existingLinks[phone] ?? null : null,
+        );
     });
 
-    if (!existing || existing.deletedAt !== null) {
-        fail(
-            "არჩეული მომხმარებელი აღარ არსებობს ან წაშლილია. საჭიროა ხელახლა შემოწმება.",
-            409,
-        );
+    const linkIds = [...new Set(checked.flatMap(entry =>
+        entry.action === "LINK" ? [entry.link.customerId] : [],
+    ))];
+
+    const existing = linkIds.length === 0
+        ? []
+        : await tx.customer.findMany({
+            where: {
+                id: { in: linkIds },
+                businessId,
+            },
+            select: {
+                id: true,
+                phone: true,
+                deletedAt: true,
+                updatedAt: true,
+            },
+        });
+
+    const existingById = new Map(
+        existing.map(customer => [customer.id, customer]),
+    );
+
+    for (const entry of checked) {
+        if (entry.action !== "LINK") continue;
+
+        const customer = existingById.get(entry.link.customerId);
+
+        if (!customer || customer.deletedAt !== null) {
+            failFor(
+                entry.item,
+                "არჩეული მომხმარებელი აღარ არსებობს ან წაშლილია. საჭიროა ხელახლა შემოწმება.",
+                409,
+            );
+        }
+
+        if (
+            customer.updatedAt.toISOString() !==
+            entry.link.updatedAt
+        ) {
+            failFor(
+                entry.item,
+                "არჩეული მომხმარებლის მონაცემები შეიცვალა. კავშირი ხელახლა დაადასტურეთ.",
+                409,
+            );
+        }
+
+        if (normalizeCustomerPhone(customer.phone) !== entry.phone) {
+            failFor(
+                entry.item,
+                "არჩეული მომხმარებლის ნომერი იმპორტის ჩანაწერს აღარ ემთხვევა.",
+                409,
+            );
+        }
     }
 
-    if (
-        existing.updatedAt.toISOString() !==
-        existingLink.updatedAt
-    ) {
-        fail(
-            "არჩეული მომხმარებლის მონაცემები შეიცვალა. კავშირი ხელახლა დაადასტურე.",
-            409,
-        );
-    }
+    const creates = checked.flatMap(entry =>
+        entry.action === "CREATE" ? [entry.data] : [],
+    );
 
-    if (normalizeCustomerPhone(existing.phone) !== data.phone) {
-        fail(
-            "არჩეული მომხმარებლის ნომერი იმპორტის ჩანაწერს აღარ ემთხვევა.",
-            409,
-        );
+    const createdByPhone = new Map<string, string>();
+
+    for (let index = 0; index < creates.length; index += 500) {
+        const created = await tx.customer.createManyAndReturn({
+            data: creates.slice(index, index + 500).map(data => ({
+                businessId,
+                ...data,
+            })),
+            select: {
+                id: true,
+                phone: true,
+            },
+        });
+
+        for (const customer of created) {
+            createdByPhone.set(customer.phone, customer.id);
+        }
     }
 
     // დაკავშირებისას არსებულ ველებს არ ვცვლით.
-    return {
-        action: "LINK",
-        customerId: existing.id,
-        phone: data.phone,
-    };
+    return checked.map(entry => {
+        if (entry.action === "LINK") {
+            return {
+                action: "LINK",
+                customerId: entry.link.customerId,
+                phone: entry.phone,
+            };
+        }
+
+        const customerId = createdByPhone.get(entry.data.phone);
+
+        if (!customerId) {
+            throw new Error("Created import customer is missing");
+        }
+
+        return {
+            action: "CREATE",
+            customerId,
+            phone: entry.data.phone,
+        };
+    });
 }

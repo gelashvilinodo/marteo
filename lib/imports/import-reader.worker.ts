@@ -31,7 +31,7 @@ async function read(request: ImportWorkerRequest) {
             extension !== "numbers"
         ) {
             throw new Error(
-                "აირჩიე Excel (.xlsx), CSV ან Apple Numbers ფაილი.",
+                "აირჩიეთ Excel (.xlsx), CSV ან Apple Numbers ფაილი.",
             );
         }
 

@@ -352,17 +352,12 @@ export default function ImportProductsSummary({
                             </p>
 
                             <p className="text-text-secondary">
-                                ეს იმპორტს არ დაბლოკავს. უცნობ
-                                ღირებულებას ნულად არ ჩავთვლით.
-                                თუ პროდუქტის თვითღირებულება
-                                გაყიდვის დროსაც უცნობი იქნება,
-                                მოგების დასათვლელად მისი შევსება
-                                დაგჭირდება.
+                                გადმოვა, მაგრამ მოგება შევსებამდე არ დაითვლება.
                             </p>
 
                             <p className="text-text-secondary">
-                                შეგიძლია ახლა შეავსო პროდუქტების
-                                რედაქტირებიდან ან გააგრძელო მის გარეშე.
+                                შეგიძლიათ ახლა შეავსოთ პროდუქტების
+                                რედაქტირებიდან ან გააგრძელოთ მის გარეშე.
                             </p>
                         </div>
                     )}
@@ -398,10 +393,7 @@ export default function ImportProductsSummary({
                             </h3>
 
                             <p className="text-text-secondary">
-                                გამოიყენება შენ მიერ დატოვებული ჩანაწერის
-                                მონაცემები. ქვემოთ ჩამოთვლილი რიგების
-                                რაოდენობები მას არ ემატება.
-                                არჩევანის შეცვლა ზემოთ შეგიძლია.
+                                გადმოვა მხოლოდ დატოვებული ჩანაწერი.
                             </p>
 
                             {duplicateResolution.omittedDuplicates.map(
@@ -487,11 +479,7 @@ export default function ImportProductsSummary({
                                             დამთხვევები - {group.length}
                                         </h3>
                                         <p className="text-text-secondary">
-                                            კოდით ან სახელისა და
-                                            ვარიანტის მონაცემებით
-                                            დაკავშირებული ჩანაწერები.
-                                            ეს ჯერ ერთ პროდუქტად
-                                            გაერთიანებას არ ნიშნავს.
+                                            ერთი კოდის ან სახელის მქონე ჩანაწერები.
                                         </p>
                                     </div>
 
@@ -518,7 +506,7 @@ export default function ImportProductsSummary({
                         result.mappingProblems.length === 0 && (
                             <p className="text-sm text-text-secondary">
                                 არჩეულ სვეტებში პროდუქტის ჩანაწერები
-                                ვერ ვიპოვეთ. გადაამოწმე სათაურების
+                                ვერ ვიპოვეთ. გადაამოწმეთ სათაურების
                                 რიგი და სვეტების არჩევანი.
                             </p>
                         )}
@@ -530,10 +518,7 @@ export default function ImportProductsSummary({
                             </h3>
 
                             <p className="text-sm text-text-secondary">
-                                ეს ჩანაწერები პროდუქტებისა და მარაგის იმპორტში
-                                არ შევა. მათი საწყისი მონაცემები შენარჩუნებულია.
-                                დაკავშირებული შეკვეთებისა და პარტიების საკითხი
-                                ცალკე იქნება გადასაწყვეტი.
+                                ეს ჩანაწერები არ გადმოვა.
                             </p>
 
                             <div className="max-h-72 space-y-3 overflow-y-auto">

@@ -24,7 +24,7 @@ export async function POST(request: Request) {
         if (!user) {
             return json({
                 success: false,
-                message: "მონახაზის შესანახად გაიარე ავტორიზაცია.",
+                message: "მონახაზის შესანახად გაიარეთ ავტორიზაცია.",
             }, 401);
         }
 
@@ -184,7 +184,7 @@ export async function GET() {
         if (!user) {
             return json({
                 success: false,
-                message: "მონახაზების სანახავად გაიარე ავტორიზაცია.",
+                message: "მონახაზების სანახავად გაიარეთ ავტორიზაცია.",
             }, 401);
         }
 
@@ -268,7 +268,7 @@ export async function GET() {
         return json({
             success: false,
             message:
-                "მონახაზების სია ვერ ჩაიტვირთა. შენახული მონაცემები არ შეცვლილა - სცადე ხელახლა.",
+                "მონახაზების სია ვერ ჩაიტვირთა. შენახული მონაცემები არ შეცვლილა - სცადეთ ხელახლა.",
         }, 500);
     }
 }

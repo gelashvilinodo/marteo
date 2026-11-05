@@ -37,7 +37,7 @@ export async function POST(
     try {
         const user = await getCurrentUser();
 
-        if (!user) fail("გაიარე ავტორიზაცია.", 401);
+        if (!user) fail("გაიარეთ ავტორიზაცია.", 401);
 
         const membership = await getCurrentBusiness();
 
@@ -213,7 +213,7 @@ export async function POST(
 
                 if (draft.revision !== expectedRevision) {
                     fail(
-                        "მონახაზი სხვა მოთხოვნით შეიცვალა. მონაცემები არ გადაგვიწერია - განაახლე მონახაზი გაგრძელებამდე.",
+                        "მონახაზი სხვა მოთხოვნით შეიცვალა. მონაცემები არ გადაგვიწერია - განაახლეთ მონახაზი გაგრძელებამდე.",
                         409,
                     );
                 }

@@ -30,7 +30,7 @@ export async function readImportCsv(
     options: CsvOptions = {},
 ): Promise<ParsedImportFile> {
     if (!/\.csv$/i.test(originalName)) {
-        throw new Error("აირჩიე CSV ფაილი.");
+        throw new Error("აირჩიეთ CSV ფაილი.");
     }
 
     const bytes = new Uint8Array(buffer);
@@ -143,7 +143,7 @@ export async function readImportCsv(
                         : "ERROR",
                     code: `CSV_${issue.code}`,
                     message: ambiguousDelimiter
-                        ? "სვეტების გამყოფი ერთმნიშვნელოვნად ვერ დადგინდა. გადაამოწმე ცხრილი ან აირჩიე გამყოფი."
+                        ? "სვეტების გამყოფი ერთმნიშვნელოვნად ვერ დადგინდა. გადაამოწმეთ ცხრილი ან აირჩიეთ გამყოფი."
                         : `CSV-ის რიგი ვერ დამუშავდა სწორად: ${issue.message}`,
                     sheetName,
                     rowNumber,

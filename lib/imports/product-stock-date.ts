@@ -23,7 +23,7 @@ export function validateProductStockDate(
 
     if (!match) {
         throw new ImportDraftFileError(
-            "მარაგის თარიღი მიუთითე ფორმატით წელი-თვე-დღე.",
+            "მარაგის თარიღი მიუთითეთ ფორმატით წელი-თვე-დღე.",
         );
     }
 

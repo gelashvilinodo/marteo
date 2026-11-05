@@ -32,7 +32,7 @@ export async function POST(
 
         if (!user) {
             throw new OrderValidationError(
-                "გაიარე ავტორიზაცია.",
+                "გაიარეთ ავტორიზაცია.",
                 401,
             );
         }
@@ -77,7 +77,7 @@ export async function POST(
             body.expectedRevision < 1
         ) {
             throw new OrderValidationError(
-                "დაადასტურე შეკვეთების შენახვა და მონახაზის ვერსია.",
+                "დაადასტურეთ შეკვეთების შენახვა და მონახაზის ვერსია.",
                 422,
             );
         }
@@ -136,7 +136,7 @@ export async function POST(
             success: false,
             message:
                 "შეკვეთების შენახვის შედეგი ვერ დავადასტურეთ. " +
-                "იგივე ღილაკით ხელახლა გადაამოწმე - დასრულებული " +
+                "იგივე ღილაკით ხელახლა გადაამოწმეთ - დასრულებული " +
                 "იმპორტი მეორედ არ შესრულდება.",
         }, 500);
     }

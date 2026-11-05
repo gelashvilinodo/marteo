@@ -6,7 +6,7 @@ import { createInventorySkuAllocator } from "@/lib/purchases/create-inventory-sk
 import { validateImportDraftFile } from "./validate-import-draft-file";
 import { validateImportDraftSettings } from "./validate-import-draft-settings";
 import { checkDraftProducts } from "./check-draft-products";
-import { createImportedProduct } from "./create-imported-product";
+import { createImportedProducts } from "./create-imported-product";
 import {
     buildProductPhotoPlan,
 } from "./build-product-photo-plan";
@@ -205,13 +205,13 @@ export async function executeProductImport(
 
     if (saved.revision !== expectedRevision) {
         fail(
-            "მონახაზი შეიცვალა. ხელახლა შეინახე და შეამოწმე იმპორტის გეგმა.",
+            "მონახაზი შეიცვალა. ხელახლა შეინახეთ და შეამოწმეთ იმპორტის გეგმა.",
             409,
         );
     }
 
     if (saved.settings === null) {
-        fail("ჯერ შეინახე მონახაზის არჩევანი.");
+        fail("ჯერ შეინახეთ მონახაზის არჩევანი.");
     }
 
     const settings = validateImportDraftSettings(
@@ -321,7 +321,7 @@ export async function executeProductImport(
 
     if (checked.prepared.mappingProblems.length > 0) {
         fail(
-            "არჩეულ ფურცლებზე სვეტების პრობლემებია. ჯერ გაასწორე შემოწმებაში ნაჩვენები შესაბამისობები.",
+            "არჩეულ ფურცლებზე სვეტების პრობლემებია. ჯერ გაასწორეთ შემოწმებაში ნაჩვენები შესაბამისობები.",
         );
     }
 
@@ -330,7 +330,7 @@ export async function executeProductImport(
         checked.prepared.excludedRecords.length === 0
     ) {
         fail(
-            "შესანახი პროდუქტები არ არის. გადაამოწმე ფურცლების არჩევანი და გამოტოვებული ჩანაწერები.",
+            "შესანახი პროდუქტები არ არის. გადაამოწმეთ ფურცლების არჩევანი და გამოტოვებული ჩანაწერები.",
         );
     }
 
@@ -340,7 +340,7 @@ export async function executeProductImport(
         )
     ) {
         fail(
-            "პროდუქტების იმპორტის გეგმაში გადასაწყვეტი ჩანაწერებია. გაუშვი სერვერული შემოწმება და გაასწორე ნაჩვენები მიზეზები.",
+            "პროდუქტების იმპორტის გეგმაში გადასაწყვეტი ჩანაწერებია. გაუშვით სერვერული შემოწმება და გაასწორეთ ნაჩვენები მიზეზები.",
         );
     }
 
@@ -357,7 +357,9 @@ export async function executeProductImport(
         ),
     );
 
-    async function writeRecord(
+    const records: Prisma.ImportRecordCreateManyInput[] = [];
+
+    function writeRecord(
         record: PreparedImportProduct,
         status: "IMPORTED" | "SKIPPED",
         result: unknown,
@@ -387,27 +389,17 @@ export async function executeProductImport(
             result: json(result),
         };
 
-        await tx.importRecord.upsert({
-            where: {
-                jobId_recordKey: {
-                    jobId: draftId,
-                    recordKey: record.key,
-                },
-            },
-            create: {
-                jobId: draftId,
-                recordKey: record.key,
-                provenance: json({
-                    clientFileId: record.fileId,
-                    fileName: record.fileName,
-                    sheetName: record.sheetName,
-                    rowNumber: record.rowNumber,
-                }),
-                rawData: json(raw),
-                ...fields,
-            },
-            // საწყისი რიგი შესწორებებით არ გადაიწერება.
-            update: fields,
+        records.push({
+            jobId: draftId,
+            recordKey: record.key,
+            provenance: json({
+                clientFileId: record.fileId,
+                fileName: record.fileName,
+                sheetName: record.sheetName,
+                rowNumber: record.rowNumber,
+            }),
+            rawData: json(raw),
+            ...fields,
         });
     }
 
@@ -437,34 +429,42 @@ export async function executeProductImport(
             ),
     );
 
+    // ახალი პროდუქტები ერთად იწერება: თითო რიგზე
+    // ცალკე მოთხოვნები დიდ ფაილზე ტაიმაუტს იწვევდა.
+    const creates = items.filter(item => item.action === "CREATE");
+
+    const created = await createImportedProducts({
+        tx,
+        businessId,
+        jobId: draftId,
+        stockDate: settings.productStockDate,
+        nextSku,
+        products: creates.map(item => ({
+            item,
+            photo:
+                photoPlan.photosByRecordKey.get(
+                    item.record.key,
+                ) ?? null,
+            skipPhoto:
+                photoPlan.skippedRecordKeys.has(
+                    item.record.key,
+                ),
+        })),
+    });
+
+    creates.forEach((item, index) => {
+        const result = created[index];
+
+        written.set(item.record.key, result);
+
+        if (result.quantity > 0) stockChangeCount++;
+
+        writeRecord(item.record, "IMPORTED", result);
+    });
+
     for (const item of items) {
         if (item.action === "CREATE") {
-            const result = await createImportedProduct({
-                tx,
-                businessId,
-                jobId: draftId,
-                item,
-                stockDate: settings.productStockDate,
-                nextSku,
-                photo:
-                    photoPlan.photosByRecordKey.get(
-                        item.record.key,
-                    ) ?? null,
-                skipPhoto:
-                    photoPlan.skippedRecordKeys.has(
-                        item.record.key,
-                    ),
-            });
-
-            written.set(item.record.key, result);
-
-            if (result.quantity > 0) stockChangeCount++;
-
-            await writeRecord(
-                item.record,
-                "IMPORTED",
-                result,
-            );
+            continue;
         } else {
             const decision =
                 settings.existingProductLinks[item.record.key];
@@ -489,7 +489,7 @@ export async function executeProductImport(
 
             if (result.adjustment !== 0) stockChangeCount++;
 
-            await writeRecord(
+            writeRecord(
                 item.record,
                 "IMPORTED",
                 result,
@@ -498,7 +498,7 @@ export async function executeProductImport(
     }
 
     for (const record of checked.prepared.excludedRecords) {
-        await writeRecord(record, "SKIPPED", {
+        writeRecord(record, "SKIPPED", {
             reason: "EXCLUDED",
         });
     }
@@ -515,10 +515,26 @@ export async function executeProductImport(
             );
         }
 
-        await writeRecord(record, "SKIPPED", {
+        writeRecord(record, "SKIPPED", {
             reason: "DUPLICATE",
             aliasOf,
             ...target,
+        });
+    }
+
+    // წინა, დაუსრულებელი ცდის ჩანაწერებს ახლით ვცვლით.
+    await tx.importRecord.deleteMany({
+        where: {
+            jobId: draftId,
+            recordKey: {
+                in: records.map(record => record.recordKey),
+            },
+        },
+    });
+
+    for (let index = 0; index < records.length; index += 500) {
+        await tx.importRecord.createMany({
+            data: records.slice(index, index + 500),
         });
     }
 

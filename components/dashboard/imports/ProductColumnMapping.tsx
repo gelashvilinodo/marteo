@@ -106,7 +106,7 @@ export default function ProductColumnMapping({
                     <p className="text-sm text-text-secondary">
                         {mapping.mode === "CATALOG"
                             ? "პროდუქტებს მოვამზადებთ რაოდენობის მარაგში დამატების გარეშე."
-                            : "რაოდენობა უნდა ასახავდეს მიმდინარე ნაშთს. ძველი შეკვეთები მას მეორედ არ უნდა გამოაკლდეს. ამ არჩევანით ისტორიულ საწყის რაოდენობას ნუ მიუთითებ."}
+                            : "მიუთითეთ დღევანდელი ნაშთი, არა საწყისი რაოდენობა."}
                     </p>
 
                     <label className="block space-y-1">
@@ -180,7 +180,7 @@ export default function ProductColumnMapping({
 
                                     {item.column === null && required && (
                                         <span className="block text-xs text-text-secondary">
-                                            მიუთითე შესაბამისი სვეტი.
+                                            მიუთითეთ შესაბამისი სვეტი.
                                             ავტომატურად ვერ ამოცნობა მონაცემის არქონას არ ნიშნავს.
                                         </span>
                                     )}
@@ -188,7 +188,7 @@ export default function ProductColumnMapping({
                                     {conflict && (
                                         <span className="block text-xs text-danger">
                                             ეს სვეტი სხვა ველისთვისაც არის არჩეული.
-                                            გადაამოწმე დაკავშირება.
+                                            გადაამოწმეთ დაკავშირება.
                                         </span>
                                     )}
                                 </label>
@@ -197,10 +197,7 @@ export default function ProductColumnMapping({
                     </div>
 
                     <p className="text-xs text-text-secondary">
-                        კოდი და ფოტო აუცილებელი არ არის.
-                        უცნობ თვითღირებულებას ნულად არ ჩავთვლით.
-                        ამ ეტაპზე მხოლოდ სვეტებს ვაკავშირებთ -
-                        პროდუქტები და მარაგი ჯერ არ ინახება.
+                        კოდი და ფოტო არასავალდებულოა.
                     </p>
                 </>
             )}

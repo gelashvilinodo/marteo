@@ -32,13 +32,9 @@ export default function ImportOrdersSummary({
     onGroupingConfirmationChange,
     onExcludedRowsChange,
     onOrderCustomerDecisionChange,
-    onContinue,
-    continueDisabled = false,
     autoReview = false,
 }: {
     autoReview?: boolean;
-    onContinue?: () => void;
-    continueDisabled?: boolean;
     onOrderCustomerDecisionChange?: (
         phone: string,
         decision: OrderCustomerDecision | null,
@@ -171,6 +167,25 @@ export default function ImportOrdersSummary({
 
     if (!selected) return null;
 
+    // ერთნაირ პრობლემებს ერთად ვაჩვენებთ: რიგის ნომრები და
+    // თანხები განსხვავდება, მიზეზი კი იგივეა.
+    const problemGroups = new Map<string, {
+        title: string;
+        orders: PreparedDraftOrder[];
+    }>();
+
+    for (const order of result?.orders ?? []) {
+        if (order.result.kind !== "NEEDS_REVIEW") continue;
+
+        const title = (order.result.messages[0] ?? "")
+            .replace(/^რიგ(ი|ები) [\d, ]+:\s*/u, "");
+        const key = title.replace(/\d+([.,]\d+)?/g, "#");
+        const group = problemGroups.get(key) ?? { title, orders: [] };
+
+        group.orders.push(order);
+        problemGroups.set(key, group);
+    }
+
     function check() {
         setEditingRowKey(null);
         setEditorNotice("");
@@ -294,12 +309,10 @@ export default function ImportOrdersSummary({
 
             {result && (
                 <>
-                    <p role="status" className="text-sm">
-                        შეკვეთების ჯგუფები: {result.summary.totalGroups}.
-                        {" "}წინასწარ მომზადებულია:{" "}
-                        {result.summary.previewReadyCount}.
-                        {" "}დასაზუსტებელია: {result.summary.reviewCount}.
-                        {" "}გამოტოვებულია: {result.summary.skippedCount}.
+                    <p role="status" className="flex flex-wrap gap-x-3 text-sm">
+                        <span className="text-success">✓ {result.summary.previewReadyCount} მზადაა</span>
+                        {result.summary.reviewCount > 0 && <span className="text-danger">⚠ {result.summary.reviewCount} გასასწორებელი</span>}
+                        {result.summary.skippedCount > 0 && <span className="text-text-secondary">{result.summary.skippedCount} გაუქმებული/დაბრუნებული არ გადმოვა</span>}
                     </p>
 
                     {result.summary.groupingProblemRowCount > 0 && (
@@ -314,9 +327,7 @@ export default function ImportOrdersSummary({
                     {result.summary.excludedRowCount > 0 && (
                         <div className="space-y-2">
                             <p className="text-sm text-text-secondary">
-                                შენი არჩევანით გამოტოვებულია{" "}
-                                {result.summary.excludedRowCount} რიგი.
-                                წყაროს ფაილიდან არაფერი წაშლილა.
+                                თქვენ გამოტოვეთ {result.summary.excludedRowCount} რიგი.
                             </p>
                             <button
                                 type="button"
@@ -335,39 +346,24 @@ export default function ImportOrdersSummary({
 
                     {result.summary.incompleteContactOrderCount > 0 && (
                         <p className="text-sm text-text-secondary">
-                            წინასწარ მომზადებული შეკვეთებიდან{" "}
-                            {result.summary.incompleteContactOrderCount}-ს
-                            ტელეფონი ან მისამართი არ აქვს. ეს შეკვეთების
-                            გადმოტანას არ დაბლოკავს. არასრული მონაცემებით
-                            მომხმარებლის ახალ ჩანაწერს არ შევქმნით;
-                            არსებული მიმღების ინფორმაცია შეკვეთაზე შენარჩუნდება.
+                            {result.summary.incompleteContactOrderCount} შეკვეთას
+                            ტელეფონი ან მისამართი აკლია. გადმოვა, მაგრამ
+                            მომხმარებლის ჩანაწერი არ შეიქმნება.
                         </p>
                     )}
 
                     {result.summary.unknownCostOrderCount > 0 && (
                         <p className="text-sm text-text-secondary">
-                            წინასწარ მომზადებული შეკვეთებიდან{" "}
-                            {result.summary.unknownCostOrderCount}-ს სრული
-                            თვითღირებულება არ აქვს. მათი გადმოტანა
-                            შესაძლებელი იქნება, მაგრამ თვითღირებულების
-                            შევსებამდე ანალიტიკაში არ ჩაითვლება.
-                            შევსებას იმპორტის დროსაც შეძლებ.
+                            {result.summary.unknownCostOrderCount} შეკვეთას
+                            თვითღირებულება აკლია. გადმოვა, მაგრამ ანალიტიკაში
+                            შევსებამდე არ ჩაითვლება.
                         </p>
                     )}
 
                     {result.summary.confirmationRequiredCount > 0 && (
                         <p className="text-sm text-text-secondary">
-                            ტელეფონითა და თარიღით დაჯგუფებულია{" "}
-                            {result.summary.confirmationRequiredCount}{" "}
-                            წინასწარ მომზადებული შეკვეთა. შენახვამდე
-                            ამ ჯგუფების დადასტურება იქნება საჭირო.
-                        </p>
-                    )}
-
-                    {result.summary.skippedCount > 0 && (
-                        <p className="text-sm text-text-secondary">
-                            გაუქმებული და დაბრუნებული შეკვეთები ამ ეტაპზე
-                            არ გადმოგვაქვს.
+                            {result.summary.confirmationRequiredCount} შეკვეთა
+                            ტელეფონითა და თარიღით დავაჯგუფეთ. დაადასტურეთ ქვემოთ.
                         </p>
                     )}
 
@@ -388,7 +384,7 @@ export default function ImportOrdersSummary({
                         onEditRow={setEditingRowKey}
                     />
 
-                    {settings.skipOrderCustomers && <p className="text-sm text-text-secondary">მომხმარებლების გადმოტანა გამოტოვებულია. მიმღების ინფორმაცია შეკვეთაზე დარჩება, მომხმარებლის ცალკე ჩანაწერები არ შეიქმნება.</p>}
+                    {settings.skipOrderCustomers && <p className="text-sm text-text-secondary">მომხმარებლები არ გადმოვა - მიმღების მონაცემები შეკვეთაზე დარჩება.</p>}
                     {onOrderCustomerDecisionChange && !settings.skipOrderCustomers && (
                         <OrderCustomersReview
                             orders={result.orders}
@@ -450,88 +446,71 @@ export default function ImportOrdersSummary({
                         );
                     })}
 
-                    {result.orders.map(order =>
-                        order.result.kind === "NEEDS_REVIEW" ? (
-                            <div
-                                key={order.group.key}
-                                className="space-y-2 rounded-xl border border-danger/40 p-3"
-                            >
-                                <p className="break-words text-sm font-semibold">
-                                    {order.fileName} /{" "}
-                                    {order.group.rows[0]?.sheetName}
-                                    {" "}- რიგები{" "}
-                                    {order.group.rows.map(
-                                        row => row.rowNumber,
-                                    ).join(", ")}
-                                </p>
+                    {[...problemGroups.values()].map(group => (
+                        <div
+                            key={group.title}
+                            className="space-y-2 rounded-xl border border-danger/40 p-3"
+                        >
+                            <p className="text-sm font-semibold text-danger">
+                                {group.orders.length} შეკვეთა: {group.title}
+                            </p>
 
-                                {order.result.messages.map((message, index) => (
-                                    <p
-                                        key={index}
-                                        className="text-sm text-danger"
-                                    >
-                                        {message}
-                                    </p>
-                                ))}
-
-                                <div className="flex flex-wrap gap-2">
-                                    {problemEditButtons(order)}
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            onExcludedRowsChange(
-                                                order.group.rows.map(
-                                                    row => row.key,
-                                                ),
-                                                true,
-                                            )
-                                        }
-                                        className="min-h-11 rounded-xl border border-border px-3 text-sm"
-                                    >
-                                        მთელი შეკვეთის გამოტოვება
-                                    </button>
-                                </div>
-                            </div>
-                        ) : null,
-                    )}
-
-                    {onContinue &&
-                        result.summary.reviewCount === 0 &&
-                        result.mappingProblems.length === 0 &&
-                        result.groupingProblems.length === 0 &&
-                        result.summary.confirmationRequiredCount === 0 &&
-                        (
-                            result.summary.totalGroups > 0 ||
-                            result.excludedRows.length > 0
-                        ) && (
-                            <div className="space-y-2 rounded-xl border border-border p-3">
-                                <p className="text-sm">
-                                    წინასწარი შემოწმება დასრულებულია.
-                                    გააგრძელე შემდეგი კატეგორიით.
-                                    საბოლოო შენახვა ბოლო ნაბიჯზე იქნება.
-                                </p>
-
+                            <div className="flex flex-wrap gap-2">
                                 <button
                                     type="button"
-                                    disabled={continueDisabled}
-                                    onClick={onContinue}
-                                    className="min-h-11 rounded-xl bg-accent px-4 text-sm font-semibold text-white disabled:opacity-50"
+                                    onClick={() =>
+                                        onExcludedRowsChange(
+                                            group.orders.flatMap(order =>
+                                                order.group.rows.map(row => row.key),
+                                            ),
+                                            true,
+                                        )
+                                    }
+                                    className="min-h-11 rounded-xl border border-border px-3 text-sm"
                                 >
-                                    შემდეგ ეტაპზე გადასვლა
+                                    {group.orders.length > 1
+                                        ? `ყველას გამოტოვება (${group.orders.length})`
+                                        : "გამოტოვება"}
                                 </button>
-
-                                <p className="text-xs text-text-secondary">
-                                    ეს მოქმედება რეალურ შეკვეთებს ჯერ
-                                    არ დაამატებს. საბოლოო შენახვა
-                                    შემდეგი შემოწმების შემდეგ შესრულდება.
-                                </p>
                             </div>
-                        )}
 
-                    <p className="text-xs text-text-secondary">
-                        ეს წინასწარი შემოწმებაა. შეკვეთები, მარაგი და
-                        ფინანსები ჯერ არ იცვლება.
-                    </p>
+                            <details open={group.orders.length === 1} className="text-sm">
+                                <summary className="cursor-pointer text-text-secondary">
+                                    {group.orders.length > 1 ? "სათითაოდ გასწორება" : "გასწორება"}
+                                </summary>
+
+                                <div className="mt-2 space-y-2">
+                                    {group.orders.map(order => order.result.kind === "NEEDS_REVIEW" && (
+                                        <div key={order.group.key} className="space-y-2 rounded-lg bg-background p-3">
+                                            <p className="break-words font-medium">
+                                                {order.group.rows[0]?.orderCode ?? `რიგები ${order.group.rows.map(row => row.rowNumber).join(", ")}`}
+                                            </p>
+                                            {order.result.messages.map((message, index) => (
+                                                <p key={index} className="text-danger">{message}</p>
+                                            ))}
+                                            <div className="flex flex-wrap gap-2">
+                                                {problemEditButtons(order)}
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        onExcludedRowsChange(
+                                                            order.group.rows.map(row => row.key),
+                                                            true,
+                                                        )
+                                                    }
+                                                    className="min-h-11 rounded-xl border border-border px-3 text-sm"
+                                                >
+                                                    გამოტოვება
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </details>
+                        </div>
+                    ))}
+
+
                 </>
             )}
         </section>

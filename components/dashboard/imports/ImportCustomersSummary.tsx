@@ -432,16 +432,12 @@ export default function ImportCustomersSummary({
                                         <p className="text-text-secondary">
                                             ამ ჩანაწერებს ერთი ნომერი
                                             აქვს. თუ ნომერი შეცდომითაა
-                                            მითითებული, შეასწორე შესაბამის
+                                            მითითებული, შეასწორეთ შესაბამის
                                             ჩანაწერზე.
                                         </p>
 
                                         <p className="text-text-secondary">
-                                            თუ ჩანაწერის შესწორება არ შეგიძლია,
-                                            გამოტოვე მისი იმპორტი.
-                                            მისი დაბრუნება ქვემოთ მდებარე
-                                            გამოტოვებული ჩანაწერების სიიდან შეგიძლია.
-                                            ჩანაწერები ავტომატურად არ გაერთიანდება.
+                                            თუ ვერ ასწორებთ, გამოტოვეთ ჩანაწერი.
                                         </p>
                                     </div>
 
@@ -469,7 +465,7 @@ export default function ImportCustomersSummary({
                         result.mappingProblems.length === 0 && (
                             <p className="text-sm text-text-secondary">
                                 მომხმარებლის ჩანაწერები ვერ ვიპოვეთ.
-                                გადაამოწმე სათაურების რიგი და სვეტები.
+                                გადაამოწმეთ სათაურების რიგი და სვეტები.
                             </p>
                         )}
 
@@ -480,10 +476,7 @@ export default function ImportCustomersSummary({
                             </h3>
 
                             <p className="text-sm text-text-secondary">
-                                ეს ჩანაწერები მომხმარებლებად არ დაემატება.
-                                საწყის ფაილში ინფორმაცია შენარჩუნებულია.
-                                თუ მათ შეკვეთები უკავშირდება, მომხმარებელთან
-                                დაკავშირება ცალკე იქნება გადასამოწმებელი.
+                                ეს ჩანაწერები არ გადმოვა.
                             </p>
 
                             <div className="max-h-72 space-y-3 overflow-y-auto">
@@ -600,9 +593,7 @@ export default function ImportCustomersSummary({
 
                         {waitingForCheck.length > 0 && (
                             <p role="status" className="text-sm text-text-secondary">
-                                არსებული მომხმარებლების შემოწმება ჯერ არ დასრულებულა.
-                                გაუშვი შემოწმება ზემოთ მდებარე ღილაკით.
-                                ეს ჩანაწერების შეცდომა არ არის.
+                                არსებულ მომხმარებლებთან შედარება ჯერ მიმდინარეობს.
                             </p>
                         )}
 
@@ -648,10 +639,7 @@ export default function ImportCustomersSummary({
                         )}
 
                         <p className="text-xs text-text-secondary">
-                            გამოტოვებული მომხმარებლები ამ გეგმაში არ შედის.
-                            ეს წინასწარი გეგმაა - ბაზაში შენახვა ჯერ არ ხდება.
-                            საბოლოო შენახვისას არსებული მონაცემები
-                            ხელახლა შემოწმდება.
+                            გამოტოვებული მომხმარებლები არ გადმოვა.
                         </p>
                     </section>
                 </>

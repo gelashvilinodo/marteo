@@ -293,7 +293,7 @@ export default function ImportDraftPicker({
 
             <p className="text-sm text-text-secondary">
                 მონახაზის გახსნა ამ გვერდზე არსებულ სამუშაოს
-                ჩაანაცვლებს. მიმდინარე ცვლილებები ჯერ შეინახე.
+                ჩაანაცვლებს. მიმდინარე ცვლილებები ჯერ შეინახეთ.
             </p>
 
             <button

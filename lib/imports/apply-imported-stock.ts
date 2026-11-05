@@ -71,7 +71,7 @@ export async function applyImportedStock({
         existing.productUpdatedAt.toISOString() !== decision.productUpdatedAt
     ) {
         fail(
-            "არსებული პროდუქტი შეიცვალა. ხელახლა შეამოწმე და დაადასტურე კავშირი.",
+            "არსებული პროდუქტი შეიცვალა. ხელახლა შეამოწმეთ და დაადასტურეთ კავშირი.",
             409,
         );
     }
@@ -81,7 +81,7 @@ export async function applyImportedStock({
 
     if (record.mode === "CURRENT_STOCK") {
         if (policy === null || data.currentStock === null) {
-            fail("აირჩიე ნაშთის გამოყენების წესი.");
+            fail("აირჩიეთ ნაშთის გამოყენების წესი.");
         }
 
         try {
@@ -124,7 +124,7 @@ export async function applyImportedStock({
         fail("მარაგის თარიღი არასწორია.");
     }
 
-    if (date === null) fail("მიუთითე მარაგის თარიღი.");
+    if (date === null) fail("მიუთითეთ მარაგის თარიღი.");
 
     const availableAt = new Date(`${date}T00:00:00+04:00`);
 
@@ -210,7 +210,7 @@ export async function applyImportedStock({
 
     if (nextStock < defective) {
         fail(
-            "ფაილის სრული ნაშთი უკვე აღრიცხულ წუნდებულ რაოდენობაზე ნაკლებია. ჯერ გადაამოწმე წუნდებული მარაგი - მას ავტომატურად არ შევამცირებთ.",
+            "ფაილის სრული ნაშთი უკვე აღრიცხულ წუნდებულ რაოდენობაზე ნაკლებია. ჯერ გადაამოწმეთ წუნდებული მარაგი - მას ავტომატურად არ შევამცირებთ.",
         );
     }
 

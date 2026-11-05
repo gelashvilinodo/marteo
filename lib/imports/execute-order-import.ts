@@ -17,7 +17,7 @@ import {
     checkDraftOrders,
 } from "./check-draft-orders";
 import {
-    createImportedManualOrder,
+    createImportedManualOrders,
 } from "./create-imported-manual-order";
 import {
     applyOrderCustomerPlan,
@@ -221,13 +221,13 @@ export async function executeOrderImport(
 
     if (saved.revision !== expectedRevision) {
         fail(
-            "მონახაზი შეიცვალა. ხელახლა გახსენი და შეკვეთები თავიდან შეამოწმე.",
+            "მონახაზი შეიცვალა. ხელახლა გახსენით და შეკვეთები თავიდან შეამოწმეთ.",
             409,
         );
     }
 
     if (saved.settings === null) {
-        fail("ჯერ შეინახე მონახაზის არჩევანები და შესწორებები.");
+        fail("ჯერ შეინახეთ მონახაზის არჩევანები და შესწორებები.");
     }
 
     const settings = validateImportDraftSettings(
@@ -289,7 +289,9 @@ export async function executeOrderImport(
         ),
     );
 
-    async function audit(
+    const records: Prisma.ImportRecordCreateManyInput[] = [];
+
+    function audit(
         recordKey: string,
         rowKeys: string[],
         status: "IMPORTED" | "SKIPPED",
@@ -316,28 +318,19 @@ export async function executeOrderImport(
             result: json(result),
         };
 
-        await tx.importRecord.upsert({
-            where: {
-                jobId_recordKey: {
-                    jobId: draftId,
-                    recordKey,
-                },
-            },
-            create: {
-                jobId: draftId,
-                recordKey,
-                type: "ORDER",
-                provenance: json(rows.map(({ source }) => ({
-                    sourceRowKey: source.key,
-                    clientFileId: source.fileId,
-                    fileName: source.fileName,
-                    sheetName: source.sheetName,
-                    rowNumber: source.rowNumber,
-                }))),
-                rawData: json(rows.map(row => row.original)),
-                ...fields,
-            },
-            update: fields,
+        records.push({
+            jobId: draftId,
+            recordKey,
+            type: "ORDER",
+            provenance: json(rows.map(({ source }) => ({
+                sourceRowKey: source.key,
+                clientFileId: source.fileId,
+                fileName: source.fileName,
+                sheetName: source.sheetName,
+                rowNumber: source.rowNumber,
+            }))),
+            rawData: json(rows.map(row => row.original)),
+            ...fields,
         });
     }
 
@@ -359,21 +352,15 @@ export async function executeOrderImport(
     }
 
 
-    let createdCount = 0;
     let skippedCount = 0;
-    let pendingCostCount = 0;
+
+    const ready: typeof checked.prepared.orders = [];
 
     for (const order of checked.prepared.orders) {
-        const rowKeys = order.group.rows.map(row => row.key);
-        const recordKey = JSON.stringify([
-            "ORDER_GROUP",
-            order.group.key,
-        ]);
-
         if (order.result.kind === "SKIPPED") {
-            await audit(
-                recordKey,
-                rowKeys,
+            audit(
+                JSON.stringify(["ORDER_GROUP", order.group.key]),
+                order.group.rows.map(row => row.key),
                 "SKIPPED",
                 null,
                 { reason: order.result.message },
@@ -387,31 +374,41 @@ export async function executeOrderImport(
             fail("შეკვეთის გეგმა ჯერ დასაზუსტებელია.");
         }
 
-        const customerId =
-            appliedCustomers.customerByOrderKey.get(order.group.key) ??
-            null;
+        ready.push(order);
+    }
+
+    const created = await createImportedManualOrders({
+        tx,
+        businessId,
+        jobId: draftId,
+        orders: ready.map(order => ({
+            order,
+            customerId:
+                appliedCustomers.customerByOrderKey.get(
+                    order.group.key,
+                ) ?? null,
+        })),
+    });
+
+    ready.forEach((order, index) => {
+        if (order.result.kind !== "PREVIEW_READY") return;
 
         const customerPlan = customerPlanByOrderKey.get(
             order.group.key,
         );
 
-        const created = await createImportedManualOrder({
-            tx,
-            businessId,
-            jobId: draftId,
-            order,
-            customerId,
-        });
-
-        await audit(
-            recordKey,
-            rowKeys,
+        audit(
+            JSON.stringify(["ORDER_GROUP", order.group.key]),
+            order.group.rows.map(row => row.key),
             "IMPORTED",
             order.result.data,
             {
-                ...created,
+                ...created[index],
                 customer: {
-                    id: customerId,
+                    id:
+                        appliedCustomers.customerByOrderKey.get(
+                            order.group.key,
+                        ) ?? null,
                     action: customerPlan?.action ?? "NO_CUSTOMER_DATA",
                     createdProfile:
                         customerPlan?.action === "CREATE"
@@ -420,20 +417,37 @@ export async function executeOrderImport(
                 },
             },
         );
+    });
 
-        createdCount++;
-
-        if (created.analyticsPendingCost) pendingCostCount++;
-    }
+    const createdCount = created.length;
+    const pendingCostCount = created.filter(
+        order => order.analyticsPendingCost,
+    ).length;
 
     for (const row of checked.prepared.excludedRows) {
-        await audit(
+        audit(
             JSON.stringify(["ORDER_ROW", row.key]),
             [row.key],
             "SKIPPED",
             null,
             { reason: "EXCLUDED_BY_USER" },
         );
+    }
+
+    // წინა, დაუსრულებელი ცდის ჩანაწერებს ახლით ვცვლით.
+    await tx.importRecord.deleteMany({
+        where: {
+            jobId: draftId,
+            recordKey: {
+                in: records.map(record => record.recordKey),
+            },
+        },
+    });
+
+    for (let index = 0; index < records.length; index += 500) {
+        await tx.importRecord.createMany({
+            data: records.slice(index, index + 500),
+        });
     }
 
     const customersSelected = Object.values(

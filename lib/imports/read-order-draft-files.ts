@@ -28,7 +28,7 @@ export function readOrderDraftFiles(
             Array.isArray(raw)
         ) {
             throw new ImportDraftFileError(
-                "შეკვეთების წყაროს შენახული სტრუქტურა ვერ დადასტურდა. ხელახლა გახსენი მონახაზი.",
+                "შეკვეთების წყაროს შენახული სტრუქტურა ვერ დადასტურდა. ხელახლა გახსენით მონახაზი.",
             );
         }
 

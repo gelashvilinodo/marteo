@@ -125,7 +125,7 @@ export async function checkDraftOrders(input: {
             !order.groupingConfirmed
         ) {
             problems.push(
-                `${location}: ჯერ დაადასტურე, რომ დაჯგუფებული რიგები ერთი შეკვეთაა.`,
+                `${location}: ჯერ დაადასტურეთ, რომ დაჯგუფებული რიგები ერთი შეკვეთაა.`,
             );
         }
 

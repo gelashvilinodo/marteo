@@ -15,7 +15,7 @@ export async function readImportWorkbook(
         ?.toLowerCase();
 
     if (extension !== "xlsx" && extension !== "numbers") {
-        throw new Error("აირჩიე Excel ან Apple Numbers ფაილი.");
+        throw new Error("აირჩიეთ Excel ან Apple Numbers ფაილი.");
     }
 
     const bytes = new Uint8Array(buffer);
@@ -232,11 +232,13 @@ export async function readImportWorkbook(
         format: extension,
         byteSize: buffer.byteLength,
         sha256,
-        excelDateSystem: extension === "xlsx"
-            ? workbook.Workbook?.WBProps?.date1904
-                ? "1904"
-                : "1900"
-            : null,
+        // Numbers-ის თარიღებს SheetJS 1904 სისტემის რიცხვებად
+        // აბრუნებს და date1904-ს რთავს. მისი საკუთარი ჩვენების
+        // ტექსტი (cell.w) ამ დროს 1900 სისტემით ცდება, ამიტომ
+        // მხოლოდ ამ ნიშანს ვენდობით.
+        excelDateSystem: workbook.Workbook?.WBProps?.date1904
+            ? "1904"
+            : "1900",
         documentCreatedAt: metadataDate(
             workbook.Props?.CreatedDate,
         ),

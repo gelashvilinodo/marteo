@@ -78,7 +78,7 @@ export default function OrderCustomerChoices({
                         {saved && !decision && (
                             <p className="text-sm text-danger">
                                 წყაროს მონაცემები შეიცვალა.
-                                არჩევანი ხელახლა გააკეთე.
+                                არჩევანი ხელახლა გააკეთეთ.
                             </p>
                         )}
 
@@ -109,8 +109,8 @@ export default function OrderCustomerChoices({
                                         <p className="text-sm text-danger">
                                             მომხმარებელი წაშლილია.
                                             ავტომატურად არ აღვადგენთ.
-                                            შეგიძლია შეკვეთები კავშირის
-                                            გარეშე გადმოიტანო.
+                                            შეგიძლიათ შეკვეთები კავშირის
+                                            გარეშე გადმოიტანოთ.
                                         </p>
                                     ) : (
                                         <button

@@ -58,11 +58,11 @@ export default function ProductRowEditor({
     return (
         <div className="space-y-4 border-t border-border pt-3">
             <p className="text-xs text-text-secondary">
-                თანხებში გამოიყენე{" "}
+                თანხებში გამოიყენეთ{" "}
                 {record.decimalSeparator === ","
                     ? "მძიმე, მაგალითად 12,50."
                     : "წერტილი, მაგალითად 12.50."}
-                {" "}უცნობი თვითღირებულება დატოვე ცარიელი.
+                {" "}უცნობი თვითღირებულება დატოვეთ ცარიელი.
             </p>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -126,8 +126,7 @@ export default function ProductRowEditor({
             </div>
 
             <p className="text-xs text-text-secondary">
-                გამოყენების შემდეგ მონაცემები ხელახლა შემოწმდება.
-                მონახაზში შესანარჩუნებლად შენახვის ღილაკსაც დააჭირე.
+                შეცვლის შემდეგ ხელახლა შევამოწმებთ.
             </p>
         </div>
     );

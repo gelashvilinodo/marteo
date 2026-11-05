@@ -55,7 +55,7 @@ export default function ProductDuplicateChoices({
                         className="space-y-4 rounded-xl border border-danger/60 p-4"
                     >
                         <p className="text-sm text-text-secondary">
-                            ეს ჩანაწერები ერთმანეთს ჰგავს. აირჩიე,
+                            ეს ჩანაწერები ერთმანეთს ჰგავს. აირჩიეთ,
                             ერთი პროდუქტი განმეორდა თუ სხვადასხვა
                             პროდუქტია.
                         </p>
@@ -138,10 +138,7 @@ export default function ProductDuplicateChoices({
                         </div>
 
                         <p className="text-sm text-text-secondary">
-                            ერთი ჩანაწერის დატოვებისას გამოიყენება
-                            მხოლოდ მისი მონაცემები და ნაშთი.
-                            რაოდენობები არ შეიკრიბება. დანარჩენი
-                            ჩანაწერები საწყის ფაილში შენარჩუნდება.
+                            გადმოვა მხოლოდ დატოვებული ჩანაწერი, რაოდენობები არ შეიკრიბება.
                         </p>
 
                         <div className="flex flex-wrap gap-3">
