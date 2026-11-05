@@ -4,8 +4,8 @@ import type { createPrismaClient } from "@/lib/prisma";
 import { runInBackground, sendPushToUsers } from "@/lib/push/web-push";
 import { createPrismaClient as newClient } from "@/lib/prisma";
 import { isBusinessPermission, type BusinessPermission } from "./permissions";
-import { PERMISSION_OPTIONS, TEAM_LIMITS, type TeamRequestView } from "./team";
-import { readPlan, TeamError } from "./team-server";
+import { PERMISSION_OPTIONS, planPermissions, TEAM_LIMITS, type TeamRequestView } from "./team";
+import { PLAN_PERMISSION_ERROR, readPlan, TeamError } from "./team-server";
 
 type Db = ReturnType<typeof createPrismaClient>;
 type Tx = Parameters<Parameters<Db["$transaction"]>[0]>[0];
@@ -111,10 +111,15 @@ export async function updateStaffAccess(db: Db, businessId: string, actorId: str
     await db.$transaction(async tx => {
         await lockBusiness(tx, businessId);
         await requireOwner(tx, businessId, actorId);
-        const target = await tx.businessMembership.findFirst({ where: { id: membershipId, businessId }, select: { role: true } });
+        const target = await tx.businessMembership.findFirst({ where: { id: membershipId, businessId }, select: { role: true, permissions: true } });
         if (!target) throw new TeamError("წევრი ვერ მოიძებნა.", 404);
         if (target.role === "OWNER") throw new TeamError("თანამფლობელის უფლებები არ იცვლება.", 403);
-        await tx.businessMembership.update({ where: { id: membershipId }, data: input });
+        const allowed = planPermissions(await readPlan(tx, businessId, new Date()));
+        if (input.permissions.some(permission => !allowed.includes(permission))) throw new TeamError(PLAN_PERMISSION_ERROR, 403);
+        // გეგმაში არშემავალი უფლებები (მაგ. სტარტზე მარაგი) ინახება და გეგმის აწევისას ბრუნდება.
+        const kept = target.permissions.filter(permission => isBusinessPermission(permission) && !allowed.includes(permission));
+        const permissions = PERMISSION_OPTIONS.map(option => option.value).filter(value => input.permissions.includes(value) || kept.includes(value));
+        await tx.businessMembership.update({ where: { id: membershipId }, data: { ...input, permissions } });
     });
 }
 

@@ -46,11 +46,11 @@ export const PLAN_CARDS: readonly PlanCard[] = [
             { icon: "solar:check-circle-linear", label: "მომხმარებლების ბაზა" },
             { icon: "solar:check-circle-linear", label: "ანალიტიკა და სტატისტიკა" },
             { icon: "solar:check-circle-linear", label: "კონტენტ-კალენდარი" },
+            { icon: "solar:check-circle-linear", label: "თანამშრომელი უფლებებით", value: String(PLAN_LIMITS.START.staff) },
             { icon: "solar:close-circle-linear", label: "მარაგი და შესყიდვები", included: false },
             { icon: "solar:close-circle-linear", label: "ფოტოები შეკვეთაში", included: false },
             { icon: "solar:close-circle-linear", label: "მართეო AI", included: false },
             { icon: "solar:close-circle-linear", label: "ფაილიდან იმპორტი", included: false },
-            { icon: "solar:close-circle-linear", label: "გუნდი", included: false },
         ],
     },
     {
@@ -158,7 +158,7 @@ export const PLAN_COMPARISON: readonly ComparisonGroup[] = [
     {
         title: "გუნდი და ბიზნესები", icon: "solar:users-group-rounded-bold-duotone", rows: [
             row("თანამფლობელები", false, String(PLAN_LIMITS.BUSINESS.coOwners), String(PLAN_LIMITS.PRO.coOwners)),
-            row("თანამშრომლები უფლებებით", false, String(PLAN_LIMITS.BUSINESS.staff), String(PLAN_LIMITS.PRO.staff)),
+            row("თანამშრომლები უფლებებით", String(PLAN_LIMITS.START.staff), String(PLAN_LIMITS.BUSINESS.staff), String(PLAN_LIMITS.PRO.staff)),
             row("დამატებითი ბიზნესი", false, "−25%", "−25%"),
         ],
     },

@@ -14,6 +14,7 @@ import {
     INVITE_MAX_RESENDS,
     INVITE_RESEND_COOLDOWN_SECONDS,
     PERMISSION_OPTIONS,
+    planPermissions,
     TEAM_LIMITS,
     type TeamPlan,
     type TeamSnapshot,
@@ -29,7 +30,9 @@ export class TeamError extends Error {
     }
 }
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const PLAN_PERMISSION_ERROR = "მონიშნული უფლება თქვენს გეგმაში არ შედის. მარაგი, შესყიდვები და წარმოება ბიზნეს გეგმიდან იხსნება.";
+
+const EMAIL_PATTERN =/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function hashInviteToken(token: string) {
     return createHash("sha256").update(token).digest("hex");
@@ -164,6 +167,9 @@ export async function createInvite(db: Db, businessId: string, inviterId: string
             throw new TeamError(limits.staff
                 ? `შენს გეგმაზე მაქსიმუმ ${limits.staff} თანამშრომლის დამატებაა შესაძლებელი. მეტისთვის გეგმა გააუმჯობესე.`
                 : "თანამშრომლის დასამატებლად გეგმის გაუმჯობესებაა საჭირო.", 403, "role");
+        }
+        if (input.permissions.some(permission => !planPermissions(plan).includes(permission))) {
+            throw new TeamError(PLAN_PERMISSION_ERROR, 403, "permissions");
         }
         return tx.businessInvite.create({
             data: {

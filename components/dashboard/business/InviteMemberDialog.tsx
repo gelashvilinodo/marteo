@@ -4,9 +4,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 
 import type { BusinessMode } from "@/lib/business/business-mode";
-import { hasBusinessFeature } from "@/lib/business/business-mode";
 import type { BusinessPermission } from "@/lib/business/permissions";
-import { INVITE_LIFETIME_HOURS, PERMISSION_OPTIONS, type TeamSnapshot } from "@/lib/business/team";
+import { INVITE_LIFETIME_HOURS, planPermissionOptions, type TeamSnapshot } from "@/lib/business/team";
 import PermissionPicker from "./PermissionPicker";
 
 type Role = "OWNER" | "MEMBER";
@@ -37,7 +36,7 @@ export default function InviteMemberDialog({ team, businessMode, onClose, onInvi
     const [error, setError] = useState("");
     const [sentTo, setSentTo] = useState("");
 
-    const options = PERMISSION_OPTIONS.filter(option => option.value !== "PRODUCTION" || hasBusinessFeature(businessMode, "manufacturing"));
+    const options = planPermissionOptions(team.plan, businessMode);
 
     useEffect(() => {
         const element = dialog.current;

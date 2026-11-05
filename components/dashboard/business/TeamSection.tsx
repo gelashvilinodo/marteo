@@ -6,7 +6,8 @@ import { Icon } from "@iconify/react";
 import SuccessToast from "@/components/shared/SuccessToast";
 import type { BusinessMode } from "@/lib/business/business-mode";
 import type { BusinessPermission } from "@/lib/business/permissions";
-import { PERMISSION_OPTIONS, type TeamInvite, type TeamMember, type TeamRequestView, type TeamSnapshot } from "@/lib/business/team";
+import { PERMISSION_OPTIONS, planPermissions, TEAM_LIMITS, type TeamInvite, type TeamMember, type TeamRequestView, type TeamSnapshot } from "@/lib/business/team";
+import { PLAN_ADJECTIVES } from "@/lib/subscription/plans";
 import InviteMemberDialog from "./InviteMemberDialog";
 import EditMemberDialog from "./EditMemberDialog";
 import { usePlan } from "@/components/dashboard/plan/PlanContext";
@@ -17,10 +18,15 @@ type ApiResponse = { success?: boolean; message?: string; team?: TeamSnapshot };
 const permissionLabel = (permission: BusinessPermission) =>
     PERMISSION_OPTIONS.find(option => option.value === permission)?.label ?? permission;
 
-function Chips({ permissions, readOnly }: { permissions: BusinessPermission[]; readOnly: boolean }) {
+// გეგმაში არშემავალი უფლებები (მაგ. სტარტზე მარაგი) არ ჩანს; თუ სხვა არაფერი რჩება, მფლობელი გაფრთხილებულია.
+function Chips({ permissions, readOnly, allowed }: { permissions: BusinessPermission[]; readOnly: boolean; allowed: BusinessPermission[] }) {
+    const visible = permissions.filter(permission => allowed.includes(permission));
+    if (!visible.length) {
+        return <p className="mt-2 text-xs text-warning">თქვენს გეგმაზე ამ წევრს მონიშნული უფლება არ აქვს. მიანიჭეთ ახალი უფლება.</p>;
+    }
     return (
         <div className="mt-2 flex flex-wrap gap-1.5">
-            {permissions.map(permission => (
+            {visible.map(permission => (
                 <span key={permission} className="rounded-lg bg-background px-2 py-0.5 text-xs text-text-secondary">
                     {permissionLabel(permission)}
                 </span>
@@ -138,6 +144,10 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
     }
     const teamAllowed = allows("team");
     const canInvite = teamAllowed && (team.used.coOwners < team.limits.coOwners || team.used.staff < team.limits.staff);
+    const allowedPermissions = planPermissions(team.plan);
+    // ლიმიტი შევსებულია: სტარტიდან ბიზნესზე, ბიზნესიდან PRO-ზე.
+    const nextTier = team.plan === "START" ? "BUSINESS" : "PRO";
+    const nextLimits = TEAM_LIMITS[nextTier];
 
     async function act(invite: TeamInvite, action: "resend" | "cancel") {
         if (busyId) return;
@@ -180,7 +190,7 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
                         {member.status === "FROZEN" && <RoleBadge tone="warning">გაყინული</RoleBadge>}
                     </div>
                     <p className="truncate text-sm text-text-secondary">{member.email}</p>
-                    {member.role === "MEMBER" && <Chips permissions={member.permissions} readOnly={member.readOnly} />}
+                    {member.role === "MEMBER" && <Chips permissions={member.permissions} readOnly={member.readOnly} allowed={allowedPermissions} />}
                     {member.role !== "OWNER" && (
                         <div className="mt-2 flex flex-wrap gap-2">
                             {confirmRemove === member.id ? (
@@ -247,7 +257,7 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
                             {expired ? "ბმულს ვადა გაუვიდა" : "ველოდებით დადასტურებას"}
                             {!expired && now > 0 && <span className="text-text-secondary">· ბმული მოქმედებს {hoursLeft} სთ</span>}
                         </p>
-                        {invite.role === "MEMBER" && <Chips permissions={invite.permissions} readOnly={invite.readOnly} />}
+                        {invite.role === "MEMBER" && <Chips permissions={invite.permissions} readOnly={invite.readOnly} allowed={allowedPermissions} />}
                     </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-2 pl-13 sm:pl-0">
@@ -304,12 +314,15 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
                     </button>
                     // ლიმიტი შევსებულია ან გეგმაში გუნდი არ არის: გვირგვინი აჩვენებს, რომელ გეგმაზე იხსნება.
                     : <button type="button" onClick={() => teamAllowed
-                            ? openUpgrade({ feature: "team", tier: "PRO", message: "მეტი წევრისთვის საჭიროა PRO გეგმა: 5 თანამფლობელი და 15 თანამშრომელი." })
+                            ? openUpgrade({
+                                feature: "team", tier: nextTier,
+                                message: `მეტი წევრისთვის საჭიროა ${PLAN_ADJECTIVES[nextTier]} გეგმა: ${nextLimits.coOwners} თანამფლობელი და ${nextLimits.staff} თანამშრომელი.`,
+                            })
                             : guard("team")}
                         className="relative inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold text-text-secondary">
                         <Icon icon="solar:user-plus-linear" className="size-5" aria-hidden="true" />
                         წევრის დამატება
-                        <CornerCrown feature="team" pro={teamAllowed} />
+                        <CornerCrown feature="team" pro={teamAllowed && nextTier === "PRO"} />
                     </button>}
             </div>
 
@@ -331,7 +344,7 @@ export default function TeamSection({ initialTeam, businessMode }: { initialTeam
             </ul>
 
             {editing && (
-                <EditMemberDialog member={editing} businessMode={businessMode} onClose={() => setEditing(null)}
+                <EditMemberDialog member={editing} plan={team.plan} businessMode={businessMode} onClose={() => setEditing(null)}
                     onSaved={(updated, message) => { setTeam(updated); setNotice(message); setEditing(null); }} />
             )}
             {inviting && (
