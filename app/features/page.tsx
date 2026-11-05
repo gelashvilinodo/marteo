@@ -1,6 +1,10 @@
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
+import Link from "next/link";
+import { Icon } from "@iconify/react";
+
 import CapabilitiesFlow from "@/components/landing/CapabilitiesFlow";
+import FeaturesHeroPreview from "@/components/landing/FeaturesHeroPreview";
 
 export const metadata = {
     title: "შესაძლებლობები - MARTEO",
@@ -32,6 +36,27 @@ export default function FeaturesPage() {
                     <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/70 sm:text-base">
                         ბიზნესის მთელი ციკლი, შესყიდვიდან მოგებამდე, ერთ სისტემაში.
                     </p>
+
+                    <div className="mt-6 flex justify-center gap-3 sm:mt-8">
+                        <Link
+                            href="/register"
+                            className="group inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-sm font-semibold whitespace-nowrap text-white shadow-lg shadow-accent/25 transition-all duration-200 hover:bg-accent-hover hover:scale-[1.02] sm:flex-none sm:px-6 sm:text-base"
+                        >
+                            სცადეთ უფასოდ
+                            <Icon
+                                icon="solar:arrow-right-linear"
+                                className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-0.5"
+                            />
+                        </Link>
+                        <Link
+                            href="/pricing"
+                            className="inline-flex flex-1 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-3.5 text-sm font-semibold whitespace-nowrap text-white transition-colors duration-200 hover:border-white/40 hover:bg-white/10 sm:flex-none sm:px-6 sm:text-base"
+                        >
+                            პაკეტები
+                        </Link>
+                    </div>
+
+                    <FeaturesHeroPreview />
                 </div>
             </section>
 
