@@ -100,12 +100,13 @@ const DATA_TOOLS: Anthropic.Tool[] = [
     {
         name: "get_stock",
         description:
-            "Product stock levels (not materials). filter low = 1 to 4 units left, exhausted = 0 units. query searches product names. Returns at most 15 rows plus totals. The app shows the found products to the user as cards with photos.",
+            "Product stock levels (not materials). filter low = 1 to 4 units left, exhausted = 0 units. query searches product names. sort most = largest stock first (for which product the user has the most of), least = smallest stock first (default). Returns at most 15 rows plus totals. The app shows the found products to the user as cards with photos.",
         input_schema: {
             type: "object",
             properties: {
                 filter: { type: "string", enum: ["low", "exhausted", "all"] },
                 query: { type: "string", description: "Optional product name search." },
+                sort: { type: "string", enum: ["least", "most"] },
                 limit: limitProperty,
             },
             required: ["filter"],
@@ -570,7 +571,7 @@ async function runTool(name: string, input: Record<string, unknown>, context: Ai
         case "get_stock": {
             const filter = ["low", "exhausted", "all"].includes(String(input.filter)) ? String(input.filter) : "all";
             const query = typeof input.query === "string" ? input.query.slice(0, 60) : "";
-            const page = await getInventoryPage(context.prisma, businessId, { status: filter, q: query, sort: "quantity-asc" }, readLimit(input, AI_CARD_LIMIT));
+            const page = await getInventoryPage(context.prisma, businessId, { status: filter, q: query, sort: input.sort === "most" ? "quantity-desc" : "quantity-asc" }, readLimit(input, AI_CARD_LIMIT));
             context.cards.push({ kind: "stock", total: input.limit ? page.products.length : page.totalProducts, items: page.products });
             return {
                 matching_variants: page.totalProducts,

@@ -41,6 +41,11 @@ export default function AiHistoryList({ history, activeId, loading, error, onOpe
     return (
         <div className="flex min-h-0 flex-1 flex-col">
             <div className="shrink-0 border-b border-border p-3">
+                <p className="mb-2.5 flex items-start gap-2 rounded-xl bg-accent/5 px-3 py-2 text-[11px] leading-snug text-text-secondary ring-1 ring-inset ring-accent/15">
+                    <Icon icon="solar:info-circle-linear" className="mt-px h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
+                    მართეო AI შეიძლება შეცდეს — მნიშვნელოვანი ინფორმაცია გადაამოწმეთ.
+                </p>
+
                 <button
                     type="button"
                     onClick={onNew}

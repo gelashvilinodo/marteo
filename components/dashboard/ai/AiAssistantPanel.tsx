@@ -184,10 +184,11 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
     const keyboard = useKeyboardViewport();
     const desktop = useSyncExternalStore(subscribeDesktop, () => window.matchMedia(DESKTOP_QUERY).matches, () => true);
 
+    // გახსნისას, ახალ ჩათზე და ისტორიიდან ჩათის ჩატვირთვისას კურსორი ველშია.
     // ტელეფონზე ავტომატური ფოკუსი კლავიატურას გახსნიდა — მხოლოდ დესკტოპზე.
     useEffect(() => {
-        if (open && desktop) textareaRef.current?.focus();
-    }, [open, desktop]);
+        if (open && desktop && view === "chat" && !loadingConversation) textareaRef.current?.focus({ preventScroll: true });
+    }, [open, desktop, view, loadingConversation, conversationId]);
 
     // ღია ფანჯრისას შიდა ბმულზე დაჭერა ჯერ ფანჯარას კეცავს, გვერდი კი
     // ანიმაციის დასრულების შემდეგ იცვლება. დესკტოპზე ფანჯრის გარეთ ნებისმიერი
@@ -360,6 +361,7 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
         setFile(null);
         setFileError("");
         newChat();
+        if (desktop) textareaRef.current?.focus({ preventScroll: true });
     }
 
     function toggle() {
