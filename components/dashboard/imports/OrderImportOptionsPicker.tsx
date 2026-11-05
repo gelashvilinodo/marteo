@@ -16,7 +16,7 @@ export default function OrderImportOptionsPicker({ value, onChange, needs }: {
     return <section className="space-y-3 rounded-xl border border-border bg-surface p-4">
         {unknownStatuses.length > 0 && <div className="space-y-3">
             <h2 className="font-semibold">ფაილის სტატუსები</h2>
-            <p className="text-sm text-text-secondary">ეს სტატუსები ავტომატურად ვერ ამოვიცანით. აირჩიეთ, რას ნიშნავს თითოეული. არჩევანი ამ სტატუსის მქონე ყველა შეკვეთას შეეხება.</p>
+            <p className="text-sm text-text-secondary">აირჩიეთ, რას ნიშნავს თითოეული სტატუსი - ერთხელ, ყველა შეკვეთისთვის.</p>
             <div className="grid gap-4 sm:grid-cols-2">
                 {unknownStatuses.map(status => <label key={status.key} className="space-y-1 text-sm"><span>„{status.label}“ · {status.orders} შეკვეთა</span>
                     <select value={statusMap[status.key] ?? ""} onChange={event => {
@@ -32,13 +32,13 @@ export default function OrderImportOptionsPicker({ value, onChange, needs }: {
         </div>}
         {Object.values(questions).some(Boolean) && <>
         <h2 className="font-semibold">ფაილში გამოტოვებული ინფორმაციის შევსება</h2>
-        <p className="text-sm text-text-secondary">ეს არჩევანები ყველა შესაბამის შეკვეთას შეეხება. ფაილში არსებულ მონაცემებს არ გადაწერს და სათითაოდ შევსება არ დაგჭირდებათ.</p>
+        <p className="text-sm text-text-secondary">ერთხელ აირჩიეთ - ყველა შესაბამის შეკვეთას შეეხება.</p>
         <div className="grid gap-4 sm:grid-cols-2">
             {required.status && <label className="space-y-1 text-sm"><span>სტატუსის გარეშე შეკვეთები</span>
                 <select value={value.missingStatus} onChange={event => onChange({ ...value, missingStatus: event.target.value as OrderImportOptions["missingStatus"] })} className={inputClass}>
                     <option value="UNRESOLVED">აირჩიეთ სტატუსი</option><option value="COMPLETED">დასრულებული</option><option value="PROCESSING">დამუშავებაში</option>
                 </select>
-                {value.missingStatus === "COMPLETED" && <span className="block text-xs text-text-secondary">დასრულებული ნიშნავს, რომ შეკვეთა შესრულებულია და სრულად გადახდილია. გადახდის ინფორმაცია ამას უნდა შეესაბამებოდეს.</span>}
+                {value.missingStatus === "COMPLETED" && <span className="block text-xs text-text-secondary">დასრულებული = მიწოდებული და სრულად გადახდილი.</span>}
             </label>}
             {required.payment && <label className="space-y-1 text-sm"><span>თუ გადახდის ინფორმაცია არ წერია</span>
                 <select value={value.missingPayment} onChange={event => onChange({ ...value, missingPayment: event.target.value as OrderImportOptions["missingPayment"] })} className={inputClass}>

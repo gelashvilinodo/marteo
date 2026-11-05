@@ -232,13 +232,13 @@ export async function readImportWorkbook(
         format: extension,
         byteSize: buffer.byteLength,
         sha256,
-        // Numbers-ის თარიღებს SheetJS Excel-ის 1900 სისტემის
-        // რიცხვებად აბრუნებს, თუმცა date1904-ს მაინც რთავს.
-        excelDateSystem:
-            extension === "xlsx" &&
-            workbook.Workbook?.WBProps?.date1904
-                ? "1904"
-                : "1900",
+        // Numbers-ის თარიღებს SheetJS 1904 სისტემის რიცხვებად
+        // აბრუნებს და date1904-ს რთავს. მისი საკუთარი ჩვენების
+        // ტექსტი (cell.w) ამ დროს 1900 სისტემით ცდება, ამიტომ
+        // მხოლოდ ამ ნიშანს ვენდობით.
+        excelDateSystem: workbook.Workbook?.WBProps?.date1904
+            ? "1904"
+            : "1900",
         documentCreatedAt: metadataDate(
             workbook.Props?.CreatedDate,
         ),

@@ -87,9 +87,7 @@ export default function CustomerRowsReview({
     if (!requiredConnected || hasConflict) {
         return (
             <p className="text-sm text-text-secondary">
-                რიგების შესამოწმებლად ჯერ ტელეფონისა და
-                მისამართის სვეტები დააკავშირე.
-                თითოეულ ველს განსხვავებული სვეტი უნდა ჰქონდეს.
+                აირჩიეთ ტელეფონისა და მისამართის სვეტები.
             </p>
         );
     }
@@ -143,13 +141,13 @@ export default function CustomerRowsReview({
                         }
                         if (cell.errorCode !== null) {
                             return [
-                                `${cell.address}: წყაროს უჯრედი შეიცავს შეცდომას. მისი მნიშვნელობა სანდოდ ვერ წავიკითხეთ. გაასწორე ფორმულა ან მიუთითე სწორი მონაცემი.`,
+                                `${cell.address}: წყაროს უჯრედი შეიცავს შეცდომას. მისი მნიშვნელობა სანდოდ ვერ წავიკითხეთ. გაასწორეთ ფორმულა ან მიუთითეთ სწორი მონაცემი.`,
                             ];
                         }
 
                         if (cell.formula && cell.value === null) {
                             return [
-                                `${cell.address}: ფორმულას შენახული შედეგი არ აქვს. გახსენი ფაილი Excel-ში ან Numbers-ში, გადაანგარიშე და შეინახე, ან მიუთითე მნიშვნელობა პირდაპირ.`,
+                                `${cell.address}: ფორმულას შენახული შედეგი არ აქვს. გახსენით ფაილი Excel-ში ან Numbers-ში, გადაანგარიშეთ და შეინახეთ, ან მიუთითეთ მნიშვნელობა პირდაპირ.`,
                             ];
                         }
 
@@ -232,9 +230,7 @@ export default function CustomerRowsReview({
 
                     {rows.length === 0 && (
                         <p className="text-sm text-text-secondary">
-                            სათაურების ქვემოთ არჩეულ სვეტებში
-                            მომხმარებლის მონაცემები ვერ ვიპოვეთ.
-                            გადაამოწმე რიგისა და სვეტების არჩევანი.
+                            არჩეულ სვეტებში მონაცემები ვერ ვიპოვეთ.
                         </p>
                     )}
 
@@ -245,10 +241,7 @@ export default function CustomerRowsReview({
                             </h3>
 
                             <p className="text-sm text-text-secondary">
-                                შეცვალე საჭირო ველები აქვე.
-                                სახელი და გვარი აუცილებელი არ არის.
-                                გასწორებული ჩანაწერი ამ სიაში დარჩება,
-                                რომ ცვლილება გადაამოწმო.
+                                შეცვალეთ ველები აქვე. სახელი და გვარი სავალდებულო არ არის.
                             </p>
 
                             <div className="max-h-[36rem] space-y-4 overflow-y-auto">
@@ -369,12 +362,6 @@ export default function CustomerRowsReview({
                         </section>
                     )}
 
-                    <p className="text-xs text-text-secondary">
-                        ეს შემოწმება ამოწმებს სავალდებულო ველებს.
-                        დუბლიკატებისა და არსებულ მომხმარებლებთან
-                        კავშირის შემოწმება შემდეგ ეტაპზე დაემატება.
-                        მონაცემები ჯერ არ ინახება.
-                    </p>
                 </>
             )}
         </div>

@@ -5,7 +5,7 @@ import {
     OrderValidationError,
 } from "@/lib/orders/order-validation-error";
 import {
-    saveProductAttributes,
+    saveProductAttributesBatch,
 } from "@/lib/purchases/save-product-attributes";
 import type {
     ProductImportPlanItem,
@@ -17,26 +17,22 @@ import type {
     SavedImportPhoto,
 } from "./read-saved-import-photos";
 
-// გამოიძახება მხოლოდ ავტორიზებულ ტრანზაქციაში,
-// Business-ისა და ImportJob-ის დაბლოკვისა და გეგმის გადამოწმების შემდეგ.
-export async function createImportedProduct({
-    tx,
+export type ImportedProductInput = {
+    item: ProductImportPlanItem;
+    photo: SavedImportPhoto | null;
+    skipPhoto: boolean;
+};
+
+// ბაზასთან შეხების გარეშე ამოწმებს და ამზადებს ერთ პროდუქტს.
+function checkImportedProduct({
     businessId,
-    jobId,
     item,
     stockDate,
-    nextSku,
-    photo = null,
-    skipPhoto = false,
-}: {
-    tx: Prisma.TransactionClient;
+    photo,
+    skipPhoto,
+}: ImportedProductInput & {
     businessId: string;
-    jobId: string;
-    item: ProductImportPlanItem;
     stockDate: string | null;
-    nextSku: () => string;
-    photo?: SavedImportPhoto | null;
-    skipPhoto?: boolean;
 }) {
     const record = item.record;
     const data = record.data;
@@ -160,87 +156,137 @@ export async function createImportedProduct({
         }
 
         if (date === null) {
-            fail("მიუთითე მარაგის თარიღი.");
+            fail("მიუთითეთ მარაგის თარიღი.");
         }
 
         availableAt = new Date(`${date}T00:00:00+04:00`);
     }
 
-    const attributes = await saveProductAttributes(
+    return {
+        record,
+        data,
+        photo,
+        skipPhoto,
+        quantity,
+        unitCost,
+        salePrice,
+        remainingCost,
+        availableAt,
+    };
+}
+
+// გამოიძახება მხოლოდ ავტორიზებულ ტრანზაქციაში,
+// Business-ისა და ImportJob-ის დაბლოკვისა და გეგმის გადამოწმების შემდეგ.
+// ყველა პროდუქტს ჯგუფურად წერს, რომ დიდი ფაილი ტაიმაუტზე არ გავიდეს.
+export async function createImportedProducts({
+    tx,
+    businessId,
+    jobId,
+    products,
+    stockDate,
+    nextSku,
+}: {
+    tx: Prisma.TransactionClient;
+    businessId: string;
+    jobId: string;
+    products: readonly ImportedProductInput[];
+    stockDate: string | null;
+    nextSku: () => string;
+}) {
+    const checked = products.map(input =>
+        checkImportedProduct({ ...input, businessId, stockDate }),
+    );
+
+    const attributes = await saveProductAttributesBatch(
         tx,
         businessId,
-        {
+        checked.map(({ data }) => ({
             brand: data.brand ?? "",
             category: data.category ?? "",
             color: data.color ?? "",
             size: data.size ?? "",
-        },
+        })),
     );
 
-    const product = await tx.product.create({
-        data: {
-            businessId,
-            name: data.name,
-            description: data.description,
-            brand: attributes.brand || null,
-            category: attributes.category || null,
-        },
-        select: { id: true },
-    });
+    const rows = checked.map((entry, index) => ({
+        ...entry,
+        attributes: attributes[index],
+        productId: crypto.randomUUID(),
+        inventoryItemId: crypto.randomUUID(),
+        stockLotId: crypto.randomUUID(),
+        sku: nextSku(),
+    }));
 
-    const inventory = await tx.inventoryItem.create({
-        data: {
-            businessId,
-            productId: product.id,
-            sku: nextSku(),
-            imageUrl: photo?.imageUrl ?? null,
-            color: attributes.color || null,
-            size: attributes.size || null,
-            salePrice,
-            pricingMethod: salePrice === null ? null : "MANUAL",
-            pricingValue: salePrice,
-            currentStock: quantity,
-            isActive: true,
-        },
-        select: { id: true, sku: true },
-    });
+    for (let index = 0; index < rows.length; index += 500) {
+        const chunk = rows.slice(index, index + 500);
 
-    // ნულოვანი ჩანაწერიც საჭიროა, რომ მხოლოდ კატალოგის
-    // პროდუქტიც გამოჩნდეს მარაგების არსებულ სიაში.
-    const lot = await tx.inventoryStockLot.create({
-        data: {
-            inventoryItemId: inventory.id,
-            quantity,
-            remainingQuantity: quantity,
-            unitCost,
-            remainingCost,
-            availableAt,
-        },
-        select: { id: true },
-    });
-
-    if (quantity > 0) {
-        await tx.inventoryMovement.create({
-            data: {
-                inventoryItemId: inventory.id,
-                type: "ADJUSTMENT_IN",
-                condition: "GOOD",
-                quantity,
-                createdAt: availableAt,
-                note: `იმპორტი ${jobId}; ${record.fileName} / ${record.sheetName}; რიგი ${record.rowNumber}`,
-            },
+        await tx.product.createMany({
+            data: chunk.map(row => ({
+                id: row.productId,
+                businessId,
+                name: row.data.name,
+                description: row.data.description,
+                brand: row.attributes.brand || null,
+                category: row.attributes.category || null,
+            })),
         });
+
+        await tx.inventoryItem.createMany({
+            data: chunk.map(row => ({
+                id: row.inventoryItemId,
+                businessId,
+                productId: row.productId,
+                sku: row.sku,
+                imageUrl: row.photo?.imageUrl ?? null,
+                color: row.attributes.color || null,
+                size: row.attributes.size || null,
+                salePrice: row.salePrice,
+                pricingMethod: row.salePrice === null ? null : "MANUAL" as const,
+                pricingValue: row.salePrice,
+                currentStock: row.quantity,
+                isActive: true,
+            })),
+        });
+
+        // ნულოვანი ჩანაწერიც საჭიროა, რომ მხოლოდ კატალოგის
+        // პროდუქტიც გამოჩნდეს მარაგების არსებულ სიაში.
+        await tx.inventoryStockLot.createMany({
+            data: chunk.map(row => ({
+                id: row.stockLotId,
+                inventoryItemId: row.inventoryItemId,
+                quantity: row.quantity,
+                remainingQuantity: row.quantity,
+                unitCost: row.unitCost,
+                remainingCost: row.remainingCost,
+                availableAt: row.availableAt,
+            })),
+        });
+
+        const movements = chunk.filter(row => row.quantity > 0);
+
+        if (movements.length > 0) {
+            await tx.inventoryMovement.createMany({
+                data: movements.map(row => ({
+                    inventoryItemId: row.inventoryItemId,
+                    type: "ADJUSTMENT_IN" as const,
+                    condition: "GOOD" as const,
+                    quantity: row.quantity,
+                    createdAt: row.availableAt,
+                    note: `იმპორტი ${jobId}; ${row.record.fileName} / ${row.record.sheetName}; რიგი ${row.record.rowNumber}`,
+                })),
+            });
+        }
     }
 
-    return {
-        productId: product.id,
-        inventoryItemId: inventory.id,
-        stockLotId: lot.id,
-        sku: inventory.sku,
-        photoId: photo?.id ?? null,
-        photoSkipped: skipPhoto,
-        imageUrl: photo?.imageUrl ?? null,
-        quantity,
-        unitCost: unitCost?.toFixed(2) ?? null,
-    };
+    return rows.map(row => ({
+        productId: row.productId,
+        inventoryItemId: row.inventoryItemId,
+        stockLotId: row.stockLotId,
+        sku: row.sku,
+        photoId: row.photo?.id ?? null,
+        photoSkipped: row.skipPhoto,
+        imageUrl: row.photo?.imageUrl ?? null,
+        quantity: row.quantity,
+        unitCost: row.unitCost?.toFixed(2) ?? null,
+    }));
 }

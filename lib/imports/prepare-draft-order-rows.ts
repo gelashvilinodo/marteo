@@ -107,7 +107,7 @@ export function prepareDraftOrderRows(input: {
                     // არ ჰქონდათ მითითებული.
                     excelDateSystem:
                         entry.file.excelDateSystem ??
-                        (entry.file.format === "numbers" ? "1900" : null),
+                        (entry.file.format === "numbers" ? "1904" : null),
                     orderTotalIncludesCourier:
                         mapping.orderTotalIncludesCourier === true,
                     paidAmountIncludesCourier:

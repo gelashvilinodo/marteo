@@ -24,7 +24,7 @@ export default function ProductStockDateInput({
 
     try {
         if (validateProductStockDate(value) === null) {
-            error = "აირჩიე, რომელ დღეს არსებულ ნაშთს ტვირთავ. ეს ველი ერთხელ ივსება.";
+            error = "აირჩიეთ, რომელ დღეს არსებულ ნაშთს ტვირთავთ. ეს ველი ერთხელ ივსება.";
         }
     } catch (cause) {
         error =
@@ -43,9 +43,7 @@ export default function ProductStockDateInput({
             </label>
 
             <p className="text-sm text-text-secondary">
-                მიუთითე, რომელ თარიღს ეხება გადმოსატანი მარაგი.
-                ეს თარიღი გამოყენებული იქნება ყველა იმ
-                ჩანაწერისთვის, რომლის რაოდენობაც გადმოგვაქვს.
+                რომელი დღის ნაშთია? ერთი თარიღი ყველა პროდუქტისთვის.
             </p>
 
             <input

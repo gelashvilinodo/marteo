@@ -16,8 +16,6 @@ import type {
 import type {
     LoadedImportDraft,
 } from "./ImportDraftPicker";
-import ImportDraftProductsCheck from "./ImportDraftProductsCheck";
-import ImportDraftCustomersCheck from "./ImportDraftCustomersCheck";
 import type {
     PreparedImportPhoto,
 } from "@/lib/imports/prepare-import-photos";
@@ -29,7 +27,12 @@ import {
 import type {
     ImportPhotoManifest,
 } from "@/lib/imports/import-photo-manifest";
-import ImportDraftOrdersCheck from "./ImportDraftOrdersCheck";
+import {
+    checkImportSection,
+    executeImportSection,
+    ImportSectionUncertainError,
+    type ImportSectionReceipt,
+} from "@/lib/imports/run-import-section";
 
 type DraftFile = {
     clientFileId: string;
@@ -114,7 +117,7 @@ async function post(
         Array.isArray(raw)
     ) {
         throw new Error(
-            "შენახვის პასუხი ვერ წავიკითხეთ. სცადე ხელახლა.",
+            "შენახვის პასუხი ვერ წავიკითხეთ. სცადეთ ხელახლა.",
         );
     }
 
@@ -138,7 +141,7 @@ function revision(value: unknown): number {
         value < 1
     ) {
         throw new Error(
-            "მონახაზის ვერსია პასუხში ვერ დადასტურდა. სცადე ხელახლა.",
+            "მონახაზის ვერსია პასუხში ვერ დადასტურდა. სცადეთ ხელახლა.",
         );
     }
 
@@ -173,52 +176,39 @@ export default function ImportDraftSaveButton({
     onSectionImported: (category: ImportCategory, allDone: boolean) => void;
 }) {
     const [saving, setSaving] = useState(false);
-    const [importLocked, setImportLocked] = useState(false);
-    const [activeExecution, setActiveExecution] = useState<
-        "CUSTOMERS" | "PRODUCTS" | "ORDERS" | null
-    >(null);
     const [importCompleted, setImportCompleted] = useState(false);
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
-
-    const [checkTarget, setCheckTarget] = useState<{
-        draftId: string;
-        revision: number;
-        signature: string;
+    const [progress, setProgress] = useState(0);
+    const [results, setResults] = useState<
+        Partial<Record<ImportCategory, ImportSectionReceipt>>
+    >({});
+    const [activeCategory, setActiveCategory] =
+        useState<ImportCategory | null>(null);
+    const [blocked, setBlocked] = useState<{
+        category: ImportCategory;
+        problems: string[];
     } | null>(null);
 
-    const currentSignature = JSON.stringify({
-        files: files.map(fileSignature),
-        settings,
-    });
+    // კატეგორია, რომლის შენახვის პასუხი დაიკარგა. ხელახლა
+    // ცდისას პირდაპირ შენახვას ვიმეორებთ: სერვერი უკვე
+    // შესრულებულს მეორედ არ შეასრულებს და შედეგს დააბრუნებს.
+    const uncertain = useRef<ImportCategory | null>(null);
 
     const selectedCategories = (["customers", "products", "orders"] as ImportCategory[]).filter(category => {
         const mappings = category === "orders" ? settings.orderMappings ?? {}
             : category === "customers" ? settings.customerMappings : settings.productMappings;
         return Object.values(mappings).some(sheets => Object.values(sheets as Record<string, { enabled: boolean }>).some(mapping => mapping.enabled));
     });
-    const nextCategory = selectedCategories.find(category => !completedSections.includes(category));
-    function sectionImported(category: ImportCategory) {
-        const allDone = selectedCategories.every(item => item === category || completedSections.includes(item));
-        if (session.current) session.current.revision += 1;
-        setCheckTarget(current => current ? { ...current, revision: current.revision + 1 } : null);
-        setImportCompleted(allDone);
-        setMessage(allDone ? "ყველა მონიშნული კატეგორია გადმოტანილია." : `${IMPORT_CATEGORY_LABELS[category]} გადმოტანილია. გააგრძელე შემდეგი კატეგორიით.`);
-        onSectionImported(category, allDone);
-    }
-
     const running = useRef(false);
     const session = useRef<SaveSession | null>(null);
 
-    useImperativeHandle(saveRef, () => ({
-        save,
-    }));
-
-    async function save() {
+    // ერთი ღილაკი: ინახავს მონახაზს, შემდეგ თითო კატეგორიას
+    // ამოწმებს და გადმოაქვს. შეჩერდება პირველსავე პრობლემაზე.
+    async function transfer() {
         if (
             running.current ||
             disabled ||
-            importLocked ||
             importCompleted ||
             files.length === 0 ||
             selectedCategories.length === 0
@@ -228,8 +218,94 @@ export default function ImportDraftSaveButton({
         setSaving(true);
         onSavingChange(true);
         setError("");
-        setCheckTarget(null);
-        setMessage("მონახაზი ინახება…");
+        setBlocked(null);
+
+        const pending = selectedCategories.filter(
+            category => !completedSections.includes(category),
+        );
+        const done = new Set(completedSections);
+        const total = pending.length + 1;
+
+        try {
+            setProgress(0);
+            const target = await saveDraft();
+
+            if (!target) return;
+
+            const current = session.current!;
+            let step = 1;
+            setProgress(step / total);
+
+            for (const category of pending) {
+                setActiveCategory(category);
+                setMessage(`${IMPORT_CATEGORY_LABELS[category]} გადმოგვაქვს…`);
+
+                if (uncertain.current !== category) {
+                    const check = await checkImportSection({
+                        draftId: target.draftId,
+                        revision: current.revision,
+                        category,
+                    });
+
+                    if (!check.canImport) {
+                        setBlocked({ category, problems: check.problems });
+                        return;
+                    }
+                }
+
+                let receipt: ImportSectionReceipt;
+
+                try {
+                    receipt = await executeImportSection({
+                        draftId: target.draftId,
+                        revision: current.revision,
+                        category,
+                    });
+                } catch (cause: unknown) {
+                    if (cause instanceof ImportSectionUncertainError) {
+                        uncertain.current = category;
+                    }
+
+                    throw cause;
+                }
+
+                uncertain.current = null;
+                current.revision += 1;
+                done.add(category);
+                setResults(previous => ({ ...previous, [category]: receipt }));
+
+                const allDone = selectedCategories.every(item => done.has(item));
+                onSectionImported(category, allDone);
+
+                step++;
+                setProgress(step / total);
+
+                if (allDone) setImportCompleted(true);
+            }
+        } catch (cause: unknown) {
+            setError(
+                (cause instanceof Error
+                    ? cause.message
+                    : "გადმოტანა შეჩერდა.") +
+                (cause instanceof ImportSectionUncertainError
+                    ? " დააჭირეთ „გაგრძელებას“ - უკვე შენახული მეორედ არ შეინახება."
+                    : ""),
+            );
+        } finally {
+            running.current = false;
+            setActiveCategory(null);
+            setMessage("");
+            setSaving(false);
+            onSavingChange(false);
+        }
+    }
+
+    // ფაილებს, ფოტოებსა და არჩევანს სერვერზე ინახავს.
+    async function saveDraft(): Promise<{
+        draftId: string;
+        revision: number;
+    } | null> {
+        setMessage("მონაცემები მზადდება…");
 
         // ვინახავთ ღილაკზე დაჭერის მომენტში არსებულ არჩევანს.
         const capturedSettings = JSON.parse(
@@ -276,7 +352,7 @@ export default function ImportDraftSaveButton({
                     Array.isArray(rawDraft)
                 ) {
                     throw new Error(
-                        "შექმნილი მონახაზი ვერ დადასტურდა. სცადე ხელახლა.",
+                        "შექმნილი მონახაზი ვერ დადასტურდა. სცადეთ ხელახლა.",
                     );
                 }
 
@@ -394,7 +470,7 @@ export default function ImportDraftSaveButton({
                     typeof response.fileId !== "string"
                 ) {
                     throw new Error(
-                        "შენახული ფაილის იდენტობა ვერ დადასტურდა. სცადე ხელახლა.",
+                        "შენახული ფაილის იდენტობა ვერ დადასტურდა. სცადეთ ხელახლა.",
                     );
                 }
 
@@ -457,180 +533,106 @@ export default function ImportDraftSaveButton({
                 await finishPendingSettings();
             }
 
-            setCheckTarget({
+            return {
                 draftId: current.draftId,
                 revision: current.revision,
-                signature,
-            });
-
-            setMessage(
-                "მონახაზი შენახულია. შენახვის დაწყების შემდეგ შეტანილი ცვლილებები ხელახლა შეინახე.",
-            );
+            };
         } catch (cause: unknown) {
-            setMessage("");
             setError(
                 cause instanceof Error
                     ? cause.message
-                    : "შენახვა ვერ დასრულდა. სცადე ხელახლა.",
+                    : "შენახვა ვერ დასრულდა. სცადეთ ხელახლა.",
             );
-        } finally {
-            running.current = false;
-            setSaving(false);
-            onSavingChange(false);
+
+            return null;
         }
     }
+
+    useImperativeHandle(saveRef, () => ({
+        save: transfer,
+    }));
+
+    const stopped = error !== "" || blocked !== null;
 
     return (
         <div
             id="import-draft-save"
-            className="scroll-mt-28 space-y-2 border-t border-border pt-3"
+            className="scroll-mt-28 space-y-4"
         >
-            <button
-                type="button"
-                hidden={importCompleted || (checkTarget?.signature === currentSignature && !saving)}
-                disabled={disabled || saving || importLocked || importCompleted || files.length === 0 || selectedCategories.length === 0}
-                onClick={() => void save()}
-                className="min-h-12 w-full rounded-xl bg-accent px-5 text-sm font-semibold text-white disabled:opacity-50 sm:w-auto"
-            >
-                {saving
-                    ? "ინახება…"
-                    : initialDraft?.draft.status === "PARTIAL"
-                        ? "დარჩენილი იმპორტის გაგრძელება"
-                        : "მონაცემების მომზადება და შემოწმება"}
-            </button>
+            <ul className="divide-y divide-border rounded-xl border border-border">
+                {selectedCategories.map(category => {
+                    const result = results[category];
+                    const status = result
+                        ? `${result.savedCount} დაემატა` +
+                            (result.skippedCount > 0 ? ` · ${result.skippedCount} არ გადმოვიდა` : "")
+                        : completedSections.includes(category)
+                            ? "უკვე გადმოტანილია"
+                            : activeCategory === category
+                                ? "მიმდინარეობს…"
+                                : blocked?.category === category
+                                    ? "გასასწორებელია"
+                                    : "მზადაა გადმოსატანად";
+                    const doneHere = result !== undefined || completedSections.includes(category);
 
-            {message && (
-                <p role="status" className="text-sm text-text-secondary">
-                    {message}
-                </p>
-            )}
+                    return (
+                        <li key={category} className="flex items-center justify-between gap-3 p-3 text-sm">
+                            <span className="font-medium">{IMPORT_CATEGORY_LABELS[category]}</span>
+                            <span className={doneHere ? "text-success" : blocked?.category === category ? "text-danger" : "text-text-secondary"}>
+                                {doneHere && "✓ "}{status}
+                            </span>
+                        </li>
+                    );
+                })}
+            </ul>
 
-            {error && (
-                <div role="alert" className="space-y-1 text-sm">
-                    <p className="text-danger">{error}</p>
-                    <p className="text-text-secondary">
-                        გვერდი არ განაახლო. ხელახლა შენახვა
-                        უკვე დასრულებულ ნაბიჯებს აღარ გაიმეორებს.
+            {blocked && (
+                <div role="alert" className="space-y-2 rounded-xl border border-danger/60 p-3 text-sm">
+                    <p className="font-medium text-danger">
+                        {IMPORT_CATEGORY_LABELS[blocked.category]}: გადმოტანამდე გასასწორებელია
                     </p>
+                    <ul className="list-disc space-y-1 pl-5">
+                        {blocked.problems.slice(0, 5).map(problem => <li key={problem}>{problem}</li>)}
+                    </ul>
+                    {blocked.problems.length > 5 && (
+                        <p className="text-text-secondary">და კიდევ {blocked.problems.length - 5}.</p>
+                    )}
+                    {onReviewCategory && (
+                        <button type="button" onClick={() => onReviewCategory(blocked.category)} className="min-h-11 rounded-xl border border-border px-4">
+                            გასწორება
+                        </button>
+                    )}
                 </div>
             )}
 
-            {checkTarget && !importCompleted && nextCategory && <div className="space-y-2 rounded-xl bg-accent/10 p-3 text-sm">
-                <p>ახლა გადმოგვაქვს: <strong>{IMPORT_CATEGORY_LABELS[nextCategory]}</strong>. შემდეგი კატეგორია დასრულების შემდეგ გამოჩნდება.</p>
-                {onReviewCategory && <button type="button" disabled={saving || importLocked} onClick={() => onReviewCategory(nextCategory)} className="min-h-10 rounded-lg border border-border px-3 disabled:opacity-50">ამ კატეგორიის მონაცემების შესწორება</button>}
-            </div>}
-            {checkTarget &&
-                checkTarget.signature === currentSignature &&
-                !saving && (
-                    <div className="space-y-3">
-                        {nextCategory === "customers" &&
-                            Object.values(
-                                settings.customerMappings,
-                            ).some(sheets =>
-                                Object.values(sheets).some(
-                                    mapping => mapping.enabled,
-                                ),
-                            ) && (
-                                <ImportDraftCustomersCheck
-                                    key={`customers:${checkTarget.draftId}:${checkTarget.revision}`}
-                                    draftId={checkTarget.draftId}
-                                    revision={checkTarget.revision}
-                                    disabled={
-                                        disabled ||
-                                        importCompleted ||
-                                        (
-                                            activeExecution !== null &&
-                                            activeExecution !== "CUSTOMERS"
-                                        )
-                                    }
-                                    onExecutionLockChange={locked => {
-                                        setImportLocked(locked);
-                                        setActiveExecution(
-                                            locked ? "CUSTOMERS" : null,
-                                        );
-                                        onSavingChange(locked);
-                                    }}
-                                    onImported={() => sectionImported("customers")}
-                                />
-                            )}
+            {error && (
+                <p role="alert" className="text-sm text-danger">{error}</p>
+            )}
 
-                        {nextCategory === "products" &&
-                            Object.values(
-                                settings.productMappings,
-                            ).some(sheets =>
-                                Object.values(sheets).some(
-                                    mapping => mapping.enabled,
-                                ),
-                            ) && (
-                                <ImportDraftProductsCheck
-                                    key={`products:${checkTarget.draftId}:${checkTarget.revision}`}
-                                    draftId={checkTarget.draftId}
-                                    revision={checkTarget.revision}
-                                    disabled={
-                                        disabled ||
-                                        importCompleted ||
-                                        (
-                                            activeExecution !== null &&
-                                            activeExecution !== "PRODUCTS"
-                                        )
-                                    }
-                                    onExecutionLockChange={locked => {
-                                        setImportLocked(locked);
-                                        setActiveExecution(
-                                            locked ? "PRODUCTS" : null,
-                                        );
-                                        onSavingChange(locked);
-                                    }}
-                                    onImported={() => sectionImported("products")}
-                                />
-                            )}
-
-                        {nextCategory === "orders" &&
-                            Object.values(
-                                settings.orderMappings ?? {},
-                            ).some(sheets =>
-                                Object.values(sheets).some(
-                                    mapping => mapping.enabled,
-                                ),
-                            ) && (
-                                <ImportDraftOrdersCheck
-                                    key={`orders:${checkTarget.draftId}:${checkTarget.revision}`}
-                                    draftId={checkTarget.draftId}
-                                    revision={checkTarget.revision}
-                                    disabled={
-                                        disabled ||
-                                        importCompleted ||
-                                        (
-                                            activeExecution !== null &&
-                                            activeExecution !== "ORDERS"
-                                        )
-                                    }
-                                    onExecutionLockChange={locked => {
-                                        setImportLocked(locked);
-                                        setActiveExecution(
-                                            locked ? "ORDERS" : null,
-                                        );
-                                        onSavingChange(locked);
-                                    }}
-                                    onImported={() => sectionImported("orders")}
-                                />
-                            )}
+            {saving && (
+                <div className="space-y-1">
+                    <div className="h-2 overflow-hidden rounded-full bg-border">
+                        <div className="h-full bg-success transition-all" style={{ width: `${Math.max(5, Math.round(progress * 100))}%` }} />
                     </div>
-                )}
+                    <p role="status" className="text-sm text-text-secondary">{message}</p>
+                </div>
+            )}
 
-            {checkTarget &&
-                checkTarget.signature !== currentSignature && (
-                    <p className="text-sm text-text-secondary">
-                        მონაცემები შეიცვალა. სერვერზე შემოწმებამდე
-                        მონახაზი ხელახლა შეინახე.
-                    </p>
-                )}
+            {!importCompleted && (
+                <button
+                    type="button"
+                    disabled={disabled || saving || files.length === 0 || selectedCategories.length === 0}
+                    onClick={() => void transfer()}
+                    className="min-h-12 w-full rounded-xl bg-accent px-5 text-sm font-semibold text-white disabled:opacity-50 sm:w-auto"
+                >
+                    {saving ? "გადმოგვაქვს…" : stopped || completedSections.length > 0 ? "გაგრძელება" : "გადმოტანა MARTEO-ში"}
+                </button>
+            )}
 
-            <p className="text-xs text-text-secondary">
-                მონაცემები ბიზნესში ემატება მხოლოდ შესაბამისი კატეგორიის
-                საბოლოო გადმოტანის დადასტურებით. მანამდე შეგიძლია დაბრუნდე
-                და შესწორებები შეიტანო.
-            </p>
+            {importCompleted && (
+                <p role="status" className="text-sm font-medium text-success">
+                    ყველაფერი გადმოტანილია.
+                </p>
+            )}
         </div>
     );
 }

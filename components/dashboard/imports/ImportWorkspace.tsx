@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { readImportFile } from "@/lib/imports/read-import-file-client";
@@ -97,13 +99,23 @@ import type {
 
 import {
     createDiscoveredMappings, discoverImportSources,
-    IMPORT_CATEGORY_LABELS, IMPORT_CATEGORY_ORDER,
+    IMPORT_CATEGORY_LABELS, IMPORT_CATEGORY_NOUNS, IMPORT_CATEGORY_ORDER,
     type ImportCategory,
 } from "@/lib/imports/discover-import-sources";
 
 import { getOrderImportNeeds } from "@/lib/imports/get-order-import-needs";
+import { prepareDraftOrders } from "@/lib/imports/prepare-draft-orders";
+import { prepareImportCustomers } from "@/lib/imports/prepare-import-customers";
+import { buildCustomerImportPlan } from "@/lib/imports/build-customer-import-plan";
+import {
+    summarizeCustomerCategory,
+    summarizeOrderCategory,
+    summarizeProductCategory,
+    type ImportCategoryStatus,
+} from "@/lib/imports/summarize-import-categories";
+import ImportCategoryCards from "./ImportCategoryCards";
 
-type ImportStep = "files" | ImportCategory | "review";
+type ImportStep = "files" | "check" | "review";
 
 type FileEntry = {
     id: string;
@@ -224,6 +236,8 @@ function FilePreview({
 export default function ImportWorkspace() {
     const draftSaveRef = useRef<ImportDraftSaveHandle | null>(null);
     const [step, setStep] = useState<ImportStep>("files");
+    // შემოწმების გვერდზე გახსნილი კატეგორია (შესასწორებლად).
+    const [openCategory, setOpenCategory] = useState<ImportCategory | null>(null);
     const [completedSections, setCompletedSections] = useState<ImportCategory[]>([]);
     const [orderMappings, setOrderMappings] = useState<
         Record<string, Record<string, OrderImportMapping>>
@@ -277,6 +291,7 @@ export default function ImportWorkspace() {
     const [draftSaving, setDraftSaving] = useState(false);
     const [draftLoading, setDraftLoading] = useState(false);
     const [draftNotice, setDraftNotice] = useState("");
+    const [checkNotice, setCheckNotice] = useState("");
     const [customerCheckSnapshot, setCustomerCheckSnapshot] =
         useState<ImportCustomerCheckSnapshot | null>(null);
     const [existingCustomerLinks, setExistingCustomerLinks] =
@@ -476,6 +491,25 @@ export default function ImportWorkspace() {
 
     const discovery = useMemo(() => entries.flatMap(entry => entry.result
         ? discoverImportSources(entry.result).map(source => ({ ...source, fileId: entry.id, fileName: entry.name })) : []), [entries]);
+    // ნაპოვნი ჩანაწერების რაოდენობა: შეკვეთებისთვის შეკვეთები და არა რიგები.
+    const foundCounts = useMemo(() => {
+        const counts: Partial<Record<ImportCategory, number>> = {};
+        for (const category of ["customers", "products"] as const) {
+            counts[category] = discovery.filter(source => source.category === category && source.suggested).reduce((sum, source) => sum + source.rowCount, 0);
+        }
+        const orderSources = discovery.filter(source => source.category === "orders" && source.suggested);
+        if (orderSources.length > 0) {
+            try {
+                const files = entries.flatMap(entry => entry.result ? [{ clientFileId: entry.id, file: entry.result }] : []);
+                const mappings = Object.fromEntries(entries.flatMap(entry => entry.result ? [[entry.id, Object.fromEntries(Object.entries(createDiscoveredMappings(entry.result).orders).map(([name, mapping]) => [name, { ...mapping, enabled: orderSources.some(source => source.fileId === entry.id && source.sheetName === name) }]))]] : []));
+                const prepared = prepareDraftOrders({ files, settings: { orderMappings: mappings, orderOptions: createOrderImportOptions() } as unknown as ImportDraftSettings });
+                counts.orders = prepared.summary.totalGroups + prepared.summary.groupingProblemRowCount;
+            } catch {
+                counts.orders = orderSources.reduce((sum, source) => sum + source.rowCount, 0);
+            }
+        }
+        return counts;
+    }, [discovery, entries]);
     const unrecognizedSheets = entries.flatMap(entry => entry.result ? entry.result.sheets.filter(sheet =>
         !discovery.some(source => source.fileId === entry.id && source.sheetName === sheet.name)
     ).map(sheet => ({ fileId: entry.id, fileName: entry.name, sheet })) : []);
@@ -489,29 +523,45 @@ export default function ImportWorkspace() {
     const categoryMappings = { orders: orderMappings, customers: customerMappings, products: productMappings };
     const selectedCategories = IMPORT_CATEGORY_ORDER.filter(category => Object.values(categoryMappings[category]).some(sheets => Object.values(sheets as Record<string, { enabled: boolean }>).some(mapping => mapping.enabled)));
     const availableCategories = IMPORT_CATEGORY_ORDER.filter(category => selectedCategories.includes(category) || discovery.some(source => source.category === category));
-    const editableCategories = availableCategories.filter(category => !completedSections.includes(category));
-    const steps: ImportStep[] = ["files", ...editableCategories, "review"];
+    const steps: ImportStep[] = ["files", "check", "review"];
     const nextStep = steps[steps.indexOf(step) + 1] ?? "review";
-    const nextStepLabel = nextStep === "review" ? "შეჯამება და შენახვა" : `შემდეგი: ${IMPORT_CATEGORY_LABELS[nextStep as ImportCategory]}`;
-    function moveTo(next: ImportStep) {
-        setStep(next);
+    function moveTo(next: ImportStep | ImportCategory) {
+        if (next === "files" || next === "check" || next === "review") {
+            setStep(next);
+            if (next !== "check") setOpenCategory(null);
+        } else {
+            setStep("check");
+            setOpenCategory(next);
+        }
         document.getElementById("import-wizard-heading")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-    const productStockDateReview = useMemo(() => {
+    const productReview = useMemo(() => {
         const sources = entries.flatMap(entry => entry.result ? entry.result.sheets.flatMap(sheet => {
             const mapping = productMappings[entry.id]?.[sheet.name];
             return mapping?.enabled ? [{ fileId: entry.id, fileName: entry.name, sheet, mapping, edits: productEdits[entry.id]?.[sheet.name] ?? {} }] : [];
         }) : []);
         const prepared = prepareImportProducts(sources, excludedProductKeys);
         const resolved = resolveImportProductDuplicates({ records: prepared.records, decisions: productDuplicateDecisions });
-        return getProductStockDateReview(buildProductImportPlan({ records: resolved.records, snapshot: productCheckSnapshot, decisions: existingProductLinks, stockPolicy: productStockPolicy, stockDate: productStockDate }), productStockDate, productStockPolicy);
+        const plan = buildProductImportPlan({ records: resolved.records, snapshot: productCheckSnapshot, decisions: existingProductLinks, stockPolicy: productStockPolicy, stockDate: productStockDate });
+        return { plan, stockDate: getProductStockDateReview(plan, productStockDate, productStockPolicy) };
     }, [entries, productMappings, productEdits, excludedProductKeys, productDuplicateDecisions, productCheckSnapshot, existingProductLinks, productStockPolicy, productStockDate]);
+    const productStockDateReview = productReview.stockDate;
     const productDateBlocked = !completedSections.includes("products") && productStockDateReview.error !== null;
     function goNext() {
-        if (step === "products" && productDateBlocked) {
-            document.getElementById("import-stock-date")?.scrollIntoView({ behavior: "smooth", block: "center" });
-            return;
+        if (step === "check") {
+            if (productDateBlocked) {
+                setOpenCategory("products");
+                requestAnimationFrame(() => document.getElementById("import-stock-date")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+                return;
+            }
+            const firstAttention = selectedCategories.find(category => !completedSections.includes(category) && (categoryStatus[category]?.attention ?? 0) > 0);
+            if (firstAttention) {
+                setOpenCategory(firstAttention);
+                setCheckNotice("ჯერ გაასწორეთ ან გამოტოვეთ მონიშნული ჩანაწერები.");
+                return;
+            }
         }
+        setCheckNotice("");
         moveTo(nextStep);
     }
     function goBack() { moveTo(steps[Math.max(0, steps.indexOf(step) - 1)] ?? "files"); }
@@ -523,8 +573,24 @@ export default function ImportWorkspace() {
             setSkipOrderCustomers(true);
         }
         if (category === "products") setProductMappings(disable);
-        // Skipping is explicit: do not validate the old render's category data.
-        moveTo(nextStep);
+        if (openCategory === category) setOpenCategory(null);
+    }
+    function includeCategory(category: ImportCategory) {
+        const sources = discovery.filter(source => source.category === category);
+        const enable = <T extends { enabled: boolean },>(current: Record<string, Record<string, T>>) => Object.fromEntries(Object.entries(current).map(([id, sheets]) => [id, Object.fromEntries(Object.entries(sheets).map(([name, mapping]) => [name, { ...mapping, enabled: mapping.enabled || sources.some(source => source.fileId === id && source.sheetName === name && source.suggested) }]))]));
+        if (category === "orders") setOrderMappings(enable);
+        if (category === "customers") {
+            setCustomerMappings(enable);
+            setSkipOrderCustomers(false);
+        }
+        if (category === "products") setProductMappings(enable);
+    }
+    function skipAttention(category: ImportCategory) {
+        const keys = categoryStatus[category]?.attentionKeys ?? [];
+        const add = (current: string[]) => [...new Set([...current, ...keys])];
+        if (category === "orders") setExcludedOrderKeys(add);
+        if (category === "customers") setExcludedCustomerKeys(add);
+        if (category === "products") setExcludedProductKeys(add);
     }
 
     const importSettings: ImportDraftSettings = {
@@ -550,6 +616,30 @@ export default function ImportWorkspace() {
         existingCustomerLinks,
         existingProductLinks,
     };
+
+    // თითო კატეგორიის მოკლე შეჯამება შემოწმების გვერდისთვის.
+    const categoryStatus: Partial<Record<ImportCategory, ImportCategoryStatus>> = {};
+    if (step === "check") {
+        const draftFiles = entries.flatMap(entry => entry.result ? [{ clientFileId: entry.id, file: entry.result }] : []);
+        if (selectedCategories.includes("orders")) {
+            try {
+                categoryStatus.orders = summarizeOrderCategory(prepareDraftOrders({ files: draftFiles, settings: importSettings }), orderGroupingConfirmations);
+            } catch {
+                // შეცდომას შეკვეთების დეტალური ბლოკი აჩვენებს.
+            }
+        }
+        if (selectedCategories.includes("customers")) {
+            const customerSources = entries.flatMap(entry => entry.result ? entry.result.sheets.flatMap(sheet => {
+                const mapping = customerMappings[entry.id]?.[sheet.name];
+                return mapping?.enabled ? [{ fileId: entry.id, fileName: entry.name, sheet, mapping, edits: customerEdits[entry.id]?.[sheet.name] ?? {} }] : [];
+            }) : []);
+            const customerPlan = buildCustomerImportPlan({ records: prepareImportCustomers(customerSources, excludedCustomerKeys).records, snapshot: customerCheckSnapshot, links: existingCustomerLinks });
+            categoryStatus.customers = summarizeCustomerCategory(customerPlan, excludedCustomerKeys.length);
+        }
+        if (selectedCategories.includes("products")) {
+            categoryStatus.products = summarizeProductCategory(productReview.plan, excludedProductKeys.length);
+        }
+    }
 
     function startNewImport() {
         hashes.current.clear();
@@ -584,6 +674,22 @@ export default function ImportWorkspace() {
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
+    // ისტორიული შეკვეთები ძველი თარიღებითაა, ამიტომ დასრულების
+    // შემდეგ მათ პერიოდზე პირდაპირ ბმულს ვაჩვენებთ.
+    let importedOrderRange: { from: string; to: string } | null = null;
+    if (productsImported && completedSections.includes("orders")) {
+        try {
+            const dates = prepareDraftOrders({
+                files: entries.flatMap(entry => entry.result ? [{ clientFileId: entry.id, file: entry.result }] : []),
+                settings: importSettings,
+            }).orders.flatMap(order => order.result.kind === "PREVIEW_READY" ? [order.result.data.date] : []).sort();
+            if (dates.length > 0) importedOrderRange = { from: dates[0], to: dates[dates.length - 1] };
+        } catch {
+            importedOrderRange = null;
+        }
+    }
+    const shortDate = (value: string) => value.split("-").reverse().join(".");
+
     if (productsImported) {
         return (
             <main className="mx-auto w-full max-w-3xl p-4 text-text-primary sm:p-6">
@@ -597,8 +703,15 @@ export default function ImportWorkspace() {
                     <div className="space-y-2">
                         <h1 className="text-xl font-semibold sm:text-2xl">იმპორტი წარმატებით დასრულდა</h1>
                         <p className="text-sm text-text-secondary">არჩეული მონაცემები შენახულია MARTEO-ში.</p>
+                        {importedOrderRange && <p className="text-sm text-text-secondary">
+                            შეკვეთები {shortDate(importedOrderRange.from)} - {shortDate(importedOrderRange.to)} პერიოდისაა. სიაში სანახავად ეს პერიოდი აირჩიეთ.
+                        </p>}
                     </div>
-                    <button type="button" onClick={startNewImport} className="min-h-12 rounded-xl bg-accent px-5 text-sm font-semibold text-white">ახალი იმპორტის დაწყება</button>
+                    {importedOrderRange && <div className="flex flex-wrap justify-center gap-2">
+                        <Link href={`/dashboard/orders?period=custom&from=${importedOrderRange.from}&to=${importedOrderRange.to}`} className="inline-flex min-h-12 items-center rounded-xl bg-accent px-5 text-sm font-semibold text-white">შეკვეთების ნახვა</Link>
+                        <Link href={`/dashboard/analytics?period=custom&from=${importedOrderRange.from}&to=${importedOrderRange.to}`} className="inline-flex min-h-12 items-center rounded-xl border border-border px-5 text-sm">ანალიტიკა ამ პერიოდზე</Link>
+                    </div>}
+                    <button type="button" onClick={startNewImport} className={importedOrderRange ? "min-h-12 rounded-xl border border-border px-5 text-sm" : "min-h-12 rounded-xl bg-accent px-5 text-sm font-semibold text-white"}>ახალი იმპორტის დაწყება</button>
                 </section>
             </main>
         );
@@ -612,14 +725,14 @@ export default function ImportWorkspace() {
                 </h1>
 
                 <p className="mt-2 text-sm text-text-secondary">
-                    ატვირთე ფაილები - MARTEO თავად იპოვის შეკვეთებს,
-                    მომხმარებლებსა და პროდუქტებს. თითოეულ ეტაპს ცალ-ცალკე გაივლი.
+                    ატვირთეთ ფაილი - MARTEO თავად იპოვის შეკვეთებს,
+                    მომხმარებლებსა და პროდუქტებს.
                 </p>
             </div>
 
             <nav aria-label="იმპორტის ნაბიჯები" className="flex flex-wrap gap-2">
                 {steps.map((item, index) => <button key={item} type="button" disabled={draftSaving || busy || (item !== "files" && availableCategories.length === 0)} aria-current={step === item ? "step" : undefined} onClick={() => moveTo(item)} className={`min-h-10 rounded-xl border px-3 text-sm disabled:opacity-40 ${step === item ? "border-accent bg-accent/10 font-semibold text-accent" : "border-border text-text-secondary"}`}>
-                    {index + 1}. {item === "files" ? "ფაილები" : item === "review" ? "გადმოტანა" : IMPORT_CATEGORY_LABELS[item]}
+                    {index + 1}. {item === "files" ? "ფაილები" : item === "review" ? "გადმოტანა" : "შემოწმება"}
                 </button>)}
             </nav>
 
@@ -672,8 +785,7 @@ export default function ImportWorkspace() {
                 </div>
 
                 <p className="mt-3 text-xs text-text-secondary">
-                    Excel (.xlsx), CSV ან Apple Numbers. შეგიძლია რამდენიმე ფაილი დაამატო.
-                    საბოლოო დადასტურებამდე მონაცემები ბიზნესში არ დაემატება.
+                    Excel, CSV ან Apple Numbers. რამდენიმე ფაილიც შეიძლება.
                 </p>
 
 
@@ -685,28 +797,40 @@ export default function ImportWorkspace() {
                     </div>)}
                 </div>}
                 {discovery.length > 0 && <div className="space-y-3">
-                    <h2 className="font-semibold">ფაილებში აღმოჩენილი მონაცემები</h2>
-                    <p className="text-sm text-text-secondary">კატეგორიებსა და სვეტებს MARTEO თავად ამოიცნობს. არასრულ ჩანაწერებს შემდეგ ეტაპზე შეავსებ ან გამოტოვებ. ერთი ფურცელი რამდენიმე კატეგორიის წყაროც შეიძლება იყოს.</p>
-                    {IMPORT_CATEGORY_ORDER.filter(category => availableCategories.includes(category)).map(category => <div key={category} className="rounded-xl border border-border p-4">
-                        <p className="font-semibold">{IMPORT_CATEGORY_LABELS[category]}</p>
-                        <div className="mt-2 space-y-2 text-sm text-text-secondary">{discovery.filter(source => source.category === category).map(source => <p key={JSON.stringify([source.fileId, source.sheetName])} className="break-words">
-                            {source.fileName} / {source.sheetName} · {source.rowCount} რიგი
-                            {source.missing.length > 0 ? ` - დასამატებელი ან დასაკავშირებელია: ${source.missing.join(", ")}` : " - ძირითადი სვეტები ამოცნობილია"}
-                            {!source.suggested && " · დამატებითი წყარო"}
-                        </p>)}</div>
-                    </div>)}
-                    <p className="text-xs text-text-secondary">ამოცნობა ჯერ არ ნიშნავს შენახვას. თარიღებს, თანხებსა და თითოეული ჩანაწერის სისწორეს შემდეგ ეტაპებზე გადავამოწმებთ.</p>
+                    <h2 className="font-semibold">ფაილში ვიპოვეთ</h2>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                        {IMPORT_CATEGORY_ORDER.filter(category => availableCategories.includes(category)).map(category => {
+                            const sources = discovery.filter(source => source.category === category && (source.suggested || selectedCategories.includes(category)));
+                            const missing = [...new Set(sources.flatMap(source => source.missing))];
+                            const done = completedSections.includes(category);
+                            return <label key={category} className={`flex min-w-0 cursor-pointer items-start gap-3 rounded-xl border p-4 ${selectedCategories.includes(category) ? "border-accent bg-accent/5" : "border-border"}`}>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedCategories.includes(category)}
+                                    disabled={done || busy || draftSaving}
+                                    onChange={event => event.target.checked ? includeCategory(category) : skipCategory(category)}
+                                    className="mt-1 h-5 w-5 shrink-0"
+                                />
+                                <span className="min-w-0 space-y-1">
+                                    <span className="block font-semibold">{foundCounts[category] ?? 0} {IMPORT_CATEGORY_NOUNS[category]}</span>
+                                    <span className="block break-words text-xs text-text-secondary">{done ? "უკვე გადმოტანილია" : sources.map(source => source.sheetName).join(", ")}</span>
+                                    {!done && missing.length > 0 && <span className="block text-xs text-danger">აკლია: {missing.join(", ")}</span>}
+                                </span>
+                            </label>;
+                        })}
+                    </div>
+                    <p className="text-xs text-text-secondary">მონიშნეთ, რისი გადმოტანა გსურთ. შემდეგ ნაბიჯზე ყველაფერს შევამოწმებთ.</p>
                 </div>}
                 {unrecognizedSheets.length > 0 && <details className="space-y-3 rounded-xl border border-border p-4 text-sm">
                     <summary className="cursor-pointer">სხვა ფურცლები ({unrecognizedSheets.length})</summary>
-                    <p className="mt-3 text-text-secondary">ქვემოთ ჩამოთვლილი ფურცლები ავტომატურად არ დაგვიმატებია. თუ მათშიც გადმოსატანი მონაცემებია, მიუთითე კატეგორია; სხვა შემთხვევაში არაფრის გაკეთება არ გჭირდება.</p>
+                    <p className="mt-3 text-text-secondary">ამ ფურცლებს ვერ ვიცნობთ. თუ საჭიროა, მიუთითეთ, რა არის მათში.</p>
                     {unrecognizedSheets.map(({ fileId, fileName, sheet }) => <div key={JSON.stringify([fileId, sheet.name])} className="space-y-2 rounded-lg border border-border p-3">
                         <p className="break-words font-medium">{fileName} / {sheet.name}</p>
                         {/პარტი|შესყიდვ|purchase|procurement|batch/i.test(sheet.name) ? <p className="text-text-secondary">შესყიდვების/პარტიების ისტორია ამ იმპორტში არ გადმოდის.</p>
                         : <div className="flex flex-wrap gap-2">{IMPORT_CATEGORY_ORDER.map(category => <button key={category} type="button" disabled={draftSaving || busy || completedSections.length > 0} onClick={() => assignSource(category, fileId, sheet)} className="min-h-10 rounded-lg border border-border px-3">{IMPORT_CATEGORY_LABELS[category]}</button>)}</div>}
                     </div>)}
                 </details>}
-                {availableCategories.length > 0 && <button type="button" disabled={busy || draftSaving || draftLoading} onClick={goNext} className="min-h-12 w-full rounded-xl bg-accent px-5 font-semibold text-white sm:w-auto">ამოცნობილი მონაცემების გასწორება</button>}
+                {availableCategories.length > 0 && <button type="button" disabled={busy || draftSaving || draftLoading} onClick={goNext} className="min-h-12 w-full rounded-xl bg-accent px-5 font-semibold text-white sm:w-auto">შემოწმება</button>}
 
             </section>
 
@@ -784,7 +908,7 @@ export default function ImportWorkspace() {
                     setDraftNotice(
                         loaded.hasSavedSettings
                             ? "მონახაზი გახსნილია. შენახული შესწორებები და არჩევანები აღდგენილია."
-                            : "ფაილები აღდგენილია, თუმცა ამ მონახაზში პარამეტრების შენახვა დასრულებული არ ყოფილა. არჩევანი ხელახლა გადაამოწმე.",
+                            : "ფაილები აღდგენილია. არჩევანი ხელახლა გადაამოწმეთ.",
                     );
                 }}
             />
@@ -798,28 +922,41 @@ export default function ImportWorkspace() {
 
             {partialDraft && (
                 <p role="status" className="text-sm text-text-secondary">
-                    ამ მონახაზის ნაწილი უკვე შენახულია.
-                    შეგიძლია გააგრძელო დარჩენილი განყოფილებების იმპორტი.
-                    დასრულებული კატეგორიები აღარ განმეორდება.
-                    დარჩენილ კატეგორიებზე დაბრუნება და შესწორება შეგიძლია ზედა ნაბიჯებიდან.
+                    ნაწილი უკვე გადმოტანილია. გააგრძელეთ დარჩენილით.
                 </p>
             )}
 
 
-            {step !== "files" && step !== "review" && <div className="space-y-2">
-                <h2 className="text-xl font-semibold">{IMPORT_CATEGORY_LABELS[step]}</h2>
-                <p className="text-sm text-text-secondary">სწორად შევსებული მონაცემები მზადაა. გაასწორე მხოლოდ მონიშნული ველები ან გამოტოვე არასასურველი ჩანაწერები. ცვლილების გამოყენების შემდეგ შედეგი ავტომატურად განახლდება.</p>
-                {step === "orders" && <p className="text-xs text-text-secondary">გადმოდის ძველი შეკვეთების ისტორია. მიმდინარე მარაგს არ შევცვლით.</p>}
+            {step === "check" && !productsImported && (
+                <ImportCategoryCards
+                    categories={availableCategories}
+                    selected={selectedCategories}
+                    completed={completedSections}
+                    status={categoryStatus}
+                    open={openCategory}
+                    onOpen={category => {
+                        setCheckNotice("");
+                        setOpenCategory(current => current === category ? null : category);
+                    }}
+                    onSkip={skipCategory}
+                    onInclude={includeCategory}
+                    onSkipAttention={skipAttention}
+                />
+            )}
+            {step === "check" && openCategory && <div className="space-y-2">
+                <h2 className="text-xl font-semibold">{IMPORT_CATEGORY_LABELS[openCategory]}</h2>
+                <p className="text-sm text-text-secondary">გაასწორეთ მონიშნული ჩანაწერები ან გამოტოვეთ ისინი. დანარჩენი მზადაა.</p>
+                {openCategory === "orders" && <p className="text-xs text-text-secondary">გადმოდის ძველი შეკვეთების ისტორია. მიმდინარე მარაგს არ შევცვლით.</p>}
             </div>}
             <fieldset
                 disabled={draftSaving || productsImported}
-                hidden={step === "files" || step === "review" || productsImported}
+                hidden={step !== "check" || openCategory === null || productsImported}
                 className="min-w-0 space-y-5 border-0 p-0"
             >
-                {entries.filter(entry => entry.result && (
-                    step === "orders" ? Object.values(orderMappings[entry.id] ?? {}).some(m => m.enabled) || discovery.some(d => d.fileId === entry.id && d.category === step)
-                    : step === "customers" ? Object.values(customerMappings[entry.id] ?? {}).some(m => m.enabled) || discovery.some(d => d.fileId === entry.id && d.category === step)
-                    : Object.values(productMappings[entry.id] ?? {}).some(m => m.enabled) || discovery.some(d => d.fileId === entry.id && d.category === step)
+                {entries.filter(entry => entry.result && openCategory !== null && (
+                    openCategory === "orders" ? Object.values(orderMappings[entry.id] ?? {}).some(m => m.enabled) || discovery.some(d => d.fileId === entry.id && d.category === openCategory)
+                    : openCategory === "customers" ? Object.values(customerMappings[entry.id] ?? {}).some(m => m.enabled) || discovery.some(d => d.fileId === entry.id && d.category === openCategory)
+                    : Object.values(productMappings[entry.id] ?? {}).some(m => m.enabled) || discovery.some(d => d.fileId === entry.id && d.category === openCategory)
                 )).map(entry => (
                     <section
                         key={`${workspaceKey}:${entry.id}`}
@@ -849,7 +986,7 @@ export default function ImportWorkspace() {
                             </p>
                         )}
 
-                        {step === "products" && entry.state === "READY" &&
+                        {openCategory === "products" && entry.state === "READY" &&
                             entry.result &&
                             Object.values(
                                 productMappings[entry.id] ?? {},
@@ -862,7 +999,7 @@ export default function ImportWorkspace() {
                                 />
                             )}
 
-                        {step === "products" && entry.state === "READY" && entry.result && (
+                        {openCategory === "products" && entry.state === "READY" && entry.result && (
                             <ImportRowPhotoChoices
                                 clientFileId={entry.id}
                                 file={entry.result}
@@ -879,14 +1016,14 @@ export default function ImportWorkspace() {
                             />
                         )}
 
-                        {step === "products" && entry.state === "READY" &&
+                        {openCategory === "products" && entry.state === "READY" &&
                             entry.savedPhotos &&
                             entry.savedPhotos.length > 0 && (
                                 <ImportSavedPhotoPreview
                                     photos={entry.savedPhotos}
                                 />
                             )}
-                        {step === "products" && entry.state === "READY" && entry.photoResult && (
+                        {openCategory === "products" && entry.state === "READY" && entry.photoResult && (
                             <div className="mt-3 space-y-2 text-sm">
                                 {entry.photoResult.photos.length > 0 && (
                                     <p className="text-text-secondary">
@@ -944,7 +1081,7 @@ export default function ImportWorkspace() {
 
                         {entry.result && (
                             <FilePreview
-                                category={step === "customers" || step === "products" ? step : "orders"}
+                                category={openCategory ?? "orders"}
                                 result={entry.result}
                                 orderMappings={orderMappings[entry.id] ?? {}}
                                 onOrderMappingChange={(sheetName, mapping) => {
@@ -1003,7 +1140,7 @@ export default function ImportWorkspace() {
                     </section>
                 ))}
 
-                {step === "orders" && ordersSelected && (
+                {openCategory === "orders" && ordersSelected && (
                     <>
                         <OrderImportOptionsPicker
                             needs={getOrderImportNeeds(entries.flatMap(entry => entry.result ? [{ clientFileId: entry.id, file: entry.result }] : []), importSettings)}
@@ -1013,13 +1150,6 @@ export default function ImportWorkspace() {
 
                         <ImportOrdersSummary
                             autoReview
-                            continueDisabled={
-                                busy ||
-                                draftSaving ||
-                                draftLoading ||
-                                productsImported
-                            }
-                            onContinue={goNext}
                             onOrderCustomerDecisionChange={(phone, decision) => {
                                 setOrderCustomerDecisions(current => {
                                     const next = { ...current };
@@ -1079,7 +1209,7 @@ export default function ImportWorkspace() {
                     </>
                 )}
 
-                <div hidden={step !== "customers"}>
+                <div hidden={openCategory !== "customers"}>
                 <ImportCustomersSummary
                     autoReview
                     onEdit={(fileId, sheetName, rowNumber, changes) => {
@@ -1150,7 +1280,7 @@ export default function ImportWorkspace() {
                     })}
                 />
                 </div>
-                <div hidden={step !== "products"}>
+                <div hidden={openCategory !== "products"}>
                 <ImportProductsSummary
                     autoReview
                     stockDate={productStockDate}
@@ -1225,28 +1355,21 @@ export default function ImportWorkspace() {
                 </div>
             </fieldset>
 
-            {step !== "files" && step !== "review" && !productsImported && (
+            {step === "check" && !productsImported && (
                 <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-surface p-4 shadow-lg sm:mx-0 sm:rounded-xl sm:border">
                     <button type="button" disabled={draftSaving} onClick={goBack} className="min-h-11 rounded-xl border border-border px-4 text-sm">უკან</button>
                     <div className="flex flex-wrap gap-2">
-                        {step === "products" && productDateBlocked && <p role="alert" className="w-full text-sm text-danger">{productStockDateReview.error}</p>}
-                        {!completedSections.includes(step) && <button type="button" disabled={draftSaving} onClick={() => skipCategory(step)} className="min-h-11 rounded-xl border border-border px-4 text-sm">ამ კატეგორიის გამოტოვება</button>}
-                        <button type="button" disabled={draftSaving} onClick={goNext} className="min-h-11 rounded-xl bg-accent px-5 text-sm font-semibold text-white">{nextStepLabel}</button>
+                        {openCategory === "products" && productDateBlocked && <p role="alert" className="w-full text-sm text-danger">{productStockDateReview.error}</p>}
+                        {checkNotice && <p role="alert" className="w-full text-sm text-danger">{checkNotice}</p>}
+                        <button type="button" disabled={draftSaving} onClick={goNext} className="min-h-11 rounded-xl bg-accent px-5 text-sm font-semibold text-white">გადმოტანაზე გადასვლა</button>
                     </div>
                 </div>
             )}
 
             <section hidden={step !== "review"} className="space-y-4 rounded-2xl border border-border bg-surface p-4 sm:p-6">
-                <h2 className="text-lg font-semibold">მონაცემების გადმოტანა MARTEO-ში</h2>
-                <p className="text-sm text-text-secondary">შეინახე მომზადებული მონაცემები, შემდეგ გადაამოწმე და დაადასტურე თითოეული კატეგორიის გადმოტანა. ღილაკები ამავე ბლოკში გამოჩნდება.</p>
-                <div className="grid gap-3 sm:grid-cols-3">
-                    {IMPORT_CATEGORY_ORDER.map(category => <div key={category} className="rounded-xl border border-border p-3 text-sm">
-                        <p className="font-semibold">{IMPORT_CATEGORY_LABELS[category]}</p>
-                        <p className="mt-1 text-text-secondary">{completedSections.includes(category) ? "გადმოტანილია" : selectedCategories.includes(category) ? "მონიშნულია გადმოსატანად" : "გამოტოვებულია"}</p>
-                    </div>)}
-                </div>
-                {selectedCategories.length === 0 && <p role="status" className="text-sm text-text-secondary">ყველა კატეგორია გამოტოვებულია. გადასატანად დაბრუნდი შესაბამის ნაბიჯზე და დაამატე სასურველი წყარო.</p>}
-                {!productsImported && <button type="button" disabled={draftSaving} onClick={goBack} className="min-h-11 rounded-xl border border-border px-4 text-sm">მონაცემებთან დაბრუნება</button>}
+                <h2 className="text-lg font-semibold">გადმოტანა MARTEO-ში</h2>
+                <p className="text-sm text-text-secondary">თუ რამე გასასწორებელი აღმოჩნდა, შევჩერდებით და გაჩვენებთ.</p>
+                {selectedCategories.length === 0 && <p role="status" className="text-sm text-text-secondary">გადმოსატანი არაფერია მონიშნული. დაბრუნდით წინა ნაბიჯზე.</p>}
                 {productDateBlocked && <div role="alert" className="space-y-2 rounded-xl border border-danger/60 p-3 text-sm text-danger">
                     <p>{productStockDateReview.error}</p>
                     <button type="button" onClick={() => moveTo("products")} className="min-h-11 rounded-xl border border-danger/60 px-4">მარაგის თარიღის შევსება</button>
@@ -1264,7 +1387,7 @@ export default function ImportWorkspace() {
                             setCompletedSections(current => [...new Set([...current, category])]);
                             setProductsImported(allDone);
                             if (allDone) window.scrollTo({ top: 0, behavior: "smooth" });
-                            setDraftNotice(allDone ? "მონიშნული მონაცემების გადმოტანა დასრულებულია." : "განყოფილება შენახულია. გააგრძელე შემდეგით.");
+                            if (allDone) setDraftNotice("მონიშნული მონაცემების გადმოტანა დასრულებულია.");
                         }}
                         files={entries.flatMap(entry =>
                             entry.result
@@ -1333,6 +1456,7 @@ export default function ImportWorkspace() {
                         settings={importSettings}
                     />
                 )}
+                {!productsImported && !draftSaving && <button type="button" onClick={goBack} className="min-h-11 rounded-xl border border-border px-4 text-sm">უკან</button>}
             </section>
         </main>
     );

@@ -12,6 +12,12 @@ export const IMPORT_CATEGORY_ORDER: ImportCategory[] = ["orders", "customers", "
 export const IMPORT_CATEGORY_LABELS: Record<ImportCategory, string> = {
     orders: "შეკვეთები", customers: "მომხმარებლები", products: "პროდუქტები და მარაგები",
 };
+// რიცხვის შემდეგ მხოლობითი ფორმა: „243 შეკვეთა“.
+export const IMPORT_CATEGORY_NOUNS: Record<ImportCategory, string> = {
+    orders: "შეკვეთა",
+    customers: "მომხმარებელი",
+    products: "პროდუქტი",
+};
 export type DiscoveredImportSource = {
     sheetName: string;
     category: ImportCategory;

@@ -82,11 +82,7 @@ export default function OrderColumnMapping({
 
             <div className="space-y-3 rounded-xl border border-border p-3">
                 <p className="text-sm text-text-secondary">
-                    საკურიერო თანხა გაყიდვაში არ ჩაითვლება.
-                    მონიშნეთ მხოლოდ მაშინ, თუ ამ ფურცლის შესაბამის
-                    თანხაში საკურიეროც გაერთიანებულია.
-                    მის გამოსაკლებად ფაილში ცალკე მითითებული
-                    საკურიერო თანხა დაგვჭირდება.
+                    მონიშნეთ, თუ ამ თანხებში საკურიეროც შედის. ის გაყიდვაში არ ჩაითვლება.
                 </p>
 
                 <label className="flex items-start gap-3 text-sm">
@@ -220,10 +216,7 @@ export default function OrderColumnMapping({
                 </summary>
 
                 <p className="text-sm text-text-secondary">
-                    სვეტის არჩაურჩევლობა მონაცემის არქონას არ ნიშნავს.
-                    გამოტოვებული ინფორმაცია შემდეგ ეტაპზე საერთო
-                    არჩევანით ან შესწორებით შეივსება. შეკვეთის კოდი
-                    და თვითღირებულება სავალდებულო არ არის.
+                    აკლია სვეტი? არაუშავს - შემდეგ ერთხელ შევავსებთ.
                 </p>
 
                 <div className="grid gap-4 sm:grid-cols-2">

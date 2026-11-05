@@ -183,9 +183,7 @@ export default function OrderRowEditor({
             </details>
 
             <p className="text-xs text-text-secondary">
-                ცვლილება შეეხება მხოლოდ იმპორტის ამ რიგს.
-                წყაროს ფაილი არ შეიცვლება. საერთო მონაცემების
-                შესავსებად შეგიძლია ზედა საერთო არჩევანები გამოიყენო.
+                ფაილი არ შეიცვლება - მხოლოდ ეს რიგი.
             </p>
 
             <div className="flex flex-wrap gap-3">

@@ -46,15 +46,13 @@ export default function ImportEmbeddedPhotoPreview({
     return (
         <div className="space-y-3">
             <p className="text-xs text-text-secondary">
-                მდებარეობა განსაზღვრულია ფოტოს ზედა მარცხენა
-                კუთხის მიხედვით. გადაამოწმე, რომ მითითებული
-                რიგი შესაბამის პროდუქტს ეკუთვნის.
+                გადაამოწმეთ, რომ ფოტო სწორ პროდუქტს ეკუთვნის.
             </p>
 
             {previews.length === 0 ? (
                 <p role="status" className="text-sm text-text-secondary">
                     ფოტოების პრევიუ ვერ გამოჩნდა.
-                    ფაილის ხელახლა არჩევა შეგიძლია.
+                    ფაილის ხელახლა არჩევა შეგიძლიათ.
                 </p>
             ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

@@ -164,9 +164,7 @@ export default function ProductImportPlan({
 
             {plan.waitingCount > 0 && (
                 <p className="text-sm text-text-secondary">
-                    არსებული პროდუქტების შემოწმება ჯერ დასასრულებელია.
-                    გაუშვი შემოწმება ზემოთ მდებარე ღილაკით.
-                    ეს ჩანაწერების შეცდომა არ არის.
+                    არსებულ პროდუქტებთან შედარება ჯერ მიმდინარეობს.
                 </p>
             )}
 
@@ -195,9 +193,7 @@ export default function ProductImportPlan({
 
             {plan.stockReviewCount > 0 && !stockDateConfirmed && (
                 <p role="status" className="text-sm text-text-secondary">
-                    მარაგის გადმოტანის მოსამზადებლად მიუთითე
-                    სწორი თარიღი ზემოთ. თითოეულ პროდუქტზე
-                    ცალ-ცალკე შევსება საჭირო არ არის.
+                    მიუთითეთ მარაგის თარიღი ზემოთ, ერთხელ ყველასთვის.
                 </p>
             )}
 
@@ -261,7 +257,7 @@ export default function ProductImportPlan({
                                 {!change && !error && (
                                     <p className="text-text-secondary">
                                         არსებული ნაშთის დასადასტურებლად
-                                        პროდუქტების შემოწმება ხელახლა გაუშვი.
+                                        პროდუქტების შემოწმება ხელახლა გაუშვით.
                                     </p>
                                 )}
                             </article>
@@ -295,12 +291,6 @@ export default function ProductImportPlan({
                 </div>
             )}
 
-            <p className="text-xs text-text-secondary">
-                ეს წინასწარი გეგმაა. გამოტოვებული ჩანაწერები
-                მასში არ შედის. პროდუქტები და მარაგი ჯერ არ ინახება.
-                საბოლოო შენახვამდე მონაცემები სერვერზეც
-                ხელახლა შემოწმდება.
-            </p>
         </section>
     );
 }

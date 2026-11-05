@@ -32,9 +32,7 @@ export default function OrderGroupingReview({
             </h3>
 
             <p className="text-sm text-text-secondary">
-                ეს რიგები ერთნაირი ტელეფონისა და თარიღის მიხედვით
-                გაერთიანდა. გადაამოწმე, ხომ არ არის ერთი ადამიანის
-                იმავე დღეს გაკეთებული რამდენიმე სხვადასხვა შეკვეთა.
+                ერთი ტელეფონი და თარიღი - გაერთიანდა ერთ შეკვეთად. სწორია?
             </p>
 
             {candidates.map(order => {
@@ -119,10 +117,7 @@ export default function OrderGroupingReview({
 
                         {!order.groupingConfirmed && (
                             <p className="text-xs text-text-secondary">
-                                თუ სხვადასხვა შეკვეთებია, მიუთითე მათი
-                                განსხვავებული შეკვეთის კოდები ან საერთო
-                                არჩევანებში აირჩიე თითოეული რიგის ცალკე
-                                შეკვეთად გადმოტანა.
+                                თუ ცალ-ცალკე შეკვეთებია, მიეცით განსხვავებული კოდები.
                             </p>
                         )}
                     </div>
