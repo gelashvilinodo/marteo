@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Icon } from "@iconify/react";
 
 import { BUSINESS_MODES, type BusinessMode } from "@/lib/business/business-mode";
@@ -29,7 +30,7 @@ export default function FeaturesBento() {
                         id="features-bento-title"
                         className="text-[clamp(1.15rem,5.5vw,3rem)] leading-tight font-bold whitespace-nowrap text-text-primary"
                     >
-                        შენი ბიზნესი ერთ ეკრანზე.
+                        თქვენი ბიზნესი ერთ ეკრანზე.
                     </h2>
 
                     <ModeSwitch mode={mode} onChange={setMode} />
@@ -52,7 +53,7 @@ export default function FeaturesBento() {
                             icon="solar:graph-up-bold-duotone"
                             tone="bg-success/10 text-success"
                             title="ფინანსები"
-                            text="იცი, რამდენს გამოიმუშავებ სინამდვილეში."
+                            text="იცით, რამდენს გამოიმუშავებთ სინამდვილეში."
                         >
                             {active => <FinanceVisual active={active} />}
                         </BentoCard>
@@ -128,6 +129,16 @@ export default function FeaturesBento() {
                     >
                         {active => <AiVisual key={mode} mode={mode} active={active} />}
                     </BentoCard>
+                </div>
+
+                <div className="mt-8 flex justify-center">
+                    <Link
+                        href="/features"
+                        className="group inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-surface px-5 text-sm font-semibold text-text-primary transition-colors hover:border-accent/50 hover:text-accent"
+                    >
+                        ყველა შესაძლებლობა
+                        <Icon icon="solar:arrow-right-linear" className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
                 </div>
             </div>
         </section>
@@ -755,23 +766,23 @@ const aiScenes: Record<
     }
 > = {
     IMPORT: {
-        text: "ჰკითხე ბიზნესზე ან ატვირთე მომწოდებლის ფაილი — შესყიდვას თავად შეადგენს.",
+        text: "ჰკითხეთ ბიზნესზე ან ატვირთეთ მომწოდებლის ფაილი — შესყიდვას თავად შეადგენს.",
         question: "რა შევიძინო შემდეგ პარტიაში?",
-        answer: "ტყავის საფულე ყველაზე სწრაფად იყიდება — 20 ცალი დაახლოებით 3 კვირას გეყოფა.",
+        answer: "ტყავის საფულე ყველაზე სწრაფად იყიდება — 20 ცალი დაახლოებით 3 კვირას გეყოფათ.",
         file: "მომწოდებელი.xlsx",
         steps: ["24 პროდუქტი ვიპოვე", "სახელები ვთარგმნე, ფერები დავყავი", "USD → ₾ ეროვნული ბანკის კურსით"],
         total: "3 420 ₾",
     },
     MANUFACTURING: {
-        text: "ჰკითხე ბიზნესზე ან ატვირთე მასალების ფაილი — შესყიდვას თავად შეადგენს.",
+        text: "ჰკითხეთ ბიზნესზე ან ატვირთეთ მასალების ფაილი — შესყიდვას თავად შეადგენს.",
         question: "რომელი პროდუქტი მთავრდება?",
-        answer: "ტყავის საფულე — 4 ცალი დარჩა. დროა ახალი პარტია დაამზადო.",
+        answer: "ტყავის საფულე — 4 ცალი დარჩა. დროა ახალი პარტია დაამზადოთ.",
         file: "მასალები.xlsx",
         steps: ["12 მასალა ვიპოვე", "ერთეულები ამოვიცანი: მ², მ, ც.", "ტრანსპორტის ხარჯი გადავანაწილე"],
         total: "1 180 ₾",
     },
     HYBRID: {
-        text: "ჰკითხე ბიზნესზე ან ატვირთე ფაილი — პროდუქტებსაც და მასალებსაც თავად გაარჩევს.",
+        text: "ჰკითხეთ ბიზნესზე ან ატვირთეთ ფაილი — პროდუქტებსაც და მასალებსაც თავად გაარჩევს.",
         question: "რამდენია ამ თვის მოგება?",
         answer: "2 742 ₾ — წინა თვეზე 12%-ით მეტი.",
         file: "შესყიდვა.xlsx",

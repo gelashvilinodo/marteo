@@ -16,9 +16,9 @@ import { Icon } from "@iconify/react";
 
 // ყველა სათაური ზუსტად ორ ხაზზეა, რომ მომენტების გადართვისას განლაგება არ ხტებოდეს.
 const moments = [
-    { from: 0, caption: ["შენ მხოლოდ", "შეკვეთას ამატებ."] },
+    { from: 0, caption: ["თქვენ მხოლოდ", "შეკვეთას ამატებთ."] },
     { from: 0.3, caption: ["დანარჩენს", "MARTEO აკეთებს."] },
-    { from: 0.72, caption: ["შენ ბიზნესს მართავ.", "ციფრებს - MARTEO."] },
+    { from: 0.72, caption: ["თქვენ ბიზნესს მართავთ.", "ციფრებს - MARTEO."] },
 ];
 
 // მომენტების დრო (t = 0…1 სექციის სქროლზე).
@@ -42,7 +42,7 @@ const resultCards = [
     {
         kind: "invoice",
         label: "ინვოისი მზადაა",
-        caption: "PDF QR კოდით - ერთი დაჭერით დაბეჭდე",
+        caption: "PDF QR კოდით - ერთი დაჭერით დაბეჭდეთ",
         icon: "solar:document-text-bold-duotone",
         tone: "bg-text-primary/10 text-text-primary",
         ring: "border-text-primary/40",
@@ -573,7 +573,7 @@ function Caption({ t, moment }: { t: number; moment: number }) {
                 <span className="order-flow-scroll-dot flex h-6 w-4 justify-center rounded-full border-2 border-text-secondary pt-1">
                     <span className="h-1.5 w-1 rounded-full bg-accent" />
                 </span>
-                გაიგე, რა ხდება შემდეგ
+                გაიგეთ, რა ხდება შემდეგ
             </p>
         </div>
     );

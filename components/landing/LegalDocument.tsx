@@ -96,11 +96,11 @@ export default function LegalDocument({ titleId, title, subtitle, sections }: Le
                 </div>
 
                 <p className="mt-12 border-t border-border pt-6 text-sm text-text-secondary">
-                    კითხვები გაქვს? მოგვწერე{" "}
+                    კითხვები გაქვთ? მოგვწერეთ{" "}
                     <a href={`mailto:${MARTEO_CONTACTS.email}`} className="font-medium text-accent hover:underline">
                         {MARTEO_CONTACTS.email}
                     </a>{" "}
-                    ან <LegalLink href="/contact">დაგვიკავშირდი</LegalLink>. ძალაშია: <Pending>[გაშვების თარიღი]</Pending>.
+                    ან <LegalLink href="/contact">დაგვიკავშირდით</LegalLink>. ძალაშია: <Pending>[გაშვების თარიღი]</Pending>.
                 </p>
             </div>
 

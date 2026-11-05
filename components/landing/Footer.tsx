@@ -20,7 +20,7 @@ const columns = [
     {
         title: "პროდუქტი",
         links: [
-            { label: "ფუნქციები", href: "/#features" },
+            { label: "შესაძლებლობები", href: "/features" },
             { label: "როგორ მუშაობს", href: "/#how-it-works" },
             { label: "ფასები", href: "/pricing" },
             { label: "რეგისტრაცია", href: "/register" },
@@ -160,7 +160,7 @@ function FooterCta() {
                     id="footer-cta-title"
                     className="max-w-xl text-2xl leading-tight font-bold text-balance sm:text-3xl"
                 >
-                    მზად ხარ, რომ ბიზნესი მარტივად მართო?
+                    მზად ხართ, რომ ბიზნესი მარტივად მართოთ?
                 </h2>
 
                 <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
@@ -168,7 +168,7 @@ function FooterCta() {
                         href="/register"
                         className="group inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3.5 text-sm font-semibold whitespace-nowrap text-white shadow-lg shadow-accent/25 transition-all duration-200 hover:bg-accent-hover hover:scale-[1.02] sm:text-base"
                     >
-                        სცადე უფასოდ
+                        სცადეთ უფასოდ
                         <Icon
                             icon="solar:arrow-right-linear"
                             className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-0.5"

@@ -140,13 +140,13 @@ export default function Hero() {
                         >
                             ყველაფერი,
                             <span className="mt-1 block text-accent">
-                                რაც შენი ბიზნესის მართვისთვის გჭირდება.
+                                რაც თქვენი ბიზნესის მართვისთვის გჭირდებათ.
                             </span>
                         </h1>
 
                         <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-slate-300 sm:mt-6 sm:text-lg lg:[@media(max-height:820px)]:mt-4 lg:[@media(max-height:820px)]:text-base">
-                            მართე შეკვეთები, მარაგები, ფინანსები, ანალიტიკა და
-                            კონტენტი - ერთ სივრცეში. შენ ბიზნესზე ფიქრობ,
+                            მართეთ შეკვეთები, მარაგები, ფინანსები, ანალიტიკა და
+                            კონტენტი - ერთ სივრცეში. თქვენ ბიზნესზე ფიქრობთ,
                             დანარჩენს MARTEO აკეთებს.
                         </p>
 
@@ -155,7 +155,7 @@ export default function Hero() {
                                 href="/register"
                                 className="group inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-sm font-semibold whitespace-nowrap text-white shadow-lg shadow-accent/25 transition-all duration-200 hover:bg-accent-hover hover:scale-[1.02] sm:flex-none sm:px-6 sm:text-base"
                             >
-                                სცადე უფასოდ
+                                სცადეთ უფასოდ
                                 <Icon
                                     icon="solar:arrow-right-linear"
                                     className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-0.5"
@@ -166,7 +166,7 @@ export default function Hero() {
                                 href="#features"
                                 className="inline-flex flex-1 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-3.5 text-sm font-semibold whitespace-nowrap text-white transition-colors duration-200 hover:border-white/40 hover:bg-white/10 sm:flex-none sm:px-6 sm:text-base"
                             >
-                                გაიგე მეტი
+                                გაიგეთ მეტი
                             </a>
                         </div>
 
