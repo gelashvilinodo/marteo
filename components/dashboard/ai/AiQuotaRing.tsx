@@ -90,7 +90,7 @@ export default function AiQuotaRing() {
             {open && (
                 <div role="dialog" aria-label="AI ლიმიტი" className="absolute right-0 top-full z-20 mt-1.5 w-64 rounded-xl border border-border bg-surface p-3 text-left shadow-xl">
                     {quota.disabled ? (
-                        <p className="text-sm text-text-primary">მართეო AI ამ ბიზნესისთვის გამორთულია. დეტალებისთვის მოგვწერე დახმარების ჩათში.</p>
+                        <p className="text-sm text-text-primary">მართეო AI ამ ბიზნესისთვის გამორთულია. დეტალებისთვის მოგვწერეთ დახმარების ჩათში.</p>
                     ) : (
                         <>
                             <p className="text-sm text-text-primary">{quota.trial ? "საცდელში დარჩა" : "ამ პერიოდში დარჩა"}: <b className="font-semibold">{left}</b> / {quota.limit}</p>

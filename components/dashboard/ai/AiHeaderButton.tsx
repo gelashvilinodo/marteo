@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useAiAssistant } from "./AiAssistantProvider";
+import { useAiAssistant, useAiAssistantHidden } from "./AiAssistantProvider";
 import { usePlan } from "@/components/dashboard/plan/PlanContext";
 import PlanCrown from "@/components/dashboard/plan/PlanCrown";
 
@@ -11,6 +11,9 @@ export default function AiHeaderButton() {
     const { open, unread, pending, openPanel, collapse } = useAiAssistant();
     const { allows } = usePlan();
     const blocked = !allows("ai");
+    const hidden = useAiAssistantHidden();
+
+    if (hidden) return null;
 
     return (
         <button

@@ -133,7 +133,7 @@ export default function AiPurchaseDraftCard({ message }: { message: AiMessage & 
 
         if (mode === "custom") {
             const rate = amount(customRate);
-            return { rate, label: rate ? `ჩემი კურსი: 1 ${currency} = ${rate} ₾` : "", problem: rate ? "" : "მიუთითე კურსი." };
+            return { rate, label: rate ? `ჩემი კურსი: 1 ${currency} = ${rate} ₾` : "", problem: rate ? "" : "მიუთითეთ კურსი." };
         }
 
         if (mode === "paidGel") {
@@ -141,7 +141,7 @@ export default function AiPurchaseDraftCard({ message }: { message: AiMessage & 
             return {
                 rate: paid && foreignTotal > 0 ? paid / foreignTotal : null,
                 label: paid ? `რეალურად გადახდილი: ${money(paid)} ₾` : "",
-                problem: paid ? "" : "მიუთითე ლარში გადახდილი თანხა.",
+                problem: paid ? "" : "მიუთითეთ ლარში გადახდილი თანხა.",
             };
         }
 
@@ -192,19 +192,19 @@ export default function AiPurchaseDraftCard({ message }: { message: AiMessage & 
     }, [rateInfo.rate, priceColumn, extras, foreignTotal]);
 
     const problems: string[] = [];
-    if (!priceColumn) problems.push("აირჩიე, რომელი ფასი გამოვიყენო.");
-    if (!status) problems.push("აირჩიე, პარტია გზაშია თუ ჩამოსულია.");
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) problems.push("მიუთითე თარიღი.");
+    if (!priceColumn) problems.push("აირჩიეთ, რომელი ფასი გამოვიყენო.");
+    if (!status) problems.push("აირჩიეთ, პარტია გზაშია თუ ჩამოსულია.");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) problems.push("მიუთითეთ თარიღი.");
     if (rateInfo.problem) problems.push(rateInfo.problem);
-    if (extras.some((kind) => !kind)) problems.push("მიუთითე, რა არის დამატებითი თანხა.");
+    if (extras.some((kind) => !kind)) problems.push("მიუთითეთ, რა არის დამატებითი თანხა.");
     if (products) {
         const value = Number(pricingValue.replace(",", "."));
-        if (!/^\d{1,10}([.,]\d{1,2})?$/.test(pricingValue.trim())) problems.push("მიუთითე გასაყიდი ფასის ნამატი.");
+        if (!/^\d{1,10}([.,]\d{1,2})?$/.test(pricingValue.trim())) problems.push("მიუთითეთ გასაყიდი ფასის ნამატი.");
         else if (pricingMethod === "MARGIN_PERCENT" && value >= 100) problems.push("მარჟა 100%-ზე ნაკლები უნდა იყოს.");
-        if (draft.items.some((item) => !Number.isInteger(item.quantity) || item.quantity < 1)) problems.push("პროდუქტის რაოდენობა მთელი რიცხვი უნდა იყოს. შეასწორე ფაილი.");
+        if (draft.items.some((item) => !Number.isInteger(item.quantity) || item.quantity < 1)) problems.push("პროდუქტის რაოდენობა მთელი რიცხვი უნდა იყოს. შეასწორეთ ფაილი.");
         if (draft.items.length > 200) problems.push("ერთ შესყიდვაში მაქსიმუმ 200 პროდუქტია.");
     } else if (draft.items.length > 50) {
-        problems.push("ერთ პარტიაში მაქსიმუმ 50 მასალაა. დაყავი ფაილი.");
+        problems.push("ერთ პარტიაში მაქსიმუმ 50 მასალაა. დაყავით ფაილი.");
     }
 
     async function save() {
@@ -278,20 +278,20 @@ export default function AiPurchaseDraftCard({ message }: { message: AiMessage & 
             const data = await response.json().catch(() => null) as { error?: string } | null;
 
             if (!response.ok) {
-                setError(data?.error || "შენახვა ვერ მოხერხდა. სცადე ხელახლა.");
+                setError(data?.error || "შენახვა ვერ მოხერხდა. სცადეთ ხელახლა.");
                 return;
             }
 
             updateMessage(message.id, { draftSaved: true });
             addAssistantMessage({
-                text: `✓ შესყიდვა შენახულია: ${draft.items.length} ${products ? "პროდუქტი" : "მასალა"}, ${money(conversion.productsGel + conversion.costs.shipping + conversion.costs.customs + otherCost)} ₾.${draft.photoCount === 0 && products ? " ფოტოები შესყიდვების გვერდზე დაამატე." : ""}`,
+                text: `✓ შესყიდვა შენახულია: ${draft.items.length} ${products ? "პროდუქტი" : "მასალა"}, ${money(conversion.productsGel + conversion.costs.shipping + conversion.costs.customs + otherCost)} ₾.${draft.photoCount === 0 && products ? " ფოტოები შესყიდვების გვერდზე დაამატეთ." : ""}`,
                 link: products
                     ? { href: "/dashboard/purchases", label: "შესყიდვებზე გადასვლა" }
                     : { href: "/dashboard/material-purchases", label: "მასალების შესყიდვებზე გადასვლა" },
             });
             refreshPurchasesAfterMutation(() => router.refresh());
         } catch {
-            setError("შენახვის შედეგი ვერ დადასტურდა. შეამოწმე შესყიდვების გვერდი, სანამ ხელახლა შეინახავ.");
+            setError("შენახვის შედეგი ვერ დადასტურდა. შეამოწმეთ შესყიდვების გვერდი, სანამ ხელახლა შეინახავთ.");
         } finally {
             setSaving(false);
         }
@@ -315,10 +315,10 @@ export default function AiPurchaseDraftCard({ message }: { message: AiMessage & 
             {(draft.photoCount === 0 || draft.photoCount > 0 || draft.warnings.length > 0 || draft.notes.length > 0) && (
                 <ul className="flex flex-col gap-1.5 rounded-xl bg-warning/10 p-2.5 text-xs text-text-primary ring-1 ring-inset ring-warning/30">
                     {products && draft.photoCount === 0 && (
-                        <li>⚠️ ამ ფაილში ფოტოები არ არის. შესყიდვა ფოტოების გარეშე შეიქმნება; ფოტოების დამატება შემდეგ შეგიძლია შესყიდვების გვერდზე, პარტიის რედაქტირებიდან.</li>
+                        <li>⚠️ ამ ფაილში ფოტოები არ არის. შესყიდვა ფოტოების გარეშე შეიქმნება; ფოტოების დამატება შემდეგ შეგიძლიათ შესყიდვების გვერდზე, პარტიის რედაქტირებიდან.</li>
                     )}
                     {products && draft.photoCount > 0 && (
-                        <li>⚠️ ფაილის ფოტოები AI-ით ჯერ არ გადმოდის. ფოტოები შესყიდვების გვერდზე დაამატე.</li>
+                        <li>⚠️ ფაილის ფოტოები AI-ით ჯერ არ გადმოდის. ფოტოები შესყიდვების გვერდზე დაამატეთ.</li>
                     )}
                     {draft.warnings.map((warning) => <li key={warning}>⚠️ {warning}</li>)}
                     {draft.notes.map((note) => <li key={note}>💬 {note}</li>)}
@@ -404,7 +404,7 @@ export default function AiPurchaseDraftCard({ message }: { message: AiMessage & 
                             onChange={(event) => setExtras((current) => current.map((kind, position) => position === index ? event.target.value as ExtraKind : kind))}
                             className={inputClass}
                         >
-                            <option value="" disabled>აირჩიე, რა არის ეს თანხა</option>
+                            <option value="" disabled>აირჩიეთ, რა არის ეს თანხა</option>
                             <option value="shipping">ტრანსპორტირება</option>
                             <option value="customs">განბაჟება</option>
                             <option value="other">სხვა ხარჯი</option>

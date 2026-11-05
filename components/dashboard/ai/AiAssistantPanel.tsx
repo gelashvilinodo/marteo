@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Icon } from "@iconify/react";
 import { useBusinessMode } from "@/components/dashboard/business/BusinessModeContext";
 import { hasBusinessFeature } from "@/lib/business/business-mode";
-import { useAiAssistant, type AiAttachment, type AiMessage, type AiPurchaseTarget } from "./AiAssistantProvider";
+import { useAiAssistant, useAiAssistantHidden, type AiAttachment, type AiMessage, type AiPurchaseTarget } from "./AiAssistantProvider";
 import AiPurchaseDraftCard from "./AiPurchaseDraftCard";
 import AiCards from "./AiCards";
 import AiHistoryList from "./AiHistoryList";
@@ -179,6 +179,7 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
     const panelRef = useRef<HTMLElement>(null);
     const pathname = usePathname();
     const router = useRouter();
+    const hidden = useAiAssistantHidden();
     const navigateTimer = useRef<number | undefined>(undefined);
     const keyboard = useKeyboardViewport();
     const desktop = useSyncExternalStore(subscribeDesktop, () => window.matchMedia(DESKTOP_QUERY).matches, () => true);
@@ -353,7 +354,7 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
                                 გამარჯობა{userName ? `, ${userName}` : ""}!
                             </p>
                             <p className="mt-1 text-sm text-text-secondary">
-                                მკითხე მოგებაზე, შეკვეთებზე, მარაგზე ან მომხმარებლებზე, ან ატვირთე შესყიდვის ფაილი.
+                                მკითხეთ მოგებაზე, შეკვეთებზე, მარაგზე ან მომხმარებლებზე, ან ატვირთეთ შესყიდვის ფაილი.
                             </p>
                         </div>
 
@@ -510,7 +511,7 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
                                 submit();
                             }
                         }}
-                        placeholder="დაწერე კითხვა..."
+                        placeholder="დაწერეთ კითხვა..."
                         aria-label="შეტყობინება მართეო AI-სთვის"
                         className="field-sizing-content max-h-32 min-h-9 flex-1 resize-none bg-transparent px-1 py-2 text-base text-text-primary outline-none placeholder:text-text-secondary lg:text-sm"
                     />
@@ -600,6 +601,8 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
             )}
         </>
     );
+
+    if (hidden) return null;
 
     if (desktop) {
         return (

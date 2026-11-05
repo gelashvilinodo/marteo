@@ -14,6 +14,7 @@ import type { AiCardGroup } from "@/lib/ai/ai-cards";
 import { readPurchaseFile } from "@/lib/ai/purchase-file-client";
 import type { AiQuota } from "@/lib/ai/ai-quota";
 import { announceAiQuota } from "./AiQuotaRing";
+import { usePathname } from "next/navigation";
 import { usePlan } from "@/components/dashboard/plan/PlanContext";
 import {
     deleteConversationRemote,
@@ -228,7 +229,7 @@ const FILE_STEPS = [
     "ვთარგმნი და ვალაგებ პროდუქტებს",
     "ვამოწმებ ციფრებს და ჯამებს",
 ];
-const FAILED_REPLY = "მართეო AI დროებით მიუწვდომელია. სცადე ხელახლა.";
+const FAILED_REPLY = "მართეო AI დროებით მიუწვდომელია. სცადეთ ხელახლა.";
 const DIGEST_KEY = "marteo.ai.digest-week";
 
 // კვირის დასაწყისი (ორშაბათი) თბილისის დროით.
@@ -419,7 +420,7 @@ export function AiAssistantProvider({ children, enabled = true }: { children: Re
             announceAiQuota(data?.quota);
 
             if (!response.ok || !data?.draft) {
-                throw new Error(data?.message || "ფაილის დამუშავება ვერ მოხერხდა. სცადე ხელახლა.");
+                throw new Error(data?.message || "ფაილის დამუშავება ვერ მოხერხდა. სცადეთ ხელახლა.");
             }
 
             step(2);
@@ -431,7 +432,7 @@ export function AiAssistantProvider({ children, enabled = true }: { children: Re
                 patch: {
                     progress: undefined,
                     draft,
-                    text: `ფაილი დამუშავდა: ${draft.items.length} ${target === "products" ? "პროდუქტი" : "მასალა"}. შეამოწმე ქვემოთ, უპასუხე კითხვებს და შეინახე.`,
+                    text: `ფაილი დამუშავდა: ${draft.items.length} ${target === "products" ? "პროდუქტი" : "მასალა"}. შეამოწმეთ ქვემოთ, უპასუხეთ კითხვებს და შეინახეთ.`,
                 },
             });
         } catch (error) {
@@ -562,8 +563,15 @@ export function useAiAssistant() {
     return value;
 }
 
+// იმპორტის გვერდზე ჩაკეცილი ზოლიც კი ეფარებოდა ნაბიჯების ღილაკებს,
+// ამიტომ იქ მართეო AI საერთოდ არ ჩანს.
+export function useAiAssistantHidden() {
+    return usePathname().startsWith("/dashboard/import");
+}
+
 // ფანჯარა კონტენტს ზემოდან ეფარება; ქვემოთ ჩაკეცილი ზოლისთვის ადგილი რჩება,
 // რომ გვერდის ბოლო ელემენტები არ დაიფაროს.
 export function AiAssistantInset({ children }: { children: React.ReactNode }) {
-    return <div className="min-w-0 flex-1 lg:pb-11">{children}</div>;
+    const hidden = useAiAssistantHidden();
+    return <div className={hidden ? "min-w-0 flex-1" : "min-w-0 flex-1 lg:pb-11"}>{children}</div>;
 }
