@@ -4,6 +4,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { OrderValidationError } from "@/lib/orders/order-validation-error";
 import { createInventorySkuAllocator } from "@/lib/purchases/create-inventory-sku";
 import { validateImportDraftFile } from "./validate-import-draft-file";
+import { fillImportedOrderPhotos } from "./fill-imported-order-photos";
 import { validateImportDraftSettings } from "./validate-import-draft-settings";
 import { checkDraftProducts } from "./check-draft-products";
 import { createImportedProducts } from "./create-imported-product";
@@ -606,6 +607,8 @@ export async function executeProductImport(
             }),
         },
     });
+
+    await fillImportedOrderPhotos(tx, businessId);
 
     return { receipt, replayed: false };
 }

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { Prisma } from "@/generated/prisma/client";
 import type { createPrismaClient } from "@/lib/prisma";
 import type { CustomerEntry } from "@/lib/customers/get-customers-page";
 import type { InventoryProduct } from "@/components/dashboard/inventory/InventoryView";
@@ -110,6 +111,22 @@ function money(cents: number) {
 type SalesRow = { id: string; sold30: string; sold60: string; sold90: string; gross90: string; lastSale: Date | null };
 type LotRow = { id: string; quantity: number; remaining: number; availableAt: Date };
 
+// იმპორტირებული შეკვეთების პროდუქტები მარაგს არ უკავშირდება, ამიტომ მათთვის
+// მარაგის ვარიანტი სახელით, ფერით და ზომით იძებნება (ზომა ვარიანტის სიაში
+// უნდა იყოს). მხოლოდ ზუსტად ერთი დამთხვევა ითვლება.
+function soldItemId(businessId: string) {
+    return Prisma.sql`COALESCE(oi."inventoryItemId", (
+        SELECT CASE WHEN COUNT(*) = 1 THEN MIN(i.id) END
+        FROM "InventoryItem" i
+        JOIN "Product" p ON p.id = i."productId"
+        WHERE i."businessId" = ${businessId}
+            AND lower(trim(p.name)) = lower(trim(oi.name))
+            AND lower(coalesce(trim(i.color), '')) = lower(coalesce(trim(oi.color), ''))
+            AND (nullif(trim(oi.size), '') IS NULL OR nullif(trim(i.size), '') IS NULL
+                OR lower(trim(oi.size)) = ANY (SELECT lower(trim(s)) FROM unnest(string_to_array(i.size, ',')) s))
+    ))`;
+}
+
 async function loadSales(prisma: Client, businessId: string, now: Date) {
     const d30 = new Date(now.getTime() - 30 * DAY);
     const d60 = new Date(now.getTime() - 60 * DAY);
@@ -117,17 +134,21 @@ async function loadSales(prisma: Client, businessId: string, now: Date) {
 
     // გაყიდვები ფინანსური ჟურნალიდან: დაბრუნება და გაუქმება იქ უკვე უარყოფითად ჩანს.
     return prisma.$queryRaw<SalesRow[]>`
-        SELECT oi."inventoryItemId" AS id,
-            COALESCE(SUM(fi."quantityDelta") FILTER (WHERE f."occurredAt" >= ${d30}), 0)::text AS sold30,
-            COALESCE(SUM(fi."quantityDelta") FILTER (WHERE f."occurredAt" >= ${d60}), 0)::text AS sold60,
-            COALESCE(SUM(fi."quantityDelta") FILTER (WHERE f."occurredAt" >= ${d90}), 0)::text AS sold90,
-            COALESCE(SUM(fi."quantityDelta") FILTER (WHERE f."occurredAt" >= ${d90} AND fi."quantityDelta" > 0), 0)::text AS gross90,
-            MAX(f."occurredAt") FILTER (WHERE fi."quantityDelta" > 0) AS "lastSale"
-        FROM "OrderFinancialEntry" f
-        JOIN "OrderFinancialEntryItem" fi ON fi."entryId" = f.id
-        JOIN "OrderItem" oi ON oi.id = fi."sourceOrderItemId"
-        WHERE f."businessId" = ${businessId} AND oi."inventoryItemId" IS NOT NULL
-        GROUP BY oi."inventoryItemId"
+        SELECT s.id,
+            COALESCE(SUM(s.quantity) FILTER (WHERE s."occurredAt" >= ${d30}), 0)::text AS sold30,
+            COALESCE(SUM(s.quantity) FILTER (WHERE s."occurredAt" >= ${d60}), 0)::text AS sold60,
+            COALESCE(SUM(s.quantity) FILTER (WHERE s."occurredAt" >= ${d90}), 0)::text AS sold90,
+            COALESCE(SUM(s.quantity) FILTER (WHERE s."occurredAt" >= ${d90} AND s.quantity > 0), 0)::text AS gross90,
+            MAX(s."occurredAt") FILTER (WHERE s.quantity > 0) AS "lastSale"
+        FROM (
+            SELECT ${soldItemId(businessId)} AS id, fi."quantityDelta" AS quantity, f."occurredAt"
+            FROM "OrderFinancialEntry" f
+            JOIN "OrderFinancialEntryItem" fi ON fi."entryId" = f.id
+            JOIN "OrderItem" oi ON oi.id = fi."sourceOrderItemId"
+            WHERE f."businessId" = ${businessId}
+        ) s
+        WHERE s.id IS NOT NULL
+        GROUP BY s.id
     `;
 }
 
@@ -173,15 +194,18 @@ async function loadLeadDays(prisma: Client, businessId: string, now: Date) {
 async function loadReturns(prisma: Client, businessId: string, now: Date) {
     const since = new Date(now.getTime() - 90 * DAY);
     return prisma.$queryRaw<Array<{ id: string; returned: string; reason: string }>>`
-        SELECT oi."inventoryItemId" AS id, SUM(ri.quantity)::text AS returned,
-            MODE() WITHIN GROUP (ORDER BY ri.reason::text) AS reason
-        FROM "OrderReturnItem" ri
-        JOIN "OrderReturn" ret ON ret.id = ri."returnId"
-        JOIN "Order" o ON o.id = ret."orderId"
-        JOIN "OrderItem" oi ON oi.id = ri."orderItemId"
-        WHERE o."businessId" = ${businessId} AND ret.status = 'RECEIVED' AND ret."createdAt" >= ${since}
-            AND oi."inventoryItemId" IS NOT NULL
-        GROUP BY oi."inventoryItemId"
+        SELECT r.id, SUM(r.quantity)::text AS returned,
+            MODE() WITHIN GROUP (ORDER BY r.reason) AS reason
+        FROM (
+            SELECT ${soldItemId(businessId)} AS id, ri.quantity, ri.reason::text AS reason
+            FROM "OrderReturnItem" ri
+            JOIN "OrderReturn" ret ON ret.id = ri."returnId"
+            JOIN "Order" o ON o.id = ret."orderId"
+            JOIN "OrderItem" oi ON oi.id = ri."orderItemId"
+            WHERE o."businessId" = ${businessId} AND ret.status = 'RECEIVED' AND ret."createdAt" >= ${since}
+        ) r
+        WHERE r.id IS NOT NULL
+        GROUP BY r.id
     `;
 }
 

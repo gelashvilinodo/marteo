@@ -7,6 +7,7 @@ import {
 import {
     readImportCompletedSections,
 } from "./read-import-completed-sections";
+import { fillImportedOrderPhotos } from "./fill-imported-order-photos";
 import {
     validateImportDraftSettings,
 } from "./validate-import-draft-settings";
@@ -500,6 +501,8 @@ export async function executeOrderImport(
             }),
         },
     });
+
+    await fillImportedOrderPhotos(tx, businessId);
 
     return { receipt, replayed: false };
 }
