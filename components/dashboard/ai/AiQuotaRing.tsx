@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { AI_MONTHLY_LIMITS, AI_QUOTA_WARN_SHARE, formatResetDay, type AiQuota } from "@/lib/ai/ai-quota";
 import { PLAN_ADJECTIVES } from "@/lib/subscription/plans";
@@ -33,6 +33,8 @@ export default function AiQuotaRing() {
     const [quota, setQuota] = useState<AiQuota | null>(null);
     const [open, setOpen] = useState(false);
     const box = useRef<HTMLDivElement>(null);
+    const popover = useRef<HTMLDivElement>(null);
+    const [shift, setShift] = useState(0);
 
     useEffect(() => {
         let alive = true;
@@ -55,6 +57,24 @@ export default function AiQuotaRing() {
         document.addEventListener("pointerdown", onDown);
         window.addEventListener("keydown", onKey, true);
         return () => { document.removeEventListener("pointerdown", onDown); window.removeEventListener("keydown", onKey, true); };
+    }, [open]);
+
+    // ტელეფონზე რგოლი ჰედერის შუაშია, ამიტომ მარჯვნივ მიბმული ფანჯარა ეკრანს მარცხნიდან სცდება: ვწევთ, რომ ეკრანში დარჩეს.
+    useLayoutEffect(() => {
+        if (!open) return;
+        const place = () => {
+            const node = popover.current;
+            if (!node) return;
+            const anchor = node.parentElement!.getBoundingClientRect();
+            const margin = 8;
+            const width = node.offsetWidth;
+            const naturalLeft = anchor.right - width;
+            const maxLeft = window.innerWidth - margin - width;
+            setShift(Math.min(Math.max(naturalLeft, margin), Math.max(maxLeft, margin)) - naturalLeft);
+        };
+        place();
+        window.addEventListener("resize", place);
+        return () => window.removeEventListener("resize", place);
     }, [open]);
 
     if (!quota) return null;
@@ -88,7 +108,7 @@ export default function AiQuotaRing() {
             </button>
 
             {open && (
-                <div role="dialog" aria-label="AI ლიმიტი" className="absolute right-0 top-full z-20 mt-1.5 w-64 rounded-xl border border-border bg-surface p-3 text-left shadow-xl">
+                <div ref={popover} role="dialog" aria-label="AI ლიმიტი" style={{ transform: `translateX(${shift}px)` }} className="absolute right-0 top-full z-20 mt-1.5 w-64 max-w-[calc(100vw-1rem)] rounded-xl border border-border bg-surface p-3 text-left shadow-xl">
                     {quota.disabled ? (
                         <p className="text-sm text-text-primary">მართეო AI ამ ბიზნესისთვის გამორთულია. დეტალებისთვის მოგვწერეთ დახმარების ჩათში.</p>
                     ) : (

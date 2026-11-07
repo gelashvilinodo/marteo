@@ -685,10 +685,11 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
             aria-label="მართეო AI"
             inert={!open}
             aria-hidden={!open}
+            // ფანჯარა ჰედერის ქვემოდან ფარდასავით ჩამოიშლება, შიგთავსი კი ოდნავ დაგვიანებით ჩამოცურდება.
             className={[
-                "fixed inset-x-0 z-30 flex w-screen origin-top flex-col overflow-hidden bg-[#0A244B]",
-                "transition-[opacity,transform,visibility] duration-300 ease-out motion-reduce:transition-none",
-                open ? "visible translate-y-0 opacity-100" : "pointer-events-none invisible -translate-y-3 opacity-0",
+                "fixed inset-x-0 z-30 flex w-screen flex-col overflow-hidden bg-[#0A244B]",
+                "transition-[clip-path,visibility] duration-[380ms] ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+                open ? "visible [clip-path:inset(0_0_0_0)]" : "pointer-events-none invisible [clip-path:inset(0_0_100%_0)]",
             ].join(" ")}
             style={box}
         >
@@ -704,7 +705,15 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
                 {headerActions}
             </header>
 
-            <div id="marteo-ai-body" className="flex min-h-0 flex-1 flex-col bg-surface">
+            <div
+                id="marteo-ai-body"
+                className={[
+                    "flex min-h-0 flex-1 flex-col bg-surface",
+                    // ღია მდგომარეობაში translate-none: გადაადგილება fixed შვილებს და კლავიატურის ველს არ უშლის.
+                    "transition-[opacity,translate] duration-300 ease-out motion-reduce:transition-none",
+                    open ? "translate-none opacity-100 delay-100" : "-translate-y-6 opacity-0",
+                ].join(" ")}
+            >
                 {body}
             </div>
         </aside>
