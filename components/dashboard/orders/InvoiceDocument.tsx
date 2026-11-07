@@ -191,7 +191,7 @@ export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: Or
     height:36px;
     border:1px solid #ddd;
     border-radius:4px;
-    object-fit:contain;
+    object-fit:cover;
     background:#fff;
 }
 

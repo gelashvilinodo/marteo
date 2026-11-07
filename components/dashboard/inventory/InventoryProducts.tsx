@@ -119,7 +119,7 @@ export default function InventoryProducts({
                                                     alt=""
                                                     fill
                                                     sizes="(max-width: 767px) 32px, 40px"
-                                                    className="object-contain p-0.5"
+                                                    className="object-cover"
                                                 />
                                             ) : (
                                                 <Icon

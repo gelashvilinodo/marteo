@@ -23,7 +23,7 @@ function Avatar({ item }: { item: NotificationItem }) {
         return <div className="relative h-12 w-12 shrink-0">
             <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-border bg-background">
                 {item.imageUrl
-                    ? <ProductThumbnail src={item.imageUrl} alt="" fill sizes="48px" className="object-contain p-0.5" />
+                    ? <ProductThumbnail src={item.imageUrl} alt="" fill sizes="48px" className="object-cover" />
                     : <Icon icon="solar:box-bold-duotone" className="h-6 w-6 text-text-secondary" />}
             </div>
             <span className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-surface ${out ? "bg-danger" : "bg-warning"}`}>

@@ -131,7 +131,7 @@ export default async function PublicOrderPage({ params }: { params: Promise<{ to
                 <ul className="mt-3 divide-y divide-border">
                     {order.items.map((item, index) => <li key={index} className="flex min-w-0 items-start gap-3 py-3">
                         {item.imageUrl
-                            ? <Image src={item.imageUrl} alt={item.name} width={56} height={56} unoptimized className="h-14 w-14 shrink-0 rounded-xl border border-border bg-background object-contain" />
+                            ? <Image src={item.imageUrl} alt={item.name} width={56} height={56} unoptimized className="h-14 w-14 shrink-0 rounded-xl border border-border bg-background object-cover" />
                             : <span aria-hidden="true" className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-background text-text-secondary"><Icon icon="solar:box-linear" className="h-6 w-6" /></span>}
                         <div className="min-w-0 flex-1">
                             <h3 className="break-words text-sm font-medium">{item.name}</h3>
