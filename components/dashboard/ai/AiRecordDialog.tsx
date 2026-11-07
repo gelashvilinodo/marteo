@@ -178,7 +178,7 @@ function OrderDialog({ card, onClose, onOrderUpdated, onRemoved }: Props & { car
                 />
             ) : (
                 <div className="p-4 sm:p-6">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="dialog-head dialog-head-line -mx-4 -mt-4 -mb-3 flex items-center justify-between gap-3 px-4 pt-4 pb-3 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6">
                         <h2 id="order-details-title" className="text-lg font-semibold">შეკვეთა {number(card)}</h2>
                         <button type="button" onClick={onClose} aria-label="დახურვა" className="flex h-11 w-11 items-center justify-center rounded-xl border border-border">
                             <Icon icon="solar:close-circle-linear" className="h-6 w-6" />

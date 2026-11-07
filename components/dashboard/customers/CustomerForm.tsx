@@ -165,7 +165,7 @@ export default function CustomerForm({
                 "backdrop:bg-black/30 backdrop:backdrop-blur-sm"
             }
         >
-            <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+            <div className="dialog-head flex items-center justify-between gap-3 border-b border-border p-4">
                 <h2
                     id="customer-form-title"
                     className="flex items-center gap-2 font-semibold"

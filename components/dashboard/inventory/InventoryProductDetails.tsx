@@ -147,7 +147,7 @@ export default function InventoryProductDetails({
             }}
             className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-2xl border border-border bg-surface p-0 text-text-primary shadow-xl backdrop:bg-black/25 backdrop:backdrop-blur-sm"
         >
-            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+            <div className="dialog-head flex items-center justify-between gap-3 border-b border-border px-4 py-3">
                 <h2
                     id={titleId}
                     className="text-base font-semibold"
@@ -180,7 +180,7 @@ export default function InventoryProductDetails({
                                     alt={product.name}
                                     fill
                                     sizes="64px"
-                                    className="object-contain p-1"
+                                    className="object-cover"
                                 />
                             ) : (
                                 <Icon

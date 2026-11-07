@@ -143,7 +143,7 @@ export default function OrderRefundButton({ orderId, onUpdated, onChanged }: {
             <Icon icon="solar:wallet-money-linear" className="h-5 w-5" />თანხის დაბრუნების აღრიცხვა
         </button>
         <dialog ref={dialog} onCancel={event => { event.preventDefault(); event.stopPropagation(); if (canLeave()) leave(); }} onClose={event => event.stopPropagation()} aria-labelledby="order-refund-title" className="m-auto max-h-[85dvh] w-[calc(100%_-_2rem)] max-w-lg overflow-y-auto rounded-2xl border border-border bg-surface p-5 text-text-primary shadow-2xl backdrop:bg-black/30 backdrop:backdrop-blur-sm">
-            <h2 id="order-refund-title" className="flex items-center gap-2 text-lg font-semibold"><Icon icon="solar:wallet-money-linear" className="h-6 w-6 text-warning" />თანხის დაბრუნება</h2>
+            <h2 id="order-refund-title" className="dialog-head dialog-head-line -top-5 -mx-5 -mt-5 -mb-3 px-5 pt-5 pb-3 flex items-center gap-2 text-lg font-semibold"><Icon icon="solar:wallet-money-linear" className="h-6 w-6 text-warning" />თანხის დაბრუნება</h2>
             <p className="mt-3 text-sm text-text-secondary">ეს მოქმედება თანხას ბანკიდან არ გადარიცხავს. აქ აღრიცხეთ მხოლოდ ის თანხა, რომელიც მომხმარებელს უკვე დაუბრუნეთ.</p>
             {loading && <p role="status" className="mt-4 flex items-center gap-2 text-sm text-accent"><Icon icon="solar:refresh-linear" className="h-5 w-5 animate-spin" />იტვირთება…</p>}
             {!loading && order && <>

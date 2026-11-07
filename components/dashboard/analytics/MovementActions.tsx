@@ -335,7 +335,7 @@ export default function MovementActions({
                 aria-labelledby={`${menuId}-title`}
                 className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl border border-border bg-surface p-0 text-text-primary backdrop:bg-black/40 backdrop:backdrop-blur-sm text-left"
             >
-                <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+                <div className="dialog-head flex items-center justify-between gap-3 border-b border-border p-4">
                     <h3
                         id={`${menuId}-title`}
                         className="flex items-center gap-2 font-semibold"

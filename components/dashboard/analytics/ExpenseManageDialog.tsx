@@ -236,7 +236,7 @@ export default function ExpenseManageDialog({
                 }}
                 className="space-y-4 p-5"
             >
-                <div className="flex items-center justify-between gap-3">
+                <div className="dialog-head dialog-head-line -mx-5 -mt-5 -mb-3 flex items-center justify-between gap-3 px-5 pt-5 pb-3">
                     <h3 id={headingId} className="text-lg font-semibold">
                         {mode === "edit"
                             ? "ხარჯის რედაქტირება"

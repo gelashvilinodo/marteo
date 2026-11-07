@@ -67,7 +67,7 @@ export default function PlanUpgradeDialog({ request, plan, isOwner, onClose }: {
     return <dialog ref={ref} onClose={onClose} aria-labelledby="plan-dialog-title"
         className={`m-auto max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-2xl border border-border bg-background p-0 text-text-primary shadow-2xl backdrop:bg-[var(--marteo-overlay)] backdrop:backdrop-blur-sm ${isOwner ? "w-[min(1040px,calc(100vw-2rem))]" : "w-[min(420px,calc(100vw-2rem))]"}`}>
         {content && <div className="p-5 sm:p-6">
-            <div className="flex items-start gap-3">
+            <div className="dialog-head dialog-head-line -mx-5 -mt-5 -mb-3 flex items-start gap-3 bg-background px-5 pt-5 pb-3 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface">
                     <PlanCrown feature={request?.feature} pro={focus === "PRO" ? true : undefined} className="h-6 w-6" />
                 </span>

@@ -485,7 +485,7 @@ export default function PasswordSettingsForm() {
                 }}
                 className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%_-_2rem)] max-w-md overflow-y-auto rounded-2xl border border-border bg-surface p-4 text-text-primary shadow-2xl backdrop:bg-black/40 backdrop:backdrop-blur-sm sm:p-5"
             >
-                <div className="flex items-start justify-between gap-3">
+                <div className="dialog-head dialog-head-line -top-4 -mx-4 -mt-4 -mb-3 flex items-start justify-between gap-3 px-4 pt-4 pb-3 sm:-top-5 sm:-mx-5 sm:-mt-5 sm:px-5 sm:pt-5">
                     <h2 id={titleId} className="font-semibold">
                         გსურთ სხვა მოწყობილობებიდან გამოსვლა?
                     </h2>

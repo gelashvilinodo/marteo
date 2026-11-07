@@ -35,7 +35,7 @@ export default function CustomerDetails({
 }) {
     return (
         <>
-            <div className="flex items-center justify-between gap-3">
+            <div className="dialog-head dialog-head-line -top-4 -mx-4 -mt-4 -mb-3 flex items-center justify-between gap-3 px-4 pt-4 pb-3">
                 <h2 className="font-semibold">
                     მომხმარებლის ინფორმაცია
                 </h2>

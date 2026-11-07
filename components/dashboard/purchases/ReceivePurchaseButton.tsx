@@ -226,7 +226,7 @@ export default function ReceivePurchaseButton({
                 className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-2xl border border-border bg-surface p-0 text-text-primary shadow-xl backdrop:bg-black/50"
             >
                 <form onSubmit={submit}>
-                    <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+                    <div className="dialog-head flex items-center justify-between gap-3 border-b border-border p-4">
                         <h2
                             id={titleId}
                             className="text-base font-semibold"

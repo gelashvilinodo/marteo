@@ -242,6 +242,35 @@ dialog:modal {
   overscroll-behavior: contain;
 }
 
+/* ფანჯრის სათაური (სახელი და ღილაკები) დიდი შიგთავსის სქროლისას ზემოთ რჩება.
+   components ფენაშია, რომ bg-* და სხვა utility-მ გადაფაროს. */
+@layer components {
+  .dialog-head {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background-color: var(--color-surface);
+  }
+
+  /* ხაზის გარეშე სათაურს ქვედა ხაზი მხოლოდ მაშინ უჩნდება, როცა შიგთავსი მის ქვეშ გადის. */
+  @supports (animation-timeline: scroll()) {
+    .dialog-head-line {
+      animation: dialog-head-line linear both;
+      animation-timeline: scroll(nearest block);
+      animation-range: 0 8px;
+    }
+  }
+}
+
+@keyframes dialog-head-line {
+  from {
+    box-shadow: 0 1px 0 transparent;
+  }
+  to {
+    box-shadow: 0 1px 0 var(--color-border);
+  }
+}
+
 @keyframes calendar-slide-next {
   from {
     opacity: 0.5;

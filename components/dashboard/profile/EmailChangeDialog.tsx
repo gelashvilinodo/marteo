@@ -312,7 +312,7 @@ export default function EmailChangeDialog({
             className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%_-_2rem)] max-w-md overflow-y-auto rounded-2xl border border-border bg-surface p-0 text-text-primary shadow-2xl backdrop:bg-black/40 backdrop:backdrop-blur-sm"
         >
             <div className="p-4 sm:p-5">
-                <div className="flex items-center justify-between gap-3">
+                <div className="dialog-head dialog-head-line -mx-4 -mt-4 -mb-3 flex items-center justify-between gap-3 px-4 pt-4 pb-3 sm:-mx-5 sm:-mt-5 sm:px-5 sm:pt-5">
                     <h2
                         id={titleId}
                         className="flex min-w-0 items-center gap-2 font-semibold"

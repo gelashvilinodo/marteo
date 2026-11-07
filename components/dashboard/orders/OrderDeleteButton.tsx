@@ -192,7 +192,7 @@ export default function OrderDeleteButton({
     return <>
         {!autoOpen && <button type="button" onClick={show} title="შეკვეთის წაშლა" aria-label="შეკვეთის წაშლა" className="delete-action inline-flex h-10 w-10 items-center justify-center rounded-xl border"><Icon icon="solar:trash-bin-trash-linear" className="h-5 w-5" /></button>}
         <dialog ref={dialog} onCancel={event => { event.preventDefault(); event.stopPropagation(); if (canLeave()) leave(); }} onClose={event => event.stopPropagation()} aria-label="შეკვეთის წაშლა" className="m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl border border-border bg-surface p-5 text-text-primary shadow-2xl backdrop:bg-black/35 backdrop:backdrop-blur-sm">
-            <h2 className="flex items-center gap-2 text-lg font-semibold"><Icon icon="solar:trash-bin-trash-linear" className="h-6 w-6 text-danger" />შეკვეთის წაშლა</h2>
+            <h2 className="dialog-head dialog-head-line -top-5 -mx-5 -mt-5 -mb-3 px-5 pt-5 pb-3 flex items-center gap-2 text-lg font-semibold"><Icon icon="solar:trash-bin-trash-linear" className="h-6 w-6 text-danger" />შეკვეთის წაშლა</h2>
             {loading && <p role="status" className="my-5 flex items-center gap-2 text-sm text-text-secondary"><Icon icon="solar:refresh-linear" className="h-5 w-5 animate-spin" />იტვირთება…</p>}
             {!loading && order && <div className="mt-4 space-y-4">
                 <p className="text-sm">შეკვეთა {order.number === null ? "" : `#${String(order.number).padStart(4, "0")}`}</p>

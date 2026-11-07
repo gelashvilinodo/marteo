@@ -536,7 +536,7 @@ export function OrderDetailsBody({
 }) {
     return (
         <div className="p-4 sm:p-6">
-            <div className="flex items-center justify-between gap-3">
+            <div className="dialog-head dialog-head-line -mx-4 -mt-4 -mb-3 flex items-center justify-between gap-3 px-4 pt-4 pb-3 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6">
                 <h2
                     id="order-details-title"
                     className="min-w-0 text-lg font-semibold"

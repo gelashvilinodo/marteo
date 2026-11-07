@@ -923,7 +923,7 @@ export default function OrdersView({
         </div>
         <dialog ref={dialog} onCancel={close} onClose={close} onClick={event => { if (event.target === event.currentTarget) close(); }} aria-labelledby="order-details-title" className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%_-_2rem)] max-w-xl overflow-y-auto rounded-2xl border border-border bg-surface p-0 text-text-primary shadow-2xl backdrop:bg-black/25 backdrop:backdrop-blur-sm">
             {detailTarget && !selected && <div className="p-4 sm:p-6">
-                <div className="flex items-center justify-between gap-3">
+                <div className="dialog-head dialog-head-line -mx-4 -mt-4 -mb-3 flex items-center justify-between gap-3 px-4 pt-4 pb-3 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6">
                     <h2 id="order-details-title" className="text-lg font-semibold">შეკვეთა {number(detailTarget)}</h2>
                     <button type="button" onClick={close} aria-label="დახურვა" className="flex h-11 w-11 items-center justify-center rounded-xl border border-border"><Icon icon="solar:close-circle-linear" className="h-6 w-6" /></button>
                 </div>
