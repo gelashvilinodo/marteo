@@ -1,7 +1,7 @@
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
 import Link from "next/link";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import CapabilitiesFlow from "@/components/landing/CapabilitiesFlow";
 import FeaturesHeroPreview from "@/components/landing/FeaturesHeroPreview";

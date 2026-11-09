@@ -1,19 +1,11 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Icon } from "@iconify/react";
 
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
 import { MARTEO_CONTACTS } from "@/lib/marteo-contacts";
 
 export type LegalSection = { id: string; title: string; body: ReactNode[] };
-
-// გაშვებამდე შესავსები ადგილები - ძებნისთვის: "<Pending>"
-export function Pending({ children }: { children: ReactNode }) {
-    return (
-        <mark className="rounded bg-amber-400/20 px-1 font-medium text-amber-700 dark:text-amber-300">{children}</mark>
-    );
-}
 
 export function LegalLink({ href, children }: { href: string; children: ReactNode }) {
     return (
@@ -57,19 +49,12 @@ export default function LegalDocument({ titleId, title, subtitle, sections }: Le
             </section>
 
             <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-                <div className="flex gap-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm leading-relaxed text-text-primary">
-                    <Icon icon="solar:document-text-bold-duotone" className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
-                    <p>
-                        <span className="font-semibold">სამუშაო ვერსია.</span> მონიშნული ადგილები გაშვებამდე შეივსება.
-                    </p>
-                </div>
-
-                <nav aria-label="სარჩევი" className="mt-8 rounded-2xl border border-border bg-surface p-5 sm:p-6">
+                <nav aria-label="სარჩევი" className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
                     <p className="text-sm font-semibold text-text-primary">სარჩევი</p>
-                    <ol className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                    <ol className="mt-2 grid gap-x-6 text-sm sm:mt-3 sm:grid-cols-2 sm:gap-y-2">
                         {sections.map((section, index) => (
                             <li key={section.id}>
-                                <a href={`#${section.id}`} className="text-text-secondary transition-colors hover:text-accent">
+                                <a href={`#${section.id}`} className="inline-flex min-h-11 items-center text-text-secondary transition-colors hover:text-accent sm:min-h-0">
                                     {index + 1}. {section.title}
                                 </a>
                             </li>
@@ -100,7 +85,7 @@ export default function LegalDocument({ titleId, title, subtitle, sections }: Le
                     <a href={`mailto:${MARTEO_CONTACTS.email}`} className="font-medium text-accent hover:underline">
                         {MARTEO_CONTACTS.email}
                     </a>{" "}
-                    ან <LegalLink href="/contact">დაგვიკავშირდით</LegalLink>. ძალაშია: <Pending>[გაშვების თარიღი]</Pending>.
+                    ან <LegalLink href="/contact">დაგვიკავშირდით</LegalLink>. ძალაშია: 2026 წლის 15 ნოემბრიდან.
                 </p>
             </div>
 

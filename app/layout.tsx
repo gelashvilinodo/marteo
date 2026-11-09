@@ -46,6 +46,9 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* მთავარი სათაური (Bold) და ტექსტი (Regular) პირველივე ეკრანზე ჩანს - შრიფტი HTML-თან ერთად იწყებს ჩამოტვირთვას. */}
+        <link rel="preload" href="/fonts/web/FiraGO-Regular-core.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/web/FiraGO-Bold-core.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <script
           dangerouslySetInnerHTML={{
             __html: THEME_BOOTSTRAP,

@@ -8,7 +8,7 @@ import {
     useState,
     type ReactNode,
 } from "react";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 // „ერთი დაჭერა": სქროლზე მიბმული სამი მომენტი.
 // 1) შევსებულ შეკვეთაზე ერთი დაჭერა; 2) ოთხი შედეგი თავისით ნათდება —

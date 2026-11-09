@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import { authPrimaryButtonClass } from "@/components/auth/AuthShell";
 
@@ -23,8 +23,15 @@ export default function Header() {
   const activeBackground = useRef<HTMLSpanElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const loginPanel = useRef<HTMLDivElement>(null);
+  const loginOpener = useRef<HTMLElement | null>(null);
 
   const closeMenu = () => setMenuOpen(false);
+
+  const openLogin = () => {
+    loginOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setLoginOpen(true);
+  };
 
   useLayoutEffect(() => {
     const previousHref = previousNavigationHref;
@@ -51,6 +58,21 @@ export default function Header() {
     if (!menuOpen && !loginOpen) return;
 
     function onKeyDown(event: KeyboardEvent) {
+      // ღია ფანჯარაში Tab ფოკუსს ფანჯრის ღილაკებს შორის ატრიალებს და ფონზე არ გადის.
+      if (event.key === "Tab" && loginOpen && loginPanel.current) {
+        const focusable = Array.from(loginPanel.current.querySelectorAll<HTMLElement>("a[href], button:not([disabled])"));
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const inside = loginPanel.current.contains(document.activeElement);
+        if (event.shiftKey && (!inside || document.activeElement === first)) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && (!inside || document.activeElement === last)) {
+          event.preventDefault();
+          first?.focus();
+        }
+        return;
+      }
       if (event.key !== "Escape") return;
       if (loginOpen) setLoginOpen(false);
       else setMenuOpen(false);
@@ -59,6 +81,17 @@ export default function Header() {
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [menuOpen, loginOpen]);
+
+  // გახსნისას ფოკუსი ფანჯარაში გადადის, დახურვისას გამხსნელ ღილაკს უბრუნდება.
+  useEffect(() => {
+    if (loginOpen) {
+      loginPanel.current?.querySelector<HTMLElement>("a[href]")?.focus();
+      return;
+    }
+    const opener = loginOpener.current;
+    loginOpener.current = null;
+    if (opener?.isConnected && !opener.closest("[inert]")) opener.focus();
+  }, [loginOpen]);
 
   return (
     <>
@@ -97,7 +130,7 @@ export default function Header() {
             <div className="hidden md:block">
               <button
                 type="button"
-                onClick={() => setLoginOpen(true)}
+                onClick={openLogin}
                 className="min-h-10 cursor-pointer rounded-xl bg-[#5a8dee] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#6d9af2]"
               >
                 შესვლა
@@ -110,7 +143,7 @@ export default function Header() {
               aria-label={menuOpen ? "მენიუს დახურვა" : "მენიუს გახსნა"}
               aria-expanded={menuOpen}
               aria-controls="landing-mobile-menu"
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl text-[#f8fafc] transition-colors hover:bg-white/10 md:hidden"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl text-[#f8fafc] transition-colors hover:bg-white/10 md:hidden"
             >
               <Icon
                 icon={menuOpen ? "solar:close-circle-linear" : "solar:hamburger-menu-linear"}
@@ -146,7 +179,7 @@ export default function Header() {
 
             <button
               type="button"
-              onClick={() => setLoginOpen(true)}
+              onClick={openLogin}
               className={`mt-2 ${authPrimaryButtonClass}`}
             >
               <Icon icon="solar:login-3-linear" className="h-5 w-5" />
@@ -180,6 +213,7 @@ export default function Header() {
           className={`w-full max-w-sm rounded-2xl border border-border bg-surface p-5 shadow-xl transition-transform duration-200 ease-out sm:p-6 ${
             loginOpen ? "translate-y-0 scale-100" : "translate-y-2 scale-95"
           }`}
+          ref={loginPanel}
           onClick={event => event.stopPropagation()}
         >
           <div className="flex items-start justify-between gap-4">

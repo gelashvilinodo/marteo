@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";

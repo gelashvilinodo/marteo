@@ -30,6 +30,11 @@ export default function LoginForm() {
             return;
         }
 
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            setError("გთხოვთ, შეიყვანოთ ელფოსტის სწორი მისამართი.");
+            return;
+        }
+
         requestLocked.current = true;
         setLoading(true);
         setError("");
@@ -91,6 +96,7 @@ export default function LoginForm() {
             text="შედით თქვენს ანგარიშზე და გააგრძელეთ ბიზნესის მართვა."
         >
             <form
+                noValidate
                 onSubmit={(event) => {
                     event.preventDefault();
                     void handleLogin();
@@ -99,9 +105,9 @@ export default function LoginForm() {
                 className={authCardClass}
             >
                 <div className="mb-7">
-                    <h2 className="text-2xl font-semibold text-text-primary">
+                    <h1 className="text-2xl font-semibold text-text-primary">
                         მოგესალმებით MARTEO-ზე
-                    </h2>
+                    </h1>
 
                     <p className="mt-2 text-sm leading-6 text-text-secondary">
                         გამოიყენეთ რეგისტრაციისას მითითებული
@@ -180,7 +186,7 @@ export default function LoginForm() {
                                         (previous) => !previous
                                     )
                                 }
-                                className="absolute inset-y-0 right-3 my-auto h-8 rounded px-2 text-xs font-medium text-text-secondary transition hover:text-accent"
+                                className="absolute inset-y-0 right-1 my-auto h-11 cursor-pointer rounded-lg px-3 text-xs font-medium text-text-secondary transition hover:text-accent"
                             >
                                 {showPassword
                                     ? "დამალვა"
@@ -193,7 +199,7 @@ export default function LoginForm() {
                 <div className="mt-2 flex justify-end">
                     <Link
                         href="/forgot-password"
-                        className="inline-flex min-h-10 items-center text-sm text-accent hover:text-accent-hover"
+                        className="inline-flex min-h-11 items-center text-sm text-accent hover:text-accent-hover"
                     >
                         დამავიწყდა პაროლი
                     </Link>

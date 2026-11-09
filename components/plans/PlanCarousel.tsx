@@ -66,9 +66,11 @@ export default function PlanCarousel({ children, labels, start = 1 }: { children
     };
 
     return <div>
-        <div className="mb-5 flex items-center justify-center gap-2.5 lg:hidden" role="tablist" aria-label="გეგმები">
+        <div className="mb-3 flex items-center justify-center lg:hidden" role="tablist" aria-label="გეგმები">
             {labels.map((label, index) => <button key={label} type="button" role="tab" aria-selected={active === index} aria-label={label} onClick={() => goTo(index)}
-                className={`h-2.5 rounded-full transition-all duration-300 ${active === index ? "w-8 bg-accent" : "w-2.5 bg-text-secondary/35 hover:bg-text-secondary/60"}`} />)}
+                className="group flex h-11 min-w-11 cursor-pointer items-center justify-center">
+                <span className={`h-2.5 rounded-full transition-all duration-300 ${active === index ? "w-8 bg-accent" : "w-2.5 bg-text-secondary/35 group-hover:bg-text-secondary/60"}`} />
+            </button>)}
         </div>
         <div ref={track} className="-mx-4 flex snap-x snap-mandatory items-stretch gap-2.5 overflow-x-auto overscroll-x-contain px-[12vw] pt-2 sm:px-[22vw] pb-6 [scrollbar-width:none] sm:-mx-6 lg:mx-0 lg:grid lg:snap-none lg:grid-cols-3 lg:gap-4 lg:overflow-visible lg:p-0 [&::-webkit-scrollbar]:hidden">
             {slides.map((slide, index) => <div key={index} className="flex w-[76vw] shrink-0 snap-center snap-always flex-col will-change-transform *:flex-1 sm:w-[56vw] lg:w-auto">

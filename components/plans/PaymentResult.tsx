@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import { PLAN_ADJECTIVES, isPaidTier } from "@/lib/subscription/plans";
 

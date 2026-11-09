@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import { disableGoogleAnalytics, enableGoogleAnalytics } from "@/lib/analytics/google-analytics";
 import {

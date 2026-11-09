@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import OrderJourney from "@/components/landing/OrderJourney";
 import { BUSINESS_MODES, type BusinessMode } from "@/lib/business/business-mode";
@@ -159,7 +159,7 @@ const steps: Step[] = [
         points: [
             "გრაფიკებით ხედავთ, რა იყიდება",
             "Marteo AI გირჩევთ, რა შეუკვეთოთ (ბიზნესი, PRO)",
-            "კითხვას ქართულად სწერთ და პასუხს მაშინვე იღებთ",
+            "კითხვას ქართულად წერთ და პასუხს მაშინვე იღებთ",
         ],
         visual: () => <GrowthVisual />,
     },
@@ -267,7 +267,7 @@ export default function CapabilitiesFlow() {
                                 data-chip={step.id}
                                 aria-current={active ? "true" : undefined}
                                 onClick={event => goTo(event, step.id)}
-                                className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                                className={`flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-3.5 sm:h-9 text-sm font-medium whitespace-nowrap transition-colors ${
                                     active
                                         ? "border-accent bg-accent text-white"
                                         : "border-border bg-surface text-text-secondary hover:border-accent/50 hover:text-text-primary"
@@ -309,7 +309,7 @@ export default function CapabilitiesFlow() {
                                 · {step.title}
                                 <Link
                                     href="/pricing"
-                                    className="ml-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-text-secondary transition-colors hover:border-accent/50 hover:text-accent"
+                                    className="relative ml-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-text-secondary transition-colors after:absolute after:-inset-y-3 after:inset-x-0 after:content-[''] hover:border-accent/50 hover:text-accent"
                                 >
                                     {planLabels[step.plan]}
                                 </Link>
@@ -353,7 +353,7 @@ export default function CapabilitiesFlow() {
                             </li>
                         ))}
                     </ul>
-                    <Link href="/pricing" className="text-sm font-semibold text-accent hover:text-accent-hover">
+                    <Link href="/pricing" className="inline-flex min-h-11 items-center text-sm font-semibold text-accent hover:text-accent-hover">
                         შეადარეთ პაკეტები →
                     </Link>
                 </div>

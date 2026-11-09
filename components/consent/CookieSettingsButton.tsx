@@ -1,6 +1,6 @@
 "use client";
 
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import { openCookieSettings } from "@/lib/consent/cookie-consent";
 

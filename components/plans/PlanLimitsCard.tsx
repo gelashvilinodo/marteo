@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 import type { BillingOverview } from "@/lib/subscription/billing";
 import { formatDay, planTitle } from "./billing-format";
 import UsageMeter from "./UsageMeter";

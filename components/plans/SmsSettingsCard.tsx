@@ -1,6 +1,6 @@
 "use client";
 
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 import { useState } from "react";
 import { usePlan } from "@/components/dashboard/plan/PlanContext";
 import { CornerCrown } from "@/components/dashboard/plan/PlanCrown";

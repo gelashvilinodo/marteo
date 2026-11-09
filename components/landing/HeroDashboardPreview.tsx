@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 // საჩვენებელი მონაცემები. ზომები em-შია, რომ პანელი სიგანესთან ერთად
 // პროპორციულად იზრდებოდეს და პატარავდებოდეს (იხ. .landing-preview).

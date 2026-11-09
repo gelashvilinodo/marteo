@@ -1,5 +1,5 @@
 import { MARTEO_CONTACTS } from "@/lib/marteo-contacts";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
@@ -47,7 +47,7 @@ export default function FaqPage() {
                             <li key={group.id} className="shrink-0">
                                 <a
                                     href={`#${group.id}`}
-                                    className="flex h-10 items-center gap-2 rounded-xl border border-border bg-surface px-3 text-sm font-medium whitespace-nowrap text-text-secondary transition-colors hover:border-accent/40 hover:text-accent lg:h-11 lg:border-transparent lg:bg-transparent lg:hover:bg-accent/10"
+                                    className="flex h-11 items-center gap-2 rounded-xl border border-border bg-surface px-3 text-sm font-medium whitespace-nowrap text-text-secondary transition-colors hover:border-accent/40 hover:text-accent lg:h-11 lg:border-transparent lg:bg-transparent lg:hover:bg-accent/10"
                                 >
                                     <Icon icon={group.icon} className="h-4 w-4 shrink-0 text-accent" />
                                     {group.title}

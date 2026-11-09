@@ -10,7 +10,7 @@ import AuthShell, {
     authPrimaryButtonClass,
 } from "@/components/auth/AuthShell";
 import { useEffect, useRef, useState } from "react";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import OtpInput from "@/components/auth/OtpInput";
 
@@ -257,6 +257,7 @@ export default function RegisterPage() {
     const [form, setForm] = useState<RegistrationForm>(EMPTY_FORM);
     const [touched, setTouched] = useState<TouchedFields>({});
     const [phase, setPhase] = useState<Phase>("details");
+    const [showPassword, setShowPassword] = useState(false);
     const [userId, setUserId] = useState("");
 
     const [action, setAction] = useState<Action | null>(null);
@@ -538,25 +539,39 @@ export default function RegisterPage() {
             >
                 {label}
             </label>
-            <input
-                id={field}
-                name={field}
-                type={type}
-                autoComplete={autoComplete}
-                value={form[field]}
-                onChange={(event) => updateField(field, event.target.value)}
-                onBlur={() => handleBlur(field)}
-                placeholder={placeholder}
-                aria-invalid={
-                    Boolean(touched[field] && validateField(field, form))
-                }
-                aria-describedby={
-                    touched[field] && validateField(field, form)
-                        ? `${field}-error`
-                        : undefined
-                }
-                className={inputClass(field)}
-            />
+            <div className={type === "password" ? "relative" : undefined}>
+                <input
+                    id={field}
+                    name={field}
+                    type={type === "password" && showPassword ? "text" : type}
+                    autoComplete={autoComplete}
+                    value={form[field]}
+                    onChange={(event) => updateField(field, event.target.value)}
+                    onBlur={() => handleBlur(field)}
+                    placeholder={placeholder}
+                    aria-invalid={
+                        Boolean(touched[field] && validateField(field, form))
+                    }
+                    aria-describedby={
+                        touched[field] && validateField(field, form)
+                            ? `${field}-error`
+                            : undefined
+                    }
+                    className={`${inputClass(field)}${type === "password" ? " pr-24" : ""}`}
+                />
+
+                {type === "password" && (
+                    <button
+                        type="button"
+                        aria-controls={field}
+                        aria-label={showPassword ? "პაროლის დამალვა" : "პაროლის ჩვენება"}
+                        onClick={() => setShowPassword((previous) => !previous)}
+                        className="absolute inset-y-0 right-1 my-auto h-11 cursor-pointer rounded-lg px-3 text-xs font-medium text-text-secondary transition hover:text-accent"
+                    >
+                        {showPassword ? "დამალვა" : "ჩვენება"}
+                    </button>
+                )}
+            </div>
         </>
     );
 
@@ -821,9 +836,9 @@ export default function RegisterPage() {
                     }}
                 >
                     <div className="mb-7">
-                        <h2 className="text-2xl font-semibold text-text-primary">
+                        <h1 className="text-2xl font-semibold text-text-primary">
                             შექმენით თქვენი ანგარიში
-                        </h2>
+                        </h1>
                         <p className="mt-2 text-sm leading-6 text-text-secondary">
                             შეავსეთ პირადი ინფორმაცია რეგისტრაციის
                             დასაწყებად.

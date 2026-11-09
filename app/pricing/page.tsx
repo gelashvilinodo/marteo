@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
@@ -44,7 +44,7 @@ export default function PricingPage() {
                         აირჩიეთ გეგმა, რომელიც თქვენს ბიზნესს მოერგება
                     </h1>
                     <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/70 sm:text-base">
-                        14 დღის განმავლობაში ყველა ფუნქცია უფასოდ გამოსცადეთ, შემდეგ კი აირჩიეთ გეგმა თქვენი საჭიროებით. გეგმის შეცვლისას გადახდილი თანხა არ იკარგება.
+                        14 დღის განმავლობაში მართეო უფასოდ გამოსცადეთ, შემდეგ კი აირჩიეთ გეგმა თქვენი საჭიროებით. გეგმის შეცვლისას გადახდილი თანხა არ იკარგება.
                     </p>
                     <p className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white">
                         <Icon icon="solar:gift-bold-duotone" className="h-5 w-5 text-[#7ee2a8]" aria-hidden="true" />

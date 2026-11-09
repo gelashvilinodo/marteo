@@ -1,6 +1,6 @@
 "use client";
 
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
@@ -78,7 +78,7 @@ export default function ContactPage() {
                             </p>
                             <a
                                 href={`mailto:${MARTEO_CONTACTS.email}`}
-                                className="mt-3 inline-block text-base font-semibold break-all text-accent hover:underline sm:text-lg"
+                                className="mt-2 inline-flex min-h-11 items-center text-base font-semibold break-all text-accent hover:underline sm:text-lg"
                             >
                                 {MARTEO_CONTACTS.email}
                             </a>

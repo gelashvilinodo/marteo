@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import AuthShell, { authCardClass, authPrimaryButtonClass } from "@/components/auth/AuthShell";
 import LogoutButton from "@/components/auth/LogoutButton";
@@ -29,7 +29,7 @@ export default async function FrozenPage() {
             <AuthShell heading={<>წვდომა<br />დროებით შეჩერებულია.</>} text="თქვენი მონაცემები და ანგარიში უსაფრთხოდაა.">
                 <div className={authCardClass}>
                     <Icon icon="solar:lock-keyhole-linear" className="size-12 text-accent" aria-hidden="true" />
-                    <h2 className="mt-3 text-xl font-semibold text-text-primary">ბიზნესში შესვლა ახლა ვერ ხერხდება</h2>
+                    <h1 className="mt-3 text-xl font-semibold text-text-primary">ბიზნესში შესვლა ახლა ვერ ხერხდება</h1>
                     <p className="mt-2 text-sm leading-6 text-text-secondary">
                         {names} ბიზნესის გეგმა შეიცვალა და გუნდის წევრების ლიმიტი შემცირდა. ლიმიტში ჯერ ადრე დამატებული წევრები დარჩნენ, ამიტომ თქვენი წვდომა დროებით შეჩერდა.
                     </p>

@@ -55,9 +55,9 @@ export default function AuthShell({
                         {eyebrow && (
                             <p className="mb-4 text-sm font-medium text-accent">{eyebrow}</p>
                         )}
-                        <h1 className="text-4xl leading-tight font-semibold text-white xl:text-5xl">
+                        <p className="text-4xl leading-tight font-semibold text-white xl:text-5xl">
                             {heading}
-                        </h1>
+                        </p>
                         <p className="mt-6 max-w-sm text-base leading-7 text-white/65">{text}</p>
                     </div>
 

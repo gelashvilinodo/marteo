@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 // „ერთი შეკვეთის გზა": ბლოკი ეკრანზე რომ გამოჩნდება, ეტაპები რიგრიგობით
 // ინთება. ციფრები იგივეა, რაც შესაძლებლობების სცენებში (საფულე 5 → 4,
@@ -104,7 +104,7 @@ export default function OrderJourney() {
                         type="button"
                         onClick={play}
                         tabIndex={done ? undefined : -1}
-                        className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-semibold text-text-primary transition-[colors,opacity] hover:border-accent/50 hover:text-accent ${
+                        className={`inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-semibold text-text-primary transition-[colors,opacity] hover:border-accent/50 hover:text-accent ${
                             done ? "opacity-100" : "pointer-events-none opacity-0"
                         }`}
                     >

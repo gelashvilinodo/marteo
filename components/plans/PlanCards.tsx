@@ -1,4 +1,4 @@
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 import type { ReactNode } from "react";
 import { PLAN_CARDS, YEARLY_PAID_MONTHS, type PlanCard } from "@/lib/subscription/plan-catalog";
 import PlanCarousel from "./PlanCarousel";

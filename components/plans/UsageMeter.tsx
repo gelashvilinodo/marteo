@@ -1,4 +1,4 @@
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 // ლიმიტის ხაზოვანი მრიცხველი („X / Y“). limit null — ულიმიტო, 0 — გეგმაში არ შედის.
 export default function UsageMeter({ icon, label, used, limit, unit = "" }: { icon: string; label: string; used: number; limit: number | null; unit?: string }) {

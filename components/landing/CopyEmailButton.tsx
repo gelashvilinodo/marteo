@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 export default function CopyEmailButton({ email }: { email: string }) {
     const [copied, setCopied] = useState(false);

@@ -1,4 +1,4 @@
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 import { PLAN_CARDS, PLAN_COMPARISON, type ComparisonValue } from "@/lib/subscription/plan-catalog";
 
 function Cell({ value }: { value: ComparisonValue }) {

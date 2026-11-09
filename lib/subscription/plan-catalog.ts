@@ -118,7 +118,7 @@ export const PLAN_CARDS: readonly PlanCard[] = [
 
 export { YEARLY_PAID_MONTHS };
 
-export const TRIAL_PITCH = `${TRIAL_DAYS} დღე უფასოდ · ყველა ფუნქცია · ${PLAN_LIMITS.TRIAL.aiQuestions} AI კითხვა`;
+export const TRIAL_PITCH = `${TRIAL_DAYS} დღე უფასოდ · ბარათის გარეშე · ${PLAN_LIMITS.TRIAL.aiQuestions} AI კითხვა`;
 export const PLAN_FINE_PRINT = "ყოველთვიური გადახდა · გააუქმეთ ნებისმიერ დროს";
 export const PLAN_FINE_PRINT_YEARLY = "წლიური გადახდა · გააუქმეთ ნებისმიერ დროს";
 

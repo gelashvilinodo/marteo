@@ -5,7 +5,7 @@ import CookieSettingsButton from "@/components/consent/CookieSettingsButton";
 import Image from "next/image";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import {
     THEME_STORAGE_KEY,
@@ -66,8 +66,8 @@ export default function Footer() {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <FooterCta />
 
-                <div className="grid grid-cols-2 gap-x-6 gap-y-10 py-12 sm:py-16 md:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))] md:gap-10">
-                    <div className="col-span-2 md:col-span-1">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-10 py-12 sm:grid-cols-3 sm:py-16 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))] lg:gap-10">
+                    <div className="col-span-2 sm:col-span-3 lg:col-span-1">
                         <Link href="/" aria-label="MARTEO - მთავარი" className="inline-block">
                             <Image
                                 src="/images/marteo-11.svg"
@@ -97,7 +97,7 @@ export default function Footer() {
                                         href={link.href}
                                         aria-label={link.label}
                                         {...(link.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-border text-text-secondary transition-colors hover:border-accent/40 hover:bg-accent/10 hover:text-accent"
+                                        className="flex h-11 w-11 items-center justify-center rounded-xl border border-border text-text-secondary transition-colors hover:border-accent/40 hover:bg-accent/10 hover:text-accent"
                                     >
                                         <Icon icon={link.icon} className="h-5 w-5" />
                                     </a>
@@ -113,12 +113,12 @@ export default function Footer() {
                             className={index === columns.length - 1 ? "col-span-2 sm:col-span-1" : undefined}
                         >
                             <h2 className="text-sm font-semibold text-text-primary">{column.title}</h2>
-                            <ul className="mt-4 space-y-3">
+                            <ul className="mt-2 lg:mt-3 lg:space-y-1">
                                 {column.links.map(link => (
                                     <li key={link.href}>
                                         <Link
                                             href={link.href}
-                                            className="text-sm text-text-secondary transition-colors hover:text-accent"
+                                            className="inline-flex min-h-11 items-center text-sm text-text-secondary transition-colors hover:text-accent lg:min-h-8"
                                         >
                                             {link.label}
                                         </Link>
@@ -134,7 +134,7 @@ export default function Footer() {
                         <p className="text-xs text-text-secondary">
                             © {new Date().getFullYear()} MARTEO. ყველა უფლება დაცულია.
                         </p>
-                        <CookieSettingsButton className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 text-xs text-text-secondary transition-colors hover:text-accent" />
+                        <CookieSettingsButton className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 text-xs text-text-secondary transition-colors hover:text-accent" />
                     </div>
 
                     <ThemeSwitch />
@@ -231,7 +231,7 @@ function ThemeSwitch() {
                         type="button"
                         aria-pressed={selected}
                         onClick={() => choose(option.value)}
-                        className={`flex h-9 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition-colors ${
+                        className={`flex h-11 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-xs sm:h-9 font-medium transition-colors ${
                             selected
                                 ? "bg-accent/10 text-accent"
                                 : "text-text-secondary hover:bg-background hover:text-text-primary"

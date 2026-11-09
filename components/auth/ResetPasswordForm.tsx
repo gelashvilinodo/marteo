@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import {
     PasswordSettingsError,
@@ -352,7 +352,7 @@ export default function ResetPasswordForm() {
 
             <Link
                 href="/login"
-                className="mt-4 inline-flex min-h-10 items-center gap-2 text-sm text-accent"
+                className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm text-accent"
             >
                 <Icon
                     icon="solar:arrow-left-linear"

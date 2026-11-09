@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import {
     authCardClass,
@@ -62,6 +62,12 @@ export default function ForgotPasswordForm() {
 
     async function submit() {
         if (running.current || waitSeconds > 0) return;
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            setError("გთხოვთ, შეიყვანოთ ელფოსტის სწორი მისამართი.");
+            setNotice("");
+            return;
+        }
 
         running.current = true;
         setBusy(true);
@@ -152,6 +158,7 @@ export default function ForgotPasswordForm() {
             </p>
 
             <form
+                noValidate
                 className="mt-5 min-w-0"
                 aria-busy={busy}
                 onSubmit={event => {
@@ -230,7 +237,7 @@ export default function ForgotPasswordForm() {
 
             <Link
                 href="/login"
-                className="mt-4 inline-flex min-h-10 items-center gap-2 text-sm text-accent"
+                className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm text-accent"
             >
                 <Icon
                     icon="solar:arrow-left-linear"

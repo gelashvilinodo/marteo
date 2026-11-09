@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import {
     authCardClass,
@@ -51,7 +51,7 @@ function Notice({ icon, title, text }: { icon: string; title: string; text: stri
     return (
         <div className={`${authCardClass} text-center`}>
             <Icon icon={icon} className="mx-auto size-12 text-text-secondary" aria-hidden="true" />
-            <h2 className="mt-3 text-xl font-semibold text-text-primary">{title}</h2>
+            <h1 className="mt-3 text-xl font-semibold text-text-primary">{title}</h1>
             <p className="mt-2 text-sm leading-6 text-text-secondary">{text}</p>
             <Link href="/login" className={`mt-6 ${authPrimaryButtonClass}`}>შესვლის გვერდზე გადასვლა</Link>
         </div>
@@ -156,7 +156,7 @@ export default function InviteAcceptForm() {
         <form onSubmit={submit} noValidate className={authCardClass}>
             <div className="mb-6">
                 <p className="text-sm text-text-secondary">{invite.inviterName} გიწვევთ</p>
-                <h2 className="mt-1 text-2xl font-semibold text-text-primary">„{invite.businessName}“</h2>
+                <h1 className="mt-1 text-2xl font-semibold text-text-primary">„{invite.businessName}“</h1>
                 <div className="mt-3 rounded-xl bg-background p-3 text-sm text-text-secondary">
                     <p className="flex items-center gap-2 font-medium text-text-primary">
                         <Icon icon={invite.role === "OWNER" ? "solar:crown-linear" : "solar:user-id-linear"} className="size-5 shrink-0 text-accent" aria-hidden="true" />

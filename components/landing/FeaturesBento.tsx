@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Icon } from "@iconify/react";
+import { Icon } from "@/components/shared/Icon";
 
 import { BUSINESS_MODES, type BusinessMode } from "@/lib/business/business-mode";
 
@@ -25,7 +25,7 @@ export default function FeaturesBento() {
             className="relative border-t border-border bg-background py-16 sm:py-24"
         >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <h2
                         id="features-bento-title"
                         className="text-[clamp(1.15rem,5.5vw,3rem)] leading-tight font-bold whitespace-nowrap text-text-primary"
