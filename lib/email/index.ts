@@ -1,6 +1,7 @@
 import { escapeHtml } from "@/lib/security/html";
 import { reserveDelivery } from "@/lib/security/delivery-limit";
 import { Resend } from "resend";
+import { devDeliveryToConsole, logDevDelivery } from "@/lib/dev/dev-delivery";
 
 type SendVerificationEmailParams = {
   to: string;
@@ -25,6 +26,11 @@ export async function sendVerificationEmail({
   }
 
   await reserveDelivery("email", to.trim().toLowerCase());
+
+  if (devDeliveryToConsole()) {
+    logDevDelivery("email", to, `verification code=${token}`);
+    return null;
+  }
 
   const resend = new Resend(apiKey);
 

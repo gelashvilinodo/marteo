@@ -270,6 +270,9 @@ export default function RegisterPage() {
     const [emailCode, setEmailCode] = useState<string[]>(emptyCode);
     const [phoneCode, setPhoneCode] = useState<string[]>(emptyCode);
     const [phoneSent, setPhoneSent] = useState(false);
+    // „ახალი კოდი გაიგზავნა“ - ჩანს მხოლოდ ხელახლა გაგზავნის შემდეგ.
+    const [emailResent, setEmailResent] = useState(false);
+    const [phoneResent, setPhoneResent] = useState(false);
 
     const emailCooldown = useCooldown();
     const phoneCooldown = useCooldown();
@@ -476,6 +479,7 @@ export default function RegisterPage() {
                 );
 
                 setEmailCode(emptyCode());
+                setEmailResent(true);
                 emailCooldown.start();
             },
             setEmailError
@@ -491,7 +495,11 @@ export default function RegisterPage() {
             return;
         }
 
-        await runAction("send-phone", sendPhoneCode, setPhoneError);
+        await runAction("send-phone", async () => {
+            const resend = phoneSent;
+            await sendPhoneCode();
+            if (resend) setPhoneResent(true);
+        }, setPhoneError);
     };
 
     const handleVerifyPhone = async () => {
@@ -658,6 +666,12 @@ export default function RegisterPage() {
 
                                 <ErrorNotice message={emailError} />
 
+                                {emailResent && !emailError && (
+                                    <p role="status" className="mt-3 text-center text-sm font-medium text-[#0d7a3b] dark:text-success">
+                                        ახალი კოდი გაიგზავნა.
+                                    </p>
+                                )}
+
                                 <div
                                     className="mt-4 text-center text-sm"
                                     aria-live="off"
@@ -768,6 +782,12 @@ export default function RegisterPage() {
                             />
 
                             <ErrorNotice message={phoneError} />
+
+                            {phoneResent && !phoneError && (
+                                <p role="status" className="mt-3 text-center text-sm font-medium text-[#0d7a3b] dark:text-success">
+                                    ახალი კოდი გაიგზავნა.
+                                </p>
+                            )}
 
                             {emailVerified && !finished && (
                                 <div

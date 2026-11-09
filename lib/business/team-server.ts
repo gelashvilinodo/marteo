@@ -6,6 +6,7 @@ import { Resend } from "resend";
 import type { createPrismaClient } from "@/lib/prisma";
 import { getAppOrigin, readServerSetting } from "@/lib/auth/send-password-reset-email";
 import { reserveDelivery } from "@/lib/security/delivery-limit";
+import { devDeliveryToConsole, logDevDelivery } from "@/lib/dev/dev-delivery";
 import { escapeHtml } from "@/lib/security/html";
 import { isBusinessPermission, type BusinessPermission } from "./permissions";
 import { getTeamRequests } from "./team-manage";
@@ -256,6 +257,10 @@ async function sendInviteEmail({ to, token, role, businessName, inviter }: {
     const roleText = role === "OWNER" ? "თანამფლობელად" : "თანამშრომლად";
 
     await reserveDelivery("email", to);
+    if (devDeliveryToConsole()) {
+        logDevDelivery("email", to, `team invite link=${link}`);
+        return;
+    }
     const { error } = await new Resend(apiKey).emails.send({
         from,
         to: [to],

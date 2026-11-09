@@ -1,4 +1,5 @@
 import { reserveDelivery } from "@/lib/security/delivery-limit";
+import { devDeliveryToConsole, logDevDelivery } from "@/lib/dev/dev-delivery";
 import "server-only";
 
 import { getCloudflareContext } from "@opennextjs/cloudflare";
@@ -82,6 +83,11 @@ export async function sendPasswordResetEmail({
 
     const resetLink = url.toString();
     await reserveDelivery("email", to.trim().toLowerCase());
+
+    if (devDeliveryToConsole()) {
+        logDevDelivery("email", to, `password reset link=${resetLink}`);
+        return;
+    }
 
     const resend = new Resend(apiKey);
 

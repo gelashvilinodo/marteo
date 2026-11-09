@@ -55,6 +55,15 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
         (businessType !== "სხვა" || otherBusinessType.trim().length > 0) &&
         acceptedTerms && !!mode;
 
+    // გათიშული ღილაკის ქვეშ ვწერთ, რა აკლია, რომ მომხმარებელმა არ იფიქროს, რომ ფორმა გაფუჭდა.
+    const missing = [
+        !businessName.trim() && "ბიზნესის დასახელება",
+        !mode && "ბიზნესის მიმართულება",
+        !businessType && "საქმიანობის სფერო",
+        businessType === "სხვა" && !otherBusinessType.trim() && "საქმიანობის სფეროს დასახელება",
+        !acceptedTerms && "წესებზე თანხმობა",
+    ].filter(Boolean).join(", ");
+
     const handleLogoChange = async (
         event: React.ChangeEvent<HTMLInputElement>
     ) => {
@@ -392,11 +401,12 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
                         {/* Other type */}
                         {businessType === "სხვა" && (
                             <div className="mb-4">
-                                <label className={authLabelClass}>
+                                <label htmlFor="business-other-type" className={authLabelClass}>
                                     მიუთითეთ საქმიანობის სფერო
                                 </label>
 
                                 <input
+                                    id="business-other-type"
                                     type="text"
                                     value={otherBusinessType}
                                     onChange={(e) =>
@@ -427,6 +437,14 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
                                     className="font-medium text-accent hover:underline"
                                 >
                                     წესებსა და პირობებს
+                                </Link>{" "}
+                                და{" "}
+                                <Link
+                                    href="/privacy"
+                                    target="_blank"
+                                    className="font-medium text-accent hover:underline"
+                                >
+                                    კონფიდენციალურობის პოლიტიკას
                                 </Link>
                             </span>
                         </label>
@@ -450,6 +468,12 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
                                     ? "ბიზნესის შექმნა"
                                     : "რეგისტრაციის დასრულება"}
                         </button>
+
+                        {!canSubmit && !loading && missing && (
+                            <p className="mt-2 text-center text-xs leading-5 text-text-secondary" aria-live="polite">
+                                შესავსებია: {missing}
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { createPrismaClient } from "@/lib/prisma";
+import { isUsableResetRequest } from "@/lib/auth/password-reset-link";
 import {
     EmailChangeError,
     emailChangeJson,
@@ -64,16 +65,7 @@ export async function POST(request: Request) {
             },
         });
 
-        if (
-            !pending ||
-            pending.usedAt !== null ||
-            pending.expiresAt <= new Date() ||
-            pending.user.status !== "ACTIVE" ||
-            !pending.user.emailVerifiedAt ||
-            pending.email !== pending.user.email ||
-            pending.passwordFingerprint !==
-                hashEmailChangeValue(pending.user.password)
-        ) {
+        if (!isUsableResetRequest(pending)) {
             invalidLink();
         }
 

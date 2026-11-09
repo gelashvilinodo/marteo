@@ -1,4 +1,5 @@
 import { reserveDelivery } from "@/lib/security/delivery-limit";
+import { devDeliveryToConsole, logDevDelivery } from "@/lib/dev/dev-delivery";
 import "server-only";
 
 import { Resend } from "resend";
@@ -27,6 +28,11 @@ export async function sendEmailChangeCode({
     }).format(expiresAt);
 
     await reserveDelivery("email", to.trim().toLowerCase());
+
+    if (devDeliveryToConsole()) {
+        logDevDelivery("email", to, `email change code=${code}`);
+        return;
+    }
 
     const resend = new Resend(apiKey);
 

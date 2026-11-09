@@ -11,6 +11,7 @@ export const SYSTEM_JOBS = [
     { name: "support-cleanup", label: "დახმარების ჩათის გასუფთავება (24 სთ)" },
     { name: "system-log-prune", label: "ძველი ჩანაწერების წაშლა" },
     { name: "unused-image-cleanup", label: "გამოუყენებელი ფოტოების წაშლა (დღეში ერთხელ)", lateAfterMs: 26 * 3600_000 },
+    { name: "unfinished-registration-cleanup", label: "დაუსრულებელი რეგისტრაციების წაშლა (7 დღე, დღეში ერთხელ)", lateAfterMs: 26 * 3600_000 },
 ] as const;
 
 const LATE_AFTER_MS = 2 * 3600_000;

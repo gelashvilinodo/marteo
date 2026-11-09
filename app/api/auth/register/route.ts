@@ -90,34 +90,41 @@ async function post(request: Request) {
       { scope: "register-ip", identity: requestIp(request), maximum: 10, seconds: 3600 },
     ]);
 
-    const existingUser = await prisma.user.findFirst({
+    const existingUsers = await prisma.user.findMany({
       where: {
         OR: [{ email }, { phone }],
       },
       select: {
+        id: true,
         email: true,
         phone: true,
+        status: true,
       },
     });
 
-    if (existingUser) {
-      if (existingUser.email === email) {
-        return NextResponse.json(
-          {
-            error: "ამ ელფოსტით ანგარიში უკვე არსებობს.",
-          },
-          { status: 409 }
-        );
-      }
+    // დაუდასტურებელი რეგისტრაცია (ვერიფიკაციის შუაში დატოვებული) ელფოსტას და ნომერს არ იკავებს:
+    // ხელახალი რეგისტრაცია მას ანაცვლებს. ელფოსტა და ნომერი ახალი კოდებით ისევ დასადასტურებელია.
+    const completedUsers = existingUsers.filter((user) => user.status !== "PENDING_VERIFICATION");
+    const unfinishedIds = existingUsers
+      .filter((user) => user.status === "PENDING_VERIFICATION")
+      .map((user) => user.id);
 
-      if (existingUser.phone === phone) {
-        return NextResponse.json(
-          {
-            error: "ეს ტელეფონის ნომერი უკვე გამოყენებულია.",
-          },
-          { status: 409 }
-        );
-      }
+    if (completedUsers.some((user) => user.email === email)) {
+      return NextResponse.json(
+        {
+          error: "ამ ელფოსტით ანგარიში უკვე არსებობს.",
+        },
+        { status: 409 }
+      );
+    }
+
+    if (completedUsers.some((user) => user.phone === phone)) {
+      return NextResponse.json(
+        {
+          error: "ეს ტელეფონის ნომერი უკვე გამოყენებულია.",
+        },
+        { status: 409 }
+      );
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -132,6 +139,16 @@ async function post(request: Request) {
     );
 
     const user = await prisma.$transaction(async (tx) => {
+      if (unfinishedIds.length > 0) {
+        await tx.user.deleteMany({
+          where: {
+            id: { in: unfinishedIds },
+            status: "PENDING_VERIFICATION",
+            memberships: { none: {} },
+          },
+        });
+      }
+
       const createdUser = await tx.user.create({
         data: {
           firstName,

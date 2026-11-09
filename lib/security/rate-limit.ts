@@ -54,7 +54,10 @@ export async function reserveLimits(prisma: PrismaClient, limits: Limit[]) {
 
 export function rateLimitResponse(error: unknown) {
     if (!(error instanceof RateLimitError)) return null;
-    const message = `მოთხოვნების ლიმიტი ამოიწურა. სცადეთ ხელახლა ${error.retryAfter} წამში.`;
+    const wait = error.retryAfter >= 120
+        ? `${Math.ceil(error.retryAfter / 60)} წუთში`
+        : `${error.retryAfter} წამში`;
+    const message = `მოთხოვნების ლიმიტი ამოიწურა. სცადეთ ხელახლა ${wait}.`;
     return NextResponse.json({ success: false, error: message, message, retryAfter: error.retryAfter }, {
         status: 429, headers: { "Retry-After": String(error.retryAfter), "Cache-Control": "no-store" },
     });

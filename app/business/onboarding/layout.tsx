@@ -1,4 +1,9 @@
 import type { ReactNode } from "react";
+
+export const metadata = {
+    title: "ბიზნესის ინფორმაცია - MARTEO",
+    robots: { index: false, follow: false },
+};
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";

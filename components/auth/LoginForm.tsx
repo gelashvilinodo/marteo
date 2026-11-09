@@ -17,6 +17,7 @@ export default function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [registrationIncomplete, setRegistrationIncomplete] = useState(false);
 
     const requestLocked = useRef(false);
 
@@ -62,6 +63,7 @@ export default function LoginForm() {
                     : null;
 
             if (!response.ok) {
+                setRegistrationIncomplete(data?.code === "REGISTRATION_INCOMPLETE");
                 throw new Error(
                     typeof data?.error === "string"
                         ? data.error
@@ -211,6 +213,14 @@ export default function LoginForm() {
                         className={`mt-4 ${authErrorClass}`}
                     >
                         {error}
+                        {registrationIncomplete && (
+                            <Link
+                                href="/register"
+                                className="mt-2 flex min-h-11 items-center font-semibold underline underline-offset-2"
+                            >
+                                რეგისტრაციის დასრულება
+                            </Link>
+                        )}
                     </div>
                 )}
 

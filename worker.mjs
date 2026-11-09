@@ -6,6 +6,7 @@ import {purgeExpiredSupportMessages} from './lib/support/purge-expired-support.m
 import {expireSubscriptions} from './lib/billing/expire-subscriptions.mjs';
 import {pruneSystemLog, runJob} from './lib/system/job-runs.mjs';
 import {sweepUnusedImages} from './lib/storage/sweep-unused-images.mjs';
+import {purgeUnfinishedRegistrations} from './lib/auth/purge-unfinished-registrations.mjs';
 export * from './.open-next/worker.js';
 
 const worker = createCspWorker(openNextWorker, manifest);
@@ -31,6 +32,8 @@ const entry = {
         // Once a day, at 03:00 UTC: photos in storage that no database row mentions.
         if (new Date(controller.scheduledTime).getUTCHours() === 3) {
             ctx.waitUntil(runJob(url, 'unused-image-cleanup', () => sweepUnusedImages(url, env.SUPABASE_SECRET_KEY)));
+            // 7 დღეზე ძველი დაუსრულებელი რეგისტრაციები (ვერიფიკაციის შუაში დატოვებული).
+            ctx.waitUntil(runJob(url, 'unfinished-registration-cleanup', () => purgeUnfinishedRegistrations(url)));
         }
     },
 };

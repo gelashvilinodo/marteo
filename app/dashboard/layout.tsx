@@ -8,6 +8,12 @@ import DashboardShell from "@/components/dashboard/DashboardShell";
 import SystemBannerBar from "@/components/dashboard/SystemBannerBar";
 import { getActiveBanner } from "@/lib/system/active-banner";
 
+// ჩანართის სათაური დაშბორდში; გვერდები, რომლებსაც საკუთარი სათაური აქვთ, მას ანაცვლებენ.
+export const metadata = {
+    title: "დაშბორდი - MARTEO",
+    robots: { index: false, follow: false },
+};
+
 type DashboardLayoutProps = {
     children: ReactNode;
 };

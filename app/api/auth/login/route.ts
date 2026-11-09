@@ -77,6 +77,18 @@ async function post(request: Request) {
       );
     }
 
+    // რეგისტრაცია ვერიფიკაციის შუაში შეჩერდა: მომხმარებელი მას თავიდან გადის იმავე ელფოსტით
+    // (register დაუდასტურებელ ჩანაწერს ანაცვლებს). კოდი მხოლოდ სწორი პაროლის შემდეგ ჩანს.
+    if (user.status === "PENDING_VERIFICATION") {
+      return NextResponse.json(
+        {
+          error: "რეგისტრაცია ბოლომდე არ დასრულებულა. დაასრულეთ ის იმავე ელფოსტით - ახალ კოდებს გამოგიგზავნით.",
+          code: "REGISTRATION_INCOMPLETE",
+        },
+        { status: 403 }
+      );
+    }
+
     // ACTIVE is reached only after registration verifies the phone. Invited
     // team members confirm their email through the invite and skip the phone.
     if (

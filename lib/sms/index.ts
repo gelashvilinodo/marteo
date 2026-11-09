@@ -1,5 +1,6 @@
 import { normalizePhone, isAllowedSmsPhone } from "@/lib/security/phone";
 import { reserveDelivery, reserveOrderSms } from "@/lib/security/delivery-limit";
+import { devDeliveryToConsole, logDevDelivery } from "@/lib/dev/dev-delivery";
 
 type SendSmsParams = {
   phone: string;
@@ -51,6 +52,11 @@ export async function sendSms({
 
   if (purpose === "order") await reserveOrderSms(phone);
   else await reserveDelivery("sms", phone);
+
+  if (devDeliveryToConsole()) {
+    logDevDelivery("sms", phone, message);
+    return;
+  }
 
   const response = await fetch(`${baseUrl}/v2/send?${params.toString()}`, {
     method: "POST",

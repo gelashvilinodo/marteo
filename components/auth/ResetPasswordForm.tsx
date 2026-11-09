@@ -65,6 +65,30 @@ export default function ResetPasswordForm() {
         };
     }, []);
 
+    // გამოყენებული ან ვადაგასული ბმული გვერდის გახსნისთანავე ჩანს და არა ახალი პაროლის აკრეფის შემდეგ.
+    useEffect(() => {
+        if (!token) return;
+        const check = new AbortController();
+        fetch("/api/auth/password-reset/check", {
+            method: "POST",
+            credentials: "same-origin",
+            cache: "no-store",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token }),
+            signal: check.signal,
+        })
+            .then(response => response.json())
+            .then((data: unknown) => {
+                if (data !== null && typeof data === "object" && "valid" in data && data.valid === false) {
+                    setInvalid(true);
+                }
+            })
+            .catch(() => {
+                // შემოწმება ვერ მოხერხდა: ფორმა რჩება, შეცვლისას სერვერი მაინც ამოწმებს.
+            });
+        return () => check.abort();
+    }, [token]);
+
     async function submit() {
         if (running.current || !ready || invalid || !token) return;
 

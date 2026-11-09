@@ -17,6 +17,14 @@ const RESEND_COOLDOWN_MS = 60 * 1000;
 const REQUEST_WINDOW_MS = 60 * 60 * 1000;
 const MAX_REQUESTS_PER_WINDOW = 5;
 const MAX_REQUESTS_PER_IP_HOUR = 10;
+// არსებულ ანგარიშზე ბმულის შექმნა და გაგზავნა ~2.5 წმ-ს იღებს, არარსებულზე პასუხი ~1 წმ-ში მოდიოდა.
+// ორივე შემთხვევაში პასუხი მინიმუმ ამდენ ხანს ელოდება, რომ დროით ვერ გაირკვეს, ვინ არის დარეგისტრირებული.
+const MIN_RESPONSE_MS = 3000;
+
+async function waitUntilMinimum(startedAt: number) {
+    const remaining = MIN_RESPONSE_MS - (Date.now() - startedAt);
+    if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
+}
 
 function accepted() {
     return emailChangeJson({
@@ -28,6 +36,7 @@ function accepted() {
 }
 
 export async function POST(request: Request) {
+    const startedAt = Date.now();
     const prisma = createPrismaClient();
 
     try {
@@ -69,7 +78,10 @@ export async function POST(request: Request) {
             select: { id: true },
         });
 
-        if (!account) return accepted();
+        if (!account) {
+            await waitUntilMinimum(startedAt);
+            return accepted();
+        }
 
         const token = randomBytes(32).toString("hex");
 
@@ -166,6 +178,7 @@ export async function POST(request: Request) {
             }
         }
 
+        await waitUntilMinimum(startedAt);
         return accepted();
     } catch (cause: unknown) {
         const limited = rateLimitResponse(cause);
