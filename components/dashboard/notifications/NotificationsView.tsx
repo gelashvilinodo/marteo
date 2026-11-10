@@ -7,6 +7,7 @@ import { Icon } from "@iconify/react";
 import ProductThumbnail from "@/components/shared/ProductThumbnail";
 import { NOTIFICATIONS_SEEN } from "@/lib/notifications/events";
 import PushCard from "@/components/support/PushCard";
+import { formatTbilisiDateTime } from "@/lib/tbilisi-date-time";
 
 
 type NotificationItem = {
@@ -15,7 +16,6 @@ type NotificationItem = {
     deliverAt: string; readAt: string | null;
 };
 
-const timeFormat = new Intl.DateTimeFormat("ka-GE", { timeZone: "Asia/Tbilisi", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 function Avatar({ item }: { item: NotificationItem }) {
     if (item.kind === "LOW_STOCK" || item.kind === "OUT_OF_STOCK" || item.kind === "STOCK_SUMMARY") {
@@ -92,7 +92,7 @@ export default function NotificationsView({ notifications: initial, pushKey }: {
                             </div>
                             <p className="mt-1 whitespace-pre-line break-words text-sm leading-6 text-text-secondary">{item.body}</p>
                             <div className="mt-3 flex flex-wrap items-center gap-3">
-                                <time dateTime={item.deliverAt} className="text-xs text-text-secondary">{timeFormat.format(new Date(item.deliverAt))}</time>
+                                <time dateTime={item.deliverAt} className="text-xs text-text-secondary">{formatTbilisiDateTime(item.deliverAt)}</time>
                                 {item.actionUrl && <Link href={item.actionUrl} prefetch={false} className="rounded-xl bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-hover">{item.actionLabel || "ნახვა"}</Link>}
                             </div>
                         </div>

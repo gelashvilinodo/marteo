@@ -6,6 +6,8 @@ import { createPrismaClient } from "@/lib/prisma";
 import ProfileSettingsForm from "@/components/dashboard/profile/ProfileSettingsForm";
 import PasswordSettingsForm from "@/components/dashboard/profile/PasswordSettingsForm";
 
+export const metadata = { title: "ჩემი პროფილი - MARTEO" };
+
 export default async function ProfilePage() {
     await requireDashboardSection("/dashboard/profile");
     const prisma = createPrismaClient();

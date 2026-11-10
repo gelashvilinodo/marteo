@@ -16,6 +16,8 @@ import { getHomeExpenses } from "@/lib/dashboard/get-home-expenses";
 import { Suspense } from "react";
 import HomeSkeleton from "@/components/dashboard/home/HomeSkeleton";
 
+export const metadata = { title: "მთავარი - MARTEO" };
+
 async function DashboardContent({
     searchParams,
 }: {

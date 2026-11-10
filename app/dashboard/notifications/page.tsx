@@ -5,6 +5,8 @@ import { openNotifications } from "@/lib/notifications/user-notifications";
 import NotificationsView from "@/components/dashboard/notifications/NotificationsView";
 import { getVapidPublicKey } from "@/lib/push/web-push";
 
+export const metadata = { title: "შეტყობინებები - MARTEO" };
+
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {

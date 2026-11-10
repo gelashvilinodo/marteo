@@ -14,6 +14,8 @@ import StatisticsPeriodForm from "@/components/dashboard/statistics/StatisticsPe
 import { getStatisticsCharts } from "@/lib/statistics/get-statistics-charts";
 import StatisticsCharts from "@/components/dashboard/statistics/StatisticsCharts";
 
+export const metadata = { title: "სტატისტიკა - MARTEO" };
+
 function date(value: string) {
     const [year, month, day] = value.split("-");
     return `${day}.${month}.${year}`;

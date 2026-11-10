@@ -4,6 +4,8 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { getPurchasesSnapshot, type PurchasesSearchParams } from "@/lib/purchases/get-purchases-snapshot";
 import PurchasesView from "@/components/dashboard/purchases/PurchasesView";
+
+export const metadata = { title: "შესყიდვები - MARTEO" };
 export default async function PurchasesPage({ searchParams }: { searchParams: Promise<PurchasesSearchParams> }) {
     await requireDashboardSection("/dashboard/purchases");
   const user = await getCurrentUser();

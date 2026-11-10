@@ -13,7 +13,7 @@ import { CancelPlanButton } from "@/components/plans/PlanActions";
 import UsageMeter from "@/components/plans/UsageMeter";
 import PaymentResult from "@/components/plans/PaymentResult";
 
-export const metadata = { title: "პაკეტი და გადახდები | MARTEO", robots: { index: false, follow: false } };
+export const metadata = { title: "პაკეტი და გადახდები - MARTEO", robots: { index: false, follow: false } };
 
 export default async function BillingPage({ searchParams }: { searchParams: Promise<{ payment?: string }> }) {
     const membership = await requireDashboardSection("/dashboard/billing");

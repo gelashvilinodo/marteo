@@ -5,4 +5,6 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { getCurrentBusiness } from '@/lib/auth/current-business';
 import { getProductionSnapshot } from '@/lib/production/snapshot';
 import ProductionView from '@/components/dashboard/production/ProductionView';
+
+export const metadata = { title: "წარმოება - MARTEO" };
 export default async function ProductionPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){await requireDashboardSection("/dashboard/production");const user=await getCurrentUser();if(!user)redirect('/login');const member=await getCurrentBusiness();if(!member)redirect('/business/onboarding');return <ProductionView initial={await hideCostsIfNeeded(await getProductionSnapshot(member.businessId,await searchParams,user.id))} showTour={!user.seenTours.includes('production')}/>;}

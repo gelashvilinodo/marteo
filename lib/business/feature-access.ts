@@ -12,5 +12,6 @@ export async function businessFeatureDenied(feature:BusinessFeature) {
 export async function requireBusinessFeature(feature:BusinessFeature) {
     const member=await getCurrentBusiness();
     if(!member)redirect('/dashboard');
-    if(!hasBusinessFeature(member.business.mode,feature))redirect('/dashboard/business-settings');
+    // პარამეტრების გვერდი ?hidden=-ით ხსნის, რატომ გადმოვიდა მომხმარებელი.
+    if(!hasBusinessFeature(member.business.mode,feature))redirect(`/dashboard/business-settings?hidden=${feature}`);
 }

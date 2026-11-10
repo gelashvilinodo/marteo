@@ -8,6 +8,8 @@ import { getOrdersPgPage } from "@/lib/orders/get-orders-pg-page";
 import OrdersView from "@/components/dashboard/orders/OrdersView";
 import { getCurrentBusiness } from "@/lib/auth/current-business";
 
+export const metadata = { title: "შეკვეთები - MARTEO" };
+
 export default async function OrdersPage({ searchParams }: {
     searchParams: Promise<OrdersSearchParams>;
 }) {

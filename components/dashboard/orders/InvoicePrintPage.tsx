@@ -7,6 +7,7 @@ import InvoiceDocument, { type InvoicePaper, isInvoicePaper } from "./InvoiceDoc
 import InvoicePreview from "./InvoicePreview";
 import { prepareInvoiceQr } from "@/lib/orders/prepare-invoice-qr-client";
 import { waitForInvoiceImage } from "@/lib/orders/wait-for-invoice-image";
+import { formatTbilisiDateTime } from "@/lib/tbilisi-date-time";
 
 export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: string; initialPaper: InvoicePaper }) {
     const [paper, setPaper] = useState(initialPaper);
@@ -384,7 +385,7 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
                     </span>
                     {invoice.printState !== "PRINTED" && <button type="button" disabled={confirming || printing} onClick={confirmPrinted} className="rounded-lg bg-success px-3 py-2 font-semibold text-white disabled:opacity-50">{confirming ? "ინახება…" : "მონიშნეთ დაბეჭდილად"}</button>}
                 </div>
-                {invoice.printedAt && <p className="mt-2 text-xs text-text-secondary">ბოლო დადასტურება: {new Intl.DateTimeFormat("ka-GE", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Tbilisi" }).format(new Date(invoice.printedAt))}</p>}
+                {invoice.printedAt && <p className="mt-2 text-xs text-text-secondary">ბოლო დადასტურება: {formatTbilisiDateTime(invoice.printedAt)}</p>}
                 {confirmPrompt && invoice.printState !== "PRINTED" && <div className="mt-3 border-t border-border pt-3">
                     <p>ინვოისი წარმატებით დაბეჭდეთ ან PDF-ად შეინახეთ? დაადასტურეთ ზემოთ მდებარე ღილაკით.</p>
                     <button type="button" disabled={confirming} onClick={() => setConfirmPrompt(false)} className="mt-2 text-text-secondary underline">ჯერ არა</button>

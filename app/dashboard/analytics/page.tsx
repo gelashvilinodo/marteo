@@ -6,6 +6,8 @@ import { getAnalyticsSnapshot } from "@/lib/analytics/get-analytics-snapshot";
 import type { AnalyticsSearchParams } from "@/lib/analytics/get-analytics-page";
 import AnalyticsView from "@/components/dashboard/analytics/AnalyticsView";
 
+export const metadata = { title: "ანალიტიკა - MARTEO" };
+
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<AnalyticsSearchParams> }) {
     await requireDashboardSection("/dashboard/analytics");
     const user = await getCurrentUser();

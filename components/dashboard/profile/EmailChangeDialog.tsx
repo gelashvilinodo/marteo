@@ -50,8 +50,9 @@ export default function EmailChangeDialog({
     const [authorization, setAuthorization] = useState("");
     const [email, setEmail] = useState("");
     const [sentEmail, setSentEmail] = useState("");
+    // „არა, დარჩეს შესული“ წინასწარ მონიშნულია: უსაფრთხო ნაგულისხმევი, ფორმა არჩევანის გარეშე აღარ ჩერდება.
     const [logoutOthers, setLogoutOthers] =
-        useState<boolean | null>(null);
+        useState<boolean | null>(false);
     const [code, setCode] = useState<string[]>(
         ["", "", "", "", "", ""],
     );
@@ -128,6 +129,11 @@ export default function EmailChangeDialog({
             setError(
                 "აირჩიეთ, გსურთ თუ არა სხვა მოწყობილობებიდან გამოსვლა.",
             );
+            return;
+        }
+
+        if (action === "send-code" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            setError("მიუთითეთ ელფოსტის სწორი მისამართი.");
             return;
         }
 
@@ -345,6 +351,7 @@ export default function EmailChangeDialog({
                 </p>
 
                 <form
+                    noValidate
                     className="mt-5"
                     onSubmit={event => {
                         event.preventDefault();
@@ -444,7 +451,6 @@ export default function EmailChangeDialog({
                                             className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-border px-3 py-2 text-sm"
                                         >
                                             <input
-                                                required
                                                 type="radio"
                                                 name="logoutOtherSessions"
                                                 checked={logoutOthers === value}
@@ -508,7 +514,7 @@ export default function EmailChangeDialog({
                                         }}
                                         className="min-h-10 text-xs text-text-secondary"
                                     >
-                                        მისამართის შეცვლა
+                                        სხვა მისამართის მითითება
                                     </button>
                                 </div>
                             </>
@@ -558,7 +564,7 @@ export default function EmailChangeDialog({
                                 : step === "password"
                                     ? "პაროლის დადასტურება"
                                     : step === "email"
-                                        ? "კოდის გაგზავნა"
+                                        ? (waitSeconds > 0 ? `კოდის გაგზავნა - ${waitSeconds} წმ` : "კოდის გაგზავნა")
                                         : "ელფოსტის შეცვლა"}
                         </button>
                     </div>

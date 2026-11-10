@@ -6,6 +6,8 @@ import { getCurrentBusiness } from "@/lib/auth/current-business";
 import { createPrismaClient } from "@/lib/prisma";
 import ImportWorkspace from "@/components/dashboard/imports/ImportWorkspace";
 
+export const metadata = { title: "მონაცემების იმპორტი - MARTEO" };
+
 export default async function ImportPage() {
     await requireDashboardSection("/dashboard/import");
     const user = await getCurrentUser();

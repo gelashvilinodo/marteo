@@ -460,7 +460,7 @@ export default function PhoneChangeDialog({
                                         }}
                                         className="min-h-10 text-xs text-text-secondary"
                                     >
-                                        ნომრის შეცვლა
+                                        სხვა ნომრის მითითება
                                     </button>
                                 </div>
                             </>
@@ -517,7 +517,7 @@ export default function PhoneChangeDialog({
                                 : step === "password"
                                     ? "პაროლის დადასტურება"
                                     : step === "phone"
-                                        ? "SMS-ის გაგზავნა"
+                                        ? (waitSeconds > 0 ? `SMS-ის გაგზავნა - ${waitSeconds} წმ` : "SMS-ის გაგზავნა")
                                         : "ნომრის შეცვლა"}
                         </button>
                     </div>

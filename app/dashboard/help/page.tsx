@@ -7,7 +7,7 @@ import { getVapidPublicKey } from "@/lib/push/web-push";
 import { displayName } from "@/lib/support/support-chat";
 import HelpView from "@/components/dashboard/help/HelpView";
 
-export const metadata = { title: "დახმარება · MARTEO" };
+export const metadata = { title: "დახმარება - MARTEO" };
 
 export default async function HelpPage() {
     await requireDashboardSection("/dashboard/help");

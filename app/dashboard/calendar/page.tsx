@@ -8,6 +8,8 @@ import { getCalendarPage } from "@/lib/content/get-calendar-page";
 import type { CalendarSearchParams } from "@/lib/content/calendar-period";
 import CalendarView from "@/components/dashboard/calendar/CalendarView";
 
+export const metadata = { title: "კონტენტ-კალენდარი - MARTEO" };
+
 export default async function CalendarPage({
     searchParams,
 }: {

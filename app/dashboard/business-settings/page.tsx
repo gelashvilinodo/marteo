@@ -15,8 +15,13 @@ import { getBillingOverview } from "@/lib/subscription/billing";
 import PlanLimitsCard from "@/components/plans/PlanLimitsCard";
 import SmsSettingsCard from "@/components/plans/SmsSettingsCard";
 import { getSmsUsage, shippedMessage } from "@/lib/sms/order-sms";
+import { businessFeatureMessage, type BusinessFeature } from "@/lib/business/business-mode";
 
-export default async function BusinessSettingsPage() {
+export const metadata = { title: "ბიზნესის პარამეტრები - MARTEO" };
+
+export default async function BusinessSettingsPage({ searchParams }: { searchParams: Promise<{ hidden?: string }> }) {
+    const { hidden } = await searchParams;
+    const hiddenFeature = hidden === "imports" || hidden === "manufacturing" ? (hidden as BusinessFeature) : null;
     await requireDashboardSection("/dashboard/business-settings");
     const user = await getCurrentUser();
 
@@ -77,6 +82,11 @@ export default async function BusinessSettingsPage() {
                     <h1 className="text-2xl font-semibold text-text-primary">
                         ბიზნესის პარამეტრები
                     </h1>
+                    {hiddenFeature && (
+                        <p role="status" className="rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-text-primary">
+                            ეს გვერდი ბიზნესის არჩეულ მიმართულებაში არ შედის. {businessFeatureMessage(hiddenFeature)}
+                        </p>
+                    )}
 
                     <BusinessSettingsForm
                         initialBusiness={{

@@ -11,7 +11,7 @@ import { quoteForBusiness } from "@/lib/subscription/manage";
 import { planCard } from "@/lib/subscription/plan-catalog";
 import { INTERVAL_LABELS, PAID_TIERS, periodPrice, REFUND_WINDOW_DAYS, YEARLY_PAID_MONTHS, type BillingInterval, type PaidTier } from "@/lib/subscription/plans";
 
-export const metadata = { title: "გადახდა | MARTEO", robots: { index: false, follow: false } };
+export const metadata = { title: "გადახდა - MARTEO", robots: { index: false, follow: false } };
 
 // გადახდის გვერდი: ჯამი და პირობები, გადახდა კი საქართველოს ბანკის გვერდზე ხდება.
 export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ plan?: string; period?: string }> }) {

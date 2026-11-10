@@ -11,6 +11,8 @@ import InventoryView from "@/components/dashboard/inventory/InventoryView";
 
 import type { InventoryMovementEntry } from "@/components/dashboard/inventory/LatestInventoryMovements";
 
+export const metadata = { title: "მარაგები - MARTEO" };
+
 
 export default async function InventoryPage({ searchParams }: { searchParams: Promise<InventorySearchParams> }) {
     await requireDashboardSection("/dashboard/inventory");

@@ -61,8 +61,15 @@ export default function DashboardShell({
 
         document.body.style.overflow = "hidden";
 
+        // მობილური მენიუ Escape-ითაც იხურება.
+        function closeOnEscape(event: KeyboardEvent) {
+            if (event.key === "Escape") setSidebarOpen(false);
+        }
+        document.addEventListener("keydown", closeOnEscape);
+
         return () => {
             document.body.style.overflow = previousOverflow;
+            document.removeEventListener("keydown", closeOnEscape);
         };
     }, [sidebarOpen]);
 

@@ -5,6 +5,8 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { getCurrentBusiness } from '@/lib/auth/current-business';
 import { getMaterialInventoryPage } from '@/lib/material-inventory/get-page';
 import MaterialInventoryView from '@/components/dashboard/material-inventory/MaterialInventoryView';
+
+export const metadata = { title: "მასალების მარაგი - MARTEO" };
 export default async function MaterialInventoryPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
     await requireDashboardSection("/dashboard/material-inventory");
     const user=await getCurrentUser();if(!user)redirect('/login');

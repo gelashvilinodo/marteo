@@ -18,7 +18,7 @@ import { PLAN_FINE_PRINT, PLAN_FINE_PRINT_YEARLY } from "@/lib/subscription/plan
 import { INTERVAL_ADJECTIVES, isPaidTier, PAID_TIERS, periodPrice, PLAN_LABELS, PLAN_ONTO, type BillingInterval, type PaidTier } from "@/lib/subscription/plans";
 import PeriodToggle from "@/components/plans/PeriodToggle";
 
-export const metadata = { title: "გეგმები | MARTEO", robots: { index: false, follow: false } };
+export const metadata = { title: "გეგმები - MARTEO", robots: { index: false, follow: false } };
 
 // „დეტალურად“ ამ გვერდზე მოდის: სრული შესაძლებლობები, სხვა გეგმები და ყიდვის ღილაკი.
 export default async function PlansPage({ searchParams }: { searchParams: Promise<{ plan?: string; period?: string }> }) {

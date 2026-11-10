@@ -30,9 +30,9 @@ export default function PlanLockBanner() {
         return <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-accent/20 bg-accent/5 px-4 py-2 text-sm sm:px-6 lg:px-8">
             <Icon icon="solar:gift-bold-duotone" className="h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
             <span className="min-w-0 flex-1 text-text-primary">
-                საცდელი პერიოდი: {days === 0 ? "დღეს მთავრდება" : `დარჩა ${days} დღე`}. ყველა ფუნქცია ღიაა.
+                საცდელი პერიოდი: {days === 0 ? "დღეს მთავრდება" : `დარჩა ${days} დღე`}.
             </span>
-            <Link href="/dashboard/plans" className="font-semibold text-accent hover:underline">გეგმების ნახვა</Link>
+            <Link href="/dashboard/plans" className="relative font-semibold text-accent after:absolute after:-inset-y-3 after:-inset-x-1 after:content-[''] hover:underline">გეგმების ნახვა</Link>
         </div>;
     }
 

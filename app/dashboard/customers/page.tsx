@@ -9,6 +9,8 @@ import {
 } from "@/lib/customers/get-customers-page";
 import CustomersView from "@/components/dashboard/customers/CustomersView";
 
+export const metadata = { title: "მომხმარებლები - MARTEO" };
+
 export default async function CustomersPage({
     searchParams,
 }: {
