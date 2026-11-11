@@ -51,7 +51,7 @@ export default function SmsSettingsCard({ initial, preview }: { initial: SmsUsag
                     <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition ${sms.enabled ? "translate-x-6" : "translate-x-1"}`} />
                 </button>
                 : <button type="button" onClick={() => guard("sms")} className="relative inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-3 text-sm font-medium text-text-secondary">
-                    ჩართვა<CornerCrown feature="sms" />
+                    ჩართვა<CornerCrown feature="sms" pro />
                 </button>}
         </div>
         {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}

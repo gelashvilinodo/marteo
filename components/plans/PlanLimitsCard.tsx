@@ -3,6 +3,20 @@ import { Icon } from "@/components/shared/Icon";
 import type { BillingOverview } from "@/lib/subscription/billing";
 import { formatDay, planTitle } from "./billing-format";
 import UsageMeter from "./UsageMeter";
+import PlanGatedLink from "@/components/dashboard/plan/PlanGatedLink";
+import { CornerCrown } from "@/components/dashboard/plan/PlanCrown";
+import type { PlanFeature } from "@/lib/subscription/plans";
+
+function LockedUsage({ label, feature }: { label: string; feature: PlanFeature }) {
+    return <div className="relative min-w-0 rounded-xl bg-background p-4">
+        <CornerCrown pro />
+        <p className="text-sm text-text-secondary">{label}</p>
+        <p className="mt-2 text-sm text-text-secondary">ხელმისაწვდომია ბიზნეს გეგმიდან.</p>
+        <PlanGatedLink href="/dashboard/billing" feature={feature} className="mt-3 inline-flex min-h-10 items-center text-sm font-medium text-accent hover:underline">
+            გეგმის განახლება
+        </PlanGatedLink>
+    </div>;
+}
 
 // ბიზნესის პარამეტრებში: გეგმა და ლიმიტების ხაზოვანი მრიცხველები. დეტალები „პაკეტი და გადახდებშია“.
 export default function PlanLimitsCard({ overview }: { overview: Pick<BillingOverview, "plan" | "usage" | "period"> }) {
@@ -23,9 +37,10 @@ export default function PlanLimitsCard({ overview }: { overview: Pick<BillingOve
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <UsageMeter icon="solar:bag-4-linear" label="შეკვეთები" used={usage.orders.used} limit={usage.orders.limit} />
-            {/* გეგმაში არშემავალი ლიმიტი აქ არ ჩანს; სრული სია „პაკეტი და გადახდებშია“. */}
-            {usage.ai.limit > 0 && <UsageMeter icon="solar:magic-stick-3-linear" label={plan.tier === "TRIAL" ? "მართეო AI (საცდელში სულ)" : "მართეო AI კითხვები"} used={usage.ai.used} limit={usage.ai.limit} />}
-            {!usage.aiFiles.shared && usage.aiFiles.limit !== 0 && <UsageMeter icon="solar:document-add-linear" label="შესყიდვა ფაილიდან" used={usage.aiFiles.used} limit={usage.aiFiles.limit} />}
+            {usage.ai.limit > 0 ? <UsageMeter icon="solar:magic-stick-3-linear" label={plan.tier === "TRIAL" ? "მართეო AI (საცდელში სულ)" : "მართეო AI კითხვები"} used={usage.ai.used} limit={usage.ai.limit} /> : <LockedUsage label="მართეო AI კითხვები" feature="ai" />}
+            {!usage.aiFiles.shared && (usage.aiFiles.limit !== 0
+                ? <UsageMeter icon="solar:document-add-linear" label="შესყიდვა ფაილიდან" used={usage.aiFiles.used} limit={usage.aiFiles.limit} />
+                : <LockedUsage label="შესყიდვა ფაილიდან" feature="aiFiles" />)}
         </div>
     </section>;
 }
