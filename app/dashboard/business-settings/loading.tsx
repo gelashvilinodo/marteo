@@ -1,3 +1,10 @@
+"use client";
+
+import { usePlan } from "@/components/dashboard/plan/PlanContext";
+import { CornerCrown } from "@/components/dashboard/plan/PlanCrown";
+import { planAllows } from "@/lib/subscription/plan-state";
+import { PLAN_LIMITS } from "@/lib/subscription/plans";
+
 function Placeholder({
     className = "",
     tone = "bg-border/40",
@@ -13,9 +20,11 @@ function Placeholder({
 }
 
 // Match UsageMeter's card spacing without displaying invented usage values.
-function UsagePlaceholder() {
+function UsagePlaceholder({ locked = false }: { locked?: boolean }) {
     return (
-        <div className="min-w-0 rounded-xl bg-background p-4">
+        <div className="relative min-w-0 rounded-xl bg-background p-4">
+            {locked && <CornerCrown pro />}
+            <div className={locked ? "opacity-50" : ""}>
             <div className="flex min-w-0 items-center gap-2">
                 <Placeholder className="size-5 shrink-0" />
                 <Placeholder className="h-5 w-36" />
@@ -23,11 +32,18 @@ function UsagePlaceholder() {
             <Placeholder className="mt-2 h-7 w-24" />
             <Placeholder className="mt-3 h-2 w-full rounded-full" />
             <Placeholder className="mt-2 h-4 w-24" />
+            </div>
         </div>
     );
 }
 
 export default function BusinessSettingsLoading() {
+    const { plan } = usePlan();
+    const aiLocked = Boolean(plan && !planAllows(plan, "ai"));
+    const filesLocked = Boolean(plan && !planAllows(plan, "aiFiles"));
+    const smsLocked = Boolean(plan && !planAllows(plan, "sms"));
+    const sharedFiles = plan?.tier ? PLAN_LIMITS[plan.tier].aiFilesAreQuestions : false;
+
     return (
         <main
             aria-busy="true"
@@ -110,12 +126,16 @@ export default function BusinessSettingsLoading() {
                             <Placeholder className="h-10 w-44" />
                         </div>
                         <div className="mt-4 grid min-w-0 gap-3 sm:grid-cols-2">
-                            {[0, 1, 2].map(meter => <UsagePlaceholder key={meter} />)}
+                            <UsagePlaceholder />
+                            <UsagePlaceholder locked={aiLocked} />
+                            {!sharedFiles && <UsagePlaceholder locked={filesLocked} />}
                         </div>
                     </section>
 
                     {/* SmsSettingsCard: preview, balances and the four packs. */}
-                    <section className="min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+                    <section className="relative min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+                        {smsLocked && <CornerCrown pro />}
+                        <div className={smsLocked ? "opacity-50" : ""}>
                         <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
@@ -157,6 +177,7 @@ export default function BusinessSettingsLoading() {
                                     </div>
                                 ))}
                             </div>
+                        </div>
                         </div>
                     </section>
 
