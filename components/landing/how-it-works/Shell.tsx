@@ -1,6 +1,14 @@
 import Image from "next/image";
 import { Icon } from "@/components/shared/Icon";
-import type { Frame } from "./timeline";
+// შელი ორივე დემოში გამოიყენება: მას მხოლოდ ეს ველები სჭირდება.
+export type ShellFrame = {
+    page: string;
+    pressed: (target: string) => boolean;
+    near: (target: string) => boolean;
+    menuOpen: boolean;
+};
+
+type Frame = ShellFrame;
 
 type NavId = "home" | "orders" | "purchases" | "production" | "customers" | "inventory" | "analytics" | "statistics" | "calendar";
 
@@ -20,7 +28,7 @@ export const business = { name: "თიხა და ცვილი", owner: "�
 
 // რეალური DashboardSidebar-ის ასლი (280px, #081F46).
 export function Sidebar({ frame, mobile = false }: { frame: Frame; mobile?: boolean }) {
-    const active: NavId = frame.page;
+    const active = frame.page as NavId;
 
     return (
         <aside className={`flex w-[280px] shrink-0 flex-col overflow-hidden bg-[#081F46] px-4 py-6 ${mobile ? "h-full" : ""}`}>

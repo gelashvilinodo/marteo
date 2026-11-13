@@ -1,5 +1,8 @@
 import { Icon } from "@/components/shared/Icon";
 import type { Frame } from "./timeline";
+import type { DemoDates } from "./engine";
+
+export type { DemoDates };
 import { business } from "./Shell";
 import { Delta, GreenButton, PageTitle, PeriodSelect, ProductThumb } from "./ui";
 import {
@@ -21,7 +24,6 @@ import {
     weekCounts,
 } from "./data";
 
-export type DemoDates = { period: string; today: string; last10: string[]; last7: string[] };
 
 type PageProps = { frame: Frame; m: boolean; dates: DemoDates };
 
@@ -193,74 +195,149 @@ function ExpenseCard({ period, extra = 0 }: { period: string; extra?: number }) 
 
 // ———————————————————————————— შეკვეთები ————————————————————————————
 
-function StatusChip({ status, m }: { status: keyof typeof orderStatusStyle; m: boolean }) {
+// შეკვეთების გვერდი ორივე დემოში გამოიყენება, ამიტომ მხოლოდ ამ მდგომარეობას იღებს.
+export type OrdersState = {
+    total: number;
+    processing: number;
+    shipped: number;
+    newRowIn: number;
+    newRowGlow: number;
+    status: "processing" | "shipped";
+    statusMenu: boolean;
+    statusHover: boolean;
+    newInvoices: number;
+    pressed: (target: string) => boolean;
+    near: (target: string) => boolean;
+};
+
+type Status = keyof typeof orderStatusStyle;
+
+function StatusChip({ status, m, demo, pressed }: { status: Status; m: boolean; demo?: string; pressed?: boolean }) {
     const style = orderStatusStyle[status];
     return (
-        <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold ${style.className}`}>
+        <span
+            key={status}
+            data-demo={demo}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold transition-transform ${style.className} ${demo ? "demo-pop" : ""} ${pressed ? "scale-95" : ""}`}
+        >
             <Icon icon={style.icon} className="h-4 w-4" />
             {!m && style.label}
-            {!m && status === "processing" && <Icon icon="solar:alt-arrow-down-linear" className="h-3.5 w-3.5" />}
-            {m && style.label}
+            {(demo || status === "processing") && <Icon icon="solar:alt-arrow-down-linear" className="h-3.5 w-3.5" />}
         </span>
     );
 }
 
-export function OrdersPage({ frame, m, dates }: PageProps) {
+const statusOptions: Status[] = ["processing", "shipped", "completed"];
+
+function StatusMenu({ hover, m }: { hover: boolean; m: boolean }) {
+    return (
+        <span className={`demo-pop absolute top-full z-30 mt-1 block ${m ? "right-[-3.5rem] w-48" : "left-0 w-52"} overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-[0_18px_40px_-12px_rgb(2_8_23/0.45)]`}>
+            {[...statusOptions, "cancelled" as const].map(option => {
+                const style = option === "cancelled" ? { label: "გაუქმებული", icon: "solar:close-circle-linear", className: "text-danger" } : orderStatusStyle[option];
+                const isHover = option === "shipped" && hover;
+                return (
+                    <span
+                        key={option}
+                        data-demo={option === "shipped" ? "status-shipped" : undefined}
+                        className={`flex h-11 items-center gap-2 px-3 text-sm font-semibold transition-colors ${
+                            isHover ? "bg-accent text-white" : option === "processing" ? "bg-warning/10 text-warning" : "text-text-primary"
+                        }`}
+                    >
+                        <Icon icon={style.icon} className="h-4 w-4" />
+                        {style.label}
+                    </span>
+                );
+            })}
+        </span>
+    );
+}
+
+export function OrdersPage({ orders, m, dates }: { orders: OrdersState; m: boolean; dates: DemoDates }) {
     const counters = [
-        { label: "სულ შეკვეთები", value: frame.weekTotal, icon: "solar:clipboard-list-linear", tone: "bg-accent/10 text-accent", active: true },
-        { label: "მუშავდება", value: frame.weekProcessing, icon: "solar:clock-circle-linear", tone: "bg-warning/10 text-warning" },
-        { label: "გაგზავნილი", value: weekCounts.shipped, icon: "solar:delivery-linear", tone: "bg-accent/10 text-accent" },
+        { label: "სულ შეკვეთები", value: orders.total, icon: "solar:clipboard-list-linear", tone: "bg-accent/10 text-accent", active: true },
+        { label: "მუშავდება", value: orders.processing, icon: "solar:clock-circle-linear", tone: "bg-warning/10 text-warning" },
+        { label: "გაგზავნილი", value: orders.shipped, icon: "solar:delivery-linear", tone: "bg-accent/10 text-accent" },
         { label: "დასრულებული", value: weekCounts.completed, icon: "solar:check-circle-linear", tone: "bg-success/10 text-success" },
         { label: "გაუქმებული", value: weekCounts.cancelled, icon: "solar:close-circle-linear", tone: "bg-danger/10 text-danger" },
     ];
 
-    const newRow = {
+    const newRow: Row = {
         number: order.number,
         name: `${customer.firstName} ${customer.lastName}`,
         place: `${customer.zone} · ${customer.district}`,
         product: ordered.name,
         count: 1,
         total: orderTotal,
-        status: "processing" as const,
+        status: orders.status,
         paid: true,
         icon: ordered.icon,
         tint: ordered.tint,
     };
 
+    const toolbar = [
+        { label: "მონიშვნა", icon: "solar:checklist-minimalistic-linear", tone: "text-text-primary" },
+        { label: `ახალი ინვოისები (${orders.newInvoices})`, icon: "solar:document-text-linear", tone: "text-success" },
+        { label: `ყველა გაგზავნილად (${orders.processing})`, icon: "solar:delivery-linear", tone: "text-accent" },
+    ];
+
     return (
         <div className={`flex flex-col ${m ? "gap-4 p-4" : "gap-6 p-8"}`}>
             <div className={`flex ${m ? "flex-col gap-4" : "items-center justify-between"}`}>
                 <PageTitle title="შეკვეთები" m={m} />
-                <div className={`flex ${m ? "flex-col-reverse gap-3" : "items-center gap-4"}`}>
-                    <PeriodSelect label="ერთი კვირა" m={m} />
-                    {!m && (
-                        <GreenButton className="h-14 px-7 text-[17px]">
-                            <Icon icon="solar:add-circle-linear" className="h-6 w-6" />
-                            ახალი შეკვეთა
-                        </GreenButton>
-                    )}
+                <div className={`flex ${m ? "flex-col gap-3" : "items-center gap-4"}`}>
+                    {!m && <PeriodSelect label="ერთი კვირა" m={m} />}
+                    <GreenButton className={`h-14 px-7 text-[17px] ${m ? "w-full" : ""}`}>
+                        <Icon icon="solar:add-circle-linear" className="h-6 w-6" />
+                        ახალი შეკვეთა
+                    </GreenButton>
+                    {m && <PeriodSelect label="ერთი კვირა" m={m} />}
                 </div>
             </div>
 
-            <div className={`grid ${m ? "grid-cols-2 gap-3" : "grid-cols-5 gap-4"}`}>
-                {counters.slice(0, m ? 2 : 5).map(counter => (
-                    <div key={counter.label} className={`${card} p-4 ${counter.active ? "border-accent" : ""}`}>
-                        <div className="flex items-center justify-between">
-                            <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${counter.tone}`}>
-                                <Icon icon={counter.icon} className="h-6 w-6" />
-                            </span>
-                            <span key={counter.value} className="demo-pop text-[28px] font-bold text-text-primary tabular-nums">{counter.value}</span>
-                        </div>
-                        <p className="mt-3 text-[15px] text-text-secondary">{counter.label}</p>
+            {m ? (
+                <div className="space-y-3">
+                    <div className={`${card} flex items-center gap-3 border-accent p-4`}>
+                        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                            <Icon icon="solar:clipboard-list-linear" className="h-6 w-6" />
+                        </span>
+                        <span className="text-[15px] text-text-secondary">სულ შეკვეთები</span>
+                        <span key={orders.total} className="demo-pop ml-auto text-[24px] font-bold text-text-primary tabular-nums">{orders.total}</span>
                     </div>
-                ))}
-            </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        {counters.slice(1).map(counter => (
+                            <div key={counter.label} className={`${card} p-4`}>
+                                <div className="flex items-center justify-between">
+                                    <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${counter.tone}`}>
+                                        <Icon icon={counter.icon} className="h-6 w-6" />
+                                    </span>
+                                    <span key={counter.value} className="demo-pop text-[24px] font-bold text-text-primary tabular-nums">{counter.value}</span>
+                                </div>
+                                <p className="mt-3 text-[15px] text-text-secondary">{counter.label}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                <div className="grid grid-cols-5 gap-4">
+                    {counters.map(counter => (
+                        <div key={counter.label} className={`${card} p-4 ${counter.active ? "border-accent" : ""}`}>
+                            <div className="flex items-center justify-between">
+                                <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${counter.tone}`}>
+                                    <Icon icon={counter.icon} className="h-6 w-6" />
+                                </span>
+                                <span key={counter.value} className="demo-pop text-[28px] font-bold text-text-primary tabular-nums">{counter.value}</span>
+                            </div>
+                            <p className="mt-3 text-[15px] text-text-secondary">{counter.label}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
 
-            <div className={`${card} overflow-hidden`}>
+            <div className={`${card}`}>
                 <div className="flex items-center gap-2 p-5">
                     <Icon icon="solar:clipboard-list-linear" className="h-6 w-6 text-accent" />
                     <p className="text-[19px] font-bold text-text-primary">შეკვეთების სია</p>
-                    <span className="text-sm text-text-secondary">{frame.weekTotal} შეკვეთა</span>
+                    <span className="text-sm text-text-secondary">{orders.total} შეკვეთა</span>
                 </div>
                 <div className="px-5 pb-4">
                     <span className="flex h-12 items-center gap-3 rounded-2xl border border-border bg-background px-4 text-[15px] font-semibold text-text-primary">
@@ -270,20 +347,31 @@ export function OrdersPage({ frame, m, dates }: PageProps) {
                     </span>
                 </div>
 
-                {!m && (
-                    <div className="grid grid-cols-[1.1fr_1.6fr_1.7fr_0.9fr_1.1fr_1fr_3rem] gap-3 border-y border-border bg-background px-5 py-3 text-[15px] font-bold text-text-primary">
-                        <span>შეკვეთა</span><span>მიმღები</span><span>პროდუქტები</span><span>თანხა</span><span>სტატუსი</span><span>გადახდა</span><span />
-                    </div>
-                )}
+                <div className="flex gap-3 overflow-hidden border-t border-border px-5 py-4">
+                    {toolbar.map(item => (
+                        <span key={item.label} className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-border px-3 text-[15px] font-semibold whitespace-nowrap text-text-primary">
+                            <Icon icon={item.icon} className={`h-5 w-5 ${item.tone}`} />
+                            {item.label}
+                        </span>
+                    ))}
+                </div>
 
-                <div className={m ? "space-y-3 px-4 pb-4" : ""}>
-                    <div
-                        data-demo="order-row"
-                        className="grid transition-[grid-template-rows] duration-500"
-                        style={{ gridTemplateRows: `${frame.newRowIn}fr`, opacity: frame.newRowIn }}
-                    >
-                        <div className="min-h-0 overflow-hidden">
-                            <OrderRow row={newRow} m={m} glow={frame.newRowGlow} today={dates.today} isNew />
+                <div
+                    className={`grid border-y border-border bg-background py-3 text-[15px] font-bold text-text-primary ${
+                        m ? "grid-cols-[1fr_4.25rem_3.75rem_2.75rem] gap-2 px-4" : "grid-cols-[1.1fr_1.6fr_1.7fr_0.9fr_1.2fr_1fr_3rem] gap-3 px-5"
+                    }`}
+                >
+                    <span>შეკვეთა</span>
+                    {!m && <><span>მიმღები</span><span>პროდუქტები</span></>}
+                    <span>თანხა</span><span>სტატუსი</span>
+                    {!m && <span>გადახდა</span>}
+                    <span />
+                </div>
+
+                <div>
+                    <div data-demo="order-row" className="grid" style={{ gridTemplateRows: `${orders.newRowIn}fr`, opacity: orders.newRowIn }}>
+                        <div className={orders.statusMenu ? "min-h-0" : "min-h-0 overflow-hidden"}>
+                            <OrderRow row={newRow} m={m} glow={orders.newRowGlow} today={dates.today} orders={orders} isNew />
                         </div>
                     </div>
                     {existingOrders.map(row => (
@@ -302,43 +390,61 @@ type Row = {
     product: string;
     count: number;
     total: number;
-    status: keyof typeof orderStatusStyle;
+    status: Status;
     paid: boolean;
     icon: string;
     tint: string;
 };
 
-function OrderRow({ row, m, glow = 0, isNew, today }: { row: Row; m: boolean; glow?: number; isNew?: boolean; today: string }) {
+function OrderRow({ row, m, glow = 0, isNew, today, orders }: { row: Row; m: boolean; glow?: number; isNew?: boolean; today: string; orders?: OrdersState }) {
     const glowStyle = glow > 0 ? { backgroundColor: `color-mix(in srgb, var(--marteo-accent) ${Math.round(glow * 10)}%, transparent)` } : undefined;
+    const live = isNew && orders;
+
+    const status = (
+        <span className="relative">
+            <StatusChip status={row.status} m={m} demo={live ? "row-status" : undefined} pressed={live ? orders.pressed("row-status") : false} />
+            {live && orders.statusMenu && <StatusMenu hover={orders.statusHover} m={m} />}
+        </span>
+    );
+
+    const menu = (
+        <span
+            data-demo={live ? "row-menu" : undefined}
+            className={`relative flex h-11 w-11 items-center justify-center rounded-xl border border-border text-text-secondary transition-transform ${
+                live && orders.pressed("row-menu") ? "scale-90 bg-accent/10 text-accent" : ""
+            }`}
+        >
+            <Icon icon="solar:menu-dots-bold" className="h-5 w-5" />
+            {live && orders.newInvoices > 0 && <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-accent ring-2 ring-surface" />}
+        </span>
+    );
 
     if (m) {
         return (
-            <div className={`relative flex items-center gap-3 rounded-2xl border p-3 ${isNew && glow > 0 ? "border-accent/60" : "border-border"} bg-background`} style={glowStyle}>
-                <ProductThumb icon={row.icon} tint={row.tint} />
-                <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2">
-                        <span className="text-[15px] font-bold text-text-primary">{row.number}</span>
-                        {isNew && <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-bold text-white">ახალი</span>}
+            <div className="relative grid grid-cols-[1fr_4.25rem_3.75rem_2.75rem] items-center gap-2 border-b border-border px-4 py-3.5" style={glowStyle}>
+                {isNew && glow > 0 && <span className="absolute inset-y-2 left-0 w-1 rounded-full bg-accent" style={{ opacity: glow }} />}
+                <span className="flex min-w-0 items-center gap-2">
+                    <ProductThumb icon={row.icon} tint={row.tint} size="h-10 w-10" iconSize="h-6 w-6" />
+                    <span className="min-w-0">
+                        <span className="block text-[15px] font-bold text-text-primary">{row.number}</span>
+                        <span className="block truncate text-sm text-text-secondary">{row.name}</span>
                     </span>
-                    <span className="block truncate text-sm text-text-primary">{row.name}</span>
-                    <span className="block truncate text-xs text-text-secondary">{row.place}</span>
                 </span>
-                <span className="flex shrink-0 flex-col items-end gap-1.5">
-                    <span className="text-[15px] font-bold text-text-primary tabular-nums">{money(row.total)}</span>
-                    <StatusChip status={row.status} m />
-                </span>
+                <span className="text-[14px] font-bold text-text-primary tabular-nums">{money(row.total)}</span>
+                {status}
+                {menu}
             </div>
         );
     }
 
     return (
-        <div className="relative grid grid-cols-[1.1fr_1.6fr_1.7fr_0.9fr_1.1fr_1fr_3rem] items-center gap-3 border-b border-border px-5 py-4" style={glowStyle}>
+        <div className="relative grid grid-cols-[1.1fr_1.6fr_1.7fr_0.9fr_1.2fr_1fr_3rem] items-center gap-3 border-b border-border px-5 py-4" style={glowStyle}>
             {isNew && glow > 0 && <span className="absolute inset-y-2 left-0 w-1 rounded-full bg-accent" style={{ opacity: glow }} />}
             <span className="flex items-center gap-3">
                 <ProductThumb icon={row.icon} tint={row.tint} />
                 <span>
                     <span className="block text-[16px] font-bold text-text-primary">{row.number}</span>
-                    <span className="block text-xs text-text-secondary">{isNew ? "ახლახან" : today}</span>
+                    <span className="block text-xs text-text-secondary">{today}</span>
                 </span>
             </span>
             <span className="min-w-0">
@@ -350,11 +456,9 @@ function OrderRow({ row, m, glow = 0, isNew, today }: { row: Row; m: boolean; gl
                 <span className="block text-sm text-text-secondary">{row.count} პროდუქტი</span>
             </span>
             <span className="text-[16px] font-bold text-text-primary tabular-nums">{money(row.total)}</span>
-            <span><StatusChip status={row.status} m={false} /></span>
+            {status}
             <span className={`text-sm ${row.paid ? "text-text-secondary" : "font-semibold text-warning"}`}>{row.paid ? "გადახდილი" : "გადაუხდელი"}</span>
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-border text-text-secondary">
-                <Icon icon="solar:menu-dots-bold" className="h-5 w-5" />
-            </span>
+            {menu}
         </div>
     );
 }

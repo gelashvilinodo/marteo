@@ -1,14 +1,9 @@
 import { customer, order, ordered, orderedAfterStock, month, weekCounts } from "./data";
+import { easeInOut, timeHelpers, type CameraKey, type Chapter, type Click, type Mode, type Script as EngineScript, type ScrollKey } from "./engine";
+import type { OrdersState } from "./Pages";
 
 // დემო დროზეა აწყობილი: ყველაფერი, რაც ეკრანზე ჩანს, t წამის სუფთა ფუნქციაა.
 // ასე თავისუფლად შეიძლება ნებისმიერ თავზე გადასვლა და თავიდან დაწყება.
-
-export type Mode = "desktop" | "mobile";
-
-export const VIEWPORT = {
-    desktop: { w: 1400, h: 860 },
-    mobile: { w: 390, h: 720 },
-} as const;
 
 type TimeKey =
     | "clickNew" | "formOpen" | "clickPhone" | "phoneFrom" | "phoneTo" | "lookup" | "found"
@@ -20,20 +15,7 @@ type TimeKey =
 
 export type Times = Record<TimeKey, number>;
 
-export type Click = { t: number; target: string; move: number };
-export type CameraKey = { t: number; dur: number; target: string | null; scale: number; anchorY?: number };
-export type ScrollKey = { t: number; dur: number; target: string | null; offset?: number };
-
-export type Chapter = { id: string; label: string; caption: string; from: number };
-
-export type Script = {
-    mode: Mode;
-    T: Times;
-    clicks: Click[];
-    camera: CameraKey[];
-    scroll: ScrollKey[];
-    chapters: Chapter[];
-};
+export type Script = EngineScript<Times>;
 
 // ორივე რეჟიმის საერთო ნაწილი. ტელეფონზე ფორმის სქროლსა და მენიუს ცოტა მეტი დრო სჭირდება.
 function times(mode: Mode): Times {
@@ -139,6 +121,7 @@ export function buildScript(mode: Mode): Script {
               { t: T.clickCourier - 1.4, dur: 0.8, target: "payment", offset: 12 },
               { t: T.clickBank - 0.3, dur: 0.6, target: "payment", offset: -120 },
               { t: T.orders, dur: 0, target: null },
+              { t: T.orders + 0.3, dur: 0.8, target: "order-row", offset: 330 },
               { t: T.inventory, dur: 0, target: null },
               { t: T.inventory + 0.4, dur: 0.7, target: "stock-row", offset: 180 },
               { t: T.analytics, dur: 0, target: null },
@@ -159,37 +142,16 @@ export function buildScript(mode: Mode): Script {
         { id: "analytics", label: "მოგება", from: (m ? T.menuAnalytics : T.clickAnalytics) - 0.6, caption: "გაყიდვა და მოგება თავისით ემატება ანალიტიკას." },
     ];
 
-    return { mode, T, clicks, camera, scroll, chapters };
-}
+    // შენახვის შემდეგ კურსორი ცოტა ხნით ქრება, რომ შეკვეთების გვერდის ზუმს არ ეფარებოდეს.
+    const hide: [number, number][] = m ? [] : [[T.orders + 0.6, T.clickInventory - 1.5]];
 
-export function clamp(value: number, min = 0, max = 1) {
-    return Math.min(Math.max(value, min), max);
-}
-
-export function easeInOut(x: number) {
-    return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
-}
-
-export function easeOut(x: number) {
-    return 1 - Math.pow(1 - x, 3);
-}
-
-// ადამიანის ხელის მსგავსი მოძრაობა: სწრაფი აჩქარება, ნელი მიახლოება.
-export function easeHand(x: number) {
-    return 0.4 * easeInOut(x) + 0.6 * (1 - Math.pow(1 - x, 4));
+    return { mode, T, clicks, camera, scroll, chapters, hide };
 }
 
 // ეკრანზე ჩანს თუ არა ესა თუ ის მდგომარეობა, t-ის მიხედვით.
 export function buildFrame(t: number, script: Script) {
     const { T, clicks } = script;
-    const p = (from: number, to: number) => clamp((t - from) / (to - from));
-    const type = (text: string, from: number, to: number) => {
-        const chars = Array.from(text);
-        return chars.slice(0, Math.floor(chars.length * p(from, to) + 1e-6)).join("");
-    };
-    const between = (from: number, to: number) => t >= from && t < to;
-    const pressed = (target: string) => clicks.some(click => click.target === target && t >= click.t - 0.05 && t < click.t + 0.16);
-    const near = (target: string) => clicks.some(click => click.target === target && t >= click.t - 0.4 && t < click.t + 0.16);
+    const { p, type, between, pressed, near } = timeHelpers(t, clicks);
 
     const page: "home" | "orders" | "inventory" | "analytics" =
         t < T.orders ? "home" : t < T.inventory ? "orders" : t < T.analytics ? "inventory" : "analytics";
@@ -206,6 +168,21 @@ export function buildFrame(t: number, script: Script) {
 
     const found = t >= T.found;
     const fill = (index: number) => t >= T.found + index * 0.14;
+
+    const added = t >= T.orders + 0.5;
+    const orders: OrdersState = {
+        total: weekCounts.total + (added ? 1 : 0),
+        processing: weekCounts.processing + (added ? 1 : 0),
+        shipped: weekCounts.shipped,
+        newRowIn: p(T.orders + 0.25, T.orders + 0.85),
+        newRowGlow: t >= T.orders ? 1 - p(T.orders + 2.6, T.orders + 3.8) : 0,
+        status: "processing",
+        statusMenu: false,
+        statusHover: false,
+        newInvoices: added ? 1 : 0,
+        pressed,
+        near,
+    };
 
     const menuOpen = script.mode === "mobile" && (between(T.menuInventory, T.clickInventory + 0.25) || between(T.menuAnalytics, T.clickAnalytics + 0.25));
 
@@ -240,10 +217,7 @@ export function buildFrame(t: number, script: Script) {
         bank: type(order.bank, T.bankFrom, T.bankTo),
         saving: between(T.clickSave, T.orders),
         toast: between(T.orders + 0.2, T.orders + 3.4),
-        newRowIn: p(T.orders + 0.25, T.orders + 0.85),
-        newRowGlow: t >= T.orders ? 1 - p(T.orders + 2.6, T.orders + 3.8) : 0,
-        weekTotal: weekCounts.total + (t >= T.orders + 0.5 ? 1 : 0),
-        weekProcessing: weekCounts.processing + (t >= T.orders + 0.5 ? 1 : 0),
+        orders,
         menuOpen,
         menuIn: menuOpen ? 1 : 0,
         navTarget: t >= T.clickAnalytics - 0.02 ? "analytics" : t >= T.clickInventory - 0.02 ? "inventory" : null,

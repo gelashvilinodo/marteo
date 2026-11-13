@@ -2,6 +2,8 @@ import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
 import FeaturesBento from "@/components/landing/FeaturesBento";
 import HowItWorks from "@/components/landing/how-it-works/HowItWorks";
+import AfterOrder from "@/components/landing/how-it-works/AfterOrder";
+import StackScroll from "@/components/landing/how-it-works/StackScroll";
 import Footer from "@/components/landing/Footer";
 
 export const metadata = {
@@ -15,7 +17,7 @@ export default function Home() {
       <Header />
       <Hero />
       <FeaturesBento />
-      <HowItWorks />
+      <StackScroll back={<HowItWorks />} front={<AfterOrder />} />
       <Footer />
     </main>
   );
