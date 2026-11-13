@@ -837,9 +837,8 @@ dialog:modal {
   }
 }
 
-/* ერთი შეკვეთის გზა — ტექსტისა და მნიშვნელობების რბილი გამოჩენა. */
-.order-flow-pop,
-.order-flow-caption {
+/* ტექსტისა და მნიშვნელობების რბილი გამოჩენა (ლენდინგის ბარათები). */
+.order-flow-pop {
   animation: order-flow-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -847,38 +846,40 @@ dialog:modal {
   from { opacity: 0; transform: translateY(0.35rem); }
 }
 
+/* „როგორ მუშაობს" დემო: ველის კურსორი, ელემენტების გამოჩენა, გვერდის შეცვლა. */
+.demo-caret {
+  animation: demo-caret 1s steps(1) infinite;
+}
+
+@keyframes demo-caret {
+  50% { opacity: 0; }
+}
+
+.demo-pop,
+.demo-caption {
+  animation: demo-pop 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes demo-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+}
+
+.demo-page {
+  animation: demo-page 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes demo-page {
+  from { opacity: 0; transform: translateX(18px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .order-flow-pop,
-  .order-flow-caption {
+  .demo-caret,
+  .demo-pop,
+  .demo-caption,
+  .demo-page {
     animation: none;
   }
-}
-
-.order-flow-scroll-dot > span {
-  animation: order-flow-scroll-dot 1.6s ease-in-out infinite;
-}
-
-@keyframes order-flow-scroll-dot {
-  0% { transform: translateY(0); opacity: 1; }
-  70% { transform: translateY(0.55rem); opacity: 0; }
-  100% { transform: translateY(0); opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .order-flow-scroll-dot > span {
-    animation: none;
-  }
-}
-
-/* ღამის რეჟიმში სექციას გრადიენტი არ აქვს — ფონი გვერდის მუქი ფერია. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .order-flow-glow {
-    display: none;
-  }
-}
-
-:root[data-theme="dark"] .order-flow-glow {
-  display: none;
 }
 
 /* ფუნქციების bento — ბიზნესის ტიპის მიხედვით ბარათი ნაზად ემატება/ქრება.
