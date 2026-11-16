@@ -4,7 +4,7 @@ import Image from "next/image";
 import { decimalInput, integerInput } from "@/lib/number-input";
 import { Icon } from "@iconify/react";
 import OrderPhotoUpload from "./OrderPhotoUpload";
-import { orderLineCents, moneyText, type OrderFormItem } from "@/lib/orders/order-form";
+import { orderLineCents, moneyText, stockLotCost, type OrderFormItem } from "@/lib/orders/order-form";
 import { quantityLabel } from "@/lib/orders/quantity";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { materialCost } from "@/lib/production/input";
@@ -145,6 +145,12 @@ export default function OrderProductEditor({
     let materialTotal:string|null=null;
     if(item.source==='MATERIAL'&&item.materialLots){try{let needed=new Decimal(item.quantity.replace(',','.')),cost=new Decimal(0);if(needed.lte(0))throw new Error();for(const lot of item.materialLots){const remaining=new Decimal(lot.remainingQuantity),take=Decimal.min(needed,Decimal.max(remaining.minus(lot.defectiveQuantity),0));if(take.gt(0)){cost=cost.plus(materialCost(new Decimal(lot.remainingCost),remaining,take));needed=needed.minus(take);}if(needed.isZero())break;}if(needed.isZero())materialTotal=cost.toFixed(2);}catch{/* Incomplete quantity. */}}
     if(item.source==="MATERIAL"&&!item.materialLots&&item.materialCostSnapshot&&Number(item.quantity.replace(",","."))===Number(item.materialCostSnapshot.quantity))materialTotal=item.materialCostSnapshot.totalCost;
+    const stockCost = item.source === "INVENTORY" ? stockLotCost(item) : null;
+    // მარაგის ცნობილი ღირებულება (შესყიდვიდან ან წარმოებიდან) ხელით შესაყვანი არ არის.
+    const stockCostKnown = stockCost !== null && stockCost.unknownQuantity === 0;
+    const stockUnitCost = stockCost && stockCost.knownQuantity > 0
+        ? new Decimal(stockCost.knownCost).div(stockCost.knownQuantity).toFixed(2)
+        : null;
     if (readOnly) {
         return (
             <article ref={cardRef} className="min-w-0 rounded-2xl border border-border bg-background p-3 sm:p-4">
@@ -229,7 +235,7 @@ export default function OrderProductEditor({
             <Field label={item.source==="MATERIAL"?`რაოდენობა · ${quantityLabel(0,item.unit).slice(2)} *`:"რაოდენობა *"}><input inputMode={item.source==="MATERIAL"?"decimal":"numeric"} value={item.quantity} onChange={event => update({ quantity: item.source==="MATERIAL"&&item.unit!=="PCS" ? decimalInput(event.target.value, 6) : integerInput(event.target.value) })} required className={input} /></Field>
             <Field label={item.source==="MATERIAL"?`ფასი / ${quantityLabel(0,item.unit).slice(2)} · ₾ *`:"გასაყიდი ფასი · ₾ *"}><input inputMode="decimal" value={item.unitPrice} onChange={event => update({ unitPrice: decimalInput(event.target.value) })} placeholder="0.00" required className={input} /></Field>
         </div>
-        {!canSeeCosts ? null : item.source === "MATERIAL" ? <div className="mt-3 rounded-xl border border-border p-3 text-xs text-text-secondary">არჩეული რაოდენობის თვითღირებულება: <strong className="text-text-primary">{materialTotal??"-"}{materialTotal?" ₾":""}</strong><p className="mt-1">ითვლება მასალის შესყიდვის პარტიებიდან. ზუსტი თანხა შენახვისას მოწმდება.</p></div> : <div className="mt-3 rounded-xl border border-border p-3">
+        {!canSeeCosts ? null : stockCostKnown ? <div className="mt-3 rounded-xl border border-border p-3 text-xs text-text-secondary">თვითღირებულება მარაგიდან: <strong className="text-text-primary">{stockUnitCost} ₾</strong> ერთეულზე · სულ <strong className="text-text-primary">{stockCost.knownCost} ₾</strong><p className="mt-1">ითვლება მარაგის პარტიებიდან (შესყიდვა ან წარმოება). ზუსტი თანხა შენახვისას მოწმდება.</p></div> : item.source === "MATERIAL" ? <div className="mt-3 rounded-xl border border-border p-3 text-xs text-text-secondary">არჩეული რაოდენობის თვითღირებულება: <strong className="text-text-primary">{materialTotal??"-"}{materialTotal?" ₾":""}</strong><p className="mt-1">ითვლება მასალის შესყიდვის პარტიებიდან. ზუსტი თანხა შენახვისას მოწმდება.</p></div> : <div className="mt-3 rounded-xl border border-border p-3">
             <Field label="ერთი ერთეულის თვითღირებულება · ₾">
                 <input
                     inputMode="decimal"
@@ -242,6 +248,9 @@ export default function OrderProductEditor({
                 />
             </Field>
 
+            {stockCost && stockCost.knownQuantity > 0 && <p className="mt-2 text-xs leading-relaxed text-text-secondary">
+                მარაგში ცნობილია {stockCost.knownQuantity} ცალის ღირებულება: <strong className="text-text-primary">{stockCost.knownCost} ₾</strong>. ველი {stockCost.unknownQuantity} ცალისთვისაა, რომლის ღირებულებაც უცნობია.
+            </p>}
             <p className="mt-2 text-xs leading-relaxed text-text-secondary">
                 {item.source === "INVENTORY"
                     ? "თუ მარაგში თვითღირებულება უცნობია, მიუთითეთ ერთი ერთეულის ღირებულება. თანხა მხოლოდ ამ შეკვეთის უცნობი ნაწილისთვის გამოიყენება; მარაგში ცნობილი ღირებულება არ გადაიწერება. თუ ხარჯი ნამდვილად არ გქონიათ, ჩაწერეთ 0."

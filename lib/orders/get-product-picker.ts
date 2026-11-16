@@ -2,7 +2,8 @@ import 'server-only';
 import { sql, join, Decimal, type Sql } from '@prisma/client-runtime-utils';
 
 type Reader = { $queryRaw<T>(statement: Sql): Promise<T> };
-type Product = { id:string; sku:string; name:string; brand:string; category:string; description:string; color:string; size:string; imageUrl:string|null; salePrice:string|null; totalStock:number; goodStock:number; defectiveStock:number };
+type StockLot = { remainingQuantity:number; remainingDefectiveQuantity:number; unitCost:string|null; remainingCost:string|null };
+type Product = { stockLots:StockLot[]; id:string; sku:string; name:string; brand:string; category:string; description:string; color:string; size:string; imageUrl:string|null; salePrice:string|null; totalStock:number; goodStock:number; defectiveStock:number };
 type Snapshot = { products:Product[]; totalProducts:number; currentPage:number; totalPages:number; pageSize:number };
 
 // One statement gives count, clamped page and balances the same database snapshot.
@@ -37,7 +38,16 @@ export async function getProductPicker(reader:Reader,businessId:string,q:string,
                 'id',r.id,'sku',r.sku,'name',r.name,'brand',coalesce(r.brand,''),'category',coalesce(r.category,''),
                 'description',coalesce(r.description,''),'color',coalesce(r.color,''),'size',coalesce(r.size,''),
                 'imageUrl',r."imageUrl",'salePrice',r."salePrice"::text,
-                'totalStock',s.total,'goodStock',s.total-s.defective,'defectiveStock',s.defective
+                'totalStock',s.total,'goodStock',s.total-s.defective,'defectiveStock',s.defective,
+                -- შესყიდვისა და წარმოების პარტიები იმავე რიგით, რომლითაც შეკვეთა მარაგს ჩამოწერს.
+                'stockLots',coalesce((SELECT jsonb_agg(jsonb_build_object(
+                    'remainingQuantity',l."remainingQuantity",'remainingDefectiveQuantity',l."remainingDefectiveQuantity",
+                    'unitCost',l."unitCost"::text,'remainingCost',l."remainingCost"::text
+                ) ORDER BY l."availableAt" ASC,l."createdAt" ASC,l.id ASC)
+                FROM "InventoryStockLot" l LEFT JOIN "PurchaseItem" pi ON pi.id=l."purchaseItemId"
+                LEFT JOIN "Purchase" b ON b.id=pi."purchaseId"
+                WHERE l."inventoryItemId"=r.id AND l."remainingQuantity">0
+                AND (l."purchaseItemId" IS NULL OR (b."businessId"=${businessId} AND b."receiptStatus"='RECEIVED'))),'[]'::jsonb)
             ) ORDER BY r.name ASC,r."productId" ASC,r.color ASC,r.size ASC,r.id ASC)
             FROM page_rows r CROSS JOIN LATERAL (
                 SELECT coalesce(sum(l."remainingQuantity"),0) total,coalesce(sum(l."remainingDefectiveQuantity"),0) defective

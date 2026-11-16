@@ -1,7 +1,10 @@
 import { Decimal } from "@prisma/client-runtime-utils";
 import { validQuantity } from "./quantity";
+// მარაგის პარტია (შესყიდვიდან ან წარმოებიდან); ფასები null-ია, თუ მომხმარებელი თვითღირებულებას ვერ ხედავს.
+export type OrderStockLot = { remainingQuantity: number; remainingDefectiveQuantity: number; unitCost: string | null; remainingCost: string | null };
 export type InventoryOrderProduct = {
     source?: "INVENTORY" | "MATERIAL"; unit?: string; unitCost?: string; materialLots?: Array<{remainingQuantity:string;defectiveQuantity:string;remainingCost:string}>;
+    stockLots?: OrderStockLot[];
     id: string; sku: string; name: string; brand: string; category: string; description: string;
     color: string; size: string; imageUrl: string | null; salePrice: string | null;
     totalStock: number; goodStock: number; defectiveStock: number;
@@ -10,7 +13,7 @@ export type OrderFormItem = {
     displayNumber?: number;
     orderItemId?: string;
     isCarriedOver?: boolean;
-    key: string; source: "MANUAL" | "INVENTORY" | "MATERIAL"; inventoryItemId: string | null; materialId?:string|null; unit?:string; materialLots?:InventoryOrderProduct["materialLots"];
+    key: string; source: "MANUAL" | "INVENTORY" | "MATERIAL"; inventoryItemId: string | null; materialId?:string|null; unit?:string; materialLots?:InventoryOrderProduct["materialLots"]; stockLots?: OrderStockLot[];
     name: string; description: string; color: string; size: string; imageUrl: string | null;
     condition: "GOOD" | "DEFECTIVE"; quantity: string; unitPrice: string; unitCost: string;
     goodStock?: number; defectiveStock?: number;
@@ -33,7 +36,7 @@ export function manualOrderItem(): OrderFormItem {
 }
 export function inventoryOrderItem(product: InventoryOrderProduct, condition: "GOOD" | "DEFECTIVE"): OrderFormItem {
     return {
-        ...manualOrderItem(), source: product.source === "MATERIAL" ? "MATERIAL" : "INVENTORY", inventoryItemId: product.source === "MATERIAL" ? null : product.id, materialId:product.source === "MATERIAL"?product.id:null, unit:product.unit??"PCS",materialLots:product.materialLots,quantity:String(Math.min(1,product.goodStock)), name: product.name, description: product.description,
+        ...manualOrderItem(), source: product.source === "MATERIAL" ? "MATERIAL" : "INVENTORY", inventoryItemId: product.source === "MATERIAL" ? null : product.id, materialId:product.source === "MATERIAL"?product.id:null, unit:product.unit??"PCS",materialLots:product.materialLots,stockLots:product.source === "MATERIAL" ? undefined : product.stockLots,quantity:String(Math.min(1,product.goodStock)), name: product.name, description: product.description,
         color: product.color, size: product.size, imageUrl: product.imageUrl, condition, unitPrice: product.salePrice ?? "", goodStock: product.goodStock, defectiveStock: product.defectiveStock
     };
 }
@@ -128,4 +131,29 @@ export function matchesStockItem(item:OrderFormItem,product:InventoryOrderProduc
 export function incrementStockQuantity(item:OrderFormItem,product:InventoryOrderProduct,condition:'GOOD'|'DEFECTIVE'){
     const current=new Decimal(item.quantity.replace(',','.')||0),stock=new Decimal(condition==='GOOD'?product.goodStock:product.defectiveStock);
     return current.plus(Decimal.min(1,Decimal.max(stock.minus(current),0))).toString();
+}
+
+// შენახვისას allocateStockLots-ის იგივე წესით ითვლის, რამდენი დაჯდება არჩეული რაოდენობა.
+// null - რაოდენობა არასწორია ან მარაგი არ კმარა; unknownQuantity - ცალები უცნობი ღირებულებით.
+export function stockLotCost(item: Pick<OrderFormItem, "stockLots" | "quantity" | "condition">): { knownCost: string; knownQuantity: number; unknownQuantity: number } | null {
+    if (!item.stockLots || !/^\d+$/.test(item.quantity.trim())) return null;
+    let needed = Number(item.quantity.trim());
+    if (!Number.isSafeInteger(needed) || needed <= 0) return null;
+    let cost = new Decimal(0), knownQuantity = 0, unknownQuantity = 0;
+    for (const lot of item.stockLots) {
+        if (needed === 0) break;
+        const available = item.condition === "DEFECTIVE" ? lot.remainingDefectiveQuantity : lot.remainingQuantity - lot.remainingDefectiveQuantity;
+        const take = Math.min(needed, Math.max(available, 0));
+        if (take <= 0) continue;
+        if (lot.remainingCost !== null && lot.remainingQuantity > 0) {
+            cost = cost.plus(new Decimal(lot.remainingCost).mul(take).div(lot.remainingQuantity).toDecimalPlaces(2, Decimal.ROUND_HALF_UP));
+            knownQuantity += take;
+        } else if (lot.unitCost !== null) {
+            cost = cost.plus(new Decimal(lot.unitCost).mul(take));
+            knownQuantity += take;
+        } else unknownQuantity += take;
+        needed -= take;
+    }
+    if (needed > 0) return null;
+    return { knownCost: cost.toFixed(2), knownQuantity, unknownQuantity };
 }
