@@ -44,6 +44,10 @@ export async function saveProduction(tx:Tx,businessId:string,userId:string,input
     const production=old?await tx.production.update({where:{id:old.id},data:{...values,updatedAt:new Date(Math.max(Date.now(),old.updatedAt.getTime()+1))}}):await tx.production.create({data:{...values,businessId,createdById:userId,number:((await tx.production.aggregate({where:{businessId},_max:{number:true}}))._max.number??0)+1}});
     for(const plan of plans){const {allocations,...line}=plan;await tx.productionInput.create({data:{...line,productionId:production.id,allocations:{create:allocations}}});}
     const costs=outputCosts(totalCost,input.outputs.map(o=>o.costShare));
+    // გვიან შეცვლილი ხარჯი: უკვე გაყიდული ცალების წილი ცალკე ხარჯად იწერება, დარჩენილ ცალებს მხოლოდ საკუთარი წილი ემატება.
+    const linkedExpenses=old?await tx.expense.findMany({where:{businessId,productionId:old.id},orderBy:[{createdAt:'desc'},{id:'desc'}]}):[];
+    let reversible=linkedExpenses.reduce((s,e)=>s.plus(Prisma.Decimal.max(e.amount,0)),new Prisma.Decimal(0)),soldExpense=new Prisma.Decimal(0),reversed=new Prisma.Decimal(0);
+    const soldLines:string[]=[];
     const nextSku=await createInventorySkuAllocator(tx,businessId);
     for(const previous of old?.outputs??[]){
         if(input.outputs.some(o=>o.rowKey===previous.rowKey)&&input.status==='COMPLETED')continue;
@@ -68,7 +72,14 @@ export async function saveProduction(tx:Tx,businessId:string,userId:string,input
             if(!inventoryId){const product=await tx.product.create({data:{businessId,name:metadata.name,brand:metadata.brand,category:metadata.category,description:metadata.description}});const created=await tx.inventoryItem.create({data:{businessId,productId:product.id,sku:nextSku(),color:metadata.color,size:metadata.size,imageUrl:metadata.imageUrl}});inventoryId=created.id;}
             if(existingLot){
                 if(existingLot.remainingDefectiveQuantity||existingLot.writtenOffDefectiveQuantity)throw new ProductionError('ამ პროდუქტის დეფექტური ნაშთი ცალკე შეიცვალა. ჯერ შეათანხმეთ მარაგის მონაცემები.',409);
-                const consumedQuantity=previous!.quantity-existingLot.remainingQuantity,consumedCost=previous!.totalCost.minus(existingLot.remainingCost??0),remainingQuantity=output.quantity-consumedQuantity,remainingCost=cost.minus(consumedCost);
+                const consumedQuantity=previous!.quantity-existingLot.remainingQuantity,consumedCost=previous!.totalCost.minus(existingLot.remainingCost??0),remainingQuantity=output.quantity-consumedQuantity;
+                let remainingCost=cost.minus(consumedCost);
+                // მხოლოდ ცვლილება იყოფა ცალების მიხედვით, ამიტომ დამატება და მერე წაშლა ზუსტად აბრუნებს ძველ მდგომარეობას.
+                if(consumedQuantity>0&&remainingQuantity>=0&&!consumedCost.lt(0)&&!cost.equals(previous!.totalCost)){
+                    const soldShare=cost.minus(previous!.totalCost).mul(consumedQuantity).div(output.quantity).toDecimalPlaces(2,Prisma.Decimal.ROUND_HALF_UP);
+                    if(soldShare.gt(0)){soldExpense=soldExpense.plus(soldShare);remainingCost=remainingCost.minus(soldShare);soldLines.push(`${metadata.name}: ${consumedQuantity} ცალის წილი ${soldShare.toFixed(2)} ₾`);}
+                    else if(soldShare.lt(0)){const back=Prisma.Decimal.min(soldShare.neg(),reversible);reversible=reversible.minus(back);reversed=reversed.plus(back);remainingCost=remainingCost.plus(back);}
+                }
                 if(consumedCost.lt(0)||remainingQuantity<0||remainingCost.lt(0)||(remainingQuantity===0&&!remainingCost.isZero()))throw new ProductionError('ცვლილება უკვე გამოყენებული პროდუქტის რაოდენობას ან ღირებულებას ეწინააღმდეგება. გაყიდული ნაწილის ისტორიული თვითღირებულება უცვლელი რჩება.',409);
                 const delta=remainingQuantity-existingLot.remainingQuantity;
                 await tx.inventoryStockLot.update({where:{id:existingLot.id},data:{quantity:output.quantity,remainingQuantity,remainingCost,unitCost:remainingQuantity?remainingCost.div(remainingQuantity).toDecimalPlaces(2):0}});
@@ -86,6 +97,12 @@ export async function saveProduction(tx:Tx,businessId:string,userId:string,input
         const data={...metadata,salePrice:output.pricingMethod?price:inventory?.salePrice??null,pricingMethod:output.pricingMethod,pricingValue:output.pricingValue,productionId:production.id,rowKey:output.rowKey,active:true,inventoryItemId:inventoryId,stockLotId,quantity:output.quantity,costShare:output.costShare,totalCost:cost};
         await tx.productionOutput.upsert({where:{productionId_rowKey:{productionId:production.id,rowKey:output.rowKey}},create:data,update:data});
     }
+    const net=soldExpense.minus(reversed);
+    if(net.gt(0))await tx.expense.create({data:{businessId,productionId:production.id,category:'OTHER',amount:net,expenseDate:new Date(`${new Date(Date.now()+4*3600000).toISOString().slice(0,10)}T00:00:00+04:00`),title:`წარმოება #${production.number}: გაყიდული ცალების ხარჯი`,note:`წარმოებას გვიან დაემატა ხარჯი. ამ ხარჯის ის ნაწილი, რომელიც უკვე გაყიდულ ან ჩამოწერილ ცალებს ეკუთვნის, აქ ჩაიწერა. მათი თვითღირებულება გაყიდვისას დაფიქსირდა და აღარ იცვლება. დარჩენილ ცალებს მხოლოდ საკუთარი წილი დაემატა.\n${soldLines.join('\n')}`.slice(0,3000)}});
+    // ხარჯის შემცირებისას ჯერ ამ წარმოების ადრე ჩაწერილი ხარჯი მცირდება, ბოლოდან დაწყებული.
+    let left=net.lt(0)?net.neg():new Prisma.Decimal(0);
+    for(const expense of linkedExpenses){if(left.isZero())break;if(expense.amount.lte(0))continue;const take=Prisma.Decimal.min(expense.amount,left);left=left.minus(take);
+        if(take.equals(expense.amount))await tx.expense.delete({where:{id:expense.id}});else await tx.expense.update({where:{id:expense.id},data:{amount:expense.amount.minus(take)}});}
     await tx.productionRequest.create({data:{businessId,requestId:input.requestId,inputHash:fingerprint,productionId:production.id}});
     return {id:production.id,replayed:false};
 }

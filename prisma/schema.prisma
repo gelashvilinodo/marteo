@@ -865,14 +865,19 @@ model Expense {
 
   expenseDate DateTime @default(now())
 
+  // წარმოების გვიან დამატებული ხარჯის ის ნაწილი, რომელიც უკვე გაყიდულ ცალებს ეკუთვნის.
+  productionId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business   Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  production Production? @relation(fields: [productionId], references: [id], onDelete: SetNull)
 
   @@index([businessId])
   @@index([category])
   @@index([expenseDate])
+  @@index([productionId])
 }
 
 model ContentCampaign {
@@ -1613,26 +1618,27 @@ enum ProductionStatus {
 }
 
 model Production {
-  id              String              @id @default(cuid())
-  businessId      String
-  number          Int
-  name            String?
-  productionDate  DateTime
-  status          ProductionStatus    @default(IN_PROGRESS)
-  note            String?
-  overheadCost    Decimal             @default(0) @db.Decimal(18, 2)
-  additionalCosts Json
-  materialsCost   Decimal             @db.Decimal(18, 2)
-  totalCost       Decimal             @db.Decimal(18, 2)
-  completedAt     DateTime?
-  createdById     String
-  updatedById     String
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  business        Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  inputs          ProductionInput[]
-  outputs         ProductionOutput[]
-  requests        ProductionRequest[]
+  id               String              @id @default(cuid())
+  businessId       String
+  number           Int
+  name             String?
+  productionDate   DateTime
+  status           ProductionStatus    @default(IN_PROGRESS)
+  note             String?
+  overheadCost     Decimal             @default(0) @db.Decimal(18, 2)
+  additionalCosts  Json
+  materialsCost    Decimal             @db.Decimal(18, 2)
+  totalCost        Decimal             @db.Decimal(18, 2)
+  completedAt      DateTime?
+  createdById      String
+  updatedById      String
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  business         Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  inputs           ProductionInput[]
+  outputs          ProductionOutput[]
+  requests         ProductionRequest[]
+  soldCostExpenses Expense[]
 
   @@unique([businessId, number])
   @@index([businessId, productionDate])
