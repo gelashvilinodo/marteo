@@ -1,0 +1,4 @@
+# Cloudflare-ზე არ იტვირთება (wrangler .assetsignore, gitignore-ის სინტაქსი).
+# macOS Finder-ის დამხმარე ფაილები საქაღალდეში არსებული ფაილების სახელებს ინახავს.
+.DS_Store
+**/.DS_Store
