@@ -68,8 +68,8 @@ export default function AuthShell({
                     <div className={`w-full min-w-0 ${wide ? "max-w-xl" : "max-w-md"}`}>
                         <div className="mb-8 flex justify-center lg:hidden">
                             <Link href="/" aria-label="MARTEO.GE">
-                                <img src="/images/marteo-08.svg" alt="MARTEO.GE" className="h-12 w-auto dark:hidden" />
-                                <img src="/images/logo.svg" alt="MARTEO.GE" className="hidden h-12 w-auto dark:block" />
+                                <img src="/images/marteo-08.svg" alt="MARTEO.GE" className="h-20 w-auto dark:hidden" />
+                                <img src="/images/logo.svg" alt="MARTEO.GE" className="hidden h-20 w-auto dark:block" />
                             </Link>
                         </div>
 

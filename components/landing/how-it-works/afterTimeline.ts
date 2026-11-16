@@ -80,11 +80,11 @@ export function buildAfterScript(mode: Mode): AfterScript {
 
     const chapters: Chapter[] = [
         { id: "details", label: "დეტალები", from: 0, caption: "სამ წერტილზე დაჭერით შეკვეთის ყველა დეტალი ერთ ფანჯარაში იხსნება." },
-        { id: "invoice", label: "ინვოისი", from: T.clickInvoice - 0.6, caption: "ინვოისი შეკვეთის მონაცემებით თავისით მზადდება — QR კოდითაც." },
+        { id: "invoice", label: "ინვოისი", from: T.clickInvoice - 0.6, caption: "ინვოისი უკვე მზადაა, შეკვეთის ყველა მონაცემით და QR კოდით." },
         { id: "print", label: "ბეჭდვა", from: T.clickPrint - 0.9, caption: "ერთი დაჭერით ბეჭდავთ ან PDF-ად ინახავთ." },
         { id: "customer", label: "მომხმარებლის გვერდი", from: T.clickCustomer - 0.8, caption: "მომხმარებელი პირად ბმულზე ხედავს სტატუსს, პროდუქტებს და თანხას." },
         { id: "status", label: "გაგზავნა", from: T.clickCloseInvoice - 0.4, caption: "შეკვეთას „გაგზავნილის“ სტატუსს ერთი დაჭერით ანიჭებთ." },
-        { id: "sms", label: "SMS", from: T.smsPhone - 0.3, caption: "მომხმარებელს SMS-ით თავისით ეცნობება, რომ შეკვეთა გზაშია." },
+        { id: "sms", label: "SMS", from: T.smsPhone - 0.3, caption: "სტატუსის შეცვლისთანავე მომხმარებელი SMS-ით იგებს, რომ შეკვეთა გაგზავნილია." },
     ];
 
     // მომხმარებლის ტელეფონის ჩვენებისას დესკტოპის კურსორი არ ჩანს.

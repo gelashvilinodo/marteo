@@ -104,12 +104,13 @@ export default function Header() {
               href="/"
               onClick={closeMenu}
               aria-label="MARTEO.GE"
-              className="shrink-0"
+              className="flex h-16 shrink-0 items-center overflow-hidden"
             >
+              {/* The SVG has wide empty margins, so it is drawn taller than the bar and the empty part is clipped. */}
               <img
                 src="/images/logo.svg"
                 alt="MARTEO.GE"
-                className="h-11 w-auto"
+                className="h-16 w-auto max-w-none sm:h-20"
               />
             </Link>
 
@@ -157,34 +158,61 @@ export default function Header() {
         <div
           id="landing-mobile-menu"
           inert={!menuOpen}
-          className={`landing-header-surface absolute inset-x-0 top-full z-0 border-b border-border bg-background shadow-[0_1.5rem_3rem_-1.5rem_rgb(15_28_46/0.35)] transition-[translate,opacity,visibility] duration-300 ease-out md:hidden ${
+          className={`landing-header-surface absolute inset-x-0 top-full z-0 flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px))] flex-col overflow-y-auto border-b border-border bg-background shadow-[0_1.5rem_3rem_-1.5rem_rgb(15_28_46/0.35)] transition-[translate,opacity,visibility] duration-300 ease-out md:hidden ${
             menuOpen ? "visible translate-y-0 opacity-100" : "invisible -translate-y-full opacity-0"
           }`}
         >
-          <nav className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-4 sm:px-6">
-            {navigation.map(item => (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={closeMenu}
-                aria-current={pathname === item.href ? "page" : undefined}
-                className={`flex h-12 items-center gap-3 rounded-2xl px-3 text-sm font-medium ${pathname === item.href ? "bg-accent/10 text-accent ring-1 ring-inset ring-accent/15" : "text-text-primary hover:bg-accent/10 hover:text-accent"}`}
-              >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                  <Icon icon={item.icon} className="h-5 w-5" />
-                </span>
-                {item.label}
-              </Link>
-            ))}
+          {/* პუნქტები ფილებადაა; აქტიური ფილა მთლიანად ლურჯია. გახსნისას ფილები რიგრიგობით ამოდის.
+              მენიუ ეკრანის ბოლომდეა, შესვლა-რეგისტრაცია ქვემოთაა მიმაგრებული და ნავიგაციისგან გამოყოფილია. */}
+          <nav className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6">
+            <div className="grid grid-cols-2 gap-2">
+            {navigation.map((item, index) => {
+              const active = pathname === item.href;
+              const wide = index === navigation.length - 1 && navigation.length % 2 === 1;
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  onClick={closeMenu}
+                  aria-current={active ? "page" : undefined}
+                  style={{ transitionDelay: menuOpen ? `${80 + index * 50}ms` : "0ms" }}
+                  className={`group flex rounded-2xl p-3.5 text-sm font-semibold transition-[opacity,translate,background-color,color] duration-300 ease-out motion-reduce:transition-none ${
+                    wide ? "col-span-2 min-h-14 flex-row items-center gap-3" : "min-h-24 flex-col justify-between"
+                  } ${
+                    active
+                      ? "bg-accent text-white shadow-[0_0.75rem_1.5rem_-0.75rem_rgb(90_141_238/0.7)]"
+                      : "bg-text-primary/[0.04] text-text-primary ring-1 ring-inset ring-border hover:bg-accent/10 hover:text-accent"
+                  } ${menuOpen ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}
+                >
+                  <Icon icon={item.icon} className={`h-6 w-6 shrink-0 ${active ? "text-white" : "text-accent"}`} />
+                  {item.label}
+                </Link>
+              );
+            })}
+            </div>
 
-            <button
-              type="button"
-              onClick={openLogin}
-              className={`mt-2 ${authPrimaryButtonClass}`}
+            <div
+              style={{ transitionDelay: menuOpen ? `${80 + navigation.length * 50}ms` : "0ms" }}
+              className={`mt-auto rounded-2xl bg-accent/10 p-3.5 ring-1 ring-inset ring-accent/25 transition-[opacity,translate] duration-300 ease-out motion-reduce:transition-none ${
+                menuOpen ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+              }`}
             >
-              <Icon icon="solar:login-3-linear" className="h-5 w-5" />
-              შესვლა
-            </button>
+              {/* ტელეფონზე შესვლა პირდაპირ ფორმაზე გადადის; მისალმების ფანჯარა მხოლოდ დესკტოპზეა. */}
+              <Link
+                href="/login"
+                onClick={closeMenu}
+                className={authPrimaryButtonClass}
+              >
+                შესვლა
+              </Link>
+              <Link
+                href="/register"
+                onClick={closeMenu}
+                className="mt-2 flex min-h-11 w-full items-center justify-center rounded-xl border border-accent/50 px-4 text-sm font-semibold text-text-primary transition-colors hover:bg-accent/10 hover:text-accent"
+              >
+                რეგისტრაცია
+              </Link>
+            </div>
           </nav>
         </div>
       </header>

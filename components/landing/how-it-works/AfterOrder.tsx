@@ -18,7 +18,7 @@ export default function AfterOrder() {
             className="rounded-t-[2rem] border-t border-border shadow-[0_-2rem_4rem_-1rem_rgb(2_8_23/0.35)] sm:rounded-t-[3rem]"
             eyebrow={{ icon: "solar:document-text-linear", label: "შეკვეთის შემდეგ" }}
             title="ინვოისი, ბმული და SMS — ავტომატურად"
-            subtitle="დაბეჭდეთ ინვოისი, გაუზიარეთ მომხმარებელს პირადი ბმული და შეკვეთის გაგზავნისას მას SMS თავისით მიუვა."
+            subtitle="მომხმარებელმა ყოველთვის იცის, სად არის მისი შეკვეთა: აქვს პირადი ბმული და შეკვეთის გაგზავნისას SMS-ს იღებს."
             buildScript={buildAfterScript}
             render={(t, script, dates) => <AfterApp frame={buildAfterFrame(t, script)} m={script.mode === "mobile"} dates={dates} />}
         />
