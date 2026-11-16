@@ -1,13 +1,11 @@
-import Link from "next/link";
 import { Icon } from "@/components/shared/Icon";
 import Swap from "./Swap";
 import { INTERVAL_LABELS, YEARLY_PAID_MONTHS, type BillingInterval } from "@/lib/subscription/plans";
 
-// თვიური/წლიური გადამრთველი. ფასების გვერდზე ღილაკებია (onSelect), დაშბორდში ბმულები (href), რომ გვერდმა ფასები თავიდან დაითვალოს.
-export default function PeriodToggle({ value, onSelect, href }: {
+// თვიური/წლიური გადამრთველი. გადართვა ბრაუზერშივე ხდება (ფასების გვერდი და დაშბორდი), სერვერთან მოთხოვნის გარეშე.
+export default function PeriodToggle({ value, onSelect }: {
     value: BillingInterval;
-    onSelect?: (value: BillingInterval) => void;
-    href?: (value: BillingInterval) => string;
+    onSelect: (value: BillingInterval) => void;
 }) {
     const yearly = value === "YEARLY";
     const option = (interval: BillingInterval) => {
@@ -17,9 +15,7 @@ export default function PeriodToggle({ value, onSelect, href }: {
             {INTERVAL_LABELS[interval]}
             {interval === "YEARLY" && <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold transition-colors duration-300 motion-reduce:transition-none ${active ? "bg-white/20 text-white" : "bg-success/15 text-[#0d7a3b] dark:text-success"}`}>−{Math.round((12 - YEARLY_PAID_MONTHS) / 12 * 100)}%</span>}
         </>;
-        return href
-            ? <Link key={interval} href={href(interval)} scroll={false} role="radio" aria-checked={active} className={className}>{content}</Link>
-            : <button key={interval} type="button" role="radio" aria-checked={active} onClick={() => onSelect?.(interval)} className={className}>{content}</button>;
+        return <button key={interval} type="button" role="radio" aria-checked={active} onClick={() => onSelect(interval)} className={className}>{content}</button>;
     };
     const gift = <Icon icon="solar:gift-bold-duotone" className="h-5 w-5 shrink-0 text-success" aria-hidden="true" />;
     return <div className="flex flex-col items-center gap-3">

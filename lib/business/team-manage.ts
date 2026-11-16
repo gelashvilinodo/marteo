@@ -60,6 +60,7 @@ function pushNotices(notices: Notice[]) {
         const client = newClient();
         runInBackground(sendPushToUsers(client, notice.userIds, {
             title: notice.title, body: notice.body, url: notice.actionUrl ?? "/dashboard", tag: "team",
+            ...notice.businessId ? { businessId: notice.businessId } : {},
         }).finally(() => client.$disconnect()));
     }
 }

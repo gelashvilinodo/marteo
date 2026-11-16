@@ -1,6 +1,7 @@
 import { guardMutation } from "@/lib/security/mutation-request";
 import { cancelCampaign, parseCampaignInput, updateCampaign } from "@/lib/notifications/admin";
 import { adminJson, adminRoute } from "@/lib/notifications/admin-route";
+import { queueCampaignPush } from "@/lib/subscription/notices";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,7 @@ export async function PATCH(request: Request, { params }: Context) {
     const { id } = await params;
     return guardMutation(req => adminRoute("update", async () => {
         await updateCampaign(id, parseCampaignInput(await req.json() as Record<string, unknown>));
+        await queueCampaignPush();
         return adminJson({ ok: true });
     }))(request);
 }

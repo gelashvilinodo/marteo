@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { decimalInput, integerInput } from "@/lib/number-input";
 import { Icon } from "@iconify/react";
 import OrderPhotoUpload from "./OrderPhotoUpload";
 import { orderLineCents, moneyText, type OrderFormItem } from "@/lib/orders/order-form";
@@ -225,8 +226,8 @@ export default function OrderProductEditor({
         )}
         <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
             <div className="col-span-2 lg:col-span-1"><Field label="სახელი *"><input readOnly={item.source==="MATERIAL"} value={item.name} onChange={event => update({ name: event.target.value })} required className={input} /></Field></div>
-            <Field label={item.source==="MATERIAL"?`რაოდენობა · ${quantityLabel(0,item.unit).slice(2)} *`:"რაოდენობა *"}><input inputMode={item.source==="MATERIAL"?"decimal":"numeric"} value={item.quantity} onChange={event => update({ quantity: event.target.value })} required className={input} /></Field>
-            <Field label={item.source==="MATERIAL"?`ფასი / ${quantityLabel(0,item.unit).slice(2)} · ₾ *`:"გასაყიდი ფასი · ₾ *"}><input inputMode="decimal" value={item.unitPrice} onChange={event => update({ unitPrice: event.target.value })} placeholder="0.00" required className={input} /></Field>
+            <Field label={item.source==="MATERIAL"?`რაოდენობა · ${quantityLabel(0,item.unit).slice(2)} *`:"რაოდენობა *"}><input inputMode={item.source==="MATERIAL"?"decimal":"numeric"} value={item.quantity} onChange={event => update({ quantity: item.source==="MATERIAL"&&item.unit!=="PCS" ? decimalInput(event.target.value, 6) : integerInput(event.target.value) })} required className={input} /></Field>
+            <Field label={item.source==="MATERIAL"?`ფასი / ${quantityLabel(0,item.unit).slice(2)} · ₾ *`:"გასაყიდი ფასი · ₾ *"}><input inputMode="decimal" value={item.unitPrice} onChange={event => update({ unitPrice: decimalInput(event.target.value) })} placeholder="0.00" required className={input} /></Field>
         </div>
         {!canSeeCosts ? null : item.source === "MATERIAL" ? <div className="mt-3 rounded-xl border border-border p-3 text-xs text-text-secondary">არჩეული რაოდენობის თვითღირებულება: <strong className="text-text-primary">{materialTotal??"-"}{materialTotal?" ₾":""}</strong><p className="mt-1">ითვლება მასალის შესყიდვის პარტიებიდან. ზუსტი თანხა შენახვისას მოწმდება.</p></div> : <div className="mt-3 rounded-xl border border-border p-3">
             <Field label="ერთი ერთეულის თვითღირებულება · ₾">
@@ -234,7 +235,7 @@ export default function OrderProductEditor({
                     inputMode="decimal"
                     value={item.unitCost}
                     onChange={event =>
-                        update({ unitCost: event.target.value })
+                        update({ unitCost: decimalInput(event.target.value) })
                     }
                     placeholder="მაგალითად: 12.50"
                     className={input}

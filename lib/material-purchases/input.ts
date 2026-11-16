@@ -10,8 +10,10 @@ export function text(value: unknown, max: number, required = false): string {
     if (typeof value !== "string" || value.length > max || (required && !value.trim())) throw new MaterialError("შეავსეთ ველები სწორად; ტექსტი ცარიელია ან ძალიან გრძელია.");
     return value.trim();
 }
-function decimal(value: unknown, scale: number, label: string, positive = false) {
+function decimal(value: unknown, scale: number, label: string, positive = false, emptyIsZero = false) {
     const s = typeof value === "string" ? value.trim().replace(",", ".") : "";
+    // ცარიელი არასავალდებულო ველი ნულად ითვლება.
+    if (s === "" && emptyIsZero) return new Prisma.Decimal(0);
     if (!new RegExp(`^\\d{1,8}(\\.\\d{1,${scale}})?$`).test(s)) throw new MaterialError(`${label}: მიუთითეთ სწორი არაუარყოფითი რიცხვი.`);
     const n = new Prisma.Decimal(s);
     if (positive && n.lte(0)) throw new MaterialError(`${label}: რაოდენობა უნდა იყოს ნულზე მეტი.`);
@@ -32,7 +34,7 @@ export function readPurchase(raw: unknown) {
         const i = v as Record<string, unknown>;
         const unit = text(i.unit, 10, true);
         if (!UNITS.some(([key])=>key === unit)) throw new MaterialError("აირჩიეთ საზომი ერთეული.");
-        const quantity = decimal(i.quantity,6,"რაოდენობა",true), defectiveQuantity = decimal(i.defectiveQuantity,6,"დეფექტური რაოდენობა");
+        const quantity = decimal(i.quantity,6,"რაოდენობა",true), defectiveQuantity = decimal(i.defectiveQuantity,6,"დეფექტური რაოდენობა",false,true);
         if (defectiveQuantity.gt(quantity)) throw new MaterialError("დეფექტური რაოდენობა სულ რაოდენობას არ უნდა აღემატებოდეს.");
         if (unit === "PCS" && (!quantity.isInteger() || !defectiveQuantity.isInteger())) throw new MaterialError("ცალობით მასალის რაოდენობა მთელი რიცხვი უნდა იყოს.");
         return {
@@ -44,7 +46,7 @@ export function readPurchase(raw: unknown) {
     });
     const ids = items.map(i=>i.materialId).filter(Boolean);
     if (new Set(ids).size !== ids.length) throw new MaterialError("ერთი მასალა ერთ პარტიაში მხოლოდ ერთხელ აირჩიეთ.");
-    return { requestId, name:text(r.name,200), country:text(r.country,100).replace(/\s+/g," "), note:text(r.note,3000), purchaseDate: new Date(`${date}T00:00:00+04:00`), receiptStatus:r.receiptStatus as "RECEIVED" | "IN_TRANSIT", shippingCost:decimal(r.shippingCost,2,"ტრანსპორტირება"), customsCost:decimal(r.customsCost,2,"განბაჟება"), otherCost:decimal(r.otherCost,2,"სხვა ხარჯი"), items };
+    return { requestId, name:text(r.name,200), country:text(r.country,100).replace(/\s+/g," "), note:text(r.note,3000), purchaseDate: new Date(`${date}T00:00:00+04:00`), receiptStatus:r.receiptStatus as "RECEIVED" | "IN_TRANSIT", shippingCost:decimal(r.shippingCost,2,"ტრანსპორტირება",false,true), customsCost:decimal(r.customsCost,2,"განბაჟება",false,true), otherCost:decimal(r.otherCost,2,"სხვა ხარჯი",false,true), items };
 }
 export type MaterialInput = ReturnType<typeof readPurchase>;
 export function calculate(input: MaterialInput) {

@@ -24,25 +24,29 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
     const operation = useRef(false);
     const [total, setTotal] = useState<number | null>(null);
     const [ready, setReady] = useState(false);
-    const [prepared, setPrepared] = useState<{
+    // The result is tagged with the entries/paper it was made for, so a result
+    // for an older selection is simply ignored instead of being reset in the effect.
+    const [preparation, setPreparation] = useState<{
         entries: Entry[];
         paper: InvoicePaper;
+        done: boolean;
+        error: string;
+        skippedImages: number;
     } | null>(null);
 
-    const [preparationError, setPreparationError] = useState("");
-    const [skippedImages, setSkippedImages] = useState(0);
+    const preparationIsCurrent =
+        preparation?.entries === entries &&
+        preparation?.paper === paper;
+    const preparationError = preparationIsCurrent ? preparation.error : "";
+    const skippedImages = preparationIsCurrent ? preparation.skippedImages : 0;
 
     const printReady =
         ready &&
         entries.length > 0 &&
-        prepared?.entries === entries &&
-        prepared?.paper === paper;
+        preparationIsCurrent &&
+        preparation.done;
 
     useEffect(() => {
-        setPrepared(null);
-        setPreparationError("");
-        setSkippedImages(0);
-
         const element = sheets.current;
         if (!ready || entries.length === 0 || !element) return;
 
@@ -67,7 +71,6 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                 ]);
 
                 if (!active) return;
-                setSkippedImages(failedImages);
 
                 if (paper === "58mm" || paper === "80mm") {
                     const contentWidth = paper === "80mm" ? 74 : 52;
@@ -105,14 +108,18 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                     });
                 });
 
-                if (active) setPrepared({ entries, paper });
+                if (active) setPreparation({ entries, paper, done: true, error: "", skippedImages: failedImages });
             } catch (cause: unknown) {
                 if (active) {
-                    setPreparationError(
-                        cause instanceof Error
+                    setPreparation({
+                        entries,
+                        paper,
+                        done: false,
+                        error: cause instanceof Error
                             ? cause.message
                             : "ინვოისების მომზადება ვერ მოხერხდა.",
-                    );
+                        skippedImages: 0,
+                    });
                 }
             } finally {
                 if (timeout !== undefined) clearTimeout(timeout);
@@ -318,18 +325,25 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
         if (!ready || operation.current) return;
         operation.current = true; setBusy(true); setError("");
         const completed = [...confirmed];
+        const pending = entries.filter(entry => !completed.includes(entry.id));
         try {
-            for (const entry of entries) {
-                if (completed.includes(entry.id)) continue;
+            // One request per 100 invoices instead of one per invoice.
+            for (let start = 0; start < pending.length; start += 100) {
+                const chunk = pending.slice(start, start + 100);
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 30000);
                 try {
-                    const response = await fetch(`/api/orders/${encodeURIComponent(entry.id)}/invoice/printed`, {
-                        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ version: entry.invoice.version }), signal: controller.signal,
+                    const response = await fetch("/api/orders/invoices/printed", {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ items: chunk.map(entry => ({ id: entry.id, version: entry.invoice.version })) }),
+                        signal: controller.signal,
                     });
-                    const data = await response.json() as { success?: boolean; message?: string };
+                    const data = await response.json() as { success?: boolean; message?: string; confirmed?: string[]; changed?: string[]; missing?: string[] };
                     if (!response.ok || !data.success) throw new Error(data.message || "მონიშვნა ვერ მოხერხდა.");
-                    completed.push(entry.id); setConfirmed([...completed]);
+                    for (const id of data.confirmed ?? []) if (!completed.includes(id)) completed.push(id);
+                    setConfirmed([...completed]);
+                    if (data.changed?.length) throw new Error("ზოგიერთი ინვოისი შეიცვალა. განაახლეთ გვერდი და დაბეჭდეთ ახალი ვერსია.");
+                    if (data.missing?.length) throw new Error("ზოგიერთი შეკვეთა ვერ მოიძებნა.");
                 } finally { clearTimeout(timeout); }
             }
             setPrompt(false);

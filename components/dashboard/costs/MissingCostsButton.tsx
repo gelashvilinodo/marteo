@@ -1,5 +1,6 @@
 "use client";
 import useTransientNotice from '@/components/shared/useTransientNotice';
+import { decimalInput } from "@/lib/number-input";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
@@ -153,7 +154,7 @@ export default function MissingCostsButton({ inventoryItemId, orderId, label = "
                     {inventoryItemId && historical && <p className="mt-3 text-xs text-warning">ქვემოთ ჩანს იმავე დასახელების, ფერისა და ზომის შეკვეთის პროდუქტები. თითოეული გადაამოწმეთ - მარაგში შეყვანილი ფასი მათ ავტომატურად არ მიენიჭება.</p>}
                     <div className="mt-4 space-y-3">{rows.map(row => <label key={row.key} className="block min-w-0 rounded-xl border border-border p-3"><span className="block break-words text-sm font-medium">{row.name}</span><span className="mt-1 block text-xs text-text-secondary">{row.kind === "stock" ? "დარჩენილი მარაგი" : `შეკვეთა #${row.orderNumber ?? "-"} · ${displayDate(row.date)}`} · {row.quantity} ერთეული</span><input aria-label={`${row.name} - ერთეულის თვითღირებულება`} inputMode="decimal" type="text" placeholder="არ არის მითითებული" value={values[row.key] ?? ""} aria-invalid={invalidFields.includes(row.key)} onChange={e => {
                         setInvalidFields(fields => fields.filter(key => key !== row.key));
-                        setValues(v => ({...v, [row.key]: e.target.value}));
+                        setValues(v => ({...v, [row.key]: decimalInput(e.target.value)}));
                     }} className={`${field} ${invalidFields.includes(row.key) ? "border-danger" : ""}`}/></label>)}</div>
                     {!rows.length && <p className="py-6 text-sm text-text-secondary">არჩეულ ნაწილში შესავსები თვითღირებულება არ არის.</p>}
                     {preview.hasMore && <p className="mt-3 text-xs text-text-secondary">სია ნაწილობრივაა ნაჩვენები. შენახვის შემდეგ ხელახლა გახსენით დარჩენილი ჩანაწერებისთვის.</p>}

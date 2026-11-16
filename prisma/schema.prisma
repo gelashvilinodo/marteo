@@ -106,6 +106,7 @@ enum PaymentMethod {
   CASH
   BANK_TRANSFER
   CARD
+  COURIER
   UNKNOWN
 }
 

@@ -24,7 +24,7 @@ type RecordRow = {
     invoiceVersion: number; lastPrintedInvoiceVersion: number | null; invoicePrintedAt: Date | null;
     items: ItemRow[];
     returns: Array<{ status: "PENDING" | "RECEIVED"; fulfillmentCycle: number; items: Array<{ orderItemId: string; quantity: number }> }>;
-    payments: Array<{ id: string; amount: string; method: "CASH" | "BANK_TRANSFER" | "CARD" | "UNKNOWN"; bankName: string | null; createdAt: string }>;
+    payments: Array<{ id: string; amount: string; method: "CASH" | "BANK_TRANSFER" | "CARD" | "COURIER" | "UNKNOWN"; bankName: string | null; createdAt: string }>;
     paidAmount: string;
 };
 

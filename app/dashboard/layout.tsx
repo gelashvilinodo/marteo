@@ -7,6 +7,8 @@ import { getAdminUser } from "@/lib/admin/authorization";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import SystemBannerBar from "@/components/dashboard/SystemBannerBar";
 import { getActiveBanner } from "@/lib/system/active-banner";
+import PushSync from "@/components/support/PushSync";
+import { getVapidPublicKey } from "@/lib/push/web-push";
 
 // ჩანართის სათაური დაშბორდში; გვერდები, რომლებსაც საკუთარი სათაური აქვთ, მას ანაცვლებენ.
 export const metadata = {
@@ -49,6 +51,7 @@ export default async function DashboardLayout({
             userName={user.firstName || ""}
             userEmail={user.email}
         >
+            <PushSync publicKey={getVapidPublicKey()} />
             {banner && <SystemBannerBar banner={banner} />}
             {children}
         </DashboardShell>

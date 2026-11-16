@@ -27,6 +27,7 @@ export const methods = {
     CASH: "ნაღდი",
     BANK_TRANSFER: "გადარიცხვა",
     CARD: "ბარათი",
+    COURIER: "კურიერთან",
     UNKNOWN: "მეთოდი უცნობია",
 };
 

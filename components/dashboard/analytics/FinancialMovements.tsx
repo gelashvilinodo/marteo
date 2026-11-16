@@ -39,6 +39,7 @@ const methods: Record<string, string> = {
     CASH: "ნაღდი",
     BANK_TRANSFER: "გადარიცხვა",
     CARD: "ბარათი",
+    COURIER: "კურიერთან",
 };
 
 function date(value: string) {

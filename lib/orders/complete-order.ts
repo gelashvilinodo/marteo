@@ -49,7 +49,8 @@ export async function completeOrder(
         if (
             method !== "CASH" &&
             method !== "BANK_TRANSFER" &&
-            method !== "CARD"
+            method !== "CARD" &&
+            method !== "COURIER"
         ) {
             fail("აირჩიეთ დარჩენილი თანხის გადახდის მეთოდი.");
         }

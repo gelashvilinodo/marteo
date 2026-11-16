@@ -18,7 +18,7 @@ import { AiAssistantInset, AiAssistantProvider } from "@/components/dashboard/ai
 import AiAssistantPanel from "@/components/dashboard/ai/AiAssistantPanel";
 import { PlanProvider } from "@/components/dashboard/plan/PlanContext";
 import PlanLockBanner from "@/components/dashboard/plan/PlanLockBanner";
-import type { PlanState } from "@/lib/subscription/plan-state";
+import { planAllows, type PlanState } from "@/lib/subscription/plan-state";
 
 type DashboardShellProps = {
     children: React.ReactNode;
@@ -74,7 +74,7 @@ export default function DashboardShell({
     }, [sidebarOpen]);
 
     return (
-        <BusinessModeContext value={businessMode}><BusinessAccessContext value={access}><PlanProvider plan={plan} isOwner={isOwner} businessId={businessId}><AiAssistantProvider enabled={isOwner}><div className="min-h-screen bg-background lg:flex">
+        <BusinessModeContext value={businessMode}><BusinessAccessContext value={access}><PlanProvider plan={plan} isOwner={isOwner} businessId={businessId}><AiAssistantProvider enabled={isOwner && planAllows(plan, "ai")}><div className="min-h-screen bg-background lg:flex">
             <DashboardSidebar mode={businessMode} supportUnread={supportUnread} />
 
             <div

@@ -1,38 +1,24 @@
-import { timingSafeEqual } from "node:crypto";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { deliverRetentionWarnings } from "@/lib/admin/retention";
-import { deliverSubscriptionReminders } from "@/lib/notifications/sync";
+import { deliverDueCampaigns, deliverSubscriptionReminders } from "@/lib/notifications/sync";
 import { createPrismaClient } from "@/lib/prisma";
+import { isCronRequest } from "@/lib/security/cron-auth";
 import { runBankRenewals } from "@/lib/subscription/bank";
 import { deliverNoticeChannels } from "@/lib/subscription/notices";
 
 export const dynamic = "force-dynamic";
 
-function cronSecret() {
-    try {
-        const value = (getCloudflareContext().env as unknown as Record<string, unknown>).CRON_SECRET;
-        if (typeof value === "string" && value) return value;
-    } catch { /* Local development. */ }
-    return process.env.CRON_SECRET ?? "";
-}
-
-function authorized(request: Request) {
-    const secret = cronSecret();
-    const given = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
-    if (secret.length < 16 || given.length !== secret.length) return false;
-    return timingSafeEqual(Buffer.from(given), Buffer.from(secret));
-}
-
 // საათობრივი cron (worker.mjs): ბარათიდან ავტოგანახლება და ბანკის დაკარგული პასუხების გადამოწმება, გეგმის შეხსენებები ყველა ბიზნესზე, წაშლის გაფრთხილებები (30/7 დღე)
 // და ჯერ გაუგზავნელი მეილი/პუში.
 // მომხმარებლისთვის მიუწვდომელია: მხოლოდ CRON_SECRET-ით.
 export async function POST(request: Request) {
-    if (!authorized(request)) return Response.json({ success: false }, { status: 401 });
+    if (!isCronRequest(request)) return Response.json({ success: false }, { status: 401 });
     const prisma = createPrismaClient();
     try {
         // ჩამოჭრის შეცდომა შეხსენებებს არ აჩერებს (შემდეგ საათში თავიდან ცდის).
         const bank = await runBankRenewals(prisma).catch(() => { console.error("Bank renewals failed"); return null; });
         await deliverSubscriptionReminders(prisma, null);
+        // ადმინის დაგეგმილი შეტყობინებები, რომელთა დროც დადგა: პუში ყველას, აპის გახსნის მოლოდინის გარეშე.
+        await deliverDueCampaigns(prisma);
         await deliverRetentionWarnings(prisma);
         let sent = 0;
         for (let batch = 0; batch < 5; batch++) {

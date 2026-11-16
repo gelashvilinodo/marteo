@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { decimalInput } from "@/lib/number-input";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import type { AiPurchaseDraft } from "@/lib/ai/purchase-draft-types";
@@ -383,10 +384,10 @@ export default function AiPurchaseDraftCard({ message }: { message: AiMessage & 
                             </label>
                         ))}
                         {mode === "custom" && (
-                            <input inputMode="decimal" placeholder={`1 ${currency} = ? ₾`} value={customRate} onChange={(event) => setCustomRate(event.target.value)} className={inputClass} />
+                            <input inputMode="decimal" placeholder={`1 ${currency} = ? ₾`} value={customRate} onChange={(event) => setCustomRate(decimalInput(event.target.value, 6))} className={inputClass} />
                         )}
                         {mode === "paidGel" && (
-                            <input inputMode="decimal" placeholder="თანხა ლარში, ₾" value={paidGel} onChange={(event) => setPaidGel(event.target.value)} className={inputClass} />
+                            <input inputMode="decimal" placeholder="თანხა ლარში, ₾" value={paidGel} onChange={(event) => setPaidGel(decimalInput(event.target.value))} className={inputClass} />
                         )}
                         {rateInfo.label && <p className="text-xs text-text-secondary">{rateInfo.label}</p>}
                         {conversion && (
@@ -423,7 +424,7 @@ export default function AiPurchaseDraftCard({ message }: { message: AiMessage & 
                             </select>
                         </Field>
                         <Field label={pricingMethod === "FIXED_PROFIT" ? "₾" : "%"}>
-                            <input inputMode="decimal" value={pricingValue} onChange={(event) => setPricingValue(event.target.value)} placeholder="მაგ. 100" className={inputClass} />
+                            <input inputMode="decimal" value={pricingValue} onChange={(event) => setPricingValue(decimalInput(event.target.value))} placeholder="მაგ. 100" className={inputClass} />
                         </Field>
                     </div>
                 )}

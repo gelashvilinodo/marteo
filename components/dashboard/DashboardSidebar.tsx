@@ -115,8 +115,8 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps) {
     const pathname = usePathname();
     const { can, canOpen } = useBusinessAccess();
-    const { plan, openUpgrade } = usePlan();
-    const planCount = usePurchasePlanCount(hasBusinessFeature(mode, "imports") && can(["PURCHASES", "INVENTORY"]));
+    const { plan, openUpgrade, allows } = usePlan();
+    const planCount = usePurchasePlanCount(hasBusinessFeature(mode, "imports") && can(["PURCHASES", "INVENTORY"]) && allows("stock"));
     // თანამშრომელი მხოლოდ იმ განყოფილებებს ხედავს, რომლებზეც წვდომა აქვს.
     const allowedPurchaseLinks = purchaseLinks.filter(link => canOpen(link.href));
     const allowedInventoryLinks = inventoryLinks.filter(link => canOpen(link.href));

@@ -14,7 +14,7 @@ import {
 export type ResolvedHistoricalPayment = {
     paidAmount: Prisma.Decimal;
     paymentDate: string | null;
-    method: "CASH" | "BANK_TRANSFER" | "CARD" | "UNKNOWN";
+    method: "CASH" | "BANK_TRANSFER" | "CARD" | "COURIER" | "UNKNOWN";
     bankName: string | null;
 };
 
@@ -92,6 +92,7 @@ export function validatePaymentResolution(
         method !== "CASH" &&
         method !== "BANK_TRANSFER" &&
         method !== "CARD" &&
+        method !== "COURIER" &&
         method !== "UNKNOWN"
     ) {
         fail("გადახდის მეთოდი არასწორია.");

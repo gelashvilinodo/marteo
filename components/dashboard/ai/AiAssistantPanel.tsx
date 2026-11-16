@@ -631,6 +631,9 @@ export default function AiAssistantPanel({ userName }: { userName: string }) {
     if (hidden) return null;
 
     if (desktop) {
+        // დახმარების გვერდზე ჩაკეცილი ზოლი ჩატის გაგზავნის ღილაკს ფარავდა.
+        // ტელეფონზე ღილაკი ჰედერშია, ამიტომ იქ ფანჯარა ისევ ხელმისაწვდომია.
+        if (pathname.startsWith("/dashboard/help")) return null;
         return (
             <aside
                 key="desktop"

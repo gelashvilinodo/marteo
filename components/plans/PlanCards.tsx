@@ -9,18 +9,22 @@ import type { PaidTier } from "@/lib/subscription/plans";
 // სამი გეგმის ქარდი. action თითო ქარდის ღილაკს აწყობს (ფასების გვერდზე „დაიწყე“, დაშბორდში „დეტალურად“).
 // compact: გეგმის ფანჯარაში ჩამონათვალი მოკლდება, რომ სამივე ქარდი ერთ ეკრანზე დაეტიოს.
 // inset: დაშბორდში საიდბარის გამო ადგილი ნაკლებია, ამიტომ სამი სვეტი მხოლოდ ფართო ეკრანზე იშლება.
-// carousel: ტელეფონზე ქარდები ჰორიზონტალურად იფურცლება (ფასების გვერდი). yearly: ფასი წლიურად.
-export default function PlanCards({ action, current, focus, compact = false, inset = false, carousel = false, yearly = false }: {
+// carousel: ტელეფონზე ქარდები ჰორიზონტალურად იფურცლება (ფასების გვერდი და გეგმის ფანჯარა); bleed — იხ. PlanCarousel.
+// yearly: ფასი წლიურად.
+export default function PlanCards({ action, current, focus, compact = false, inset = false, carousel = false, bleed, yearly = false }: {
     action: (card: PlanCard) => ReactNode;
     current?: PaidTier | null;
     focus?: PaidTier | null;
     compact?: boolean;
     inset?: boolean;
     carousel?: boolean;
+    bleed?: string;
     yearly?: boolean;
 }) {
     const cards = PLAN_CARDS.map(card => <PlanCardView key={card.tier} card={card} action={action(card)} current={current === card.tier} focused={(focus ?? "PRO") === card.tier} compact={compact} yearly={yearly} />);
-    if (carousel) return <PlanCarousel labels={PLAN_CARDS.map(card => card.name)}>{cards}</PlanCarousel>;
+    // ჯერ გამოკვეთილი გეგმა ჩანს; ფოკუსის გარეშე შუა ქარდი.
+    const start = focus ? Math.max(0, PLAN_CARDS.findIndex(card => card.tier === focus)) : 1;
+    if (carousel) return <PlanCarousel labels={PLAN_CARDS.map(card => card.name)} start={start} bleed={bleed}>{cards}</PlanCarousel>;
     return <div className={`grid items-stretch gap-4 ${compact ? "md:grid-cols-3" : inset ? "md:grid-cols-2 xl:grid-cols-3" : "lg:grid-cols-3"}`}>{cards}</div>;
 }
 

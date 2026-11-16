@@ -32,18 +32,23 @@ export async function POST(request: Request, context: Context) {
         const prisma = createPrismaClient();
         try {
             const thread = await postAdminMessage(prisma, conversationId, admin.id, input.text, input.image);
-            // Business members who enabled notifications get the reply on their device.
-            const members = await prisma.businessMembership.findMany({
-                where: { business: { supportConversation: { id: conversationId } }, userId: { not: admin.id } },
-                select: { userId: true },
+            // Business members who enabled notifications get the reply on their device, whichever
+            // business they have open; the tap switches to this one. A reply from MARTEO stays on screen until tapped.
+            const business = await prisma.business.findFirst({
+                where: { supportConversation: { id: conversationId } },
+                select: { id: true, name: true, memberships: { where: { status: "ACTIVE", userId: { not: admin.id } }, select: { userId: true } } },
             });
-            const pushClient = createPrismaClient();
-            await runInBackground(sendPushToUsers(pushClient, members.map(member => member.userId), {
-                title: "MARTEO მხარდაჭერა",
-                body: text.length > 160 ? `${text.slice(0, 157)}…` : text,
-                url: "/dashboard/help",
-                tag: "support-reply",
-            }).finally(() => pushClient.$disconnect()));
+            if (business?.memberships.length) {
+                const pushClient = createPrismaClient();
+                await runInBackground(sendPushToUsers(pushClient, business.memberships.map(member => member.userId), {
+                    title: `MARTEO მხარდაჭერა · ${business.name}`,
+                    body: text.length > 160 ? `${text.slice(0, 157)}…` : text,
+                    url: "/dashboard/help",
+                    tag: `support-reply-${business.id}`,
+                    businessId: business.id,
+                    requireInteraction: true,
+                }).finally(() => pushClient.$disconnect()));
+            }
             return supportJson({ success: true, thread }, 201);
         } catch (cause) {
             return supportFailure(cause);

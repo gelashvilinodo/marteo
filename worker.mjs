@@ -29,6 +29,19 @@ const entry = {
             return (await response.json()).sent;
         })));
         ctx.waitUntil(runJob(url, 'system-log-prune', () => pruneSystemLog(url)));
+        // Mondays 06:00–08:00 UTC (10:00–12:00 Tbilisi): Marteo AI weekly digest, once per owner and business.
+        // Later hours only retry what failed; the chat id is fixed per week, so nothing is sent twice.
+        const scheduled = new Date(controller.scheduledTime);
+        if (scheduled.getUTCDay() === 1 && scheduled.getUTCHours() >= 6 && scheduled.getUTCHours() <= 8) {
+            ctx.waitUntil(runJob(url, 'ai-weekly-digest', async () => {
+                if (!env.CRON_SECRET) throw new Error('CRON_SECRET is not configured');
+                const response = await entry.fetch(new Request(`${env.APP_URL}/api/cron/ai-weekly-digest`, {
+                    method: 'POST', headers: {authorization: `Bearer ${env.CRON_SECRET}`},
+                }), env, ctx);
+                if (!response.ok) throw new Error(`AI weekly digest HTTP ${response.status}`);
+                return (await response.json()).sent;
+            }));
+        }
         // Once a day, at 06:00 UTC (10:00 Tbilisi): one push per business about orders still not completed 7+ days after creation.
         if (new Date(controller.scheduledTime).getUTCHours() === 6) {
             ctx.waitUntil(runJob(url, 'stale-order-push', async () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { decimalInput } from "@/lib/number-input";
 import { Icon } from "@iconify/react";
 import { expenseCategories } from "@/lib/analytics/expense-categories";
 
@@ -314,7 +315,7 @@ export default function ExpenseManageDialog({
                                     inputMode="decimal"
                                     value={values.amount}
                                     onChange={event =>
-                                        change("amount", event.target.value)
+                                        change("amount", decimalInput(event.target.value))
                                     }
                                     className={inputClass}
                                 />

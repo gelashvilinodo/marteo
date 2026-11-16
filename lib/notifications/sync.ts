@@ -52,6 +52,26 @@ async function deliverCampaigns(tx: Tx, userId: string, now: Date) {
 }
 
 /**
+ * ადმინის შეტყობინება ყველა შესაბამის მომხმარებელს მაშინვე იქმნება (cron-იდან და გაგზავნისას),
+ * რომ push დაშბორდის გახსნას არ დაელოდოს. მხოლოდ ბოლო 3 დღის კამპანიები: ძველი აღარ ეგზავნება
+ * მათ, ვისაც ჯერ არ მიუღია (ისინი აპში მაინც ნახავენ syncNotifications-ით).
+ */
+export async function deliverDueCampaigns(tx: Tx, now = new Date()) {
+    const match = audienceMatch({
+        modes: Prisma.sql`c.modes`, plan: Prisma.sql`c.plan::text`,
+        days: Prisma.sql`c."registeredWithinDays"`, deliverAt: Prisma.sql`c."deliverAt"`,
+    });
+    return tx.$executeRaw`
+        INSERT INTO "Notification" (id, "userId", "businessId", kind, title, body, "actionLabel", "actionUrl", "campaignId", "dedupeKey", "deliverAt", "createdAt")
+        SELECT gen_random_uuid()::text, u.id, NULL, 'ANNOUNCEMENT', c.title, c.body, c."actionLabel", c."actionUrl", c.id,
+            'campaign:' || c.id || ':' || u.id, c."deliverAt", ${now}
+        FROM "NotificationCampaign" c JOIN "User" u ON u.status = 'ACTIVE'
+        WHERE c."canceledAt" IS NULL AND c."deliverAt" <= ${now} AND c."deliverAt" > ${new Date(now.getTime() - 3 * 86_400_000)} AND ${match}
+        ON CONFLICT ("dedupeKey") DO NOTHING
+    `;
+}
+
+/**
  * გეგმის შეხსენებები მფლობელებს (აპში; მეილს და პუშს deliverNoticeChannels აგზავნის):
  * საცდელი სრულდება 2 დღეში, ფასიანი გეგმა იწურება 3 დღეში (გაუქმებულზე — „სრულდება“),
  * და ერთი შეტყობინება დასრულების შემდეგ. businessId = null — ყველა ბიზნესი (საათობრივი cron).

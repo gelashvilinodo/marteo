@@ -8,7 +8,8 @@ import { Children, useEffect, useRef, useState, type ReactNode } from "react";
 const DESKTOP = "(min-width: 1024px)";
 const MAX_TILT = 22;
 
-export default function PlanCarousel({ children, labels, start = 1 }: { children: ReactNode; labels: string[]; start?: number }) {
+// bleed: ქარდები მშობლის padding-ს გასცდება კიდემდე. ზომები cqw-შია (კონტეინერის სიგანე), ამიტომ ფანჯარაშიც სწორად ჯდება.
+export default function PlanCarousel({ children, labels, start = 1, bleed = "-mx-4 sm:-mx-6" }: { children: ReactNode; labels: string[]; start?: number; bleed?: string }) {
     const track = useRef<HTMLDivElement>(null);
     const [active, setActive] = useState(start);
     const slides = Children.toArray(children);
@@ -44,15 +45,25 @@ export default function PlanCarousel({ children, labels, start = 1 }: { children
         const schedule = () => { if (!frame) frame = requestAnimationFrame(paint); };
 
         // პირველად შუა (ან მითითებული) ქარდი ჩანს, რომ ორივე მხარეს მეზობელი მოჩანდეს.
-        const first = el.children[start] as HTMLElement | undefined;
-        if (first && !desktop.matches) el.scrollLeft = first.offsetLeft + first.offsetWidth / 2 - el.clientWidth / 2;
+        // დახურულ <dialog>-ში სიგანე ჯერ 0-ია, ამიტომ ცენტრირება მაშინ ხდება, როცა ზომა პირველად გამოჩნდება.
+        let centered = false;
+        const center = () => {
+            const first = el.children[start] as HTMLElement | undefined;
+            if (centered || !first || !el.clientWidth) return;
+            centered = true;
+            if (!desktop.matches) el.scrollLeft = first.offsetLeft + first.offsetWidth / 2 - el.clientWidth / 2;
+        };
+        center();
         paint();
+        const resize = new ResizeObserver(() => { center(); schedule(); });
+        resize.observe(el);
 
         el.addEventListener("scroll", schedule, { passive: true });
         window.addEventListener("resize", schedule);
         desktop.addEventListener("change", schedule);
         return () => {
             cancelAnimationFrame(frame);
+            resize.disconnect();
             el.removeEventListener("scroll", schedule);
             window.removeEventListener("resize", schedule);
             desktop.removeEventListener("change", schedule);
@@ -72,10 +83,12 @@ export default function PlanCarousel({ children, labels, start = 1 }: { children
                 <span className={`h-2.5 rounded-full transition-all duration-300 ${active === index ? "w-8 bg-accent" : "w-2.5 bg-text-secondary/35 group-hover:bg-text-secondary/60"}`} />
             </button>)}
         </div>
-        <div ref={track} className="-mx-4 flex snap-x snap-mandatory items-stretch gap-2.5 overflow-x-auto overscroll-x-contain px-[12vw] pt-2 sm:px-[22vw] pb-6 [scrollbar-width:none] sm:-mx-6 lg:mx-0 lg:grid lg:snap-none lg:grid-cols-3 lg:gap-4 lg:overflow-visible lg:p-0 [&::-webkit-scrollbar]:hidden">
-            {slides.map((slide, index) => <div key={index} className="flex w-[76vw] shrink-0 snap-center snap-always flex-col will-change-transform *:flex-1 sm:w-[56vw] lg:w-auto">
-                {slide}
-            </div>)}
+        <div className={`@container ${bleed} lg:mx-0`}>
+            <div ref={track} className="flex snap-x snap-mandatory items-stretch gap-2.5 overflow-x-auto overscroll-x-contain px-[12cqw] pt-2 pb-6 [scrollbar-width:none] sm:px-[22cqw] lg:grid lg:snap-none lg:grid-cols-3 lg:gap-4 lg:overflow-visible lg:p-0 [&::-webkit-scrollbar]:hidden">
+                {slides.map((slide, index) => <div key={index} className="flex w-[76cqw] shrink-0 snap-center snap-always flex-col will-change-transform *:flex-1 sm:w-[56cqw] lg:w-auto">
+                    {slide}
+                </div>)}
+            </div>
         </div>
     </div>;
 }

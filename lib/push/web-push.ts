@@ -94,7 +94,12 @@ async function encryptPayload(payload: string, p256dh: string, auth: string) {
     return concat(salt, recordSize, new Uint8Array([localPublic.byteLength]), localPublic, ciphertext);
 }
 
-export type PushMessage = { title: string; body: string; url: string; tag?: string };
+// businessId: clicking opens this business even if another one is active on the device.
+// requireInteraction: the notification stays on screen until tapped (desktop and Android; iPhone ignores it).
+export type PushMessage = { title: string; body: string; url: string; tag?: string; businessId?: string; requireInteraction?: boolean };
+
+// Push services keep an undelivered message while the phone is off or offline; 28 days is the longest they all accept.
+const PUSH_TTL_SECONDS = 28 * 24 * 60 * 60;
 
 async function sendOne(subscription: { endpoint: string; p256dh: string; auth: string }, message: PushMessage) {
     const authorization = await vapidAuthorization(subscription.endpoint);
@@ -105,7 +110,7 @@ async function sendOne(subscription: { endpoint: string; p256dh: string; auth: s
             Authorization: authorization,
             "Content-Encoding": "aes128gcm",
             "Content-Type": "application/octet-stream",
-            TTL: "86400",
+            TTL: String(PUSH_TTL_SECONDS),
             Urgency: "high",
         },
         body: await encryptPayload(JSON.stringify(message), subscription.p256dh, subscription.auth) as BodyInit,
@@ -146,13 +151,14 @@ export async function sendPushToUsers(prisma: PrismaClient, userIds: string[], m
     };
 }
 
-// The platform owner's devices; the sender never notifies themselves.
+// Every platform admin's devices; the sender never notifies themselves. Admin alerts stay on screen until tapped.
 export async function notifyPlatformAdmin(prisma: PrismaClient, message: PushMessage, exceptUserId?: string) {
     // A notification must never fail the request that triggered it.
-    const admin = await prisma.user.findFirst({ where: { isPlatformAdmin: true, status: "ACTIVE" }, select: { id: true } }).catch(() => null);
-    if (!admin || admin.id === exceptUserId) return;
+    const admins = await prisma.user.findMany({ where: { isPlatformAdmin: true, status: "ACTIVE" }, select: { id: true } }).catch(() => []);
+    const userIds = admins.map(admin => admin.id).filter(id => id !== exceptUserId);
+    if (!userIds.length) return;
     const pushClient = createPrismaClient();
-    await runInBackground(sendPushToUsers(pushClient, [admin.id], message).finally(() => pushClient.$disconnect()));
+    await runInBackground(sendPushToUsers(pushClient, userIds, { requireInteraction: true, ...message }).finally(() => pushClient.$disconnect()));
 }
 
 // Keep the HTTP response fast: on Cloudflare the push continues after it.

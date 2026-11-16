@@ -1,6 +1,8 @@
 "use client";
 
+import BankNameInput from "./BankNameInput";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { decimalInput } from "@/lib/number-input";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { Icon } from "@iconify/react";
@@ -43,7 +45,7 @@ export function Status({
     const completionDialog = useRef<HTMLDialogElement>(null);
     const [fullPaymentReceived, setFullPaymentReceived] = useState(false);
     const [completionMethod, setCompletionMethod] = useState<
-        "CASH" | "BANK_TRANSFER" | "CARD"
+        "CASH" | "BANK_TRANSFER" | "CARD" | "COURIER"
     >("CASH");
     const [completionBankName, setCompletionBankName] = useState("");
 
@@ -341,7 +343,7 @@ export function Status({
                                     inputMode="decimal"
                                     value={completionCosts[item.id] ?? ""}
                                     onChange={event => {
-                                        const value = event.target.value;
+                                        const value = decimalInput(event.target.value);
 
                                         setCompletionCosts(current => ({
                                             ...current,
@@ -397,6 +399,7 @@ export function Status({
                                 <option value="CASH">ნაღდი</option>
                                 <option value="BANK_TRANSFER">გადარიცხვა</option>
                                 <option value="CARD">ბარათი</option>
+                                <option value="COURIER">კურიერთან გადახდა</option>
                             </select>
                         </label>
 
@@ -405,11 +408,9 @@ export function Status({
                                 <span className="mb-1 block text-text-secondary">
                                     ბანკი - არასავალდებულო
                                 </span>
-                                <input
+                                <BankNameInput
                                     value={completionBankName}
-                                    onChange={event =>
-                                        setCompletionBankName(event.target.value)
-                                    }
+                                    onChange={setCompletionBankName}
                                     className="h-11 w-full rounded-xl border border-border bg-background px-3 text-[16px]"
                                 />
                             </label>

@@ -32,7 +32,7 @@ export type ValidatedOrder = {
     status: "PROCESSING" | "SHIPPED" | "COMPLETED" | "CANCELED";
     courierFee: Prisma.Decimal;
     paidAmount: Prisma.Decimal;
-    paymentMethod: "CASH" | "BANK_TRANSFER" | "CARD" | "UNKNOWN";
+    paymentMethod: "CASH" | "BANK_TRANSFER" | "CARD" | "COURIER" | "UNKNOWN";
     bankName: string;
     items: OrderProduct[];
 };
@@ -154,6 +154,7 @@ export function validateOrder(raw: unknown, mode: "create" | "edit" = "create"):
         data.paymentMethod !== "CASH" &&
         data.paymentMethod !== "BANK_TRANSFER" &&
         data.paymentMethod !== "CARD" &&
+        data.paymentMethod !== "COURIER" &&
         !(mode === "edit" && data.paymentMethod === "UNKNOWN")
     ) {
         fail("გადახდის მეთოდი არასწორია.");

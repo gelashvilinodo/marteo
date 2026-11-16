@@ -36,6 +36,7 @@ const methodLabels: Record<string, string> = {
     CASH: "ნაღდი",
     BANK_TRANSFER: "გადარიცხვა",
     CARD: "ბარათი",
+    COURIER: "კურიერთან",
 };
 
 const historyLabels: Record<string, string> = {

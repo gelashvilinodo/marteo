@@ -32,7 +32,7 @@ async function post(request: Request) {
         if (result.notifyUserId) {
             const pushClient = createPrismaClient();
             runInBackground(sendPushToUsers(pushClient, [result.notifyUserId], {
-                title: "გუნდს ახალი წევრი შეემატა", body: result.message, url: "/dashboard/business-settings", tag: "team",
+                title: "გუნდს ახალი წევრი შეემატა", body: result.message, url: "/dashboard/business-settings", tag: "team", businessId: result.businessId,
             }).finally(() => pushClient.$disconnect()));
         }
 

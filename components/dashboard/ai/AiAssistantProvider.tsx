@@ -230,14 +230,9 @@ const FILE_STEPS = [
     "ვამოწმებ ციფრებს და ჯამებს",
 ];
 const FAILED_REPLY = "მართეო AI დროებით მიუწვდომელია. სცადეთ ხელახლა.";
-const DIGEST_KEY = "marteo.ai.digest-week";
-
-// კვირის დასაწყისი (ორშაბათი) თბილისის დროით.
-function currentWeek() {
-    const local = new Date(Date.now() + 4 * 60 * 60 * 1000);
-    const weekday = (local.getUTCDay() + 6) % 7;
-    return new Date(local.getTime() - weekday * 86_400_000).toISOString().slice(0, 10);
-}
+// ბოლოს ნანახი კვირის მიმოხილვის ჩათის id.
+const DIGEST_KEY = "marteo.ai.digest-seen";
+const WEEKLY_DIGEST_TITLE = "კვირის მიმოხილვა";
 
 function readStorage(key: string) {
     try {
@@ -345,48 +340,6 @@ export function AiAssistantProvider({ children, enabled = true }: { children: Re
 
         return () => window.clearTimeout(timer);
     }, [enabled, conversationId, messages, pending]);
-
-    // კვირის პირველ შემოსვლაზე AI თავად ამზადებს მოკლე მიმოხილვას.
-    useEffect(() => {
-        const week = currentWeek();
-        if (!enabled || readStorage(DIGEST_KEY) === week) return;
-
-        const controller = new AbortController();
-        const timer = window.setTimeout(() => {
-            fetch("/api/ai/digest", { cache: "no-store", credentials: "same-origin", signal: controller.signal })
-                .then((response) => response.ok ? response.json() as Promise<{ digest?: { text: string; cards: AiCardGroup[] } | null }> : null)
-                .then((body) => {
-                    if (!body) return;
-                    writeStorage(DIGEST_KEY, week);
-                    if (!body.digest) return;
-
-                    // მიმოხილვა ცალკე ჩათად ინახება; თუ ახლა ცარიელი ჩათია, პირდაპირ ის იხსნება.
-                    const id = crypto.randomUUID();
-                    const message: AiMessage = {
-                        id: crypto.randomUUID(),
-                        role: "assistant",
-                        text: body.digest.text,
-                        cards: body.digest.cards.length ? body.digest.cards : undefined,
-                    };
-                    const title = "კვირის მიმოხილვა";
-                    return saveConversationRemote(id, storable([message]), title).then((saved) => {
-                        dispatch({ type: "saved", summary: { id, title: saved.title ?? title, preview: null, updatedAt: saved.updatedAt } });
-                        if (stateRef.current.messages.length === 0) {
-                            const loaded = [message];
-                            lastSaved.current = loaded;
-                            dispatch({ type: "load", id, title, messages: loaded });
-                        }
-                        dispatch({ type: "notify", message: null });
-                    });
-                })
-                .catch(() => undefined);
-        }, 4000);
-
-        return () => {
-            window.clearTimeout(timer);
-            controller.abort();
-        };
-    }, [enabled]);
 
     const reply = useCallback((text: string, failed = false, cards?: AiCardGroup[]) => {
         dispatch({
@@ -519,6 +472,31 @@ export function AiAssistantProvider({ children, enabled = true }: { children: Re
             dispatch({ type: "historyError", message: error instanceof Error ? error.message : "ჩათი ვერ ჩაიტვირთა." });
         }
     }, [stopRequest]);
+
+    // კვირის მიმოხილვას სერვერი ორშაბათს ქმნის და პუშით აგზავნის (/dashboard?ai=<id>):
+    // ბმულიდან პანელი პირდაპირ ამ ჩათზე იხსნება.
+    useEffect(() => {
+        if (!enabled) return;
+        const url = new URL(window.location.href);
+        const id = url.searchParams.get("ai");
+        if (!id) return;
+        url.searchParams.delete("ai");
+        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+        writeStorage(DIGEST_KEY, id);
+        dispatch({ type: "open" });
+        void openConversation(id);
+    }, [enabled, openConversation]);
+
+    // ჯერ უნახავი მიმოხილვა (ბოლო 7 დღის) დახურულ პანელზე წერტილით ჩანს.
+    const { history } = state;
+    useEffect(() => {
+        if (!enabled || !history) return;
+        const digest = history.find((row) => row.title === WEEKLY_DIGEST_TITLE);
+        if (!digest || Date.now() - new Date(digest.updatedAt).getTime() > 7 * 86_400_000) return;
+        if (readStorage(DIGEST_KEY) === digest.id) return;
+        writeStorage(DIGEST_KEY, digest.id);
+        dispatch({ type: "notify", message: null });
+    }, [enabled, history]);
 
     const deleteConversation = useCallback(async (id: string) => {
         if (stateRef.current.conversationId === id) stopRequest();

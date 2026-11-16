@@ -1,12 +1,14 @@
 "use client";
 
+import BankNameInput from "./BankNameInput";
 import { useEffect, useRef, useState } from "react";
+import { decimalInput } from "@/lib/number-input";
 import {
     OrderActionError,
     sendOrderAction,
 } from "@/lib/orders/order-actions-client";
 
-type Method = "UNKNOWN" | "CASH" | "BANK_TRANSFER" | "CARD";
+type Method = "UNKNOWN" | "CASH" | "BANK_TRANSFER" | "CARD" | "COURIER";
 
 export default function OrderPaymentResolution({
     orderId,
@@ -152,7 +154,7 @@ export default function OrderPaymentResolution({
                         <input
                             inputMode="decimal"
                             value={amount}
-                            onChange={event => setAmount(event.target.value)}
+                            onChange={event => setAmount(decimalInput(event.target.value))}
                             className={field}
                         />
                     </label>
@@ -181,7 +183,8 @@ export default function OrderPaymentResolution({
                                     value === "UNKNOWN" ||
                                     value === "CASH" ||
                                     value === "BANK_TRANSFER" ||
-                                    value === "CARD"
+                                    value === "CARD" ||
+                                    value === "COURIER"
                                 ) setMethod(value);
                             }}
                             className={field}
@@ -190,17 +193,14 @@ export default function OrderPaymentResolution({
                             <option value="CASH">ნაღდი</option>
                             <option value="BANK_TRANSFER">გადარიცხვა</option>
                             <option value="CARD">ბარათი</option>
+                            <option value="COURIER">კურიერთან გადახდა</option>
                         </select>
                     </label>
 
                     {method === "BANK_TRANSFER" && (
                         <label className="block space-y-1">
                             <span className="text-sm">ბანკი - არასავალდებულო</span>
-                            <input
-                                value={bankName}
-                                onChange={event => setBankName(event.target.value)}
-                                className={field}
-                            />
+                            <BankNameInput value={bankName} onChange={setBankName} className={field} />
                         </label>
                     )}
 

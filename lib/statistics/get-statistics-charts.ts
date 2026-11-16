@@ -12,7 +12,7 @@ type ChartSnapshot = {
         count: number;
     }>;
     payments: Array<{
-        method: "CASH" | "CARD" | "BANK_TRANSFER" | "UNKNOWN";
+        method: "CASH" | "CARD" | "BANK_TRANSFER" | "COURIER" | "UNKNOWN";
         amount: string;
     }>;
 };
@@ -115,7 +115,8 @@ export async function getStatisticsCharts(
                     ('CASH', 1),
                     ('CARD', 2),
                     ('BANK_TRANSFER', 3),
-                    ('UNKNOWN', 4)
+                    ('COURIER', 4),
+                    ('UNKNOWN', 5)
             ) AS available(method, position)
         )
         SELECT JSONB_BUILD_OBJECT(

@@ -1,6 +1,7 @@
 "use client";
 
 import { Icon } from "@iconify/react";
+import { decimalInput } from "@/lib/number-input";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ConfirmDialog from "./ConfirmDialog";
@@ -78,7 +79,7 @@ export default function PaymentsPanel({ businessId, current, initial }: { busine
                 </select>
             </label>
             <label className="text-xs text-text-secondary">თანხა (₾)
-                <input inputMode="decimal" value={amount} onChange={event => { setNotice(""); setAmount(event.target.value); }} placeholder="მაგ.: 49.90" maxLength={9} className={`mt-1 ${field}`} />
+                <input inputMode="decimal" value={amount} onChange={event => { setNotice(""); setAmount(decimalInput(event.target.value)); }} placeholder="მაგ.: 49.90" maxLength={9} className={`mt-1 ${field}`} />
             </label>
             <label className="text-xs text-text-secondary">მეთოდი
                 <select value={method} onChange={event => setMethod(event.target.value)} className={`mt-1 ${field}`}>

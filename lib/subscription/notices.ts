@@ -5,6 +5,7 @@ import { getAppOrigin, readServerSetting } from "@/lib/auth/send-password-reset-
 import { createPrismaClient } from "@/lib/prisma";
 import { runInBackground, sendPushToUsers } from "@/lib/push/web-push";
 import { escapeHtml } from "@/lib/security/html";
+import { deliverDueCampaigns } from "@/lib/notifications/sync";
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -12,6 +13,8 @@ type Db = PrismaClient | Prisma.TransactionClient;
 // სათაური და ტექსტი ყველა არხზე ერთია; მეილს მხოლოდ მისალმება, ღილაკი და ხელმოწერა ემატება.
 export const CHANNEL_KINDS = ["TRIAL_ENDING", "RENEWAL_REMINDER", "PAYMENT_CONFIRMED", "PAYMENT_FAILED", "PLAN_CHANGED", "LIMIT_WARNING", "SMS_LOW"] as const;
 export type NoticeKind = typeof CHANNEL_KINDS[number];
+// ადმინის შეტყობინება მხოლოდ პუშით (მეილის გარეშე) და რიგში პირველია.
+const PUSH_ONLY_KINDS = ["ANNOUNCEMENT"] as const;
 
 export type OwnerNotice = {
     businessId: string;
@@ -64,17 +67,19 @@ async function sendEmail(to: string, subject: string, html: string) {
  * ჯერ ნიშნავს, მერე აგზავნის: ერთდროული გაშვება ერთსა და იმავეს ორჯერ ვერ გაგზავნის.
  */
 export async function deliverNoticeChannels(prisma: PrismaClient, businessId?: string, now = new Date()) {
-    const claimed = await prisma.$queryRaw<{ id: string; userId: string; title: string; body: string; actionLabel: string | null; actionUrl: string | null }[]>`
+    const claimed = await prisma.$queryRaw<{ id: string; userId: string; businessId: string | null; kind: string; title: string; body: string; actionLabel: string | null; actionUrl: string | null }[]>`
         UPDATE "Notification" n SET "channelsSentAt" = ${now}
         WHERE n.id IN (
             SELECT id FROM "Notification"
             WHERE "channelsSentAt" IS NULL AND "deletedAt" IS NULL AND "deliverAt" <= ${now}
+              -- აპში უკვე წაკითხულ ადმინის შეტყობინებას პუში აღარ სჭირდება.
+              AND ("readAt" IS NULL OR NOT kind::text = ANY(${[...PUSH_ONLY_KINDS]}))
               AND "createdAt" > ${new Date(now.getTime() - 3 * 86_400_000)}
-              AND kind::text = ANY(${[...CHANNEL_KINDS]})
+              AND kind::text = ANY(${[...CHANNEL_KINDS, ...PUSH_ONLY_KINDS]})
               ${businessId ? Prisma.sql`AND "businessId" = ${businessId}` : Prisma.empty}
-            ORDER BY "createdAt" LIMIT 200 FOR UPDATE SKIP LOCKED
+            ORDER BY (kind::text = ANY(${[...PUSH_ONLY_KINDS]})) DESC, "createdAt" LIMIT 200 FOR UPDATE SKIP LOCKED
         )
-        RETURNING n.id, n."userId", n.title, n.body, n."actionLabel", n."actionUrl"
+        RETURNING n.id, n."userId", n."businessId", n.kind::text AS kind, n.title, n.body, n."actionLabel", n."actionUrl"
     `;
     if (!claimed.length) return 0;
     const users = new Map((await prisma.user.findMany({
@@ -84,9 +89,18 @@ export async function deliverNoticeChannels(prisma: PrismaClient, businessId?: s
     let origin = "";
     try { origin = getAppOrigin(); } catch { /* without APP_URL the e-mail button points to the site root */ }
     for (const row of claimed) {
+        const pushOnly = (PUSH_ONLY_KINDS as readonly string[]).includes(row.kind);
+        if (pushOnly) {
+            // ადმინის შეტყობინება: ეკრანზე რჩება, სანამ არ დააჭერენ; გარე ბმული აპის შეტყობინებების გვერდს ხსნის.
+            const url = row.actionUrl?.startsWith("/") && !row.actionUrl.startsWith("//") ? row.actionUrl : "/dashboard/notifications";
+            await sendPushToUsers(prisma, [row.userId], { title: row.title, body: row.body, url, tag: `notice-${row.id}`, requireInteraction: true })
+                .catch(() => console.error("Notice push failed"));
+            continue;
+        }
         const path = row.actionUrl ?? "/dashboard/billing";
-        await sendPushToUsers(prisma, [row.userId], { title: row.title, body: row.body, url: path, tag: "billing" })
-            .catch(() => console.error("Notice push failed"));
+        await sendPushToUsers(prisma, [row.userId], {
+            title: row.title, body: row.body, url: path, tag: "billing", ...row.businessId ? { businessId: row.businessId } : {},
+        }).catch(() => console.error("Notice push failed"));
         const user = users.get(row.userId);
         if (user) {
             await sendEmail(user.email, row.title, emailHtml(user.firstName, row.title, row.body, row.actionLabel ?? "გახსნა", `${origin}${path}`))
@@ -94,6 +108,17 @@ export async function deliverNoticeChannels(prisma: PrismaClient, businessId?: s
         }
     }
     return claimed.length;
+}
+
+// ადმინის შეტყობინება, რომლის დროც უკვე დადგა, მაშინვე ყველას ეგზავნება; დაგეგმილს საათობრივი cron აგზავნის.
+export function queueCampaignPush() {
+    const prisma = createPrismaClient();
+    return runInBackground((async () => {
+        await deliverDueCampaigns(prisma);
+        for (let batch = 0; batch < 5; batch++) {
+            if (await deliverNoticeChannels(prisma) < 200) break;
+        }
+    })().finally(() => prisma.$disconnect()));
 }
 
 // მოვლენის შემდეგ (გადახდა, გეგმის შეცვლა, ლიმიტი) არხები მაშინვე იგზავნება; ჩავარდნილს cron აგზავნის.

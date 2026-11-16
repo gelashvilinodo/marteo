@@ -84,7 +84,7 @@ export default function PlanUpgradeDialog({ request, plan, isOwner, onClose }: {
             </div>
             {isOwner && <>
                 <div className="mt-5">
-                    <PlanCards compact current={plan.locked ? null : plan.tier === "TRIAL" ? null : plan.tier} focus={focus}
+                    <PlanCards compact carousel bleed="-mx-5 sm:-mx-6" current={plan.locked ? null : plan.tier === "TRIAL" ? null : plan.tier} focus={focus}
                         action={card => <Link href={`/dashboard/plans?plan=${card.tier.toLowerCase()}`} onClick={() => ref.current?.close()}
                             className={planButtonClass(card.tier, (focus ?? "PRO") === card.tier)}>
                             დეტალურად<Icon icon="solar:arrow-right-linear" className="h-4 w-4" aria-hidden="true" />

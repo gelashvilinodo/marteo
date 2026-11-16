@@ -1,5 +1,6 @@
 "use client";
 import { refreshAnalyticsAfterMutation } from "@/lib/analytics/refresh-analytics-client";
+import { decimalInput } from "@/lib/number-input";
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -344,7 +345,7 @@ export default function NewExpenseButton({
                                     inputMode="decimal"
                                     value={draft.amount}
                                     onChange={event =>
-                                        patch("amount", event.target.value)
+                                        patch("amount", decimalInput(event.target.value))
                                     }
                                     placeholder="0.00"
                                     className={fieldClass}

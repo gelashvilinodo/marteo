@@ -8,6 +8,7 @@ const methods = {
     UNKNOWN: { label: "მეთოდი უცნობია", color: "#94a3b8" },
     CASH: { label: "ნაღდი", color: "#16c45b" },
     CARD: { label: "ბარათი", color: "#598bed" },
+    COURIER: { label: "კურიერთან", color: "#f59e0b" },
     BANK_TRANSFER: { label: "გადარიცხვა", color: "#a78bfa" },
 };
 

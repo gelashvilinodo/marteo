@@ -21,12 +21,12 @@ export type DeliveryZone = "TBILISI" | "REGION";
 export const deliveryZoneLabel: Record<DeliveryZone, string> = { TBILISI: "თბილისი", REGION: "რეგიონი" };
 export type OrderFormDraft = {
     recipientPhone: string; recipientFirstName: string; recipientLastName: string; deliveryZone: DeliveryZone | null; shippingAddress: string; notes: string;
-    courierFee: string; paidAmount: string; paymentMethod: "CASH" | "BANK_TRANSFER" | "CARD" | "UNKNOWN";
+    courierFee: string; paidAmount: string; paymentMethod: "CASH" | "BANK_TRANSFER" | "CARD" | "COURIER" | "UNKNOWN";
     bankName: string; status: "PROCESSING" | "COMPLETED"; items: OrderFormItem[];
 };
 export type PaidMode = "none" | "full" | "courier" | "custom";
 export function emptyOrderDraft(): OrderFormDraft {
-    return { recipientPhone: "", recipientFirstName: "", recipientLastName: "", deliveryZone: "TBILISI", shippingAddress: "", notes: "", courierFee: "0", paidAmount: "0", paymentMethod: "CASH", bankName: "", status: "PROCESSING", items: [] };
+    return { recipientPhone: "", recipientFirstName: "", recipientLastName: "", deliveryZone: "TBILISI", shippingAddress: "", notes: "", courierFee: "", paidAmount: "", paymentMethod: "CASH", bankName: "", status: "PROCESSING", items: [] };
 }
 export function manualOrderItem(): OrderFormItem {
     return { key: crypto.randomUUID(), source: "MANUAL", inventoryItemId: null, name: "", description: "", color: "", size: "", imageUrl: null, condition: "GOOD", quantity: "1", unitPrice: "", unitCost: "" };
@@ -109,7 +109,7 @@ export function orderCreatePayload(
             quantity: Number(item.quantity.replace(",",".")), unitPrice: item.unitPrice.trim().replace(",", "."), unitCost: item.source==="MATERIAL"?"":item.unitCost.trim().replace(",", ".")
         };
     });
-    if (moneyCents(draft.courierFee) === null) throw new Error("მიუთითეთ კურიერის საფასური.");
+    if (draft.courierFee.trim() && moneyCents(draft.courierFee) === null) throw new Error("მიუთითეთ კურიერის საფასური.");
     if (paidMode === "custom" && moneyCents(draft.paidAmount) === null) throw new Error("მიუთითეთ გადახდილი თანხა.");
     const totals = orderFormTotals(draft, paidMode);
     if (mode === "create" && totals.paid > totals.total) {

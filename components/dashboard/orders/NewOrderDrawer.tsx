@@ -1,6 +1,8 @@
 "use client";
 
+import BankNameInput from "./BankNameInput";
 import { refreshOrdersAfterMutation } from "@/lib/orders/refresh-orders-client";
+import { decimalInput } from "@/lib/number-input";
 
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -84,7 +86,6 @@ export default function NewOrderDrawer() {
     const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const autoFilled = useRef<{ phone: string; firstName: string; lastName: string; address: string } | null>(null);
     const formId = useId();
-    const headingId = useId();
     const blocked =
         saving ||
         Boolean(pending) ||
@@ -517,7 +518,7 @@ export default function NewOrderDrawer() {
 
     return <>
         {saved && !isOpen && <div role="status" className="fixed bottom-5 right-4 z-50 flex max-w-[calc(100%_-_2rem)] items-center gap-3 rounded-2xl border border-success/30 bg-surface p-3 text-sm text-text-primary shadow-xl"><Icon icon="solar:check-circle-linear" className="h-6 w-6 shrink-0 text-success" /><span>შეკვეთა {saved.number !== null ? `#${String(saved.number).padStart(4, "0")}` : ""} შენახულია.</span><OrderInvoiceButton orderId={saved.id} /><button type="button" onClick={() => setSaved(null)} aria-label="შეტყობინების დახურვა" className="p-2"><Icon icon="solar:close-circle-linear" className="h-5 w-5" /></button></div>}
-        <dialog ref={dialog} onCancel={event => { event.preventDefault(); event.stopPropagation(); requestClose(); }} aria-labelledby={headingId} data-closing={closing} onKeyDown={event => {
+        <dialog ref={dialog} onCancel={event => { event.preventDefault(); event.stopPropagation(); requestClose(); }} aria-label={editingOrder ? "შეკვეთის რედაქტირება" : "ახალი შეკვეთა"} data-closing={closing} onKeyDown={event => {
             if (event.key === "Escape") {
                 event.preventDefault();
                 event.stopPropagation();
@@ -531,26 +532,6 @@ export default function NewOrderDrawer() {
                 @keyframes orderDrawerExit { to { transform:translateY(100%); opacity:.8; } }
                 @media (prefers-reduced-motion:reduce) { .order-create-dialog[open], .order-create-dialog[data-closing="true"] { animation:none; } }
             `}</style>
-            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface px-4 py-3 sm:px-6">
-                <button type="button" onClick={requestClose} disabled={saving} aria-label="დახურვა" className="flex h-10 w-10 items-center justify-center rounded-xl border border-border disabled:opacity-40"><Icon icon="solar:close-circle-linear" className="h-6 w-6" /></button>
-                <h2
-                    id={headingId}
-                    className="flex items-center gap-2 text-lg font-semibold sm:text-xl"
-                >
-                    <Icon
-                        icon={
-                            editingOrder
-                                ? "solar:pen-new-square-linear"
-                                : "solar:clipboard-add-linear"
-                        }
-                        className="h-6 w-6 text-success"
-                    />
-
-                    {editingOrder
-                        ? "შეკვეთის რედაქტირება"
-                        : "ახალი შეკვეთა"}
-                </h2>
-            </header>
             <form id={formId} onSubmit={submit} className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-5 lg:p-4 xl:p-5">
                 <fieldset disabled={blocked} className="min-w-0 space-y-3 disabled:opacity-70 lg:flex lg:min-h-full lg:flex-col lg:gap-3 lg:space-y-0">
                     <section className="shrink-0 rounded-2xl border border-border bg-surface p-3 sm:p-4">
@@ -667,7 +648,9 @@ export default function NewOrderDrawer() {
                                             className="h-10 w-10 text-accent/60"
                                         />
                                         <p className="text-sm">
-                                            აირჩიეთ მარაგიდან ან დაამატეთ ხელით
+                                            {stockAllowed
+                                                ? "აირჩიეთ მარაგიდან ან დაამატეთ ხელით"
+                                                : "დაამატეთ პროდუქტი ხელით"}
                                         </p>
                                     </div>
                                 )}
@@ -697,12 +680,12 @@ export default function NewOrderDrawer() {
                                 </div>
                             )}
                             <div className="space-y-3">
-                                <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2"><Field label="კურიერის საფასური · ₾"><input inputMode="decimal" value={draft.courierFee} readOnly={productsLocked} onChange={event => patch({ courierFee: event.target.value })} className={input} /></Field><Field label="გადახდა"><select disabled={Boolean(editingOrder)} value={paidMode} onChange={event => { setPaidMode(event.target.value as PaidMode); setDirty(true); }} className={input}><option value="none">გადახდა არ არის</option><option value="full">სრულად გადახდილი</option><option value="courier">მხოლოდ კურიერი</option><option value="custom">
+                                <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2"><Field label="კურიერის საფასური · ₾"><input inputMode="decimal" value={draft.courierFee} readOnly={productsLocked} onChange={event => patch({ courierFee: decimalInput(event.target.value) })} placeholder="0" className={input} /></Field><Field label="გადახდა"><select disabled={Boolean(editingOrder)} value={paidMode} onChange={event => { setPaidMode(event.target.value as PaidMode); setDirty(true); }} className={input}><option value="none">გადახდა არ არის</option><option value="full">სრულად გადახდილი</option><option value="courier">მხოლოდ კურიერი</option><option value="custom">
                                     {editingOrder
                                         ? "მიღებული თანხის მითითება"
                                         : "ნაწილობრივ"}
                                 </option></select></Field></div>
-                                {paidMode !== "none" && <><Field label="გადახდილი თანხა · ₾"><input inputMode="decimal" readOnly={paidMode !== "custom"} value={paidMode === "custom" ? draft.paidAmount : moneyText(totals.paid)} onChange={event => patch({ paidAmount: event.target.value })} className={input} /></Field><Field label="გადახდის მეთოდი"><select value={draft.paymentMethod} onChange={event => patch({ paymentMethod: event.target.value as OrderFormDraft["paymentMethod"] })} className={input}><option value="CASH">ნაღდი</option><option value="BANK_TRANSFER">გადარიცხვა</option><option value="CARD">ბარათი</option>{draft.paymentMethod === "UNKNOWN" && <option value="UNKNOWN">მეთოდი უცნობია</option>}</select></Field>{draft.paymentMethod === "BANK_TRANSFER" && <Field label="ბანკი"><input value={draft.bankName} onChange={event => patch({ bankName: event.target.value })} className={input} /></Field>}</>}
+                                {paidMode !== "none" && <><Field label="გადახდილი თანხა · ₾"><input inputMode="decimal" readOnly={paidMode !== "custom"} value={paidMode === "custom" ? draft.paidAmount : moneyText(totals.paid)} onChange={event => patch({ paidAmount: decimalInput(event.target.value) })} placeholder="0" className={input} /></Field><Field label="გადახდის მეთოდი"><select value={draft.paymentMethod} onChange={event => patch({ paymentMethod: event.target.value as OrderFormDraft["paymentMethod"] })} className={input}><option value="CASH">ნაღდი</option><option value="BANK_TRANSFER">გადარიცხვა</option><option value="CARD">ბარათი</option><option value="COURIER">კურიერთან გადახდა</option>{draft.paymentMethod === "UNKNOWN" && <option value="UNKNOWN">მეთოდი უცნობია</option>}</select></Field>{draft.paymentMethod === "BANK_TRANSFER" && <Field label="ბანკი"><BankNameInput value={draft.bankName} onChange={bankName => patch({ bankName })} className={input} /></Field>}</>}
                             </div>
                             <div className="mt-4 rounded-xl bg-background p-3"><h4 className="mb-2 flex items-center gap-2 text-xs font-semibold text-text-secondary"><Icon icon="solar:document-text-linear" className="h-4 w-4" />შეჯამება</h4><dl className="space-y-2 text-xs lg:text-sm">{[["პროდუქტები", totals.products], ["კურიერი", totals.courier], ["გადახდილი", totals.paid], [
                                 totals.remaining < 0n

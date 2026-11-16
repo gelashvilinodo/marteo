@@ -1,15 +1,16 @@
 "use client";
 
+import BankNameInput from "./BankNameInput";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { refreshOrdersAfterMutation } from "@/lib/orders/refresh-orders-client";
 import type { BulkCompleteResult } from "@/lib/orders/bulk-order-status";
 
-type Method = "CASH" | "BANK_TRANSFER" | "CARD";
+type Method = "CASH" | "BANK_TRANSFER" | "CARD" | "COURIER";
 type PaymentRow = BulkCompleteResult["needsPayment"][number];
 
-const methods: Record<Method, string> = { CASH: "ნაღდი", BANK_TRANSFER: "გადარიცხვა", CARD: "ბარათი" };
+const methods: Record<Method, string> = { CASH: "ნაღდი", BANK_TRANSFER: "გადარიცხვა", CARD: "ბარათი", COURIER: "კურიერთან" };
 const control = "h-10 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-[16px] lg:text-sm";
 
 async function send(body: Record<string, unknown>) {
@@ -198,7 +199,7 @@ export default function OrderBulkStatusButtons({
                     {needsBank && (
                         <label className="block text-sm">
                             <span className="mb-1 block text-text-secondary">ბანკი - არასავალდებულო</span>
-                            <input value={bankName} onChange={event => setBankName(event.target.value)} className={control} />
+                            <BankNameInput value={bankName} onChange={setBankName} className={control} />
                         </label>
                     )}
                 </div>

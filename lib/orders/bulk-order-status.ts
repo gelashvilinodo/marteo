@@ -19,7 +19,7 @@ function fail(message: string, status = 400): never {
 
 const MAX_ORDERS = 200;
 
-type Method = "CASH" | "BANK_TRANSFER" | "CARD";
+type Method = "CASH" | "BANK_TRANSFER" | "CARD" | "COURIER";
 type BulkPayment = { orderId: string; remaining: string; method: Method; bankName: string };
 
 export type BulkStatusOrder = { id: string; label: string; customer: string };
@@ -46,7 +46,7 @@ function payments(value: unknown): Map<string, BulkPayment> {
         if (
             typeof entry.orderId !== "string" ||
             typeof entry.remaining !== "string" ||
-            (entry.method !== "CASH" && entry.method !== "BANK_TRANSFER" && entry.method !== "CARD") ||
+            (entry.method !== "CASH" && entry.method !== "BANK_TRANSFER" && entry.method !== "CARD" && entry.method !== "COURIER") ||
             (entry.bankName !== undefined && typeof entry.bankName !== "string") ||
             result.has(entry.orderId)
         ) {
