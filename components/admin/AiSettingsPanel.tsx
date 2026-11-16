@@ -63,7 +63,7 @@ export default function AiSettingsPanel({ businessId, initial }: { businessId: s
         </div>
         <p className="mt-2 text-xs text-text-secondary">ბოლოს გამოიყენა: {ai.lastUsedAt ? formatSupportDate(ai.lastUsedAt) : "არასდროს"} · {ai.plan} პაკეტის ლიმიტი {ai.planLimit}</p>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2.5">
                 <span className="text-sm text-text-primary">AI გამორთული
                     <span className="block text-[11px] text-text-secondary">ბიზნესი AI-ს ვერ გამოიყენებს.</span></span>

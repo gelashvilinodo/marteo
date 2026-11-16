@@ -62,7 +62,7 @@ export default function UserActions(props: UserActionsProps) {
         </p>}
         {entries.length === 0
             ? <p className="text-sm text-text-secondary">{props.protectedAccount ? "პლატფორმის ადმინის ანგარიშზე მოქმედებები შეზღუდულია." : "ამ ანგარიშზე საჭირო მოქმედება არ არის."}</p>
-            : <div className="grid gap-2 sm:grid-cols-2">
+            : <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {entries.map(([action, item]) => <button key={action} type="button" onClick={() => { setError(""); setNotice(""); setPending(action); }}
                     className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm font-medium transition ${item.danger ? "border-danger/30 text-danger hover:bg-danger/5" : "border-border text-text-primary hover:border-accent/40 hover:bg-background"}`}>
                     <Icon icon={item.icon} className="h-5 w-5 shrink-0" aria-hidden="true" />{item.label}

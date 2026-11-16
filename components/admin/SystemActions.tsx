@@ -94,7 +94,7 @@ export function BannerManager({ banners }: { banners: SystemBannerView[] }) {
             <input value={message} onChange={event => setMessage(event.target.value)} maxLength={200} placeholder="მაგ.: ხვალ 02:00-03:00 ტექნიკური სამუშაოები, სისტემა შეიძლება შეფერხდეს."
                 className={`mt-1 ${field}`} />
         </label>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <label className="text-xs text-text-secondary">ფერი
                 <select value={tone} onChange={event => setTone(event.target.value as "INFO" | "WARNING")} className={`mt-1 ${field}`}>
                     <option value="WARNING">გაფრთხილება (ყვითელი)</option>

@@ -47,10 +47,10 @@ export default function RegistrationsChart({ days }: { days: Day[] }) {
             {[0, 7, 14, 21, days.length - 1].map(index => <span key={index}>{label(days[index].day)}</span>)}
         </div>
 
-        <table className="sr-only">
+        <div className="sr-only"><table>
             <caption>ახალი მომხმარებლები და ბიზნესები დღეების მიხედვით</caption>
             <thead><tr><th scope="col">დღე</th><th scope="col">მომხმარებელი</th><th scope="col">ბიზნესი</th></tr></thead>
             <tbody>{days.map(day => <tr key={day.day}><td>{label(day.day)}</td><td>{day.users}</td><td>{day.businesses}</td></tr>)}</tbody>
-        </table>
+        </table></div>
     </figure>;
 }

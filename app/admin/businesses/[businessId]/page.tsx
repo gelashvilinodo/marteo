@@ -101,7 +101,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
             <Panel title="SMS მომხმარებელთან"><SmsPackPanel businessId={business.id} initial={sms} /></Panel>
         </div>
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
             <div className="flex flex-col gap-4">
                 <Panel title="შიდა შენიშვნები"><NotesPanel businessId={business.id} initial={notes} /></Panel>
                 <Panel title="აქტივობა">

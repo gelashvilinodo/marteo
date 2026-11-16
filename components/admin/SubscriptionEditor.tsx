@@ -90,7 +90,7 @@ export default function SubscriptionEditor({ businessId, current }: { businessId
         {notice && <p role="status" className="mb-3 flex items-start gap-2 rounded-xl bg-success/10 px-3 py-2 text-sm text-success">
             <Icon icon="solar:check-circle-bold" className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />{notice}
         </p>}
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <label className="text-xs text-text-secondary">პაკეტი
                 <select value={plan} onChange={event => { setNotice(""); setPlan(event.target.value); }} className={`mt-1 ${field}`}>
                     {PLAN_OPTIONS.map(option => <option key={option} value={option}>{PLAN_OPTION_LABELS[option]}</option>)}

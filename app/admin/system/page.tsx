@@ -48,7 +48,7 @@ export default async function AdminSystemPage({ searchParams }: { searchParams: 
             </div>
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
             {data.jobs.map(job => {
                 const state = JOB_STATES[job.state];
                 return <section key={job.name} className="rounded-2xl border border-border bg-surface p-4">

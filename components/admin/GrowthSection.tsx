@@ -14,7 +14,7 @@ function percent(part: number, whole: number) {
 }
 
 export function Card({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
-    return <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+    return <section className="min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-text-primary">{title}</h2>
             {action}
@@ -49,7 +49,7 @@ export default function GrowthSection({ stats, range }: { stats: GrowthStats; ra
     return <div className="mt-8">
         <h2 className="text-lg font-semibold text-text-primary">ზრდა</h2>
 
-        <div className="mt-3 grid gap-4 lg:grid-cols-2">
+        <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card title="რეგისტრაციები, ბოლო 30 დღე"><RegistrationsChart days={stats.days} /></Card>
 
             <Card title="ძაბრი: სად იკარგებიან მომხმარებლები" action={<nav aria-label="პერიოდი" className="flex gap-1 rounded-xl bg-background p-1">
@@ -68,7 +68,7 @@ export default function GrowthSection({ stats, range }: { stats: GrowthStats; ra
             </Card>
         </div>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <Card title="აქტიური ბიზნესები">
                 <div className="grid grid-cols-2 gap-3">
                     {[{ label: "ბოლო 7 დღე", active: activity.active7, ordered: activity.ordered7 }, { label: "ბოლო 30 დღე", active: activity.active30, ordered: activity.ordered30 }].map(item =>

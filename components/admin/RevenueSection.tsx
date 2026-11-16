@@ -9,7 +9,7 @@ const monthLabel = (key: string) => MONTHS[Number(key.slice(5, 7)) - 1];
 const money = (value: number, digits = 0) => `${value.toLocaleString("ka-GE", { minimumFractionDigits: digits, maximumFractionDigits: digits })} ₾`;
 
 function Tile({ label, value, note, icon, tone }: { label: string; value: string; note?: string; icon: string; tone: string }) {
-    return <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
+    return <div className="min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">
         <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone}`}><Icon icon={icon} className="h-5 w-5" aria-hidden="true" /></span>
         <p className="mt-4 text-2xl font-semibold text-text-primary sm:text-3xl">{value}</p>
         <h3 className="mt-1 text-xs text-text-secondary sm:text-sm">{label}</h3>
@@ -39,24 +39,24 @@ export default function RevenueSection({ stats }: { stats: RevenueStats }) {
             <Tile label="სულ შემოსული" value={money(stats.total)} icon="solar:safe-square-bold-duotone" tone="bg-amber-500/12 text-amber-500" />
         </div>
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
             <Card title="შემოსავალი თვეების მიხედვით">
                 <figure className="m-0">
                     <figcaption className="text-sm text-text-secondary">ბოლო 12 თვე: <b className="font-semibold text-text-primary">{money(yearTotal)}</b></figcaption>
                     <div className="mt-4 flex h-40 items-end gap-1.5" aria-hidden="true">
                         {stats.months.map(row => <div key={row.month} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1" title={`${monthLabel(row.month)}: ${money(row.amount, 2)} · ${row.payments} გადახდა`}>
-                            {row.amount > 0 && <span className="text-[9px] text-text-secondary">{Math.round(row.amount)}</span>}
+                            {row.amount > 0 && <span className="hidden text-[9px] text-text-secondary sm:block">{Math.round(row.amount)}</span>}
                             <span className={`block w-full rounded-t-[4px] ${row.amount ? "bg-success" : "bg-border/60"}`} style={{ height: row.amount ? `max(${(row.amount / max) * 85}%, 3px)` : 2 }} />
                         </div>)}
                     </div>
                     <div className="mt-1.5 flex gap-1.5 text-[10px] text-text-secondary" aria-hidden="true">
                         {stats.months.map(row => <span key={row.month} className="min-w-0 flex-1 text-center">{monthLabel(row.month)}</span>)}
                     </div>
-                    <table className="sr-only">
+                    <div className="sr-only"><table>
                         <caption>შემოსავალი თვეების მიხედვით</caption>
                         <thead><tr><th scope="col">თვე</th><th scope="col">თანხა</th><th scope="col">გადახდები</th></tr></thead>
                         <tbody>{stats.months.map(row => <tr key={row.month}><td>{row.month}</td><td>{money(row.amount, 2)}</td><td>{row.payments}</td></tr>)}</tbody>
-                    </table>
+                    </table></div>
                 </figure>
             </Card>
 

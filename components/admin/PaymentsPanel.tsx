@@ -67,7 +67,7 @@ export default function PaymentsPanel({ businessId, current, initial }: { busine
         {notice && <p role="status" className="mb-3 flex items-start gap-2 rounded-xl bg-success/10 px-3 py-2 text-sm text-success">
             <Icon icon="solar:check-circle-bold" className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />{notice}
         </p>}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <label className="text-xs text-text-secondary">პაკეტი
                 <select value={plan} onChange={event => { setNotice(""); setPlan(event.target.value as PaidPlan); }} className={`mt-1 ${field}`}>
                     {PAID_PLANS.map(option => <option key={option} value={option}>{option}</option>)}

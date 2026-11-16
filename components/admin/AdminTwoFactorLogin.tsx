@@ -87,7 +87,7 @@ export default function AdminTwoFactorLogin({ mode, email }: { mode: Mode; email
                 <p className="mt-2 text-sm leading-6 text-text-secondary">
                     {backup ? "შეიყვანეთ ერთ-ერთი სარეზერვო კოდი. გამოყენების შემდეგ ის აღარ იმუშავებს." : "გახსენით კოდის აპი (Google Authenticator, Apple Passwords) და შეიყვანეთ MARTEO Admin-ის 6-ნიშნა კოდი."}
                 </p>
-                <fieldset disabled={busy} className="mt-6 grid gap-4">
+                <fieldset disabled={busy} className="mt-6 grid grid-cols-1 gap-4">
                     <div>
                         <label htmlFor="admin-code" className={authLabelClass}>{backup ? "სარეზერვო კოდი" : "კოდი აპიდან"}</label>
                         <CodeInput id="admin-code" value={code} onChange={setCode} backup={backup} />
@@ -106,7 +106,7 @@ export default function AdminTwoFactorLogin({ mode, email }: { mode: Mode; email
                 <p className="mt-2 text-sm leading-6 text-text-secondary">
                     ეს ერთხელ კეთდება. ტელეფონზე დაგჭირდებათ კოდის აპი: Google Authenticator ან iPhone-ზე ჩაშენებული „Passwords“. ჯერ დაადასტურეთ პაროლი ({email}).
                 </p>
-                <fieldset disabled={busy} className="mt-6 grid gap-4">
+                <fieldset disabled={busy} className="mt-6 grid grid-cols-1 gap-4">
                     <div>
                         <label htmlFor="admin-password" className={authLabelClass}>პაროლი</label>
                         <input id="admin-password" type="password" autoComplete="current-password" autoFocus value={password} onChange={event => setPassword(event.target.value)} className={authInputClass(false)} />
@@ -125,7 +125,7 @@ export default function AdminTwoFactorLogin({ mode, email }: { mode: Mode; email
                     <p className="select-all break-all font-mono text-sm tracking-wider text-text-primary">{setup.secret}</p>
                 </div>
                 <a href={setup.uri} className="mt-2 block text-center text-sm text-accent hover:underline">ამ ტელეფონზე აპში გახსნა</a>
-                <fieldset disabled={busy} className="mt-5 grid gap-4">
+                <fieldset disabled={busy} className="mt-5 grid grid-cols-1 gap-4">
                     <div>
                         <label htmlFor="admin-first-code" className={authLabelClass}>აპში გამოჩენილი 6-ნიშნა კოდი</label>
                         <CodeInput id="admin-first-code" value={code} onChange={setCode} backup={false} />

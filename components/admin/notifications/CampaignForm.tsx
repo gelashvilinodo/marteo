@@ -77,7 +77,7 @@ export default function CampaignForm({ id, initial }: { id?: string; initial: Ca
         }
     }
 
-    return <form onSubmit={submit} className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    return <form onSubmit={submit} className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="space-y-4 rounded-2xl border border-border bg-surface p-5">
             <h2 className="text-base font-semibold text-text-primary">შინაარსი</h2>
             <label className="block text-sm text-text-secondary">სათაური
@@ -86,7 +86,7 @@ export default function CampaignForm({ id, initial }: { id?: string; initial: Ca
             <label className="block text-sm text-text-secondary">ტექსტი
                 <textarea required maxLength={2000} rows={6} value={values.body} onChange={e => set("body", e.target.value)} className={inputClass} />
             </label>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <label className="block text-sm text-text-secondary">ღილაკის ტექსტი (არასავალდებულო)
                     <input maxLength={40} value={values.actionLabel} onChange={e => set("actionLabel", e.target.value)} placeholder="მაგ. ნახვა" className={inputClass} />
                 </label>
@@ -165,7 +165,7 @@ export function WelcomeTemplateForm({ initial }: { initial: { title: string; bod
         <label className="block text-sm text-text-secondary">ტექსტი
             <textarea required maxLength={2000} rows={7} value={values.body} onChange={e => set("body", e.target.value)} className={inputClass} />
         </label>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="block text-sm text-text-secondary">ღილაკის ტექსტი
                 <input maxLength={40} value={values.actionLabel} onChange={e => set("actionLabel", e.target.value)} className={inputClass} />
             </label>

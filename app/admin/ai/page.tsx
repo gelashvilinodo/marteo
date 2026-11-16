@@ -44,7 +44,7 @@ export default async function AdminAiPage() {
             <Tile label="ტოკენები (შემავალი / გამავალი)" value={`${tokens(month.inputTokens)} / ${tokens(month.outputTokens)}`} icon="solar:cpu-bolt-bold-duotone" tone="bg-amber-500/12 text-amber-500" />
         </div>
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
             <Card title="ხარჯი დღეების მიხედვით, ბოლო 30 დღე">
                 <figure className="m-0">
                     <figcaption className="text-sm text-text-secondary">სულ <b className="font-semibold text-text-primary">{usd(total30)}</b></figcaption>
@@ -56,11 +56,11 @@ export default async function AdminAiPage() {
                     <div className="mt-1.5 flex justify-between text-[10px] text-text-secondary" aria-hidden="true">
                         {[0, 10, 20, stats.days.length - 1].map(index => <span key={index}>{dayLabel(stats.days[index].day)}</span>)}
                     </div>
-                    <table className="sr-only">
+                    <div className="sr-only"><table>
                         <caption>AI ხარჯი დღეების მიხედვით</caption>
                         <thead><tr><th scope="col">დღე</th><th scope="col">ხარჯი</th><th scope="col">კითხვები</th></tr></thead>
                         <tbody>{stats.days.map(day => <tr key={day.day}><td>{day.day}</td><td>{usd(day.cost)}</td><td>{day.requests}</td></tr>)}</tbody>
-                    </table>
+                    </table></div>
                 </figure>
             </Card>
             <Card title="რაზე იხარჯება">

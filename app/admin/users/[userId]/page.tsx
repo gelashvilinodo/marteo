@@ -60,7 +60,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ user
             </div>
         </header>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
             <Panel title="კონტაქტი და დადასტურება">
                 <InfoRow icon="solar:letter-linear" label="ელფოსტა" href={`mailto:${user.email}`}>{user.email}</InfoRow>
                 <InfoRow icon="solar:shield-check-linear" label="ელფოსტის დადასტურება"><Verified at={user.emailVerifiedAt} /></InfoRow>
