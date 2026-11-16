@@ -11,7 +11,7 @@ import { invoiceImageTimeout, waitForInvoiceImages } from "@/lib/orders/wait-for
 
 const EMPTY_IDS: string[] = [];
 type Entry = { id: string; invoice: OrderInvoiceData };
-export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selectionKey }: { ids?: string[]; mode?: "new" | "pending"; selectionKey?: string }) {
+export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selectionKey, view = "" }: { ids?: string[]; mode?: "new" | "pending"; selectionKey?: string; view?: string }) {
     const [entries, setEntries] = useState<Entry[]>([]);
     const [paper, setPaper] = useState<InvoicePaper>("a4");
     const [error, setError] = useState("");
@@ -148,7 +148,8 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                     let cursor: string | null = null;
                     let snapshot = "";
                     do {
-                        const params = new URLSearchParams({ mode });
+                        const params = new URLSearchParams(view);
+                        params.set("mode", mode);
                         if (snapshot) params.set("snapshot", snapshot);
                         if (cursor) params.set("cursor", cursor);
                         const response = await fetch(`/api/orders/invoices/pending?${params}`, { cache: "no-store", signal: controller.signal });
@@ -174,7 +175,7 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
         }
         void load();
         return () => { active = false; controller.abort(); };
-    }, [ids, mode, selectionKey]);
+    }, [ids, mode, selectionKey, view]);
     useEffect(() => {
         const afterPrint = () => setPrompt(true);
         window.addEventListener("afterprint", afterPrint);

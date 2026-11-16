@@ -27,10 +27,13 @@ export default function OrderBulkStatusButtons({
     processing,
     shipped,
     selection,
+    view,
     onOpenOrder,
 }: {
     processing: number;
     shipped: number;
+    // მონიშვნის გარეშე: შეკვეთების გვერდის მიმდინარე ფილტრი; რაოდენობებიც მისგან მოდის.
+    view?: Record<string, string>;
     // მონიშვნის რეჟიმში ღილაკები მხოლოდ მონიშნულ შეკვეთებზე მოქმედებს და ყოველთვის ჩანს;
     // აქტიურია მხოლოდ მაშინ, როცა ყველა მონიშნულს შესაბამისი სტატუსი აქვს.
     selection?: { ids: string[]; canShip: boolean; canComplete: boolean };
@@ -70,7 +73,7 @@ export default function OrderBulkStatusButtons({
         }
     }
 
-    const scope = selection ? { orderIds: selection.ids } : {};
+    const scope = selection ? { orderIds: selection.ids } : view ? { view } : {};
 
     async function ship() {
         const count = selection ? selection.ids.length : processing;

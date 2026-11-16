@@ -533,6 +533,8 @@ model Order {
   invoiceVersion            Int           @default(1)
   lastPrintedInvoiceVersion Int?
   invoicePrintedAt          DateTime?
+  /// 7+ დღის დაუსრულებელ შეკვეთაზე პუში ერთხელ იგზავნება: გაგზავნისას ივსება.
+  staleNotifiedAt           DateTime?
   businessId                String
   customerId                String?
   recipientPhone            String

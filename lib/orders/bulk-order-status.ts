@@ -9,6 +9,9 @@ import { orderWithStock } from "./order-stock";
 import { completeOrder, completionBalance } from "./complete-order";
 import { OrderValidationError } from "./validate-order";
 import { queueShippedSms } from "@/lib/sms/order-sms";
+import { resolveOrdersView } from "./orders-view-filter";
+import { createPgReader } from "@/lib/database/pg-reader";
+import { sql } from "@prisma/client-runtime-utils";
 
 function fail(message: string, status = 400): never {
     throw new OrderValidationError(message, status);
@@ -85,7 +88,11 @@ export async function bulkOrderStatus(raw: unknown) {
         : {};
     if (body.action !== "ship" && body.action !== "complete") fail("მოქმედება არასწორია.", 422);
     const confirmed = payments(body.payments);
-    const ids = orderIds(body.orderIds);
+    let ids = orderIds(body.orderIds);
+    // მონიშვნის გარეშე მოქმედება მხოლოდ შეკვეთების გვერდზე გაფილტრულ შეკვეთებს ეხება.
+    const view = !ids && typeof body.view === "object" && body.view !== null && !Array.isArray(body.view)
+        ? Object.fromEntries(Object.entries(body.view as Record<string, unknown>).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
+        : null;
 
     const prisma = createPrismaClient();
     try {
@@ -95,6 +102,17 @@ export async function bulkOrderStatus(raw: unknown) {
             fail("ამ მოქმედების უფლება არ გაქვთ.", 403);
         }
         const businessId = membership.businessId;
+        if (view) {
+            // ფილტრი იგივე წამკითხველით, რითაც სია: სტატუსს ქვემოთ ტრანზაქცია ხელახლა ამოწმებს.
+            const reader = createPgReader();
+            try {
+                const { where } = await resolveOrdersView(reader, businessId, view);
+                const status = body.action === "ship" ? "PROCESSING" : "SHIPPED";
+                const rows = await reader.withReadTransaction(tx => tx.$queryRaw<{ id: string }[]>(sql`SELECT o.id FROM "Order" o WHERE ${where} AND o.status::text = ${status}`));
+                ids = rows.map(row => row.id);
+            } finally { await reader.$disconnect(); }
+            if (!ids.length) return body.action === "ship" ? { shipped: 0 } : { completed: [], needsPayment: [], blocked: [] } satisfies BulkCompleteResult;
+        }
 
         if (body.action === "ship") {
             const shippedIds = await prisma.$transaction(async tx => {

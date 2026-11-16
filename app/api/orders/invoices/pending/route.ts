@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { withInvoiceReader } from "@/lib/orders/read-invoice-order";
 import { orderJson, orderError } from "@/lib/orders/order-http";
 import { OrderValidationError } from "@/lib/orders/order-validation-error";
+import { NEW_INVOICE_SQL, UPDATED_INVOICE_SQL, resolveOrdersView } from "@/lib/orders/orders-view-filter";
 
 export async function GET(request: Request) {
     const accessDenied = await apiAccessDenied("ORDERS", "view"); if (accessDenied) return accessDenied;
@@ -24,16 +25,17 @@ export async function GET(request: Request) {
                     if (!Number.isFinite(cursor.createdAt.getTime())) throw new Error();
                 } catch { throw new OrderValidationError("ბეჭდვის რიგის კურსორი არასწორია."); }
             }
-            // იმპორტირებული ისტორიული შეკვეთები ახალი ინვოისების რიგში არ შედის.
-            // წაშლის მოთხოვნის მქონე შეკვეთები ბრუნდება, ამიტომ მათი ინვოისი აღარ იბეჭდება.
-            const pending = onlyNew ? sql`"lastPrintedInvoiceVersion" IS NULL AND NOT "imported"` : sql`(("lastPrintedInvoiceVersion" IS NULL AND NOT "imported") OR "lastPrintedInvoiceVersion" <> "invoiceVersion")`;
-            const after = cursor ? sql`AND ("createdAt", "id") > (${cursor.createdAt}, ${cursor.id})` : empty;
+            // scope=view: მხოლოდ შეკვეთების გვერდზე გაფილტრული შეკვეთები (პერიოდი, სტატუსი, გადახდა, ძებნა).
+            const view = params.get("scope") === "view"
+                ? (await resolveOrdersView(reader, businessId, Object.fromEntries(params.entries()))).where
+                : sql`o."businessId"=${businessId} AND o."deletedAt" IS NULL`;
+            const pending = onlyNew ? NEW_INVOICE_SQL : sql`((${NEW_INVOICE_SQL}) OR (${UPDATED_INVOICE_SQL}))`;
+            const after = cursor ? sql`AND (o."createdAt", o."id") > (${cursor.createdAt}, ${cursor.id})` : empty;
             // 50 მხოლოდ გადაცემის გვერდის ზომაა; შემდეგი კურსორით რიგი ბოლომდე იკითხება.
             const rows = await reader.$queryRaw<Array<{ id: string; createdAt: Date }>>(sql`
-                SELECT "id", "createdAt" FROM "Order"
-                WHERE "businessId"=${businessId} AND "deletedAt" IS NULL AND "deleteRequestedAt" IS NULL
-                  AND "status" <> 'CANCELED' AND "createdAt" <= ${snapshot} AND ${pending} ${after}
-                ORDER BY "createdAt", "id" LIMIT 51
+                SELECT o."id", o."createdAt" FROM "Order" o
+                WHERE ${view} AND o."createdAt" <= ${snapshot} AND ${pending} ${after}
+                ORDER BY o."createdAt", o."id" LIMIT 51
             `);
             const entries = rows.slice(0, 50);
             const last = entries.at(-1);

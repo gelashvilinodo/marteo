@@ -29,6 +29,17 @@ const entry = {
             return (await response.json()).sent;
         })));
         ctx.waitUntil(runJob(url, 'system-log-prune', () => pruneSystemLog(url)));
+        // Once a day, at 06:00 UTC (10:00 Tbilisi): one push per business about orders still not completed 7+ days after creation.
+        if (new Date(controller.scheduledTime).getUTCHours() === 6) {
+            ctx.waitUntil(runJob(url, 'stale-order-push', async () => {
+                if (!env.CRON_SECRET) throw new Error('CRON_SECRET is not configured');
+                const response = await entry.fetch(new Request(`${env.APP_URL}/api/cron/stale-orders`, {
+                    method: 'POST', headers: {authorization: `Bearer ${env.CRON_SECRET}`},
+                }), env, ctx);
+                if (!response.ok) throw new Error(`Stale order push HTTP ${response.status}`);
+                return (await response.json()).sent;
+            }));
+        }
         // Once a day, at 03:00 UTC: photos in storage that no database row mentions.
         if (new Date(controller.scheduledTime).getUTCHours() === 3) {
             ctx.waitUntil(runJob(url, 'unused-image-cleanup', () => sweepUnusedImages(url, env.SUPABASE_SECRET_KEY)));
