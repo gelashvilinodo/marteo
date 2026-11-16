@@ -25,12 +25,13 @@ export async function GET(request: Request) {
                 } catch { throw new OrderValidationError("ბეჭდვის რიგის კურსორი არასწორია."); }
             }
             // იმპორტირებული ისტორიული შეკვეთები ახალი ინვოისების რიგში არ შედის.
+            // წაშლის მოთხოვნის მქონე შეკვეთები ბრუნდება, ამიტომ მათი ინვოისი აღარ იბეჭდება.
             const pending = onlyNew ? sql`"lastPrintedInvoiceVersion" IS NULL AND NOT "imported"` : sql`(("lastPrintedInvoiceVersion" IS NULL AND NOT "imported") OR "lastPrintedInvoiceVersion" <> "invoiceVersion")`;
             const after = cursor ? sql`AND ("createdAt", "id") > (${cursor.createdAt}, ${cursor.id})` : empty;
             // 50 მხოლოდ გადაცემის გვერდის ზომაა; შემდეგი კურსორით რიგი ბოლომდე იკითხება.
             const rows = await reader.$queryRaw<Array<{ id: string; createdAt: Date }>>(sql`
                 SELECT "id", "createdAt" FROM "Order"
-                WHERE "businessId"=${businessId} AND "deletedAt" IS NULL
+                WHERE "businessId"=${businessId} AND "deletedAt" IS NULL AND "deleteRequestedAt" IS NULL
                   AND "status" <> 'CANCELED' AND "createdAt" <= ${snapshot} AND ${pending} ${after}
                 ORDER BY "createdAt", "id" LIMIT 51
             `);

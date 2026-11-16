@@ -671,6 +671,26 @@ export default function OrdersView({
                         )}
                     </div>
 
+                    {/* რაოდენობები მთელ ბიზნესს ითვლის, სია კი მხოლოდ არჩეულ პერიოდს აჩვენებს. */}
+                    {!selectionMode &&
+                        data.period !== "all" &&
+                        (data.invoiceCounts.new > 0 ||
+                            data.invoiceCounts.updated > 0 ||
+                            data.queueCounts.processing > 0 ||
+                            data.queueCounts.shipped > 0) && (
+                            <p className="mt-2 text-xs text-text-secondary">
+                                ბეჭდვისა და სტატუსის ღილაკები ყველა პერიოდის შეკვეთებს ეხება.
+                                <button
+                                    type="button"
+                                    disabled={pending}
+                                    onClick={() => startTransition(() => navigate(data.filter, data.query, 1, { period: "all" }))}
+                                    className="ml-1 underline"
+                                >
+                                    ყველა პერიოდის ჩვენება
+                                </button>
+                            </p>
+                        )}
+
                     {/* {selectionMode && (
                         <p className="mt-2 text-xs text-text-secondary">
                             მონიშნეთ სასურველი შეკვეთები. სათაურის ჩეკბოქსი

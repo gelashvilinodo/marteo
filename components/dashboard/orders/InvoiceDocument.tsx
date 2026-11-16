@@ -208,7 +208,7 @@ export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: Or
         `}</style>
         <header className="invoice-top">
             <div className="invoice-brand">
-                {invoice.business.logoUrl && <Image src={invoice.business.logoUrl} alt="მაღაზიის ლოგო" width={56} height={56} unoptimized className="h-14 w-14 shrink-0 object-contain" />}
+                {invoice.business.logoUrl && <Image src={invoice.business.logoUrl} alt="მაღაზიის ლოგო" width={56} height={56} unoptimized loading="eager" className="h-14 w-14 shrink-0 object-contain" />}
                 <div><h2>{invoice.business.name}</h2><p>{[invoice.business.phone, invoice.business.email, invoice.business.address].filter(Boolean).join(" · ")}</p></div>
             </div>
             <div className="invoice-heading"><h3>ინვოისი{invoice.number !== null ? ` #${String(invoice.number).padStart(4, "0")}` : ""}</h3><p>{date(invoice.createdAt)}</p></div>
@@ -337,7 +337,7 @@ export default function InvoiceDocument({ invoice, paper = "a4" }: { invoice: Or
             </table>
         )}
         <div className="invoice-bottom">
-            {invoice.qrDataUrl && <div className="invoice-qr"><Image src={invoice.qrDataUrl} alt="შეკვეთის გვერდის QR კოდი" width={128} height={128} unoptimized /><p>შეკვეთის დეტალების ნახვა</p></div>}
+            {invoice.qrDataUrl && <div className="invoice-qr"><Image src={invoice.qrDataUrl} alt="შეკვეთის გვერდის QR კოდი" width={128} height={128} unoptimized loading="eager" /><p>შეკვეთის დეტალების ნახვა</p></div>}
             <dl className="invoice-totals">
                 {[
                     ["პროდუქტები", invoice.productsTotal],

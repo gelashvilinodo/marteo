@@ -6,7 +6,7 @@ import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
 import InvoiceDocument, { type InvoicePaper, isInvoicePaper } from "./InvoiceDocument";
 import InvoicePreview from "./InvoicePreview";
 import { prepareInvoiceQr } from "@/lib/orders/prepare-invoice-qr-client";
-import { waitForInvoiceImage } from "@/lib/orders/wait-for-invoice-image";
+import { invoiceImageTimeout, waitForInvoiceImages } from "@/lib/orders/wait-for-invoice-image";
 import { formatTbilisiDateTime } from "@/lib/tbilisi-date-time";
 
 export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: string; initialPaper: InvoicePaper }) {
@@ -26,6 +26,7 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
         version: number;
     } | null>(null);
     const [preparationError, setPreparationError] = useState("");
+    const [skippedImages, setSkippedImages] = useState(0);
 
     const printReady =
         Boolean(invoice) &&
@@ -35,6 +36,7 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
     useEffect(() => {
         setPrepared(null);
         setPreparationError("");
+        setSkippedImages(0);
 
         const element = sheet.current;
         if (!invoice || !element) return;
@@ -50,22 +52,23 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
             try {
                 const images = Array.from(element.querySelectorAll("img"));
 
-                await Promise.race([
+                const [, failedImages] = await Promise.race([
                     Promise.all([
                         document.fonts.ready,
-                        ...images.map(waitForInvoiceImage),
+                        waitForInvoiceImages(images),
                     ]),
                     new Promise<never>((_, reject) => {
                         timeout = setTimeout(
                             () => reject(new Error(
                                 "ინვოისის მომზადების დრო ამოიწურა. განაახლეთ გვერდი და სცადეთ ხელახლა.",
                             )),
-                            15000,
+                            invoiceImageTimeout(images.length) + 5000,
                         );
                     }),
                 ]);
 
                 if (!active) return;
+                setSkippedImages(failedImages);
 
                 if (paper === "58mm" || paper === "80mm") {
                     const rectangle = element.getBoundingClientRect();
@@ -359,6 +362,11 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
                         >
                             ხელახლა ცდა
                         </button>
+                    </span>
+                )}
+                {printReady && skippedImages > 0 && (
+                    <span role="status" className="text-sm text-warning">
+                        {skippedImages} სურათი ვერ ჩაიტვირთა და ბეჭდვისას გამოტოვდება.
                     </span>
                 )}
                 <button

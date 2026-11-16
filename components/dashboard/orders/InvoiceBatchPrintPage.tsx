@@ -7,7 +7,7 @@ import InvoiceDocument, { isInvoicePaper, type InvoicePaper } from "./InvoiceDoc
 import { loadInvoiceBatches } from "@/lib/orders/load-invoice-batches";
 import { prepareInvoiceQr } from "@/lib/orders/prepare-invoice-qr-client";
 import InvoicePreview from "./InvoicePreview";
-import { waitForInvoiceImage } from "@/lib/orders/wait-for-invoice-image";
+import { invoiceImageTimeout, waitForInvoiceImages } from "@/lib/orders/wait-for-invoice-image";
 
 const EMPTY_IDS: string[] = [];
 type Entry = { id: string; invoice: OrderInvoiceData };
@@ -30,6 +30,7 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
     } | null>(null);
 
     const [preparationError, setPreparationError] = useState("");
+    const [skippedImages, setSkippedImages] = useState(0);
 
     const printReady =
         ready &&
@@ -40,6 +41,7 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
     useEffect(() => {
         setPrepared(null);
         setPreparationError("");
+        setSkippedImages(0);
 
         const element = sheets.current;
         if (!ready || entries.length === 0 || !element) return;
@@ -49,23 +51,23 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
 
         async function prepare() {
             try {
-                await Promise.race([
+                const images = Array.from(element!.querySelectorAll("img"));
+                const [, failedImages] = await Promise.race([
                     Promise.all([
                         document.fonts.ready,
-                        ...Array.from(
-                            element!.querySelectorAll("img"),
-                        ).map(waitForInvoiceImage),
+                        waitForInvoiceImages(images),
                     ]),
                     new Promise<never>((_, reject) => {
                         timeout = setTimeout(() => {
                             reject(new Error(
                                 "ინვოისების მომზადების დრო ამოიწურა. განაახლეთ გვერდი და სცადეთ ხელახლა.",
                             ));
-                        }, 15000);
+                        }, invoiceImageTimeout(images.length) + 5000);
                     }),
                 ]);
 
                 if (!active) return;
+                setSkippedImages(failedImages);
 
                 if (paper === "58mm" || paper === "80mm") {
                     const contentWidth = paper === "80mm" ? 74 : 52;
@@ -440,6 +442,18 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
             {preparationError && (
                 <p role="alert" className="text-sm text-danger">
                     {preparationError}
+                    <button
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        className="ml-2 underline"
+                    >
+                        ხელახლა ცდა
+                    </button>
+                </p>
+            )}
+            {printReady && skippedImages > 0 && (
+                <p role="status" className="text-sm text-warning">
+                    {skippedImages} სურათი ვერ ჩაიტვირთა და ბეჭდვისას გამოტოვდება.
                 </p>
             )}
             {error && <p role="alert" className="text-sm text-danger">{error} {!ready && <button onClick={() => window.location.reload()} className="underline">ხელახლა ჩატვირთვა</button>}</p>}
