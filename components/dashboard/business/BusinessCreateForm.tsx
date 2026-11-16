@@ -5,7 +5,7 @@ import BusinessModeChoice from "@/components/dashboard/business/BusinessModeChoi
 import type { BusinessMode } from "@/lib/business/business-mode";
 import { useState } from "react";
 import { Icon } from "@iconify/react";
-import { prepareAccountPhoto } from "@/lib/images/prepare-account-photo";
+import { prepareBusinessLogo } from "@/lib/images/prepare-business-logo";
 
 import {
     authCardClass,
@@ -76,9 +76,9 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
         setPreparingLogo(true);
 
         try {
-            // Any photo format (iPhone HEIC included) is converted and shrunk
-            // in the browser before it is uploaded.
-            const prepared = await prepareAccountPhoto(file);
+            // Logos keep full quality (Marteo Market). HEIC/DNG or oversized
+            // photos are converted in the browser at high quality.
+            const prepared = await prepareBusinessLogo(file);
 
             setLogoFile(prepared);
             setLogoPreview(URL.createObjectURL(prepared));

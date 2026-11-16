@@ -17,7 +17,7 @@ import {
     type BusinessSettingsData,
 } from "@/lib/business/business-settings";
 
-import { prepareAccountPhoto } from "@/lib/images/prepare-account-photo";
+import { prepareBusinessLogo } from "@/lib/images/prepare-business-logo";
 
 type ApiResponse = {
     success?: boolean;
@@ -202,7 +202,7 @@ export default function BusinessSettingsForm({
         try {
             setNotice("ფოტო მუშავდება…");
 
-            const preparedFile = await prepareAccountPhoto(
+            const preparedFile = await prepareBusinessLogo(
                 file,
                 current.signal,
             );
