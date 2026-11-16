@@ -1,4 +1,4 @@
-import { reserveDelivery } from "@/lib/security/delivery-limit";
+import { reserveEmail, sendTracked } from "@/lib/email/email-log";
 import { devDeliveryToConsole, logDevDelivery } from "@/lib/dev/dev-delivery";
 import "server-only";
 
@@ -27,7 +27,7 @@ export async function sendEmailChangeCode({
         timeZone: "Asia/Tbilisi",
     }).format(expiresAt);
 
-    await reserveDelivery("email", to.trim().toLowerCase());
+    await reserveEmail("email-change", to);
 
     if (devDeliveryToConsole()) {
         logDevDelivery("email", to, `email change code=${code}`);
@@ -36,7 +36,7 @@ export async function sendEmailChangeCode({
 
     const resend = new Resend(apiKey);
 
-    const { error } = await resend.emails.send({
+    const { error } = await sendTracked("email-change", to, () => resend.emails.send({
         from,
         to: [to],
         subject: "MARTEO - ელფოსტის შეცვლის დადასტურება",
@@ -57,7 +57,7 @@ export async function sendEmailChangeCode({
                 <p>თუ ელფოსტის შეცვლა არ მოგითხოვიათ, უგულებელყავით ეს წერილი.</p>
             </div>
         `,
-    });
+    }));
 
     if (error) {
         throw new Error("Email change delivery failed");

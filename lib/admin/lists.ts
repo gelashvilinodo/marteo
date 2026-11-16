@@ -242,3 +242,79 @@ export async function getAdminPayments(page: number, filters: AdminPaymentFilter
         });
     } finally { await db.$disconnect(); }
 }
+
+export type AdminBankFilters = {
+    q: string;
+    status: "" | "PENDING" | "STUCK" | "COMPLETED" | "REJECTED" | "REFUNDED";
+    kind: "" | "CHECKOUT" | "RENEWAL";
+    period: "" | typeof PERIODS[number] | "365";
+};
+
+export function parseBankFilters(params: Params): AdminBankFilters {
+    return {
+        q: one(params, "q").slice(0, 100),
+        status: pick(one(params, "status"), ["PENDING", "STUCK", "COMPLETED", "REJECTED", "REFUNDED"] as const),
+        kind: pick(one(params, "kind"), ["CHECKOUT", "RENEWAL"] as const),
+        period: pick(one(params, "period"), [...PERIODS, "365"] as const),
+    };
+}
+
+// ბარათის მცდელობა, რომელსაც ბანკი 30 წუთზე მეტ ხანს არ პასუხობს.
+const STUCK_INTERVAL_MS = 30 * 60_000;
+// pg ლოკალურად Date-ს ლოკალური ზონით აგზავნის; სვეტები UTC-შია, ამიტომ ISO ტექსტს ვაგზავნით.
+const utc = (date: Date) => date.toISOString();
+
+function bankWhere(filters: AdminBankFilters): Sql {
+    const clauses: Sql[] = [sql`TRUE`];
+    if (filters.q) clauses.push(sql`(b.name ILIKE ${likePattern(filters.q)} OR p."cardMask" ILIKE ${likePattern(filters.q)})`);
+    if (filters.kind) clauses.push(sql`p.kind::text = ${filters.kind}`);
+    if (filters.period) clauses.push(sql`p."createdAt" >= ${utc(since(filters.period))}::timestamp`);
+    if (filters.status === "STUCK") clauses.push(sql`p.status = 'PENDING' AND p."createdAt" < ${utc(new Date(Date.now() - STUCK_INTERVAL_MS))}::timestamp`);
+    else if (filters.status === "REFUNDED") clauses.push(sql`p."refundedAt" IS NOT NULL`);
+    else if (filters.status === "COMPLETED") clauses.push(sql`p.status = 'COMPLETED' AND p."refundedAt" IS NULL`);
+    else if (filters.status) clauses.push(sql`p.status::text = ${filters.status}`);
+    return join(clauses, " AND ");
+}
+
+export type AdminBankRow = {
+    id: string; businessId: string | null; businessName: string | null; kind: string; status: string; plan: string; interval: string;
+    amount: number; bankStatus: string | null; cardMask: string | null; refundedAt: Date | null; createdAt: Date;
+};
+
+export async function getAdminBankAttempts(page: number, filters: AdminBankFilters) {
+    if (!await getAdminUser()) throw new AdminAccessError();
+    const db = createPgReader();
+    try {
+        return await db.withReadTransaction(async tx => {
+            const where = bankWhere(filters);
+            const [summary] = await tx.$queryRaw<{ total: number }[]>(sql`
+                SELECT count(*)::int AS total FROM "BankPayment" p LEFT JOIN "Business" b ON b.id = p."businessId" WHERE ${where}
+            `);
+            const rows = await tx.$queryRaw<AdminBankRow[]>(sql`
+                SELECT p.id, p."businessId", b.name AS "businessName", p.kind::text AS kind, p.status::text AS status, p.plan::text AS plan,
+                    p.interval::text AS interval, p.amount::float AS amount, p."bankStatus", p."cardMask", p."refundedAt", p."createdAt"
+                FROM "BankPayment" p LEFT JOIN "Business" b ON b.id = p."businessId"
+                WHERE ${where}
+                ORDER BY p."createdAt" DESC, p.id
+                LIMIT ${ADMIN_PAGE_SIZE} OFFSET ${(page - 1) * ADMIN_PAGE_SIZE}
+            `);
+            // „გაჭედილის“ ათვლა სერვერის ერთი წამიდან, რომ გვერდმა იგივე დრო გამოიყენოს.
+            return { total: summary?.total ?? 0, rows, now: Date.now() };
+        });
+    } finally { await db.$disconnect(); }
+}
+
+/** Card problems worth a look: attempts the bank never answered, and failed auto-renewals of the last 7 days. */
+export async function getBankAlerts() {
+    if (!await getAdminUser()) throw new AdminAccessError();
+    const db = createPgReader();
+    try {
+        const [row] = await db.withReadTransaction(tx => tx.$queryRaw<{ stuck: number; failedRenewals: number }[]>(sql`
+            SELECT
+                count(*) FILTER (WHERE status = 'PENDING' AND "createdAt" < ${utc(new Date(Date.now() - STUCK_INTERVAL_MS))}::timestamp)::int AS stuck,
+                count(*) FILTER (WHERE status = 'REJECTED' AND kind = 'RENEWAL' AND "createdAt" >= ${utc(since("7"))}::timestamp)::int AS "failedRenewals"
+            FROM "BankPayment"
+        `));
+        return { stuck: row?.stuck ?? 0, failedRenewals: row?.failedRenewals ?? 0 };
+    } finally { await db.$disconnect(); }
+}

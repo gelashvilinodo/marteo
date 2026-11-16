@@ -1,4 +1,5 @@
 import "server-only";
+import { sendTracked } from "@/lib/email/email-log";
 import { Resend } from "resend";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { getAppOrigin, readServerSetting } from "@/lib/auth/send-password-reset-email";
@@ -57,7 +58,7 @@ async function sendEmail(to: string, subject: string, html: string) {
     const apiKey = readServerSetting("RESEND_API_KEY");
     const from = readServerSetting("RESEND_FROM_EMAIL");
     if (!apiKey || !from || RESERVED_EMAIL.test(to)) return false;
-    const { error } = await new Resend(apiKey).emails.send({ from, to: [to], subject: `${subject} · MARTEO`, html });
+    const { error } = await sendTracked("notice", to, () => new Resend(apiKey).emails.send({ from, to: [to], subject: `${subject} · MARTEO`, html }));
     if (error) throw new Error("Notice email failed");
     return true;
 }

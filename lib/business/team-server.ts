@@ -1,11 +1,11 @@
 import "server-only";
+import { reserveEmail, sendTracked } from "@/lib/email/email-log";
 import { readPlanState } from "@/lib/subscription/server";
 import { teamTier } from "@/lib/subscription/plan-state";
 import { createHash, randomBytes } from "node:crypto";
 import { Resend } from "resend";
 import type { createPrismaClient } from "@/lib/prisma";
 import { getAppOrigin, readServerSetting } from "@/lib/auth/send-password-reset-email";
-import { reserveDelivery } from "@/lib/security/delivery-limit";
 import { devDeliveryToConsole, logDevDelivery } from "@/lib/dev/dev-delivery";
 import { escapeHtml } from "@/lib/security/html";
 import { isBusinessPermission, type BusinessPermission } from "./permissions";
@@ -256,12 +256,12 @@ async function sendInviteEmail({ to, token, role, businessName, inviter }: {
     const inviterName = inviter ? [inviter.firstName, inviter.lastName].filter(Boolean).join(" ") || inviter.email : "ბიზნესის მფლობელი";
     const roleText = role === "OWNER" ? "თანამფლობელად" : "თანამშრომლად";
 
-    await reserveDelivery("email", to);
+    await reserveEmail("team-invite", to);
     if (devDeliveryToConsole()) {
         logDevDelivery("email", to, `team invite link=${link}`);
         return;
     }
-    const { error } = await new Resend(apiKey).emails.send({
+    const { error } = await sendTracked("team-invite", to, () => new Resend(apiKey).emails.send({
         from,
         to: [to],
         subject: `MARTEO - მოწვევა ბიზნესში „${businessName}“`,
@@ -284,6 +284,6 @@ async function sendInviteEmail({ to, token, role, businessName, inviter }: {
                 <p>MARTEO.GE</p>
             </div>
         `,
-    });
+    }));
     if (error) throw new Error("Invite email delivery failed");
 }

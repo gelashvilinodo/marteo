@@ -199,6 +199,8 @@ model User {
   createdOrders          Order[]                  @relation("OrderCreatedBy")
   verifications          VerificationToken[]
   sessions               Session[]
+  adminSecurity          AdminSecurity?
+  adminDevices           AdminTrustedDevice[]
   aiConversations        AiConversation[]
   emailChangeRequests    EmailChangeRequest[]
   phoneChangeRequests    PhoneChangeRequest[]
@@ -425,6 +427,9 @@ model BankPayment {
   bankStatus            String?
   cardMask              String?
   subscriptionPaymentId String?           @unique
+  // ადმინის მიერ დაბრუნებული თანხა (ბანკში მოთხოვნილი). ბანკის საბოლოო პასუხი bankStatus-შია.
+  refundedAmount        Decimal           @default(0) @db.Decimal(12, 2)
+  refundedAt            DateTime?
   // ავტოგანახლება: რომელი ვადის გასაგრძელებლად (ერთ ვადაზე მაქსიმუმ 3 მცდელობა).
   renewsExpiresAt       DateTime?
   createdAt             DateTime          @default(now())
@@ -1456,6 +1461,66 @@ model PasswordResetRequest {
 
   @@index([userId, createdAt])
   @@index([expiresAt])
+}
+
+// ადმინის ორეტაპიანი შესვლა: კოდის აპის (TOTP) გასაღები და ერთჯერადი სარეზერვო კოდები (მხოლოდ ჰეშები).
+model AdminSecurity {
+  userId        String    @id
+  // დადასტურებამდე ახალი გასაღები აქ ელოდება, რომ ძველი კოდი იქამდე მუშაობდეს.
+  pendingSecret String?
+  totpSecret    String?
+  totpEnabledAt DateTime?
+  // ბოლოს გამოყენებული 30-წამიანი ბიჯი: ერთი და იგივე კოდი ორჯერ არ მიიღება.
+  lastTotpStep  Int       @default(0)
+  backupCodes   String[]  @default([])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ადმინ პანელისთვის სანდო მოწყობილობა: კოდის შეყვანის შემდეგ ვადამდე კოდს აღარ ითხოვს.
+model AdminTrustedDevice {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  label     String
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+// ელფოსტის გაგზავნის ჟურნალი მხარდაჭერისთვის („კოდი არ მომივიდა“): მხოლოდ ტიპი, მიმღები, სტატუსი
+// და Resend-ის id. წერილის შიგთავსი (კოდი, ბმული, ტექსტი) არ ინახება. 90 დღის შემდეგ იშლება.
+model EmailLog {
+  id         String   @id @default(cuid())
+  kind       String
+  recipient  String
+  // SENT (Resend-მა მიიღო) | FAILED | LIMITED (ჩვენი ლიმიტით არ გაიგზავნა)
+  status     String
+  providerId String?
+  error      String?
+  createdAt  DateTime @default(now())
+
+  @@index([recipient, createdAt])
+  @@index([createdAt])
+}
+
+// წაშლილი ანგარიში, რომელმაც საცდელი პერიოდი უკვე გამოიყენა: მხოლოდ ელფოსტისა და ტელეფონის ჰეში
+// (თავად მისამართი/ნომერი არ ინახება), რომ ხელახალ რეგისტრაციას ახალი საცდელი არ მიეცეს. 12 თვეში იშლება.
+model DeletedAccount {
+  id        String   @id @default(cuid())
+  emailHash String
+  phoneHash String?
+  deletedAt DateTime @default(now())
+
+  @@index([emailHash])
+  @@index([phoneHash])
+  @@index([deletedAt])
 }
 
 // Shared limits across Worker instances. Identifiers are hashed before storage.

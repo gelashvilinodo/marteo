@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { getCurrentBusiness, getUserBusinesses, hasFrozenMembership } from "@/lib/auth/current-business";
-import { getAdminUser } from "@/lib/admin/authorization";
+import { getAdminCandidate } from "@/lib/admin/authorization";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import SystemBannerBar from "@/components/dashboard/SystemBannerBar";
 import { getActiveBanner } from "@/lib/system/active-banner";
@@ -39,7 +39,7 @@ export default async function DashboardLayout({
 
     return (
         <DashboardShell
-            isPlatformAdmin={Boolean(await getAdminUser())}
+            isPlatformAdmin={Boolean(await getAdminCandidate())}
             isOwner={membership.access.role === "OWNER"}
             access={membership.access}
             plan={membership.plan}

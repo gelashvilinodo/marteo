@@ -5,6 +5,7 @@ import { getCurrentUserWithClient } from "@/lib/auth/session";
 import { createPrismaClient } from "@/lib/prisma";
 import ProfileSettingsForm from "@/components/dashboard/profile/ProfileSettingsForm";
 import PasswordSettingsForm from "@/components/dashboard/profile/PasswordSettingsForm";
+import AccountDeleteSection from "@/components/account/AccountDeleteSection";
 
 export const metadata = { title: "ჩემი პროფილი - MARTEO" };
 
@@ -96,6 +97,8 @@ export default async function ProfilePage() {
 
                         <PasswordSettingsForm />
                     </div>
+
+                    <AccountDeleteSection />
                 </div>
             </main>
         );

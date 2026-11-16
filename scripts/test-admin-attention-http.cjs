@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- Local integration QA with temporary businesses, an owner and sessions. */
 require('dotenv').config({quiet:true});
+const {createQaAdmin}=require('./qa-admin.cjs');
 const {Client,types}=require('pg'),{randomUUID,randomBytes,createHash}=require('node:crypto'),assert=require('node:assert/strict');
 const base=process.env.ADMIN_QA_BASE_URL||'http://localhost:3100';
 if(!/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(base))throw Error('Local QA only');
@@ -7,6 +8,7 @@ types.setTypeParser(1114,value=>new Date(value.replace(' ','T')+'Z'));
 const DAY=86400000,at=days=>new Date(Date.now()+days*DAY).toISOString();
 
 (async()=>{
+ const qaAdmins=[];
  const db=new Client({connectionString:process.env.DIRECT_URL,connectionTimeoutMillis:10000});
  const tag='risk-qa-'+randomUUID().slice(0,8),ownerId=tag+'-owner',sessionIds=[],businessIds=[];
  const startedAt=new Date();
@@ -39,7 +41,8 @@ const DAY=86400000,at=days=>new Date(Date.now()+days*DAY).toISOString();
   await db.query('INSERT INTO "SupportConversation" (id,"businessId","updatedAt") VALUES ($1,$2,now())',[tag+'-c',lapsed.id]);
 
   async function session(userId){const token=randomBytes(32).toString('hex'),id=randomUUID();sessionIds.push(id);await db.query('INSERT INTO "Session" (id,"userId","tokenHash","expiresAt","updatedAt") VALUES ($1,$2,$3,$4,now())',[id,userId,createHash('sha256').update(token).digest('hex'),at(1)]);return token}
-  const adminToken=await session(admins[0].id),ownerToken=await session(ownerId);
+  const qaAdmin=await createQaAdmin(db,'qa-'+randomUUID().slice(0,8));qaAdmins.push(qaAdmin);
+  const adminToken=qaAdmin.token,ownerToken=await session(ownerId);
   const get=(p,token)=>fetch(base+p,{redirect:'manual',headers:{Cookie:'marteo_session='+token}});
   const page=async p=>{const res=await get(p,adminToken);assert.equal(res.status,200,p);return (await res.text()).replaceAll('<!-- -->','')};
   // One business row: from its name to its chat button, which closes the row.
@@ -76,6 +79,7 @@ const DAY=86400000,at=days=>new Date(Date.now()+days*DAY).toISOString();
 
   console.log('PASS: risk signals (lapsed, trial ended, expiring, inactive, onboarding, AI limit), exclusions, filters, overview card, admin-only, chat account panel.');
  }finally{
+  for(const qaAdmin of qaAdmins)await qaAdmin.cleanup();
   await db.query('DELETE FROM "AdminAuditLog" WHERE id=$1 OR ("targetId"=ANY($2::text[]) AND "createdAt">=$3)',[tag+'-a',businessIds,startedAt.toISOString()]);
   await db.query('DELETE FROM "SubscriptionPayment" WHERE "businessName" LIKE $1',['%'+tag]);
   await db.query('DELETE FROM "AiUsage" WHERE "businessName" LIKE $1',['%'+tag]);

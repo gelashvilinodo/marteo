@@ -12,6 +12,10 @@ import UserActions from "@/components/admin/UserActions";
 import AuditHistory from "@/components/admin/AuditHistory";
 import { getAuditLog } from "@/lib/admin/actions";
 import { createPrismaClient } from "@/lib/prisma";
+import { emailsFor } from "@/lib/admin/email-log";
+import EmailLogList from "@/components/admin/EmailLogList";
+import DeleteUserButton from "@/components/admin/DeleteUserButton";
+import { planAccountDeletion } from "@/lib/account/delete-account";
 
 export const metadata = { title: "მომხმარებელი · ადმინ პანელი" };
 
@@ -36,7 +40,9 @@ export default async function AdminUserPage({ params }: { params: Promise<{ user
     });
     if (!user) notFound();
     const prisma = createPrismaClient();
-    const history = await getAuditLog(prisma, "USER", user.id).finally(() => prisma.$disconnect());
+    const [history, emails, deletion] = await Promise.all([
+        getAuditLog(prisma, "USER", user.id), emailsFor(prisma, user.email), user.isPlatformAdmin ? null : planAccountDeletion(prisma, user.id),
+    ]).finally(() => prisma.$disconnect());
     const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || "უსახელო";
 
     return <div className="mx-auto max-w-4xl">
@@ -73,6 +79,9 @@ export default async function AdminUserPage({ params }: { params: Promise<{ user
                 <UserActions userId={user.id} email={user.email} phone={user.phone} status={user.status}
                     emailVerified={Boolean(user.emailVerifiedAt)} phoneVerified={Boolean(user.phoneVerifiedAt)}
                     activeSessions={user.activeSessions} protectedAccount={user.isPlatformAdmin} />
+                {deletion && <div className="mt-3 border-t border-border pt-3 sm:max-w-xs">
+                    <DeleteUserButton userId={user.id} email={user.email} businesses={deletion.businesses} />
+                </div>}
             </Panel>
         </div>
 
@@ -94,6 +103,11 @@ export default async function AdminUserPage({ params }: { params: Promise<{ user
                     })}
                     {!user.businesses.length && <li className="py-3 text-sm text-text-secondary">ბიზნესი ჯერ არ შეუქმნია.</li>}
                 </ul>
+            </Panel>
+        </div>
+        <div className="mt-4">
+            <Panel title="ელფოსტები" action={<Link href={`/admin/emails?q=${encodeURIComponent(user.email)}`} prefetch={false} className="text-xs text-accent hover:underline">ყველა</Link>}>
+                <EmailLogList rows={emails} empty="ამ მისამართზე წერილი ბოლო 90 დღეში არ გაგზავნილა." />
             </Panel>
         </div>
         <div className="mt-4">

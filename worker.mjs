@@ -29,6 +29,15 @@ const entry = {
             return (await response.json()).sent;
         })));
         ctx.waitUntil(runJob(url, 'system-log-prune', () => pruneSystemLog(url)));
+        // ადმინს ერთი push: წინა საათის ახალი შეცდომები, ჩავარდნილი სამუშაოები და გაჭედილი გადახდები.
+        ctx.waitUntil(runJob(url, 'admin-alerts', async () => {
+            if (!env.CRON_SECRET) throw new Error('CRON_SECRET is not configured');
+            const response = await entry.fetch(new Request(`${env.APP_URL}/api/cron/admin-alerts`, {
+                method: 'POST', headers: {authorization: `Bearer ${env.CRON_SECRET}`},
+            }), env, ctx);
+            if (!response.ok) throw new Error(`Admin alerts HTTP ${response.status}`);
+            return (await response.json()).sent;
+        }));
         // Mondays 06:00–08:00 UTC (10:00–12:00 Tbilisi): Marteo AI weekly digest, once per owner and business.
         // Later hours only retry what failed; the chat id is fixed per week, so nothing is sent twice.
         const scheduled = new Date(controller.scheduledTime);

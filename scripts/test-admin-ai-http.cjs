@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- Local integration QA with a temporary business, owner and sessions. */
 require('dotenv').config({quiet:true});
+const {createQaAdmin}=require('./qa-admin.cjs');
 require('dotenv').config({path:'.env.local',quiet:true});
 const {Client,types}=require('pg'),{randomUUID,randomBytes,createHash}=require('node:crypto'),assert=require('node:assert/strict');
 const base=process.env.ADMIN_QA_BASE_URL||'http://localhost:3100';
@@ -10,6 +11,7 @@ types.setTypeParser(1114,value=>new Date(value.replace(' ','T')+'Z'));
 const callModel=process.env.AI_QA_SKIP_MODEL!=='1';
 
 (async()=>{
+ const qaAdmins=[];
  const db=new Client({connectionString:process.env.DIRECT_URL,connectionTimeoutMillis:10000});
  const tag='ai-qa-'+randomUUID().slice(0,8),ownerId=tag+'-owner',businessId=tag+'-biz',name='QA AI '+tag,sessionIds=[];
  try{
@@ -22,7 +24,8 @@ const callModel=process.env.AI_QA_SKIP_MODEL!=='1';
   // AI needs an active plan; Business has 100 questions a month.
   await db.query('INSERT INTO "Subscription" (id,"businessId",plan,status,"expiresAt","updatedAt") VALUES ($1,$2,\'BUSINESS\',\'ACTIVE\',$3,now())',[tag+'-s',businessId,new Date(Date.now()+30*86400000).toISOString()]);
   async function session(userId){const token=randomBytes(32).toString('hex'),id=randomUUID();sessionIds.push(id);await db.query('INSERT INTO "Session" (id,"userId","tokenHash","expiresAt","updatedAt") VALUES ($1,$2,$3,$4,now())',[id,userId,createHash('sha256').update(token).digest('hex'),new Date(Date.now()+86400000).toISOString()]);return token}
-  const adminToken=await session(admins[0].id),ownerToken=await session(ownerId);
+  const qaAdmin=await createQaAdmin(db,'qa-'+randomUUID().slice(0,8));qaAdmins.push(qaAdmin);
+  const adminToken=qaAdmin.token,ownerToken=await session(ownerId);
   const call=(p,token,body,method)=>fetch(base+p,{method:method||(body?'POST':'GET'),redirect:'manual',headers:{Cookie:'marteo_session='+token,...(body?{'Content-Type':'application/json',Origin:base}:{})},body:body?JSON.stringify(body):undefined});
   const rows=async()=>(await db.query('SELECT kind::text,counted,failed,calls,"inputTokens","outputTokens","costUsd"::float AS cost FROM "AiUsage" WHERE "businessId"=$1 ORDER BY "createdAt"',[businessId])).rows;
   const quota=async()=>{const r=await call('/api/ai/quota',ownerToken);const d=await r.json();assert.equal(r.status,200,d.message);return d.quota};
@@ -89,6 +92,7 @@ const callModel=process.env.AI_QA_SKIP_MODEL!=='1';
 
   console.log('PASS: quota by plan, limit refusal (chat + file), titles/failed not counted, admin limit override, disable switch, validation/access, admin pages, audit.');
  }finally{
+  for(const qaAdmin of qaAdmins)await qaAdmin.cleanup();
   // Usage rows survive business deletion by design, so the QA rows go first.
   await db.query('DELETE FROM "AiUsage" WHERE "businessId"=$1',[businessId]);
   await db.query('DELETE FROM "AiConversation" WHERE "businessId"=$1',[businessId]);

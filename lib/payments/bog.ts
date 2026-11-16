@@ -128,11 +128,20 @@ export async function deleteSavedCard(orderId: string) {
     await call("DELETE", `/payments/v1/charges/card/${encodeURIComponent(orderId)}`);
 }
 
+// თანხის დაბრუნება. amount-ის გარეშე ბანკი მთლიან თანხას აბრუნებს. პასუხი მხოლოდ მიღების დადასტურებაა:
+// საბოლოო სტატუსი (refunded / refunded_partially) callback-ით ან receipt-ით მოდის.
+export async function refundBogOrder(orderId: string, idempotencyKey: string, amount?: number) {
+    return call<{ key?: string; message?: string; action_id?: string }>("POST", `/payments/v1/payment/refund/${encodeURIComponent(orderId)}`, {
+        idempotencyKey,
+        body: amount === undefined ? {} : { amount: (Math.round(amount * 100) / 100).toFixed(2) },
+    });
+}
+
 export type BogReceipt = {
     order_id: string;
     external_order_id?: string;
     order_status?: { key?: string };
-    purchase_units?: { request_amount?: string; transfer_amount?: string; currency_code?: string };
+    purchase_units?: { request_amount?: string; transfer_amount?: string; refund_amount?: string; currency_code?: string };
     payment_detail?: { transfer_method?: { key?: string }; payer_identifier?: string; payment_option?: string; code?: string; code_description?: string };
 };
 

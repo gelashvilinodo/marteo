@@ -37,9 +37,15 @@ export default async function AdminSystemPage({ searchParams }: { searchParams: 
                 <h1 className="text-2xl font-semibold text-text-primary">სისტემა</h1>
                 <p className="mt-1 text-sm text-text-secondary">შეცდომები, საათობრივი სამუშაოები და ბანერი.</p>
             </div>
+            <div className="flex flex-wrap gap-2">
+            <Link href="/admin/emails" prefetch={false} className="flex h-10 items-center gap-2 rounded-xl border border-border bg-surface px-3 text-sm font-medium text-text-primary transition hover:border-accent/40">
+                <Icon icon="solar:letter-linear" className="h-5 w-5 text-accent" aria-hidden="true" /> ელფოსტის ჟურნალი
+                {data.emails.failed > 0 && <span className="rounded-full bg-danger px-1.5 text-[11px] font-semibold text-white">{data.emails.failed}</span>}
+            </Link>
             <Link href="/admin/audit" prefetch={false} className="flex h-10 items-center gap-2 rounded-xl border border-border bg-surface px-3 text-sm font-medium text-text-primary transition hover:border-accent/40">
                 <Icon icon="solar:history-linear" className="h-5 w-5 text-accent" aria-hidden="true" /> ადმინის ქმედებების ისტორია
             </Link>
+            </div>
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-3">

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- Local integration QA with a temporary business, owner and sessions. */
 require('dotenv').config({quiet:true});
+const {createQaAdmin}=require('./qa-admin.cjs');
 const {Client}=require('pg'),{randomUUID,randomBytes,createHash}=require('node:crypto'),assert=require('node:assert/strict'),{pathToFileURL}=require('node:url'),path=require('node:path');
 const base=process.env.ADMIN_QA_BASE_URL||'http://localhost:3100';
 if(!/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(base))throw Error('Local QA only');
@@ -9,6 +10,7 @@ const DAY=86400000;
 require('pg').types.setTypeParser(1114,value=>new Date(value.replace(' ','T')+'Z'));
 
 (async()=>{
+ const qaAdmins=[];
  const db=new Client({connectionString:process.env.DIRECT_URL,connectionTimeoutMillis:10000});
  const tag='pay-qa-'+randomUUID().slice(0,8),ownerId=tag+'-owner',businessId=tag+'-biz',name='QA გადახდები '+tag,sessionIds=[];
  const {expireSubscriptions}=await import(pathToFileURL(path.join(__dirname,'../lib/billing/expire-subscriptions.mjs')).href);
@@ -20,7 +22,8 @@ require('pg').types.setTypeParser(1114,value=>new Date(value.replace(' ','T')+'Z
   await db.query('INSERT INTO "Business" (id,name,"updatedAt") VALUES ($1,$2,now())',[businessId,name]);
   await db.query('INSERT INTO "BusinessMembership" (id,"userId","businessId",role,"updatedAt") VALUES ($1,$2,$3,\'OWNER\',now())',[tag+'-m',ownerId,businessId]);
   async function session(userId){const token=randomBytes(32).toString('hex'),id=randomUUID();sessionIds.push(id);await db.query('INSERT INTO "Session" (id,"userId","tokenHash","expiresAt","updatedAt") VALUES ($1,$2,$3,$4,now())',[id,userId,createHash('sha256').update(token).digest('hex'),new Date(Date.now()+600000)]);return token}
-  const adminToken=await session(admins[0].id),ownerToken=await session(ownerId);
+  const qaAdmin=await createQaAdmin(db,'qa-'+randomUUID().slice(0,8));qaAdmins.push(qaAdmin);
+  const adminToken=qaAdmin.token,ownerToken=await session(ownerId);
   const call=(p,token,body)=>fetch(base+p,{method:body?'POST':'GET',redirect:'manual',headers:{Cookie:'marteo_session='+token,...(body?{'Content-Type':'application/json',Origin:base}:{})},body:body?JSON.stringify(body):undefined});
   const pay=body=>call(`/api/admin/businesses/${businessId}/payments`,adminToken,{plan:'START',months:1,amount:'49.90',method:'BANK_TRANSFER',paidAt:day(new Date()),...body});
   const sub=async()=>(await db.query('SELECT plan::text,status::text,"expiresAt" FROM "Subscription" WHERE "businessId"=$1',[businessId])).rows[0];
@@ -101,6 +104,7 @@ require('pg').types.setTypeParser(1114,value=>new Date(value.replace(' ','T')+'Z
 
   console.log('PASS: payment validation/access, period continue/upgrade, void, audit, pages, filters, export, 3-day reminder, ended notice, cron PAST_DUE/EXPIRED, trial expiry.');
  }finally{
+  for(const qaAdmin of qaAdmins)await qaAdmin.cleanup();
   // Payments survive business deletion by design, so the QA rows go first.
   await db.query('DELETE FROM "SubscriptionPayment" WHERE "businessId"=$1',[businessId]);
   await db.query('DELETE FROM "AdminAuditLog" WHERE "targetId"=$1',[businessId]);

@@ -5,6 +5,8 @@ import HowItWorks from "@/components/landing/how-it-works/HowItWorks";
 import AfterOrder from "@/components/landing/how-it-works/AfterOrder";
 import StackScroll from "@/components/landing/how-it-works/StackScroll";
 import Footer from "@/components/landing/Footer";
+import AccountDeletedNotice from "@/components/account/AccountDeletedNotice";
+import { Suspense } from "react";
 
 export const metadata = {
   title: "MARTEO - ბიზნესის მართვის პლატფორმა",
@@ -19,6 +21,7 @@ export default function Home() {
       <FeaturesBento />
       <StackScroll back={<HowItWorks />} front={<AfterOrder />} />
       <Footer />
+      <Suspense fallback={null}><AccountDeletedNotice /></Suspense>
     </main>
   );
 }

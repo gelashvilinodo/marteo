@@ -2,6 +2,7 @@ import { isOwnedStorageImage } from "@/lib/security/storage-image";
 import { guardMutation } from "@/lib/security/mutation-request";
 import { isBusinessMode } from "@/lib/business/business-mode";
 import { NextResponse } from "next/server";
+import { accountEmailHash, accountPhoneHash } from "@/lib/account/deleted-accounts";
 import { rateLimitResponse, reserveLimits } from "@/lib/security/rate-limit";
 
 import { createPrismaClient } from "@/lib/prisma";
@@ -99,10 +100,17 @@ async function post(request: Request) {
 
     const result = await prisma.$transaction(async (tx) => {
       const now = new Date();
-      const trial = (await tx.user.updateMany({
+      // ადრე წაშლილი ანგარიში (იგივე ელფოსტა ან ტელეფონი), რომელმაც საცდელი უკვე გამოიყენა, ახალს ვეღარ იღებს.
+      const owner = await tx.user.findUnique({ where: { id: user.id }, select: { email: true, phone: true } });
+      const usedBefore = owner ? await tx.deletedAccount.findFirst({
+        where: { OR: [{ emailHash: accountEmailHash(owner.email) }, { phoneHash: accountPhoneHash(owner.phone) }] },
+        select: { id: true },
+      }) : null;
+      const claimed = (await tx.user.updateMany({
         where: { id: user.id, trialUsedAt: null },
         data: { trialUsedAt: now },
       })).count === 1;
+      const trial = claimed && !usedBefore;
 
       const business = await tx.business.create({
         data: {

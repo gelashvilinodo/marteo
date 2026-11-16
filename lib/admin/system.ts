@@ -10,6 +10,7 @@ export const SYSTEM_JOBS = [
     { name: "subscription-expiry", label: "პაკეტების ვადის შემოწმება" },
     { name: "support-cleanup", label: "დახმარების ჩათის გასუფთავება (24 სთ)" },
     { name: "system-log-prune", label: "ძველი ჩანაწერების წაშლა" },
+    { name: "admin-alerts", label: "ადმინის push: ახალი შეცდომები, ჩავარდნები, გაჭედილი გადახდები" },
     { name: "unused-image-cleanup", label: "გამოუყენებელი ფოტოების წაშლა (დღეში ერთხელ)", lateAfterMs: 26 * 3600_000 },
     { name: "unfinished-registration-cleanup", label: "დაუსრულებელი რეგისტრაციების წაშლა (7 დღე, დღეში ერთხელ)", lateAfterMs: 26 * 3600_000 },
     { name: "ai-weekly-digest", label: "AI-ის კვირის მიმოხილვა (ორშაბათს დილით)", lateAfterMs: 7 * 24 * 3600_000 + 4 * 3600_000 },
@@ -52,6 +53,11 @@ export async function getSystemOverview(view: "open" | "resolved", page: number)
             const banners = await tx.$queryRaw<Omit<SystemBannerView, "state">[]>`
                 SELECT id, message, tone, "startsAt", "endsAt", "canceledAt" FROM "SystemBanner" ORDER BY "createdAt" DESC LIMIT 10
             `;
+            // ელფოსტა ბოლო 24 საათში: ვერ გაგზავნილი წერილები ჟურნალის ღილაკზე ჩანს.
+            const [emails] = await tx.$queryRaw<{ failed: number }[]>`
+                SELECT count(*) FILTER (WHERE status = 'FAILED')::int AS failed FROM "EmailLog"
+                WHERE "createdAt" >= (now() AT TIME ZONE 'UTC') - interval '24 hours'
+            `;
             const byName = new Map(jobs.map(job => [job.name, job as typeof job & { lastOk: boolean | null }]));
             return {
                 jobs: SYSTEM_JOBS.map((definition): SystemJobView => {
@@ -63,6 +69,7 @@ export async function getSystemOverview(view: "open" | "resolved", page: number)
                     return { name, label, state, lastStartedAt: job.lastStartedAt, lastFinishedAt: job.lastFinishedAt, lastError: job.lastError, lastResult: job.lastResult, runs: job.runs, failures: job.failures };
                 }),
                 counts: counts ?? { open: 0, resolved: 0, day: 0 },
+                emails: { failed: emails?.failed ?? 0 },
                 errors,
                 banners: banners.map(banner => ({ ...banner, state: bannerState(banner, now) })),
             };
@@ -124,10 +131,11 @@ export async function cancelBanner(prisma: PrismaClient, adminId: string, banner
 
 // Global log of admin actions: what was done, by whom and to which account or business.
 export const AUDIT_GROUPS = {
-    users: { label: "მომხმარებლები", actions: ["verify-email", "verify-phone", "suspend", "unsuspend", "end-sessions", "send-password-reset"] },
-    billing: { label: "პაკეტი და გადახდები", actions: ["subscription", "subscription-auto", "subscription-user", "payment", "payment-void", "sms-pack", "business-delete"] },
+    users: { label: "მომხმარებლები", actions: ["verify-email", "verify-phone", "suspend", "unsuspend", "end-sessions", "send-password-reset", "user-delete"] },
+    billing: { label: "პაკეტი და გადახდები", actions: ["subscription", "subscription-auto", "subscription-user", "payment", "payment-void", "payment-bank", "payment-refund", "sms-pack", "business-delete"] },
     ai: { label: "მართეო AI", actions: ["ai-settings"] },
     exports: { label: "ექსპორტი", actions: ["export-users", "export-businesses", "export-payments"] },
+    security: { label: "ადმინის შესვლა", actions: ["admin-2fa-enable", "admin-2fa-reset", "admin-device-trust", "admin-device-revoke", "admin-backup-used", "admin-backup-regenerate"] },
     system: { label: "სისტემა", actions: ["banner-create", "banner-cancel", "errors-resolve"] },
 } as const;
 

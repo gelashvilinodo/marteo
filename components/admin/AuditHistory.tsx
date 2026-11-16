@@ -16,14 +16,23 @@ export const AUDIT_ACTIONS: Record<string, { label: string; icon: string }> = {
     "subscription-user": { label: "მფლობელმა შეცვალა პაკეტი", icon: "solar:user-check-linear" },
     payment: { label: "გადახდა აღირიცხა", icon: "solar:wallet-money-linear" },
     "payment-void": { label: "გადახდა გაუქმდა", icon: "solar:close-circle-linear" },
+    "payment-bank": { label: "გადახდა ბარათით (ბანკი)", icon: "solar:card-linear" },
+    "payment-refund": { label: "თანხა დაბრუნდა ბარათზე", icon: "solar:undo-left-round-linear" },
     "ai-settings": { label: "AI-ის პარამეტრები შეიცვალა", icon: "solar:magic-stick-3-linear" },
     "sms-pack": { label: "SMS პაკეტი დაემატა", icon: "solar:chat-round-line-linear" },
+    "user-delete": { label: "ანგარიში წაიშალა", icon: "solar:user-cross-linear" },
     "business-delete": { label: "ბიზნესი წაიშალა (12 თვე გადაუხდელი)", icon: "solar:trash-bin-trash-linear" },
     "export-users": { label: "მომხმარებლების Excel ექსპორტი", icon: "solar:file-download-linear" },
     "export-businesses": { label: "ბიზნესების Excel ექსპორტი", icon: "solar:file-download-linear" },
     "export-payments": { label: "გადახდების Excel ექსპორტი", icon: "solar:file-download-linear" },
     "banner-create": { label: "ბანერი გამოქვეყნდა", icon: "solar:flag-linear" },
     "banner-cancel": { label: "ბანერი მოიხსნა", icon: "solar:flag-linear" },
+    "admin-2fa-enable": { label: "ორეტაპიანი შესვლა ჩაირთო", icon: "solar:shield-check-linear" },
+    "admin-2fa-reset": { label: "ორეტაპიანი შესვლა თავიდან ჩასართავად გაუქმდა", icon: "solar:shield-warning-linear" },
+    "admin-device-trust": { label: "ადმინში შესვლა ახალი მოწყობილობიდან", icon: "solar:devices-linear" },
+    "admin-device-revoke": { label: "სანდო მოწყობილობა გაუქმდა", icon: "solar:devices-linear" },
+    "admin-backup-used": { label: "გამოყენებულია სარეზერვო კოდი", icon: "solar:key-linear" },
+    "admin-backup-regenerate": { label: "შეიქმნა ახალი სარეზერვო კოდები", icon: "solar:key-linear" },
     "errors-resolve": { label: "შეცდომები მოგვარებულად მოინიშნა", icon: "solar:checklist-minimalistic-linear" },
 };
 
@@ -50,7 +59,16 @@ function detail(entry: AuditEntry) {
         const text = (value: Plain) => `${value?.disabled ? "გამორთული" : "ჩართული"} · ლიმიტი ${value?.monthlyLimit ?? "პაკეტის მიხედვით"}`;
         return `${text(before)} → ${text(after)}`;
     }
+    if (entry.action === "payment-bank") return `${money(after?.amount)} · ${subscriptionText(after)}`;
+    if (entry.action === "payment-refund") return `${money(after?.amount)} · ${after?.plan} · ${after?.endPlan ? "გეგმა გაითიშა" : "გეგმა დარჩა"} · ${after?.reason ?? ""}`;
     if (entry.action === "payment-void") return `${money(after?.amount)} · ${after?.plan} · ${after?.reason ?? ""}`;
+    if (entry.action === "user-delete") {
+        const deleted = Array.isArray(after?.businessesDeleted) ? after.businessesDeleted as string[] : [];
+        return `${deleted.length ? `წაიშალა ბიზნესი: ${deleted.join(", ")}` : "ბიზნესი არ წაშლილა"}${after?.businessesLeft ? ` · დატოვა ${after.businessesLeft}` : ""}`;
+    }
+    if (entry.action === "admin-device-trust") return `${after?.label ?? ""}${after?.remember === false ? " · მხოლოდ ამ სესიაზე" : " · 30 დღე"}`;
+    if (entry.action === "admin-device-revoke") return after?.scope === "current" ? "ამ მოწყობილობიდან გასვლა" : `${after?.count ?? 1} მოწყობილობა`;
+    if (entry.action === "admin-backup-used") return `დარჩა ${after?.left ?? 0}`;
     if (entry.action === "send-password-reset") return after?.email ? String(after.email) : "";
     if (entry.action === "end-sessions") return `${before?.sessions ?? 0} მოწყობილობა`;
     if (before?.status && after?.status && before.status !== after.status) {

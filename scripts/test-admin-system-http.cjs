@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- Local integration QA with a temporary business, owner and sessions. */
 // Needs the dev server started with SYSTEM_ERRORS_LOCAL=1 so server errors are recorded locally.
 require('dotenv').config({quiet:true});
+const {createQaAdmin}=require('./qa-admin.cjs');
 const {Client,types}=require('pg'),{randomUUID,randomBytes,createHash}=require('node:crypto'),assert=require('node:assert/strict'),{pathToFileURL}=require('node:url'),path=require('node:path');
 const base=process.env.ADMIN_QA_BASE_URL||'http://localhost:3100';
 if(!/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(base))throw Error('Local QA only');
@@ -8,6 +9,7 @@ types.setTypeParser(1114,value=>new Date(value.replace(' ','T')+'Z'));
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
 (async()=>{
+ const qaAdmins=[];
  const db=new Client({connectionString:process.env.DIRECT_URL,connectionTimeoutMillis:10000});
  const tag='sys-qa-'+randomUUID().slice(0,8),ownerId=tag+'-owner',businessId=tag+'-biz',sessionIds=[],bannerIds=[];
  const lib=f=>import(pathToFileURL(path.join(__dirname,'../lib/system',f)).href);
@@ -22,7 +24,8 @@ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   await db.query('INSERT INTO "Business" (id,name,"updatedAt") VALUES ($1,$2,now())',[businessId,'QA სისტემა']);
   await db.query('INSERT INTO "BusinessMembership" (id,"userId","businessId",role,"updatedAt") VALUES ($1,$2,$3,\'OWNER\',now())',[tag+'-m',ownerId,businessId]);
   async function session(userId){const token=randomBytes(32).toString('hex'),id=randomUUID();sessionIds.push(id);await db.query('INSERT INTO "Session" (id,"userId","tokenHash","expiresAt","updatedAt") VALUES ($1,$2,$3,$4,now())',[id,userId,createHash('sha256').update(token).digest('hex'),new Date(Date.now()+86400000).toISOString()]);return token}
-  const adminToken=await session(admins[0].id),ownerToken=await session(ownerId);
+  const qaAdmin=await createQaAdmin(db,'qa-'+randomUUID().slice(0,8));qaAdmins.push(qaAdmin);
+  const adminToken=qaAdmin.token,ownerToken=await session(ownerId);
   const call=(p,token,body,method)=>fetch(base+p,{method:method||(body?'POST':'GET'),redirect:'manual',headers:{Cookie:'marteo_session='+token,...(body!==undefined?{'Content-Type':'application/json',Origin:base}:{}),...(method==='DELETE'?{Origin:base}:{})},body:body===undefined?undefined:typeof body==='string'?body:JSON.stringify(body)});
   const page=async(p,token=adminToken)=>{const res=await call(p,token);assert.equal(res.status,200,p);return (await res.text()).replaceAll('<!-- -->','')};
   const errors=async()=>(await db.query('SELECT id,source,message,route,count,"resolvedAt" FROM "SystemError" WHERE message LIKE $1 OR route LIKE $2 ORDER BY "firstAt"',['%'+tag+'%','%/api/ai/chat%'])).rows;
@@ -94,6 +97,7 @@ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
   console.log('PASS: error privacy/grouping, real server error capture, resolve/reopen, job runs, banner validation/schedule/show/cancel, admin pages, audit.');
  }finally{
+  for(const qaAdmin of qaAdmins)await qaAdmin.cleanup();
   await db.query('DELETE FROM "SystemError" WHERE message LIKE $1 OR route LIKE $1',['%'+tag+'%']);
   // The capture check created an order error entry during this run; local dev only.
   await db.query('DELETE FROM "SystemError" WHERE message LIKE \'Order operation failed%\' AND "firstAt">=$1',[startedAt.toISOString()]).catch(()=>{});

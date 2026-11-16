@@ -16,6 +16,8 @@ import { listNotes } from "@/lib/admin/support-tools";
 import NotesPanel from "@/components/admin/NotesPanel";
 import PaymentsPanel from "@/components/admin/PaymentsPanel";
 import { listPayments } from "@/lib/admin/payments";
+import BankPaymentsPanel from "@/components/admin/BankPaymentsPanel";
+import { getBankPanel } from "@/lib/admin/bank-payments";
 import AiSettingsPanel from "@/components/admin/AiSettingsPanel";
 import SmsPackPanel from "@/components/admin/SmsPackPanel";
 import { getBusinessSms } from "@/lib/sms/sms-admin";
@@ -40,9 +42,9 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
     });
     if (!business) notFound();
     const prisma = createPrismaClient();
-    const [history, notes, payments, ai, sms] = await Promise.all([
+    const [history, notes, payments, ai, sms, bank] = await Promise.all([
         getAuditLog(prisma, "BUSINESS", business.id), listNotes(prisma, business.id), listPayments(prisma, business.id), getBusinessAi(prisma, business.id),
-        getBusinessSms(prisma, business.id),
+        getBusinessSms(prisma, business.id), getBankPanel(prisma, business.id),
     ]).finally(() => prisma.$disconnect());
     const subscription = { plan: business.plan, status: business.subscriptionStatus, expiresAt: business.subscriptionExpiresAt?.toISOString() ?? null };
     const mode = BUSINESS_MODES.find(item => item.value === business.mode);
@@ -75,13 +77,19 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
         <div className="mt-4">
             <Panel title="პაკეტი" action={business.subscriptionStartedAt ? <span className="text-xs text-text-secondary">დაიწყო {formatSupportDate(business.subscriptionStartedAt.toISOString())}</span> : undefined}>
                 {/* A recorded payment changes the plan from outside the editor: start it fresh from the new values. */}
-                <SubscriptionEditor key={payments.length} businessId={business.id} current={subscription} />
+                <SubscriptionEditor key={`${payments.length}-${subscription.plan}-${subscription.status}-${subscription.expiresAt}`} businessId={business.id} current={subscription} />
             </Panel>
         </div>
 
         <div className="mt-4">
             <Panel title="გადახდები">
-                <PaymentsPanel businessId={business.id} current={subscription} initial={payments} />
+                <PaymentsPanel key={`${payments.length}-${payments.filter(payment => payment.voidedAt).length}`} businessId={business.id} current={subscription} initial={payments} />
+            </Panel>
+        </div>
+
+        <div className="mt-4">
+            <Panel title="ბარათით გადახდები (საქართველოს ბანკი)">
+                <BankPaymentsPanel businessId={business.id} initial={bank} />
             </Panel>
         </div>
 

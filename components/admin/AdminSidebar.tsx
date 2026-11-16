@@ -18,6 +18,7 @@ const navigationItems = [
     { label: "გადახდები", href: "/admin/payments", icon: "solar:wallet-money-bold-duotone" },
     { label: "მართეო AI", href: "/admin/ai", icon: "solar:magic-stick-3-bold-duotone" },
     { label: "სისტემა", href: "/admin/system", icon: "solar:server-square-bold-duotone" },
+    { label: "უსაფრთხოება", href: "/admin/security", icon: "solar:shield-keyhole-bold-duotone" },
     { label: "შეტყობინებები", href: "/admin/notifications", icon: "solar:bell-bold-duotone" },
     { label: "დახმარება", href: "/admin/support", icon: "solar:chat-round-dots-bold-duotone" },
 ];

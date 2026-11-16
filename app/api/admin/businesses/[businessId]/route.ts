@@ -1,6 +1,7 @@
 import { getAdminUser } from "@/lib/admin/authorization";
 import { adminFailure, adminJson } from "@/lib/admin/action-http";
 import { deleteRetainedBusiness } from "@/lib/admin/retention";
+import { consumeAdminCode } from "@/lib/admin/two-factor";
 import { createPrismaClient } from "@/lib/prisma";
 import { guardMutation } from "@/lib/security/mutation-request";
 
@@ -16,7 +17,9 @@ export async function DELETE(request: Request, context: Context) {
         const { businessId } = await context.params;
         const prisma = createPrismaClient();
         try {
-            const body = await guarded.json() as { confirmName?: unknown };
+            const body = await guarded.json() as { confirmName?: unknown; code?: unknown };
+            // შეუქცევადი წაშლა სანდო მოწყობილობაზეც ახალ კოდს ითხოვს.
+            await consumeAdminCode(prisma, admin.id, body.code, guarded);
             return adminJson({ success: true, message: await deleteRetainedBusiness(prisma, admin.id, businessId, body.confirmName) });
         } catch (cause) {
             return adminFailure(cause);

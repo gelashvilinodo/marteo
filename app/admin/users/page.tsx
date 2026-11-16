@@ -31,6 +31,9 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
             </div>
             {total > 0 && <ExportButton kind="users" filename="marteo-users" />}
         </div>
+        {params.deleted === "1" && <p role="status" className="mt-3 flex items-start gap-2 rounded-xl bg-success/10 px-3 py-2 text-sm text-success">
+            <Icon icon="solar:check-circle-bold" className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />ანგარიში წაიშალა. დეტალები „ადმინის ქმედებების ისტორიაშია“.
+        </p>}
 
         <AdminFilters placeholder="სახელი, მეილი, ტელეფონი ან ბიზნესი" values={filters} selects={[
             { name: "status", label: "ყველა სტატუსი", options: Object.entries(USER_STATUS_LABELS).map(([value, label]) => ({ value, label })) },

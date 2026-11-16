@@ -13,6 +13,7 @@ import { notifyOwners, notifyPaymentFailed, queueNoticeChannels } from "./notice
 import { addBillingMonths } from "./period";
 import { INTERVAL_ADJECTIVES, INTERVAL_LABELS, INTERVAL_MONTHS, isBillingInterval, isPaidTier, periodPrice, PLAN_ADJECTIVES, PLAN_LABELS, type BillingInterval, type PaidTier } from "./plans";
 import { applyPlanMode } from "./server";
+import { sendAdminPush } from "@/lib/admin/admin-push";
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -20,6 +21,7 @@ const HOUR = 3_600_000;
 const RENEWAL_ATTEMPTS_AT = [-2 * HOUR, DAY, 3 * DAY];
 // ამაზე ძველი პასუხგაუცემელი მცდელობის სტატუსს ბანკს თავად ვეკითხებით (callback შეიძლება დაიკარგოს).
 const POLL_AFTER_MS = 5 * 60_000;
+const REFUND_STATUSES = new Set(["refund_requested", "refunded", "refunded_partially"]);
 
 // გადახდის დაწყება: ბანკში იქმნება შეკვეთა, ბარათი ავტოგანახლებისთვის ინახება და მომხმარებელი
 // ბანკის გვერდზე გადადის. გეგმა მხოლოდ დადასტურებული გადახდის შემდეგ ირთვება (applyBankReceipt).
@@ -61,8 +63,13 @@ export async function startCheckout(prisma: PrismaClient, userId: string, busine
 // განმეორებით გამოძახება უსაფრთხოა: გადახდა მხოლოდ ერთხელ აღირიცხება.
 export async function applyBankReceipt(prisma: PrismaClient, receipt: BogReceipt) {
     const row = await prisma.bankPayment.findUnique({ where: { bankOrderId: receipt.order_id } });
-    if (!row || row.status !== "PENDING") return row?.status ?? null;
     const status = receipt.order_status?.key ?? "";
+    // დაბრუნების შედეგი (ადმინმა მოითხოვა): მხოლოდ ბანკის სტატუსს ვინახავთ, გეგმა უკვე დამუშავებულია.
+    if (row?.status === "COMPLETED" && REFUND_STATUSES.has(status) && status !== row.bankStatus) {
+        await prisma.bankPayment.update({ where: { id: row.id }, data: { bankStatus: status } });
+        return row.status;
+    }
+    if (!row || row.status !== "PENDING") return row?.status ?? null;
     const cardMask = receipt.payment_detail?.payer_identifier?.slice(-8) ?? null;
     if (status === "completed") {
         const paid = Number(receipt.purchase_units?.transfer_amount ?? receipt.purchase_units?.request_amount ?? 0);
@@ -87,10 +94,13 @@ export async function syncBankOrder(prisma: PrismaClient, bankOrderId: string) {
 }
 
 async function completePayment(prisma: PrismaClient, id: string, cardMask: string | null) {
+    // claimed: ეს გამოძახება ამუშავებს (არა პარალელური callback/cron), მხოლოდ მაშინ ვაგზავნით push-ს.
+    let claimedHere = false;
     const replacedCard = await prisma.$transaction(async tx => {
         const row = await tx.bankPayment.findUniqueOrThrow({ where: { id } });
         if (!row.businessId || !isPaidTier(row.plan)) {
-            await tx.bankPayment.update({ where: { id }, data: { status: "COMPLETED", bankStatus: "completed", completedAt: new Date(), cardMask } });
+            const done = await tx.bankPayment.updateMany({ where: { id, status: "PENDING" }, data: { status: "COMPLETED", bankStatus: "completed", completedAt: new Date(), cardMask } });
+            claimedHere = done.count > 0;
             return null;
         }
         const businessId = row.businessId;
@@ -98,6 +108,7 @@ async function completePayment(prisma: PrismaClient, id: string, cardMask: strin
         // სხვა პროცესმა (callback/cron) უკვე დაამუშავა.
         const claimed = await tx.bankPayment.updateMany({ where: { id, status: "PENDING" }, data: { status: "COMPLETED", bankStatus: "completed", completedAt: new Date(), cardMask } });
         if (!claimed.count) return null;
+        claimedHere = true;
         const now = new Date();
         const plan = row.plan as PaidTier;
         const months = INTERVAL_MONTHS[row.interval];
@@ -143,23 +154,40 @@ async function completePayment(prisma: PrismaClient, id: string, cardMask: strin
         // ახალი ბარათი ძველს ცვლის: ძველს ბანკშიც ვშლით.
         return row.kind === "CHECKOUT" && before?.bankCardOrderId && before.bankCardOrderId !== row.bankOrderId ? before.bankCardOrderId : null;
     });
-    const row = await prisma.bankPayment.findUnique({ where: { id }, select: { businessId: true } });
+    const row = await prisma.bankPayment.findUnique({ where: { id }, select: { businessId: true, kind: true, plan: true, amount: true, interval: true, business: { select: { name: true } } } });
     if (row?.businessId) void queueNoticeChannels(row.businessId);
+    // ადმინს: ყოველი წარმატებული ბარათით გადახდა.
+    if (row && claimedHere) await sendAdminPush(prisma, {
+        title: row.kind === "RENEWAL" ? "გადახდა: ავტოგანახლება" : "ახალი გადახდა ბარათით",
+        body: `${row.business?.name ?? "ბიზნესი"} · ${PLAN_LABELS[row.plan as PaidTier] ?? row.plan} ${INTERVAL_LABELS[row.interval]} · ${row.amount.toFixed(2)} ₾`,
+        url: row.businessId ? `/admin/businesses/${row.businessId}` : "/admin/payments?view=bank", tag: `bank-${id}`,
+    });
     if (replacedCard) await deleteSavedCard(replacedCard).catch(() => console.error("BOG old card delete failed"));
 }
 
 async function rejectPayment(prisma: PrismaClient, id: string, bankStatus: string, cardMask: string | null) {
-    await prisma.$transaction(async tx => {
+    const claimedHere = await prisma.$transaction(async tx => {
         const claimed = await tx.bankPayment.updateMany({ where: { id, status: "PENDING" }, data: { status: "REJECTED", bankStatus, completedAt: new Date(), cardMask } });
-        if (!claimed.count) return;
+        if (!claimed.count) return false;
         const row = await tx.bankPayment.findUniqueOrThrow({ where: { id } });
         // ხელით გადახდის უარს მომხმარებელი გვერდზე ხედავს; ავტოგანახლების უარზე ვატყობინებთ (ერთხელ თითო ვადაზე).
         if (row.kind === "RENEWAL" && row.businessId) {
             await notifyPaymentFailed(tx, { businessId: row.businessId, attemptId: `${row.businessId}:${row.renewsExpiresAt?.toISOString() ?? id}`, plan: PLAN_LABELS[row.plan as PaidTier] ?? row.plan });
         }
+        return true;
     });
-    const row = await prisma.bankPayment.findUnique({ where: { id }, select: { businessId: true, kind: true } });
-    if (row?.kind === "RENEWAL" && row.businessId) void queueNoticeChannels(row.businessId);
+    if (!claimedHere) return;
+    const row = await prisma.bankPayment.findUnique({ where: { id }, select: { businessId: true, kind: true, plan: true, amount: true, renewsExpiresAt: true, business: { select: { name: true } } } });
+    if (row?.kind === "RENEWAL" && row.businessId) {
+        void queueNoticeChannels(row.businessId);
+        // ადმინს: ავტოგანახლება ჩავარდა (ერთ ვადაზე მაქსიმუმ 3 მცდელობა, ბოლოს მფლობელი ხელით იხდის).
+        const attempts = await prisma.bankPayment.count({ where: { businessId: row.businessId, kind: "RENEWAL", renewsExpiresAt: row.renewsExpiresAt } });
+        await sendAdminPush(prisma, {
+            title: "ავტოგანახლება ჩავარდა",
+            body: `${row.business?.name ?? "ბიზნესი"} · ${PLAN_LABELS[row.plan as PaidTier] ?? row.plan} · ${row.amount.toFixed(2)} ₾ · მცდელობა ${attempts}/${RENEWAL_ATTEMPTS_AT.length}`,
+            url: `/admin/businesses/${row.businessId}`, tag: `renewal-${row.businessId}`,
+        });
+    }
 }
 
 // დაბრუნების გვერდისთვის: მომხმარებელს ვაჩვენებთ მხოლოდ საკუთარი ბიზნესის გადახდას.

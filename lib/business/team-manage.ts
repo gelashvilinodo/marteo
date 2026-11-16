@@ -345,3 +345,28 @@ export async function getTeamRequests(db: Db, businessId: string, userId: string
         };
     });
 }
+
+/**
+ * Account deletion: a business whose only active owner is leaving the platform is deleted with its data.
+ * The other members get a notice (not tied to the business, so it survives). Returns the saved card to remove at the bank.
+ */
+export async function deleteBusinessOfLeavingOwner(db: Db, businessId: string, ownerId: string) {
+    const notices: Notice[] = [];
+    const result = await db.$transaction(async tx => {
+        await lockBusiness(tx, businessId);
+        const owners = await activeOwners(tx, businessId);
+        if (owners.some(owner => owner.userId !== ownerId)) throw new TeamError("ბიზნესს სხვა მფლობელიც ჰყავს: ის წაშლის ნაცვლად დარჩება.", 409);
+        const business = await tx.business.findUniqueOrThrow({ where: { id: businessId }, select: { name: true, subscription: { select: { bankCardOrderId: true } } } });
+        const members = await tx.businessMembership.findMany({ where: { businessId, userId: { not: ownerId } }, select: { userId: true } });
+        await tx.business.delete({ where: { id: businessId } });
+        notices.push({
+            userIds: members.map(member => member.userId), businessId: null, title: "ბიზნესი წაიშალა",
+            body: `ბიზნესი „${business.name}“ წაიშალა, რადგან მისმა მფლობელმა მართეოს ანგარიში გააუქმა. მადლობა თანამშრომლობისთვის!`,
+            actionUrl: null, key: `business-owner-deleted:${businessId}`,
+        });
+        await writeNotices(tx, notices);
+        return { name: business.name, bankCardOrderId: business.subscription?.bankCardOrderId ?? null };
+    });
+    pushNotices(notices);
+    return result;
+}

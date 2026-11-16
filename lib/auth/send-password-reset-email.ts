@@ -1,4 +1,4 @@
-import { reserveDelivery } from "@/lib/security/delivery-limit";
+import { reserveEmail, sendTracked } from "@/lib/email/email-log";
 import { devDeliveryToConsole, logDevDelivery } from "@/lib/dev/dev-delivery";
 import "server-only";
 
@@ -82,7 +82,7 @@ export async function sendPasswordResetEmail({
     url.hash = new URLSearchParams({ token }).toString();
 
     const resetLink = url.toString();
-    await reserveDelivery("email", to.trim().toLowerCase());
+    await reserveEmail("password-reset", to);
 
     if (devDeliveryToConsole()) {
         logDevDelivery("email", to, `password reset link=${resetLink}`);
@@ -91,7 +91,7 @@ export async function sendPasswordResetEmail({
 
     const resend = new Resend(apiKey);
 
-    const { error } = await resend.emails.send({
+    const { error } = await sendTracked("password-reset", to, () => resend.emails.send({
         from,
         to: [to],
         subject: "MARTEO - პაროლის აღდგენა",
@@ -118,7 +118,7 @@ export async function sendPasswordResetEmail({
                 <p>MARTEO.GE</p>
             </div>
         `,
-    });
+    }));
 
     if (error) {
         throw new Error("Password reset email delivery failed");

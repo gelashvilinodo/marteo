@@ -1,5 +1,5 @@
 import { escapeHtml } from "@/lib/security/html";
-import { reserveDelivery } from "@/lib/security/delivery-limit";
+import { reserveEmail, sendTracked } from "@/lib/email/email-log";
 import { Resend } from "resend";
 import { devDeliveryToConsole, logDevDelivery } from "@/lib/dev/dev-delivery";
 
@@ -25,7 +25,7 @@ export async function sendVerificationEmail({
     throw new Error("RESEND_FROM_EMAIL is not configured");
   }
 
-  await reserveDelivery("email", to.trim().toLowerCase());
+  await reserveEmail("verification", to);
 
   if (devDeliveryToConsole()) {
     logDevDelivery("email", to, `verification code=${token}`);
@@ -34,7 +34,7 @@ export async function sendVerificationEmail({
 
   const resend = new Resend(apiKey);
 
-  const { data, error } = await resend.emails.send({
+  const { data, error } = await sendTracked("verification", to, () => resend.emails.send({
     from: fromEmail,
     to: [to],
     subject: "MARTEO - ელფოსტის დადასტურება",
@@ -73,7 +73,7 @@ export async function sendVerificationEmail({
     <p>MARTEO.GE</p>
   </div>
 `,
-  });
+  }));
 
   if (error) {
     throw new Error(error.message);
