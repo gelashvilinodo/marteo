@@ -67,7 +67,7 @@ export default function AiSettingsPanel({ businessId, initial }: { businessId: s
             <label className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2.5">
                 <span className="text-sm text-text-primary">AI გამორთული
                     <span className="block text-[11px] text-text-secondary">ბიზნესი AI-ს ვერ გამოიყენებს.</span></span>
-                <input type="checkbox" checked={disabled} onChange={event => { setNotice(""); setDisabled(event.target.checked); }} className="h-5 w-5 accent-[var(--marteo-danger,#dc2626)]" />
+                <input type="checkbox" checked={disabled} onChange={event => { setNotice(""); setDisabled(event.target.checked); }} className="[--checkbox-color:var(--marteo-danger)]" />
             </label>
             <label className="text-xs text-text-secondary">ცალკე თვიური ლიმიტი
                 <input inputMode="numeric" value={limit} onChange={event => { setNotice(""); setLimit(event.target.value.replace(/\D/g, "").slice(0, 6)); }}
