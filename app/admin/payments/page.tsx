@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { adminMetadata } from "@/lib/admin/metadata";
 import { notFound } from "next/navigation";
 import { AdminAccessError } from "@/lib/admin/overview";
 import { ADMIN_PAGE_SIZE, getAdminBankAttempts, getAdminPayments, getBankAlerts, parseAdminPage, parseBankFilters, parsePaymentFilters } from "@/lib/admin/lists";
@@ -9,7 +10,9 @@ import AdminPagination from "@/components/admin/AdminPagination";
 import AdminFilters from "@/components/admin/AdminFilters";
 import ExportButton from "@/components/admin/ExportButton";
 
-export const metadata = { title: "გადახდები · ადმინ პანელი" };
+export function generateMetadata() {
+    return adminMetadata("გადახდები · ადმინ პანელი");
+}
 
 const PERIOD_OPTIONS = [{ value: "7", label: "ბოლო 7 დღე" }, { value: "30", label: "ბოლო 30 დღე" }, { value: "90", label: "ბოლო 90 დღე" }, { value: "365", label: "ბოლო წელი" }];
 const VOIDED_OPTIONS = [{ value: "include", label: "გაუქმებულებითაც" }, { value: "only", label: "მხოლოდ გაუქმებული" }];

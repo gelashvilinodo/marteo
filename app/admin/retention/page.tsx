@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { adminMetadata } from "@/lib/admin/metadata";
 import { Icon } from "@iconify/react";
 import { notFound } from "next/navigation";
 import { getAdminUser } from "@/lib/admin/authorization";
@@ -7,7 +8,9 @@ import { createPrismaClient } from "@/lib/prisma";
 import { formatSupportCount, formatSupportDate } from "@/lib/support/support-config";
 import DeleteBusinessButton from "@/components/admin/DeleteBusinessButton";
 
-export const metadata = { title: "წასაშლელი ბიზნესები · ადმინ პანელი" };
+export function generateMetadata() {
+    return adminMetadata("წასაშლელი ბიზნესები · ადმინ პანელი");
+}
 export const dynamic = "force-dynamic";
 
 function Row({ business }: { business: RetentionBusiness }) {

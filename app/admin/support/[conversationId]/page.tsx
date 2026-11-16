@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { adminMetadata } from "@/lib/admin/metadata";
 import { getAdminUser } from "@/lib/admin/authorization";
 import { createPrismaClient } from "@/lib/prisma";
 import { getConversationBusinessProfile, displayName } from "@/lib/support/support-chat";
@@ -9,7 +10,9 @@ import { getBusinessAi } from "@/lib/admin/ai-usage";
 import { listPayments } from "@/lib/admin/payments";
 import { getBusinessRiskSignals } from "@/lib/admin/risk-signals";
 
-export const metadata = { title: "მიმოწერა · ადმინ პანელი" };
+export function generateMetadata() {
+    return adminMetadata("მიმოწერა · ადმინ პანელი");
+}
 
 type Props = { params: Promise<{ conversationId: string }> };
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { adminMetadata } from "@/lib/admin/metadata";
 import { Icon } from "@iconify/react";
 import { notFound } from "next/navigation";
 import { AdminAccessError } from "@/lib/admin/overview";
@@ -6,7 +7,9 @@ import { EXPIRING_DAYS, INACTIVE_DAYS, LAPSED_DAYS, ONBOARDING_DAYS, RISK_KIND_K
 import { formatSupportCount, formatSupportDate } from "@/lib/support/support-config";
 import OpenSupportChatButton from "@/components/admin/OpenSupportChatButton";
 
-export const metadata = { title: "ყურადღება · ადმინ პანელი" };
+export function generateMetadata() {
+    return adminMetadata("ყურადღება · ადმინ პანელი");
+}
 
 const RULES: Record<RiskKind, string> = {
     lapsed: `ფასიანი პაკეტის ან საცდელის ვადა გავიდა ბოლო ${LAPSED_DAYS} დღეში და ახალი გადახდა არ აღრიცხულა.`,

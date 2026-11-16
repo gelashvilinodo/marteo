@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { adminMetadata } from "@/lib/admin/metadata";
 import { AdminAccessError } from "@/lib/admin/overview";
 import { getEmailLog, parseEmailFilters } from "@/lib/admin/email-log";
 import { EMAIL_KIND_LABELS, EMAIL_STATUS } from "@/lib/admin/email-labels";
@@ -9,7 +10,9 @@ import AdminPagination from "@/components/admin/AdminPagination";
 import EmailLogList from "@/components/admin/EmailLogList";
 import { BackLink } from "@/components/admin/AdminDetail";
 
-export const metadata = { title: "ელფოსტის ჟურნალი · ადმინ პანელი" };
+export function generateMetadata() {
+    return adminMetadata("ელფოსტის ჟურნალი · ადმინ პანელი");
+}
 
 export default async function AdminEmailsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
     const params = await searchParams;

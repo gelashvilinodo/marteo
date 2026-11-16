@@ -31,6 +31,9 @@ if(!/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(base))throw Error('Local QA o
   assert.equal(data.newBusinessesToday,newBusinesses);
   r=await get('/admin',ownerToken);assert.equal(r.status,200);const html=await r.text();
   for(const label of ['ბიზნესები','მომხმარებლები','შეკვეთები','დაბეჭდილი ინვოისები','მარაგის მოძრაობები','დღეს დამატებული ბიზნესები'])assert.ok(html.includes(label));
+  // Titles and skeletons reach only the admin; everyone else gets a 404 with nothing admin-specific.
+  r=await get('/admin/security',ownerToken);assert.equal(r.status,200);assert.ok((await r.text()).includes('უსაფრთხოება · ადმინ პანელი'),'admin title for the admin');
+  for(const token of [undefined,userToken])for(const p of ['/admin','/admin/security','/admin/users','/admin-login']){const res=await get(p,token);assert.equal(res.status,404,p);assert.ok(!/ადმინ|მთელი პლატფორმის/.test(await res.text()),'nothing admin-specific in '+p)}
   r=await get('/dashboard',ownerToken);assert.equal(r.status,200);assert.ok((await r.text()).includes('ადმინ პანელი'));
   await db.query('UPDATE "User" SET "isPlatformAdmin"=false WHERE id=$1',[fixture]);
   // Suspension must invalidate an otherwise valid session too.

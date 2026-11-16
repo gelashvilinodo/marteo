@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { adminMetadata } from "@/lib/admin/metadata";
 import { Icon } from "@iconify/react";
 import { notFound } from "next/navigation";
 import { AdminAccessError } from "@/lib/admin/overview";
@@ -24,7 +25,9 @@ import { getBusinessSms } from "@/lib/sms/sms-admin";
 import { getBusinessAi } from "@/lib/admin/ai-usage";
 import { createPrismaClient } from "@/lib/prisma";
 
-export const metadata = { title: "ბიზნესი · ადმინ პანელი" };
+export function generateMetadata() {
+    return adminMetadata("ბიზნესი · ადმინ პანელი");
+}
 
 
 

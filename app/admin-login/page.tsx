@@ -1,11 +1,14 @@
 import { notFound, redirect } from "next/navigation";
+import { adminMetadata } from "@/lib/admin/metadata";
 import { getAdminCandidate, getAdminDevice } from "@/lib/admin/authorization";
 import { getTwoFactorState } from "@/lib/admin/two-factor";
 import AdminTwoFactorLogin from "@/components/admin/AdminTwoFactorLogin";
 import { createPrismaClient } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "ადმინ პანელი · მეორე ნაბიჯი", robots: { index: false, follow: false } };
+export function generateMetadata() {
+    return adminMetadata("ადმინ პანელი · მეორე ნაბიჯი", { robots: { index: false, follow: false } });
+}
 
 // ადმინ პანელის მეორე ნაბიჯი: ჯერ ჩართვა (QR), შემდეგ ყოველ ახალ მოწყობილობაზე კოდი.
 export default async function AdminLoginPage() {

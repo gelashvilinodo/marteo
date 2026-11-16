@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { adminMetadata } from "@/lib/admin/metadata";
 import { Icon } from "@iconify/react";
 import { notFound } from "next/navigation";
 import { AdminAccessError } from "@/lib/admin/overview";
@@ -9,7 +10,9 @@ import AdminPagination from "@/components/admin/AdminPagination";
 import { Panel } from "@/components/admin/AdminDetail";
 import { BannerManager, ResolveAllButton, ResolveErrorButton } from "@/components/admin/SystemActions";
 
-export const metadata = { title: "სისტემა · ადმინ პანელი" };
+export function generateMetadata() {
+    return adminMetadata("სისტემა · ადმინ პანელი");
+}
 
 const JOB_STATES: Record<SystemJobView["state"], { label: string; icon: string; tone: string }> = {
     ok: { label: "მუშაობს", icon: "solar:check-circle-bold", tone: "text-success" },

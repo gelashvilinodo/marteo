@@ -1,11 +1,14 @@
 import { notFound } from "next/navigation";
+import { adminMetadata } from "@/lib/admin/metadata";
 import { getAdminUser } from "@/lib/admin/authorization";
 import { createPrismaClient } from "@/lib/prisma";
 import { getVapidPublicKey } from "@/lib/push/web-push";
 import { listAdminConversations } from "@/lib/support/support-chat";
 import AdminSupportInbox from "@/components/admin/AdminSupportInbox";
 
-export const metadata = { title: "დახმარება · ადმინ პანელი" };
+export function generateMetadata() {
+    return adminMetadata("დახმარება · ადმინ პანელი");
+}
 
 export default async function AdminSupportPage() {
     if (!await getAdminUser()) notFound();

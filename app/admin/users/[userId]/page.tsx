@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { adminMetadata } from "@/lib/admin/metadata";
 import { Icon } from "@iconify/react";
 import { notFound } from "next/navigation";
 import { AdminAccessError } from "@/lib/admin/overview";
@@ -17,7 +18,9 @@ import EmailLogList from "@/components/admin/EmailLogList";
 import DeleteUserButton from "@/components/admin/DeleteUserButton";
 import { planAccountDeletion } from "@/lib/account/delete-account";
 
-export const metadata = { title: "მომხმარებელი · ადმინ პანელი" };
+export function generateMetadata() {
+    return adminMetadata("მომხმარებელი · ადმინ პანელი");
+}
 
 function when(date: Date | null, empty: string) {
     if (!date) return empty;

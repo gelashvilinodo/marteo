@@ -1,11 +1,14 @@
 import { notFound } from "next/navigation";
+import { adminMetadata } from "@/lib/admin/metadata";
 import { getAdminUser } from "@/lib/admin/authorization";
 import { listTemplates } from "@/lib/admin/support-tools";
 import { createPrismaClient } from "@/lib/prisma";
 import { BackLink } from "@/components/admin/AdminDetail";
 import TemplatesManager from "@/components/admin/TemplatesManager";
 
-export const metadata = { title: "სწრაფი პასუხები · ადმინ პანელი" };
+export function generateMetadata() {
+    return adminMetadata("სწრაფი პასუხები · ადმინ პანელი");
+}
 
 export default async function SupportTemplatesPage() {
     if (!await getAdminUser()) notFound();

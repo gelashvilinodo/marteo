@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { adminMetadata } from "@/lib/admin/metadata";
 import { getAdminDevice, getAdminUser } from "@/lib/admin/authorization";
 import { getTwoFactorState, listDevices } from "@/lib/admin/two-factor";
 import { getAuditLog } from "@/lib/admin/actions";
@@ -7,7 +8,9 @@ import AuditHistory from "@/components/admin/AuditHistory";
 import { Panel } from "@/components/admin/AdminDetail";
 import { createPrismaClient } from "@/lib/prisma";
 
-export const metadata = { title: "უსაფრთხოება · ადმინ პანელი" };
+export function generateMetadata() {
+    return adminMetadata("უსაფრთხოება · ადმინ პანელი");
+}
 
 export default async function AdminSecurityPage() {
     const admin = await getAdminUser();

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { adminMetadata } from "@/lib/admin/metadata";
 import { Icon } from "@iconify/react";
 import { notFound } from "next/navigation";
 import { AdminAccessError } from "@/lib/admin/overview";
@@ -7,7 +8,9 @@ import { AI_MONTHLY_LIMITS } from "@/lib/ai/ai-quota";
 import { formatSupportCount } from "@/lib/support/support-config";
 import { Card } from "@/components/admin/GrowthSection";
 
-export const metadata = { title: "მართეო AI · ადმინ პანელი" };
+export function generateMetadata() {
+    return adminMetadata("მართეო AI · ადმინ პანელი");
+}
 
 const KIND_LABELS: Record<string, string> = { CHAT: "კითხვები", PURCHASE_DRAFT: "ფაილიდან შესყიდვა", TITLE: "ჩათის სათაურები" };
 const MONTHS = ["იან", "თებ", "მარ", "აპრ", "მაი", "ივნ", "ივლ", "აგვ", "სექ", "ოქტ", "ნოე", "დეკ"];

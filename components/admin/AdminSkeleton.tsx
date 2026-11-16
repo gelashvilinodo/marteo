@@ -1,10 +1,19 @@
 import type { ReactNode } from "react";
-import { SkeletonText as Text } from "@/components/plans/LoadingSkeleton";
 
-// ადმინის გვერდების ჩონჩხი: სათაური ნამდვილია, დანარჩენი ნაცრისფერი ფორმებია იმავე ზომით,
-// რომ ჩატვირთვისას გვერდი არ „ხტუნავდეს“. AdminShell უკვე აძლევს padding-ს, ამიტომ აქ არ ემატება.
+// ადმინის გვერდების ჩონჩხი: მხოლოდ ნაცრისფერი ფორმები, ნამდვილი გვერდის ზომით, რომ ჩატვირთვისას არ „ხტუნავდეს“.
+// ტექსტი განზრახ არ არის: Next.js loading.tsx-ს პასუხში 404-ის დროსაც სვამს, ადმინ პანელის არსებობა კი
+// არაადმინისთვის არ უნდა ჩანდეს. AdminShell უკვე აძლევს padding-ს, ამიტომ აქ არ ემატება.
 
-export { Text };
+/** A grey bar as wide as the sample text would be; the text itself never reaches the page. */
+export function Text({ children, className = "" }: { children: string; className?: string }) {
+    return <span className={`inline-block h-[0.9em] max-w-full rounded bg-text-secondary/10 align-middle ${className}`} style={{ width: `${Math.min(children.length * 0.55, 40)}em` }} />;
+}
+
+/** Stands in for a page or section title: same height as the text, no words. */
+export function Title({ level = 1, size = 12, className = "" }: { level?: 1 | 2 | 3; size?: number; className?: string }) {
+    const height = level === 1 ? "h-8" : level === 2 ? "h-6" : "h-5";
+    return <span className={`block max-w-full rounded-lg bg-text-secondary/10 ${height} ${className}`} style={{ width: `${size}rem` }} />;
+}
 
 const WIDTHS = { "3xl": "max-w-3xl", "4xl": "max-w-4xl", "5xl": "max-w-5xl", "6xl": "max-w-6xl" } as const;
 
@@ -20,8 +29,8 @@ export const Block = ({ className = "" }: { className?: string }) => <span class
 export function SkHeader({ title, subtitle, action = false }: { title: string; subtitle?: string; action?: boolean }) {
     return <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-            <h1 className="text-2xl font-semibold text-text-primary">{title}</h1>
-            {subtitle && <p className="mt-1 text-sm"><Text>{subtitle}</Text></p>}
+            <Title size={Math.min(title.length * 0.9, 18)} />
+            {subtitle && <p className="mt-2 text-sm"><Text>{subtitle}</Text></p>}
         </div>
         {action && <Block className="h-10 w-28 rounded-xl" />}
     </div>;
@@ -63,7 +72,7 @@ export function SkList({ rows = 8, avatar = true, className = "mt-4" }: { rows?:
 /** A titled panel with plain rows inside (detail pages, settings). */
 export function SkPanel({ title, rows = 3, children, className = "" }: { title: string; rows?: number; children?: ReactNode; className?: string }) {
     return <section className={`min-w-0 rounded-3xl border border-border bg-surface p-5 ${className}`}>
-        <h2 className="text-base font-semibold text-text-primary">{title}</h2>
+        <Title level={3} size={Math.min(title.length * 0.6, 16)} />
         <div className="mt-3">
             {children ?? <div className="flex flex-col gap-3">
                 {Array.from({ length: rows }, (_, index) => <div key={index} className="flex items-center gap-3">
@@ -96,7 +105,7 @@ export function SkProfile() {
 
 export function SkChart({ title, height = "h-44" }: { title: string; height?: string }) {
     return <section className="min-w-0 rounded-2xl border border-border bg-surface p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-text-primary">{title}</h2>
+        <Title level={3} size={Math.min(title.length * 0.55, 16)} />
         <p className="mt-4 text-sm"><Text>სულ 000</Text></p>
         <div className={`mt-4 flex items-end gap-1 ${height}`}>
             {[40, 65, 30, 80, 55, 70, 25, 90, 45, 60, 35, 75].map((value, index) =>

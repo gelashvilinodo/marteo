@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { adminMetadata } from "@/lib/admin/metadata";
 import { AdminAccessError } from "@/lib/admin/overview";
 import { parseAdminPage } from "@/lib/admin/lists";
 import { AUDIT_GROUPS, AUDIT_PAGE_SIZE, getAuditLogPage, type AuditGroup } from "@/lib/admin/system";
@@ -8,7 +9,9 @@ import AdminFilters from "@/components/admin/AdminFilters";
 import AuditHistory, { type AuditTarget } from "@/components/admin/AuditHistory";
 import { BackLink } from "@/components/admin/AdminDetail";
 
-export const metadata = { title: "ქმედებების ისტორია · ადმინ პანელი" };
+export function generateMetadata() {
+    return adminMetadata("ქმედებების ისტორია · ადმინ პანელი");
+}
 
 const PERIODS = ["7", "30", "90"] as const;
 const one = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value) ?? "";
