@@ -263,7 +263,7 @@ export default function Header() {
             id="login-modal-title"
             className="mt-4 text-xl font-semibold text-text-primary"
           >
-            მოგესალმებით MARTEO-ში
+            მოგესალმებით MARTEO-ზე
           </h2>
 
           <div className="mt-6 grid gap-3">

@@ -49,7 +49,7 @@ export async function sendEmailChangeCode({
         html: `
             <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto">
                 <h2>ელფოსტის შეცვლა</h2>
-                <p>ახალი ელფოსტის დასადასტურებლად ჩაწერეთ ეს კოდი MARTEO-ში:</p>
+                <p>ახალი ელფოსტის დასადასტურებლად ჩაწერეთ ეს კოდი MARTEO-ზე:</p>
                 <div style="margin:24px 0;padding:20px;background:#0f1c2e;color:#fff;font-size:32px;font-weight:700;letter-spacing:8px;text-align:center;border-radius:12px">
                     ${code}
                 </div>

@@ -73,7 +73,7 @@ export const faqGroups: FaqGroup[] = [
     },
     {
         id: "using",
-        title: "მუშაობა მართეოში",
+        title: "მუშაობა მართეოზე",
         icon: "solar:widget-5-bold-duotone",
         items: [
             {

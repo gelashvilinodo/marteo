@@ -77,7 +77,7 @@ export function homeTourSteps(mode: BusinessMode, canOpen: (path: string) => boo
     return [
         {
             icon: "solar:star-shine-linear",
-            title: "მოგესალმებით მართეოში",
+            title: "მოგესალმებით მართეოზე",
             body: "მართეო თქვენი ბიზნესის ერთი სივრცეა: შეკვეთები, მარაგი, შესყიდვები და ფინანსები ერთ ადგილას. მოკლედ გაჩვენებთ, რა არის თითო გვერდზე. გვერდებს მენიუდან გახსნი.",
         },
         ...pages.filter(page => page.show !== false && (!page.path || canOpen(page.path))).map(({ icon, title, body }) => ({ icon, title, body })),

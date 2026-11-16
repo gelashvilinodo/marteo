@@ -8,7 +8,7 @@ import FeaturesHeroPreview from "@/components/landing/FeaturesHeroPreview";
 
 export const metadata = {
     title: "შესაძლებლობები - MARTEO",
-    description: "როგორ გადის ბიზნესის ერთი ციკლი მართეოში: შესყიდვა, წარმოება, მარაგი, შეკვეთა, მომხმარებელი და მოგება.",
+    description: "როგორ გადის ბიზნესის ერთი ციკლი მართეოზე: შესყიდვა, წარმოება, მარაგი, შეკვეთა, მომხმარებელი და მოგება.",
 };
 
 export default function FeaturesPage() {

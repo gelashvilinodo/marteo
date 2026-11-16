@@ -8,7 +8,7 @@ export const ka = {
 
   auth: {
     login: {
-      title: "მოგესალმებით MARTEO-ში",
+      title: "მოგესალმებით MARTEO-ზე",
       submit: "შესვლა",
       register: "რეგისტრაცია",
       forgotPassword: "დაგავიწყდათ პაროლი?",

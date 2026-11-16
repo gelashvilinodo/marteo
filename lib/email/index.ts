@@ -40,7 +40,7 @@ export async function sendVerificationEmail({
     subject: "MARTEO - ელფოსტის დადასტურება",
     html: `
   <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <h2>მოგესალმებით MARTEO-ში, ${escapeHtml(firstName)}!</h2>
+    <h2>მოგესალმებით MARTEO-ზე, ${escapeHtml(firstName)}!</h2>
 
     <p>
       თქვენი ელფოსტის დასადასტურებელი კოდია:
@@ -63,7 +63,7 @@ export async function sendVerificationEmail({
     </div>
 
     <p>
-      ჩაწერეთ ეს 6-ნიშნა კოდი MARTEO-ში.
+      ჩაწერეთ ეს 6-ნიშნა კოდი MARTEO-ზე.
     </p>
 
     <p>

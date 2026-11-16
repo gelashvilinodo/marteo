@@ -274,7 +274,7 @@ async function sendInviteEmail({ to, token, role, businessName, inviter }: {
         ].join("\n\n"),
         html: `
             <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto">
-                <h2>მოწვევა MARTEO-ში</h2>
+                <h2>მოწვევა MARTEO-ზე</h2>
                 <p><strong>${escapeHtml(inviterName)}</strong> გიწვევთ ბიზნესში <strong>„${escapeHtml(businessName)}“</strong> ${roleText}.</p>
                 <a href="${link}" style="display:inline-block;margin:16px 0;padding:14px 22px;background:#16c45b;color:#081f16;text-decoration:none;font-weight:700;border-radius:12px">
                     მოწვევის მიღება
