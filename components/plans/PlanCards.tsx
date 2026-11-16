@@ -2,6 +2,8 @@ import { Icon } from "@/components/shared/Icon";
 import type { ReactNode } from "react";
 import { PLAN_CARDS, YEARLY_PAID_MONTHS, type PlanCard } from "@/lib/subscription/plan-catalog";
 import PlanCarousel from "./PlanCarousel";
+import AnimatedNumber from "./AnimatedNumber";
+import Swap from "./Swap";
 import type { PaidTier } from "@/lib/subscription/plans";
 
 // სამი გეგმის ქარდი. action თითო ქარდის ღილაკს აწყობს (ფასების გვერდზე „დაიწყე“, დაშბორდში „დეტალურად“).
@@ -69,18 +71,14 @@ function PlanCardView({ card, action, current, focused, compact, yearly }: { car
                 : card.badge && (focused || !pro) && <span className={`ml-auto rounded-lg px-2.5 py-1 text-xs font-medium ${focused ? "bg-accent text-white" : theme.badge}`}>{card.badge}</span>}
         </div>
         <p className={`-mt-2 text-sm ${muted}`}>{card.tagline}</p>
-        {yearly
-            ? <div>
-                <p><span className="text-4xl font-semibold">{card.price * YEARLY_PAID_MONTHS}</span> <span className={`text-base ${muted}`}>₾ / წელი</span></p>
-                <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-                    <s className={muted}>{card.price * 12} ₾</s>
-                    <span className={`rounded-md px-1.5 py-0.5 font-semibold ${focused ? "bg-[#7ee2a8]/15 text-[#7ee2a8]" : "bg-success/12 text-success"}`}>{12 - YEARLY_PAID_MONTHS} თვე საჩუქრად · −{card.price * (12 - YEARLY_PAID_MONTHS)} ₾</span>
-                </p>
-            </div>
-            : <div>
-                <p><span className="text-4xl font-semibold">{card.price}</span> <span className={`text-base ${muted}`}>₾ / თვე</span></p>
-                {pro && <p className={`mt-1 text-xs ${focused ? "text-[#85B7EB]" : "text-accent"}`}>{card.perDay}</p>}
-            </div>}
+        <div>
+            <p><AnimatedNumber value={yearly ? card.price * YEARLY_PAID_MONTHS : card.price} className="text-4xl font-semibold" /> <Swap inline on={yearly} className={`text-base ${muted}`} yes="₾ / წელი" no="₾ / თვე" /></p>
+            {/* ორივე ვარიანტი ერთ უჯრაშია, ამიტომ ქარდის სიმაღლე გადართვისას არ იცვლება. */}
+            <Swap on={yearly} className="mt-1.5 text-xs" no={pro && <p className={focused ? "text-[#85B7EB]" : "text-accent"}>{card.perDay}</p>} yes={<p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <s className={muted}>{card.price * 12} ₾</s>
+                <span className={`rounded-md px-1.5 py-0.5 font-semibold ${focused ? "bg-[#7ee2a8]/15 text-[#7ee2a8]" : "bg-success/12 text-success"}`}>{12 - YEARLY_PAID_MONTHS} თვე საჩუქრად · −{card.price * (12 - YEARLY_PAID_MONTHS)} ₾</span>
+            </p>} />
+        </div>
         {action}
         <ul className="flex flex-col gap-2.5 text-sm">
             {rows.map(row => <li key={row.label} className="flex items-start gap-2.5">
