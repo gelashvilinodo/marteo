@@ -2,7 +2,7 @@ import "server-only";
 import { reserveDelivery } from "@/lib/security/delivery-limit";
 import { createPrismaClient } from "@/lib/prisma";
 
-export type EmailKind = "verification" | "password-reset" | "email-change" | "team-invite" | "notice";
+export type EmailKind = "verification" | "password-reset" | "email-change" | "team-invite" | "admin-invite" | "notice";
 
 // შეცდომიდან მხოლოდ ტიპი (მაგ. validation_error), არასდროს ტექსტი.
 function errorName(error: unknown) {

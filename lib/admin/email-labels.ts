@@ -1,7 +1,7 @@
 // ელფოსტის ჟურნალის ტექსტები (სერვერის გვერდებიც და კომპონენტებიც იყენებს).
 export const EMAIL_KIND_LABELS: Record<string, string> = {
     verification: "დადასტურების კოდი", "password-reset": "პაროლის აღდგენა", "email-change": "ელფოსტის შეცვლის კოდი",
-    "team-invite": "მოწვევა ბიზნესში", notice: "შეტყობინება (გეგმა, გადახდა)",
+    "team-invite": "მოწვევა ბიზნესში", "admin-invite": "მოწვევა ადმინად", notice: "შეტყობინება (გეგმა, გადახდა)",
 };
 
 export const EMAIL_STATUS: Record<string, { label: string; tone: string; icon: string }> = {

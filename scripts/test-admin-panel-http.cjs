@@ -10,7 +10,7 @@ if(!/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(base))throw Error('Local QA o
  const fixture='admin-qa-'+randomUUID(),sessionIds=[];
  try{
   await db.connect();
-  const owner=(await db.query('SELECT id FROM "User" WHERE "isPlatformAdmin" AND status=\'ACTIVE\'')).rows;
+  const owner=(await db.query('SELECT id FROM "User" u WHERE "isPlatformAdmin" AND status=\'ACTIVE\' AND NOT EXISTS (SELECT 1 FROM "AdminInvite" i WHERE i."acceptedById"=u.id AND i.status=\'ACCEPTED\')')).rows;
   assert.equal(owner.length,1);
   await db.query('INSERT INTO "User" (id,email,phone,password,status,"updatedAt") VALUES ($1,$2,$3,$4,\'ACTIVE\',now())',[fixture,fixture+'@example.invalid',fixture,'disabled-qa-password']);
   async function session(userId,expired=false){const token=randomBytes(32).toString('hex'),id=randomUUID();sessionIds.push(id);await db.query('INSERT INTO "Session" (id,"userId","tokenHash","expiresAt","updatedAt") VALUES ($1,$2,$3,$4,now())',[id,userId,createHash('sha256').update(token).digest('hex'),new Date(Date.now()+(expired?-60000:600000))]);return token}

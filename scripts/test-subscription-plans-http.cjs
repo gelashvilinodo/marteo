@@ -12,7 +12,7 @@ const DAY=86400000,at=days=>new Date(Date.now()+days*DAY).toISOString();
  const sessionIds=[],userIds=[ownerId,freshId],startedAt=new Date();
  try{
   await db.connect();
-  const admins=(await db.query('SELECT id FROM "User" WHERE "isPlatformAdmin" AND status=\'ACTIVE\'')).rows;
+  const admins=(await db.query('SELECT id FROM "User" u WHERE "isPlatformAdmin" AND status=\'ACTIVE\' AND NOT EXISTS (SELECT 1 FROM "AdminInvite" i WHERE i."acceptedById"=u.id AND i.status=\'ACCEPTED\')')).rows;
   assert.equal(admins.length,1);
   for(const [id,trialUsed] of [[ownerId,true],[freshId,false]]){
    await db.query('INSERT INTO "User" (id,email,phone,password,status,"emailVerifiedAt","phoneVerifiedAt","trialUsedAt","updatedAt") VALUES ($1,$2,$3,$4,\'ACTIVE\',now(),now(),$5,now())',[id,id+'@example.invalid','+000'+id,'disabled-qa-password',trialUsed?at(-30):null]);

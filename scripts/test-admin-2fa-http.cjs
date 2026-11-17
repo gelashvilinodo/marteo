@@ -18,7 +18,7 @@ const nextStep=()=>new Promise(r=>setTimeout(r,30000-(Date.now()%30000)+300));
  const sessionIds=[];let adminId=null;
  try{
   await db.connect();
-  const admins=(await db.query('SELECT id FROM "User" WHERE "isPlatformAdmin" AND status=\'ACTIVE\'')).rows;
+  const admins=(await db.query('SELECT id FROM "User" u WHERE "isPlatformAdmin" AND status=\'ACTIVE\' AND NOT EXISTS (SELECT 1 FROM "AdminInvite" i WHERE i."acceptedById"=u.id AND i.status=\'ACCEPTED\')')).rows;
   assert.equal(admins.length,1);
   const existing=(await db.query('SELECT (SELECT count(*)::int FROM "AdminSecurity" WHERE "userId"=$1) AS security,(SELECT count(*)::int FROM "AdminTrustedDevice" WHERE "userId"=$1) AS devices,(SELECT count(*)::int FROM "AdminAuditLog" WHERE "targetId"=$1 AND action LIKE \'admin-%\') AS audit',[admins[0].id])).rows[0];
   if(existing.security||existing.devices||existing.audit){console.log(JSON.stringify({skipped:'real admin already uses 2FA; this QA only runs before setup'}));return}

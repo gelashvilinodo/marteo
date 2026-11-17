@@ -201,6 +201,8 @@ model User {
   sessions               Session[]
   adminSecurity          AdminSecurity?
   adminDevices           AdminTrustedDevice[]
+  sentAdminInvites       AdminInvite[]            @relation("AdminInviteInvitedBy")
+  acceptedAdminInvites   AdminInvite[]            @relation("AdminInviteAcceptedBy")
   aiConversations        AiConversation[]
   emailChangeRequests    EmailChangeRequest[]
   phoneChangeRequests    PhoneChangeRequest[]
@@ -1485,6 +1487,28 @@ model AdminSecurity {
 }
 
 // ადმინ პანელისთვის სანდო მოწყობილობა: კოდის შეყვანის შემდეგ ვადამდე კოდს აღარ ითხოვს.
+// ადმინ პანელის მოწვევა ელფოსტით. მიღებული მოწვევა ჩანაწერად რჩება: ვინ ვინ მოიწვია.
+// ადმინი, რომელსაც მიღებული მოწვევა არ აქვს (სკრიპტით დანიშნული), პლატფორმის მფლობელია.
+model AdminInvite {
+  id           String    @id @default(cuid())
+  email        String
+  // PENDING | ACCEPTED | CANCELED
+  status       String    @default("PENDING")
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  invitedById  String?
+  acceptedById String?
+  acceptedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  invitedBy  User? @relation("AdminInviteInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  acceptedBy User? @relation("AdminInviteAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  @@index([status, expiresAt])
+  @@index([email])
+  @@index([acceptedById])
+}
+
 model AdminTrustedDevice {
   id        String    @id @default(cuid())
   userId    String

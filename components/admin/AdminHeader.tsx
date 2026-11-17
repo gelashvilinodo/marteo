@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Icon } from "@iconify/react";
+import AdminProfileMenu from "./AdminProfileMenu";
 
 type AdminHeaderProps = {
     onMenuClick: () => void;
@@ -9,9 +10,10 @@ type AdminHeaderProps = {
     menuOpen: boolean;
     adminName: string;
     adminEmail: string;
+    isOwner: boolean;
 };
 
-export default function AdminHeader({ onMenuClick, onNavigate, menuOpen, adminName, adminEmail }: AdminHeaderProps) {
+export default function AdminHeader({ onMenuClick, onNavigate, menuOpen, adminName, adminEmail, isOwner }: AdminHeaderProps) {
     return (
         <header className="dashboard-safe-header sticky top-0 z-40 flex h-16 items-center justify-between border-b border-white/10 bg-[#0A244B] px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
@@ -39,15 +41,7 @@ export default function AdminHeader({ onMenuClick, onNavigate, menuOpen, adminNa
                     <Icon icon="solar:bell-bold-duotone" className="h-5 w-5" />
                 </Link>
 
-                <div className="flex h-12 items-center gap-3 rounded-2xl px-2.5 ring-1 ring-inset ring-white/10">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10">
-                        <Icon icon="solar:shield-user-bold-duotone" className="h-5 w-5 text-accent" />
-                    </div>
-                    <div className="hidden min-w-0 sm:block">
-                        <p className="max-w-[180px] truncate text-sm font-semibold text-white">{adminName || adminEmail}</p>
-                        <p className="mt-0.5 max-w-[180px] truncate text-xs text-slate-400">{adminEmail}</p>
-                    </div>
-                </div>
+                <AdminProfileMenu adminName={adminName} adminEmail={adminEmail} isOwner={isOwner} onNavigate={onNavigate} />
             </div>
         </header>
     );

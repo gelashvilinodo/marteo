@@ -4,6 +4,8 @@ import { getAdminCandidate, getAdminUser } from "@/lib/admin/authorization";
 import AdminShell from "@/components/admin/AdminShell";
 import PushSync from "@/components/support/PushSync";
 import { getVapidPublicKey } from "@/lib/push/web-push";
+import { isPlatformOwner } from "@/lib/admin/admin-team";
+import { createPrismaClient } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -15,5 +17,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         notFound();
     }
     const adminName = [admin.firstName, admin.lastName].filter(Boolean).join(" ");
-    return <AdminShell adminName={adminName} adminEmail={admin.email}><PushSync publicKey={getVapidPublicKey()} />{children}</AdminShell>;
+    const prisma = createPrismaClient();
+    const isOwner = await isPlatformOwner(prisma, admin.id).finally(() => prisma.$disconnect());
+    return <AdminShell adminName={adminName} adminEmail={admin.email} isOwner={isOwner}><PushSync publicKey={getVapidPublicKey()} />{children}</AdminShell>;
 }

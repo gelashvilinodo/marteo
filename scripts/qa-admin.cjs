@@ -4,8 +4,8 @@
 // და cleanup() ზუსტად მათ შლის. პაროლს, არსებულ 2FA-ს და მოწყობილობებს არ ეხება.
 const {randomBytes,createHash}=require('node:crypto');
 async function createQaAdmin(db,tag){
- const admins=(await db.query('SELECT id FROM "User" WHERE "isPlatformAdmin" AND status=\'ACTIVE\'')).rows;
- if(admins.length!==1)throw Error('Expected exactly one active platform admin');
+ const admins=(await db.query('SELECT id FROM "User" u WHERE "isPlatformAdmin" AND status=\'ACTIVE\' AND NOT EXISTS (SELECT 1 FROM "AdminInvite" i WHERE i."acceptedById"=u.id AND i.status=\'ACCEPTED\')')).rows;
+ if(admins.length!==1)throw Error('Expected exactly one platform owner');
  const id=admins[0].id,session=randomBytes(32).toString('hex'),device=randomBytes(32).toString('hex');
  const day=new Date(Date.now()+86400000).toISOString();
  const security=(await db.query('SELECT "totpEnabledAt","pendingSecret" FROM "AdminSecurity" WHERE "userId"=$1',[id])).rows[0];

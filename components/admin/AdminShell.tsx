@@ -9,9 +9,10 @@ type AdminShellProps = {
     children: React.ReactNode;
     adminName: string;
     adminEmail: string;
+    isOwner: boolean;
 };
 
-export default function AdminShell({ children, adminName, adminEmail }: AdminShellProps) {
+export default function AdminShell({ children, adminName, adminEmail, isOwner }: AdminShellProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
@@ -66,6 +67,7 @@ export default function AdminShell({ children, adminName, adminEmail }: AdminShe
                     onNavigate={() => setSidebarOpen(false)}
                     adminName={adminName}
                     adminEmail={adminEmail}
+                    isOwner={isOwner}
                 />
                 <main className="p-4 sm:p-6 lg:p-8">{children}</main>
             </div>

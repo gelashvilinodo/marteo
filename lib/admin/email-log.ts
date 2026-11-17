@@ -24,7 +24,7 @@ export async function emailStats(prisma: PrismaClient, now = new Date()) {
 
 export type EmailFilters = { q: string; status: "" | "SENT" | "FAILED" | "LIMITED"; kind: string };
 
-const KINDS = ["verification", "password-reset", "email-change", "team-invite", "notice"];
+const KINDS = ["verification", "password-reset", "email-change", "team-invite", "admin-invite", "notice"];
 
 export function parseEmailFilters(params: Record<string, string | string[] | undefined>): EmailFilters {
     const one = (key: string) => { const value = params[key]; return ((Array.isArray(value) ? value[0] : value) ?? "").trim(); };
