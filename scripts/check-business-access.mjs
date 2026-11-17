@@ -12,6 +12,8 @@ const EXEMPT_API = [
     "app/api/business/onboarding/", "app/api/business/switch/", "app/api/business/upload-logo/",
     // მოწვევის ბმული: წვდომას ტოკენი განსაზღვრავს.
     "app/api/invites/",
+    // ადმინ პანელის მოწვევა: წვდომას ტოკენი და ანგარიშის პაროლი/სესია განსაზღვრავს.
+    "app/api/admin-invite/",
     // საათობრივი cron: წვდომას CRON_SECRET განსაზღვრავს.
     "app/api/cron/",
     // ბანკის callback: სერვერიდან სერვერზე, სტატუსი ბანკის API-დან მოწმდება.
