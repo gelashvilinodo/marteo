@@ -1,9 +1,9 @@
 import "server-only";
-import { createHash } from "crypto";
+import { randomUUID } from "crypto";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { AdminActionError } from "./actions";
 import { listPayments, type AdminPayment } from "./payments";
-import { BogError, bogConfigured, deleteSavedCard, refundBogOrder } from "@/lib/payments/bog";
+import { BogError, bogConfigured, deleteSavedCard, getBogReceipt, refundBogOrder } from "@/lib/payments/bog";
 import { syncBankOrder } from "@/lib/subscription/bank";
 import { enforceTeamLimits } from "@/lib/business/team-manage";
 import { planStateFrom } from "@/lib/subscription/plan-state";
@@ -72,11 +72,22 @@ export async function syncBankPayment(prisma: PrismaClient, businessId: unknown,
     return panelResult(prisma, business, text);
 }
 
-// ბანკი Idempotency-Key-ად UUID v4-ს ელის. ერთი და იგივე მცდელობისთვის გასაღები ყოველთვის ერთია,
-// ამიტომ ორჯერ დაჭერა ან ხელახლა ცდა თანხას ორჯერ ვერ დააბრუნებს.
-function refundKey(id: string) {
-    const hex = createHash("sha256").update(`marteo-refund:${id}`).digest("hex");
-    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${((parseInt(hex[16], 16) & 3) | 8).toString(16)}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+// ბანკი მოთხოვნას ჯერ იღებს (202) და უარს რამდენიმე წამში ამბობს (მაგ. 163: მერჩანტის ანგარიშზე თანხა არ არის).
+// ამიტომ ქვითარში ამ action_id-ის სტატუსს ვამოწმებთ. უარის შემთხვევაში ტექსტს ვაბრუნებთ, სხვა შემთხვევაში null-ს.
+async function refundRejection(bankOrderId: string, actionId: string | undefined) {
+    if (!actionId) return null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        const receipt = await getBogReceipt(bankOrderId).catch(() => null);
+        const action = receipt?.actions?.find(item => item.action_id === actionId);
+        if (action?.status === "rejected") {
+            return action.code === "163"
+                ? "ბანკმა დაბრუნება უარყო: მერჩანტის ანგარიშზე საკმარისი თანხა არ არის (ახალი შემოსავალი ჩვეულებრივ მეორე დღეს ირიცხება)."
+                : `ბანკმა დაბრუნება უარყო${action.code ? ` (კოდი ${action.code}${action.code_description ? `: ${action.code_description}` : ""})` : ""}.`;
+        }
+        if (action?.status && !["in_progress", "pending", "created"].includes(action.status)) return null;
+    }
+    return null;
 }
 
 /**
@@ -103,12 +114,20 @@ export async function refundBankPayment(prisma: PrismaClient, adminId: string, b
         data: { refundedAmount: row.amount, refundedAt: new Date(), bankStatus: "refund_requested" },
     });
     if (!claimed.count) throw new AdminActionError("ამ გადახდის თანხა უკვე დაბრუნებულია.", 409);
+    const release = () => prisma.bankPayment.update({ where: { id }, data: { refundedAmount: 0, refundedAt: null, bankStatus: row.bankStatus } });
+    let rejection: string | null;
     try {
-        await refundBogOrder(row.bankOrderId, refundKey(id));
+        // ყოველ ცდას ახალი გასაღები: ძველით ბანკი წინა (უარყოფილ) პასუხს გაიმეორებდა. ორმაგ დაბრუნებას ზემოთ მოცემული claim იცავს.
+        const accepted = await refundBogOrder(row.bankOrderId, randomUUID());
+        rejection = await refundRejection(row.bankOrderId, accepted.action_id);
     } catch (error) {
-        await prisma.bankPayment.update({ where: { id }, data: { refundedAmount: 0, refundedAt: null, bankStatus: row.bankStatus } });
+        await release();
         console.error("BOG refund failed", error instanceof BogError ? `${error.message} ${error.status}` : "UnknownError");
         throw new AdminActionError("ბანკმა დაბრუნება ვერ მიიღო. არაფერი შეცვლილა, სცადეთ ცოტა ხანში.", 502);
+    }
+    if (rejection) {
+        await release();
+        throw new AdminActionError(`${rejection} არაფერი შეცვლილა, სცადეთ მოგვიანებით.`, 409);
     }
 
     const removeCard = await prisma.$transaction(async tx => {

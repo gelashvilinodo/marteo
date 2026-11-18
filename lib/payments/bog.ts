@@ -143,6 +143,8 @@ export type BogReceipt = {
     order_status?: { key?: string };
     purchase_units?: { request_amount?: string; transfer_amount?: string; refund_amount?: string; currency_code?: string };
     payment_detail?: { transfer_method?: { key?: string }; payer_identifier?: string; payment_option?: string; code?: string; code_description?: string };
+    // დაბრუნება/გაუქმება: თითოეულს თავისი action_id და სტატუსი აქვს (მაგ. rejected, კოდი 163 = ანგარიშზე თანხა არ არის).
+    actions?: { action_id?: string; action?: string; status?: string; code?: string; code_description?: string }[] | null;
 };
 
 export function getBogReceipt(orderId: string) {
