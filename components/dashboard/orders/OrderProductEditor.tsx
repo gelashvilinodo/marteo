@@ -233,13 +233,14 @@ export default function OrderProductEditor({
         <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
             <div className="col-span-2 lg:col-span-1"><Field label="სახელი *"><input readOnly={item.source==="MATERIAL"} value={item.name} onChange={event => update({ name: event.target.value })} required className={input} /></Field></div>
             <Field label={item.source==="MATERIAL"?`რაოდენობა · ${quantityLabel(0,item.unit).slice(2)} *`:"რაოდენობა *"}><input inputMode={item.source==="MATERIAL"?"decimal":"numeric"} value={item.quantity} onChange={event => update({ quantity: item.source==="MATERIAL"&&item.unit!=="PCS" ? decimalInput(event.target.value, 6) : integerInput(event.target.value) })} required className={input} /></Field>
-            <Field label={item.source==="MATERIAL"?`ფასი / ${quantityLabel(0,item.unit).slice(2)} · ₾ *`:"გასაყიდი ფასი · ₾ *"}><input inputMode="decimal" value={item.unitPrice} onChange={event => update({ unitPrice: decimalInput(event.target.value) })} placeholder="0.00" required className={input} /></Field>
+            <Field label={item.source==="MATERIAL"?`ფასი / ${quantityLabel(0,item.unit).slice(2)} · ₾ *`:"გასაყიდი ფასი · ₾ *"}><input inputMode="decimal" value={item.unitPrice} onFocus={event => event.currentTarget.select()} onChange={event => update({ unitPrice: decimalInput(event.target.value) })} placeholder="0.00" required className={input} /></Field>
         </div>
         {!canSeeCosts ? null : stockCostKnown ? <div className="mt-3 rounded-xl border border-border p-3 text-xs text-text-secondary">თვითღირებულება მარაგიდან: <strong className="text-text-primary">{stockUnitCost} ₾</strong> ერთეულზე · სულ <strong className="text-text-primary">{stockCost.knownCost} ₾</strong><p className="mt-1">ითვლება მარაგის პარტიებიდან (შესყიდვა ან წარმოება). ზუსტი თანხა შენახვისას მოწმდება.</p></div> : item.source === "MATERIAL" ? <div className="mt-3 rounded-xl border border-border p-3 text-xs text-text-secondary">არჩეული რაოდენობის თვითღირებულება: <strong className="text-text-primary">{materialTotal??"-"}{materialTotal?" ₾":""}</strong><p className="mt-1">ითვლება მასალის შესყიდვის პარტიებიდან. ზუსტი თანხა შენახვისას მოწმდება.</p></div> : <div className="mt-3 rounded-xl border border-border p-3">
             <Field label="ერთი ერთეულის თვითღირებულება · ₾">
                 <input
                     inputMode="decimal"
                     value={item.unitCost}
+                    onFocus={event => event.currentTarget.select()}
                     onChange={event =>
                         update({ unitCost: decimalInput(event.target.value) })
                     }

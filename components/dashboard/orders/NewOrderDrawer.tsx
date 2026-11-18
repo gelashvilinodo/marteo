@@ -62,6 +62,10 @@ export default function NewOrderDrawer() {
     const [pending, setPending] =
         useState<PendingOrderSave | null>(null);
     const [error, setError] = useState("");
+    // დამატებითი გადახდის დადასტურება ფანჯარაშივე ჩანს: ბრაუზერის confirm-ს
+    // ზოგი ბრაუზერი ჩუმად ბლოკავს და შენახვა უხმოდ წყდებოდა.
+    const [paymentConfirm, setPaymentConfirm] = useState<bigint | null>(null);
+    const confirmedPayment = useRef<string | null>(null);
     const [pickerOpen, setPickerOpen] = useState(false);
     // გეგმაში მარაგი არ შედის: არჩევის ღილაკი გვირგვინით რჩება.
     const { allows, guard } = usePlan();
@@ -140,6 +144,8 @@ export default function NewOrderDrawer() {
             setNotesOpen(Boolean(initialDraft.notes.trim()));
             draftRef.current = initialDraft;
             setPaidMode("custom");
+            setPaymentConfirm(null);
+            confirmedPayment.current = null;
             setDirty(false);
             setError("");
             setPickerOpen(false);
@@ -206,7 +212,7 @@ export default function NewOrderDrawer() {
         editingOrder,
     ]);
 
-    function patch(values: Partial<OrderFormDraft>) { setDraft(current => ({ ...current, ...values })); setDirty(true); setError(""); }
+    function patch(values: Partial<OrderFormDraft>) { setDraft(current => ({ ...current, ...values })); setDirty(true); setError(""); setPaymentConfirm(null); confirmedPayment.current = null; }
     function changePhone(phone: string) {
         const previous = autoFilled.current;
         setDraft(current => ({
@@ -223,7 +229,7 @@ export default function NewOrderDrawer() {
     function reset() {
         setNotesOpen(false);
         productNumber.current = 0;
-        setDraft(emptyOrderDraft()); setPaidMode("none"); setDirty(false); setPending(null); setError("");
+        setDraft(emptyOrderDraft()); setPaidMode("none"); setDirty(false); setPending(null); setError(""); setPaymentConfirm(null); confirmedPayment.current = null;
         setPickerOpen(false); setCustomerInfo(""); setCustomerBusy(false); autoFilled.current = null; requestId.current = null;
     }
     function canLeave() {
@@ -391,9 +397,9 @@ export default function NewOrderDrawer() {
                         );
                     }
 
-                    if (!window.confirm(
-                        `დაადასტურეთ, რომ მომხმარებლისგან დამატებით მიიღეთ ${moneyText(additionalPayment)} ₾. ეს თანხა გადახდების ისტორიაში ჩაიწერება.`,
-                    )) {
+                    if (confirmedPayment.current !== `${paidNow}:${draft.paymentMethod}`) {
+                        setPaymentConfirm(additionalPayment);
+                        setError("");
                         return;
                     }
                 }
@@ -427,6 +433,8 @@ export default function NewOrderDrawer() {
         }
 
         requestBusy.current = true;
+        setPaymentConfirm(null);
+        confirmedPayment.current = null;
         setSaving(true);
         setPending(operation);
         setError("");
@@ -680,12 +688,8 @@ export default function NewOrderDrawer() {
                                 </div>
                             )}
                             <div className="space-y-3">
-                                <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2"><Field label="კურიერის საფასური · ₾"><input inputMode="decimal" value={draft.courierFee} readOnly={productsLocked} onChange={event => patch({ courierFee: decimalInput(event.target.value) })} placeholder="0" className={input} /></Field><Field label="გადახდა"><select disabled={Boolean(editingOrder)} value={paidMode} onChange={event => { setPaidMode(event.target.value as PaidMode); setDirty(true); }} className={input}><option value="none">გადახდა არ არის</option><option value="full">სრულად გადახდილი</option><option value="courier">მხოლოდ კურიერი</option><option value="custom">
-                                    {editingOrder
-                                        ? "მიღებული თანხის მითითება"
-                                        : "ნაწილობრივ"}
-                                </option></select></Field></div>
-                                {paidMode !== "none" && <><Field label="გადახდილი თანხა · ₾"><input inputMode="decimal" readOnly={paidMode !== "custom"} value={paidMode === "custom" ? draft.paidAmount : moneyText(totals.paid)} onChange={event => patch({ paidAmount: decimalInput(event.target.value) })} placeholder="0" className={input} /></Field><Field label="გადახდის მეთოდი"><select value={draft.paymentMethod} onChange={event => patch({ paymentMethod: event.target.value as OrderFormDraft["paymentMethod"] })} className={input}><option value="CASH">ნაღდი</option><option value="BANK_TRANSFER">გადარიცხვა</option><option value="CARD">ბარათი</option><option value="COURIER">კურიერთან გადახდა</option>{draft.paymentMethod === "UNKNOWN" && <option value="UNKNOWN">მეთოდი უცნობია</option>}</select></Field>{draft.paymentMethod === "BANK_TRANSFER" && <Field label="ბანკი"><BankNameInput value={draft.bankName} onChange={bankName => patch({ bankName })} className={input} /></Field>}</>}
+                                <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2"><Field label="კურიერის საფასური · ₾"><input inputMode="decimal" value={draft.courierFee} readOnly={productsLocked} onFocus={event => event.currentTarget.select()} onChange={event => patch({ courierFee: decimalInput(event.target.value) })} placeholder="0" className={input} /></Field><Field label="გადახდა">{editingOrder ? <select value={totals.total > 0n && totals.paid === totals.total ? "full" : "custom"} onChange={event => { if (event.target.value === "full") patch({ paidAmount: moneyText(totals.total) }); }} className={input}><option value="full">სრულად გადახდილი</option><option value="custom">მიღებული თანხის მითითება</option></select> : <select value={paidMode} onChange={event => { setPaidMode(event.target.value as PaidMode); setDirty(true); }} className={input}><option value="none">გადახდა არ არის</option><option value="full">სრულად გადახდილი</option><option value="courier">მხოლოდ კურიერი</option><option value="custom">ნაწილობრივ</option></select>}</Field></div>
+                                {paidMode !== "none" && <><Field label="გადახდილი თანხა · ₾"><input inputMode="decimal" readOnly={paidMode !== "custom"} onFocus={event => event.currentTarget.select()} value={paidMode === "custom" ? draft.paidAmount : moneyText(totals.paid)} onChange={event => patch({ paidAmount: decimalInput(event.target.value) })} placeholder="0" className={input} /></Field><Field label="გადახდის მეთოდი"><select value={draft.paymentMethod} onChange={event => patch({ paymentMethod: event.target.value as OrderFormDraft["paymentMethod"] })} className={input}><option value="CASH">ნაღდი</option><option value="BANK_TRANSFER">გადარიცხვა</option><option value="CARD">ბარათი</option><option value="COURIER">კურიერთან გადახდა</option>{draft.paymentMethod === "UNKNOWN" && <option value="UNKNOWN">მეთოდი უცნობია</option>}</select></Field>{draft.paymentMethod === "BANK_TRANSFER" && <Field label="ბანკი"><BankNameInput value={draft.bankName} onChange={bankName => patch({ bankName })} className={input} /></Field>}</>}
                             </div>
                             <div className="mt-4 rounded-xl bg-background p-3"><h4 className="mb-2 flex items-center gap-2 text-xs font-semibold text-text-secondary"><Icon icon="solar:document-text-linear" className="h-4 w-4" />შეჯამება</h4><dl className="space-y-2 text-xs lg:text-sm">{[["პროდუქტები", totals.products], ["კურიერი", totals.courier], ["გადახდილი", totals.paid], [
                                 totals.remaining < 0n
@@ -701,6 +705,23 @@ export default function NewOrderDrawer() {
             </form>
             <footer className="shrink-0 border-t border-border bg-surface px-3 py-3 sm:px-5" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
                 {error && <p role="alert" className="mb-2 text-xs text-danger sm:text-sm">{error}</p>}
+                {paymentConfirm !== null && !saving && (
+                    <div role="alertdialog" aria-label="გადახდის დადასტურება" className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-success/30 bg-success/10 p-3">
+                        <p className="min-w-0 flex-1 text-xs sm:text-sm">
+                            დაადასტურეთ, რომ მომხმარებლისგან დამატებით მიიღეთ <b className="tabular-nums">{moneyText(paymentConfirm)} ₾</b>
+                            {totals.remaining > 0n ? ` (დარჩება ${moneyText(totals.remaining)} ₾)` : " (შეკვეთა სრულად გადახდილი იქნება)"}. ეს თანხა გადახდების ისტორიაში ჩაიწერება.
+                        </p>
+                        <div className="flex shrink-0 items-center gap-2">
+                            <button type="button" onClick={() => setPaymentConfirm(null)} className="h-10 rounded-xl border border-border px-3 text-sm font-medium">უკან</button>
+                            <button type="button" autoFocus onClick={() => {
+                                const paidNow = moneyCents(draft.paidAmount);
+                                if (paidNow === null) return;
+                                confirmedPayment.current = `${paidNow}:${draft.paymentMethod}`;
+                                (document.getElementById(formId) as HTMLFormElement | null)?.requestSubmit();
+                            }} className="h-10 rounded-xl bg-success px-3 text-sm font-semibold text-white hover:bg-success-hover">დადასტურება და შენახვა</button>
+                        </div>
+                    </div>
+                )}
                 {pending && !saving && <p className="mb-2 text-xs text-text-secondary">იგივე მონაცემები ხელახლა გაიგზავნება. ასლის შენახვაც შეგიძლიათ.</p>}
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2"><button type="button" onClick={requestClose} disabled={saving} className="h-11 rounded-xl border border-border px-3 text-sm font-medium disabled:opacity-40">გაუქმება</button>{(pending || saving) && <button type="button" onClick={exportDraft} title="მონახაზის ასლის შენახვა" aria-label="მონახაზის ასლის შენახვა" className="flex h-11 w-11 items-center justify-center rounded-xl border border-border text-accent"><Icon icon="solar:download-linear" className="h-5 w-5" /></button>}</div>
