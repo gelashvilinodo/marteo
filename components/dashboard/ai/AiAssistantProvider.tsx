@@ -542,9 +542,11 @@ export function useAiAssistant() {
 }
 
 // იმპორტის გვერდზე ჩაკეცილი ზოლიც კი ეფარებოდა ნაბიჯების ღილაკებს,
-// ამიტომ იქ მართეო AI საერთოდ არ ჩანს.
+// ამიტომ იქ მართეო AI საერთოდ არ ჩანს. გადახდის გვერდზეც არ ვაჩვენებთ,
+// რომ გადახდის ფორმას არაფერი ეფარებოდეს.
 export function useAiAssistantHidden() {
-    return usePathname().startsWith("/dashboard/import");
+    const pathname = usePathname();
+    return pathname.startsWith("/dashboard/import") || pathname.startsWith("/dashboard/plans/checkout");
 }
 
 // ფანჯარა კონტენტს ზემოდან ეფარება; ქვემოთ ჩაკეცილი ზოლისთვის ადგილი რჩება,
