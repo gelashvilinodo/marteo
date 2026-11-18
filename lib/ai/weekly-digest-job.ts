@@ -28,7 +28,9 @@ function digestConversationId(businessId: string, userId: string, week: string) 
 }
 
 function plainLine(text: string) {
-    const line = text.split("\n").find((row) => row.startsWith("• ")) ?? "";
+    // პუშში ჯერ გაყიდვების ციფრი, თუ ფინანსები ჩანს; თორემ პირველი პუნქტი.
+    const rows = text.split("\n").filter((row) => row.startsWith("• "));
+    const line = rows.find((row) => row.startsWith("• გაყიდვები:")) ?? rows[0] ?? "";
     const clean = line.replace(/^• /, "").replace(/\*\*/g, "").trim();
     return clean.length > 150 ? `${clean.slice(0, 147)}…` : clean;
 }

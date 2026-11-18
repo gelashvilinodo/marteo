@@ -4,6 +4,7 @@ import type { createPrismaClient } from "@/lib/prisma";
 import { mergeCardGroups, type AiCardGroup } from "./ai-cards";
 import { getBusinessInsights } from "./business-insights";
 import { getContentInsights } from "./content-insights";
+import { getAnalyticsPage } from "@/lib/analytics/get-analytics-page";
 
 type Client = ReturnType<typeof createPrismaClient>;
 
@@ -15,9 +16,77 @@ function count(value: number, word: string) {
     return `**${value} ${word}**`;
 }
 
+const DAY = 86_400_000;
+const TBILISI = 4 * 3_600_000;
+
+// "YYYY-MM-DD" თბილისის დღის დასაწყისი, UTC-ში.
+function dayStart(date: string) {
+    return new Date(Date.parse(`${date}T00:00:00Z`) - TBILISI);
+}
+
+function shiftDay(date: string, days: number) {
+    return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY).toISOString().slice(0, 10);
+}
+
+const SHORT_DATE = new Intl.DateTimeFormat("ka-GE", { day: "numeric", month: "short", timeZone: "UTC" });
+
+type WeekFinance = { orders: number; sales: number; expenses: number; profit: number; profitReady: boolean };
+
+// ერთი კვირის (ორშაბათი-კვირა, თბილისის დროით) ციფრები ანალიტიკის გვერდის ფორმულით,
+// რომ მიმოხილვაში და ანალიტიკაში ერთი და იგივე ციფრი ეწეროს.
+async function weekFinance(prisma: Client, businessId: string, monday: string): Promise<WeekFinance> {
+    const sunday = shiftDay(monday, 6);
+    const [page, orders] = await Promise.all([
+        getAnalyticsPage(prisma, businessId, { period: "custom", from: monday, to: sunday }),
+        prisma.order.count({ where: { businessId, status: { not: "CANCELED" }, createdAt: { gte: dayStart(monday), lt: dayStart(shiftDay(monday, 7)) } } }),
+    ]);
+    return {
+        orders,
+        sales: Number(page.sales),
+        expenses: Number(page.costOfGoods) + Number(page.recordedExpenses),
+        profit: Number(page.profit ?? page.partialProfit),
+        profitReady: page.profitReady,
+    };
+}
+
+// ცვლილება წინა კვირასთან: ▲/▼ და პროცენტი. წინა კვირა ნულზე იყო, ან ნიშანი შეიცვალა: პროცენტი უაზროა.
+function change(current: number, previous: number) {
+    if (Math.abs(current - previous) < 0.005) return "უცვლელი";
+    const arrow = current > previous ? "▲" : "▼";
+    if (previous <= 0 || current < 0) return arrow;
+    const percent = Math.abs(Math.round(((current - previous) / previous) * 100));
+    return percent === 0 ? `${arrow} 1%-ზე ნაკლები` : `${arrow} ${percent}%`;
+}
+
+function financeBlock(current: WeekFinance, previous: WeekFinance, monday: string) {
+    if (current.orders === 0 && previous.orders === 0 && current.sales === 0 && previous.sales === 0) return null;
+    const period = `${SHORT_DATE.format(new Date(`${monday}T00:00:00Z`))} – ${SHORT_DATE.format(new Date(`${shiftDay(monday, 6)}T00:00:00Z`))}`;
+    const cash = (value: number) => money(Math.round(value * 100));
+    const row = (label: string, now: number, before: number, format: (value: number) => string) =>
+        `• ${label}: **${format(now)}** (${change(now, before)}, წინა კვირა ${format(before)})`;
+    const rows = [
+        row("ახალი შეკვეთები", current.orders, previous.orders, String),
+        row("გაყიდვები", current.sales, previous.sales, cash),
+        row("ხარჯები", current.expenses, previous.expenses, cash),
+        row(current.profitReady ? "მოგება" : "მოგება (წინასწარი)", current.profit, previous.profit, cash),
+    ];
+    const note = current.profitReady ? "" : "\nზოგ შეკვეთას თვითღირებულება აკლია, ამიტომ მოგება ჯერ საბოლოო არ არის.";
+    return `**გასული კვირა ციფრებში** (${period}), წინა კვირასთან შედარებით:\n${rows.join("\n")}${note}`;
+}
+
 // კვირის მიმოხილვა მოდელის გარეშე იწერება: ტექსტიც და ციფრებიც კოდიდანაა,
 // ამიტომ ყოველ ჯერზე ერთნაირი და უფასოა.
 export async function buildWeeklyDigest(prisma: Client, businessId: string, now: Date, purchasePlan: boolean) {
+    // გასული კვირა: ამ ორშაბათამდე 7 დღე. წინა კვირა: მის წინ 7 დღე.
+    const local = new Date(now.getTime() + TBILISI);
+    const thisMonday = shiftDay(local.toISOString().slice(0, 10), -((local.getUTCDay() + 6) % 7));
+    const lastMonday = shiftDay(thisMonday, -7);
+    const [current, previous] = await Promise.all([
+        weekFinance(prisma, businessId, lastMonday),
+        weekFinance(prisma, businessId, shiftDay(lastMonday, -7)),
+    ]);
+    const finance = financeBlock(current, previous, lastMonday);
+
     const insights = await getBusinessInsights(prisma, businessId, now);
     const content = await getContentInsights(prisma, businessId, now, insights.timing);
     const lines: string[] = [];
@@ -109,10 +178,14 @@ export async function buildWeeklyDigest(prisma: Client, businessId: string, now:
         lines.push(`ყველაზე მეტი შეკვეთა მოდის **${bestDay.day}ს**, საათებიდან კი **${bestHours.hours}** — კარგი დროა პოსტისთვის.`);
     }
 
-    if (lines.length === 0) return null;
+    if (lines.length === 0 && !finance) return null;
 
+    const sections = [
+        finance,
+        lines.length ? `**ყურადღება მიაქციეთ:**\n${lines.slice(0, 5).map((line) => `• ${line}`).join("\n")}` : null,
+    ].filter(Boolean);
     return {
-        text: `კვირის მიმოხილვა — თქვენი მონაცემებით:\n\n${lines.slice(0, 5).map((line) => `• ${line}`).join("\n")}\n\nდეტალებისთვის მკითხეთ, მაგალითად: „რა შევიძინო შემდეგ პარტიაში?“`,
+        text: `კვირის მიმოხილვა — თქვენი მონაცემებით:\n\n${sections.join("\n\n")}\n\nდეტალებისთვის მკითხეთ, მაგალითად: „რა შევიძინო შემდეგ პარტიაში?“`,
         cards: mergeCardGroups(cards),
     };
 }
