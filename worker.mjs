@@ -13,6 +13,15 @@ const worker = createCspWorker(openNextWorker, manifest);
 
 const entry = {
     ...worker,
+    // www.marteo.ge is the same site: send it to the one canonical host with a permanent redirect.
+    async fetch(request, env, ctx) {
+        const url = new URL(request.url);
+        if (url.hostname.startsWith('www.')) {
+            url.hostname = url.hostname.slice(4);
+            return Response.redirect(url.toString(), 301);
+        }
+        return worker.fetch(request, env, ctx);
+    },
     // Hourly cron (wrangler.jsonc triggers): support chat history and photos live 24 hours,
     // subscriptions past their end date get their status updated, then plan reminders go out.
     async scheduled(controller, env, ctx) {
