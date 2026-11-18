@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import BusinessModeChoice from "@/components/dashboard/business/BusinessModeChoice";
+import BusinessCategoryPicker, { OTHER_BUSINESS_CATEGORY } from "@/components/dashboard/business/BusinessCategoryPicker";
 import type { BusinessMode } from "@/lib/business/business-mode";
 import { useState } from "react";
 import { Icon } from "@iconify/react";
@@ -13,22 +14,6 @@ import {
     authLabelClass,
     authPrimaryButtonClass,
 } from "@/components/auth/AuthShell";
-
-const businessTypes = [
-    "ტანსაცმელი და მოდა",
-    "ფეხსაცმელი და აქსესუარები",
-    "ჩანთები და აქსესუარები",
-    "სამკაული და საათები",
-    "კოსმეტიკა და სილამაზე",
-    "კვება და სასმელი",
-    "რესტორანი / კაფე",
-    "ავტომობილები და ავტონაწილები",
-    "ელექტრონიკა და ტექნიკა",
-    "სახლი და ინტერიერი",
-    "ჯანმრთელობა და ფიტნესი",
-    "მშენებლობა და რემონტი",
-    "სხვა",
-];
 
 // "onboarding" is step 3 of sign-up; "additional" adds another business for an
 // existing user and opens it straight away.
@@ -52,7 +37,7 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
     const canSubmit =
         businessName.trim().length > 0 &&
         businessType.length > 0 &&
-        (businessType !== "სხვა" || otherBusinessType.trim().length > 0) &&
+        (businessType !== OTHER_BUSINESS_CATEGORY || otherBusinessType.trim().length > 0) &&
         acceptedTerms && !!mode;
 
     // გათიშული ღილაკის ქვეშ ვწერთ, რა აკლია, რომ მომხმარებელმა არ იფიქროს, რომ ფორმა გაფუჭდა.
@@ -60,7 +45,7 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
         !businessName.trim() && "ბიზნესის დასახელება",
         !mode && "ბიზნესის მიმართულება",
         !businessType && "საქმიანობის სფერო",
-        businessType === "სხვა" && !otherBusinessType.trim() && "საქმიანობის სფეროს დასახელება",
+        businessType === OTHER_BUSINESS_CATEGORY && !otherBusinessType.trim() && "საქმიანობის სფეროს დასახელება",
         !acceptedTerms && "წესებზე თანხმობა",
     ].filter(Boolean).join(", ");
 
@@ -150,7 +135,7 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
                 body: JSON.stringify({
                     name: businessName.trim(),
                     category:
-                        businessType === "სხვა"
+                        businessType === OTHER_BUSINESS_CATEGORY
                             ? otherBusinessType.trim()
                             : businessType,
                     logoUrl,
@@ -368,38 +353,11 @@ export default function BusinessCreateForm({ variant }: { variant: "onboarding" 
 
                         {/* Business type */}
                         <div className="mb-4">
-                            <label className={authLabelClass}>
-                                საქმიანობის სფერო
-                            </label>
-
-                            <div className="relative">
-                                <select
-                                    value={businessType}
-                                    onChange={(e) =>
-                                        setBusinessType(e.target.value)
-                                    }
-                                    className={`${authInputClass()} appearance-none pr-10`}
-                                >
-                                    <option value="">
-                                        აირჩიეთ საქმიანობის სფერო
-                                    </option>
-
-                                    {businessTypes.map((type) => (
-                                        <option key={type} value={type}>
-                                            {type}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                <Icon
-                                    icon="solar:alt-arrow-down-linear"
-                                    className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-text-secondary"
-                                />
-                            </div>
+                            <BusinessCategoryPicker value={businessType} onChange={setBusinessType} disabled={loading} />
                         </div>
 
                         {/* Other type */}
-                        {businessType === "სხვა" && (
+                        {businessType === OTHER_BUSINESS_CATEGORY && (
                             <div className="mb-4">
                                 <label htmlFor="business-other-type" className={authLabelClass}>
                                     მიუთითეთ საქმიანობის სფერო

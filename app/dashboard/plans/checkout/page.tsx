@@ -75,9 +75,12 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
 
                         <section aria-labelledby="payment-form" className="rounded-2xl border border-border bg-surface p-5">
                             <h2 id="payment-form" className="font-semibold text-text-primary">გადახდის მეთოდი</h2>
-                            <ul className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                                {[{ icon: "solar:card-bold-duotone", label: "ბარათი" }, { icon: "ph:apple-logo-fill", label: "Apple Pay" }, { icon: "ph:google-logo-bold", label: "Google Pay" }, { icon: "solar:shield-check-bold-duotone", label: "დაცული გადახდა" }].map(item =>
-                                    <li key={item.label} className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 text-text-primary"><Icon icon={item.icon} className="h-5 w-5 text-accent" aria-hidden="true" />{item.label}</li>)}
+                            <ul className="mt-4 grid grid-cols-2 gap-2 text-sm" aria-label="მიღებული გადახდის მეთოდები">
+                                <li className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 text-text-primary"><Icon icon="solar:card-bold-duotone" className="h-5 w-5 text-accent" aria-hidden="true" />ბარათი</li>
+                                {/* Apple Pay-ს ლოგო currentColor-ს იყენებს, ამიტომ ღამის რეჟიმშიც ჩანს; Google Pay-ს ნაცრისფერ "Pay"-ს ღამით თეთრი ფონი სჭირდება. */}
+                                <li className="flex min-h-11 items-center rounded-xl border border-border bg-background px-3 py-2.5 text-text-primary"><Icon icon="logos:apple-pay" role="img" aria-label="Apple Pay" className="h-6 w-auto" /></li>
+                                <li className="flex min-h-11 items-center rounded-xl border border-border bg-background px-3 py-2.5"><span className="inline-flex rounded dark:bg-white dark:px-1.5 dark:py-0.5"><Icon icon="logos:google-pay" role="img" aria-label="Google Pay" className="h-6 w-auto" /></span></li>
+                                <li className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 text-text-primary"><Icon icon="solar:shield-check-bold-duotone" className="h-5 w-5 text-accent" aria-hidden="true" />დაცული გადახდა</li>
                             </ul>
                             <p className="mt-4 flex items-start gap-2 rounded-xl bg-background p-3 text-sm leading-6 text-text-secondary">
                                 <Icon icon="solar:refresh-circle-bold-duotone" className="mt-0.5 h-5 w-5 shrink-0 text-success" aria-hidden="true" />
