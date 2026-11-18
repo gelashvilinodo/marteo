@@ -76,8 +76,14 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                         <section aria-labelledby="payment-form" className="rounded-2xl border border-border bg-surface p-5">
                             <h2 id="payment-form" className="font-semibold text-text-primary">გადახდის მეთოდი</h2>
                             <ul className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                                {[{ icon: "solar:card-bold-duotone", label: "ბარათი" }, { icon: "ph:apple-logo-fill", label: "Apple Pay" }, { icon: "ph:google-logo-bold", label: "Google Pay" }, { icon: "solar:shield-check-bold-duotone", label: "დაცული გადახდა" }].map(item =>
-                                    <li key={item.label} className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 text-text-primary"><Icon icon={item.icon} className="h-5 w-5 text-accent" aria-hidden="true" />{item.label}</li>)}
+                                {[{ icon: "solar:card-bold-duotone", label: "ბარათი" }, { icon: "logos:apple-pay", label: "Apple Pay", brand: true }, { icon: "logos:google-pay", label: "Google Pay", brand: true }, { icon: "solar:shield-check-bold-duotone", label: "დაცული გადახდა" }].map(item =>
+                                    <li key={item.label} className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 text-text-primary">
+                                        {/* ბრენდის ნიშნები თეთრ ფონზე, როგორც ფუტერში: ღამის რეჟიმშიც იკითხება. */}
+                                        {item.brand
+                                            ? <span className="flex h-6 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-white"><Icon icon={item.icon} className="h-4 w-8" aria-hidden="true" /></span>
+                                            : <Icon icon={item.icon} className="h-5 w-5 text-accent" aria-hidden="true" />}
+                                        {item.label}
+                                    </li>)}
                             </ul>
                             <p className="mt-4 flex items-start gap-2 rounded-xl bg-background p-3 text-sm leading-6 text-text-secondary">
                                 <Icon icon="solar:refresh-circle-bold-duotone" className="mt-0.5 h-5 w-5 shrink-0 text-success" aria-hidden="true" />

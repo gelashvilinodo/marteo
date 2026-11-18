@@ -35,7 +35,7 @@ export default function CheckoutConsent({ amount, plan, interval }: { amount: st
         </label>
         <button type="button" disabled={!agreed || busy} onClick={pay}
             className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-base font-semibold text-white transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50">
-            <Icon icon={busy ? "solar:refresh-linear" : "solar:lock-keyhole-minimalistic-bold"} className={`h-5 w-5 ${busy ? "animate-spin" : ""}`} aria-hidden="true" />
+            <Icon icon={busy ? "solar:refresh-linear" : "solar:card-send-bold"} className={`h-5 w-5 ${busy ? "animate-spin" : ""}`} aria-hidden="true" />
             {busy ? "ბანკის გვერდზე გადასვლა…" : `გადახდა · ${amount} ₾`}
         </button>
         <p className="text-center text-xs text-text-secondary">გადახდა საქართველოს ბანკის დაცულ გვერდზე მოხდება. ბარათის მონაცემები MARTEO-ს არ ხვდება.</p>
