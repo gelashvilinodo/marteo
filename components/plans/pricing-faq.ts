@@ -18,7 +18,7 @@ export const pricingFaq: FaqGroup[] = [
                 id: "payment",
                 question: "როგორ ვიხდი?",
                 answer: [
-                    "საქართველოში გაცემული Visa ან Mastercard ბარათით, Apple Pay-ით ან Google Pay-ით. გადახდა ავტომატურად ხდება თვეში ან წელიწადში ერთხელ, იმავე რიცხვში, როცა გეგმა შეიძინეთ.",
+                    "საქართველოში გაცემული Visa, Mastercard ან American Express ბარათით, Apple Pay-ით ან Google Pay-ით. გადახდა ავტომატურად ხდება თვეში ან წელიწადში ერთხელ, იმავე რიცხვში, როცა გეგმა შეიძინეთ.",
                 ],
             },
             {

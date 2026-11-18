@@ -58,6 +58,7 @@ const socialLinks = [
 const paymentLogos = [
     { label: "Visa", icon: "logos:visa" },
     { label: "Mastercard", icon: "logos:mastercard" },
+    { label: "American Express", icon: "logos:amex" },
     { label: "Apple Pay", icon: "logos:apple-pay" },
     { label: "Google Pay", icon: "logos:google-pay" },
 ];
