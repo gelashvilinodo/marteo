@@ -246,7 +246,7 @@ export async function getAdminPayments(page: number, filters: AdminPaymentFilter
 export type AdminBankFilters = {
     q: string;
     status: "" | "PENDING" | "STUCK" | "COMPLETED" | "REJECTED" | "REFUNDED";
-    kind: "" | "CHECKOUT" | "RENEWAL";
+    kind: "" | "CHECKOUT" | "RENEWAL" | "SMS_PACK";
     period: "" | typeof PERIODS[number] | "365";
 };
 
@@ -254,7 +254,7 @@ export function parseBankFilters(params: Params): AdminBankFilters {
     return {
         q: one(params, "q").slice(0, 100),
         status: pick(one(params, "status"), ["PENDING", "STUCK", "COMPLETED", "REJECTED", "REFUNDED"] as const),
-        kind: pick(one(params, "kind"), ["CHECKOUT", "RENEWAL"] as const),
+        kind: pick(one(params, "kind"), ["CHECKOUT", "RENEWAL", "SMS_PACK"] as const),
         period: pick(one(params, "period"), [...PERIODS, "365"] as const),
     };
 }
@@ -278,7 +278,7 @@ function bankWhere(filters: AdminBankFilters): Sql {
 
 export type AdminBankRow = {
     id: string; businessId: string | null; businessName: string | null; kind: string; status: string; plan: string; interval: string;
-    amount: number; bankStatus: string | null; cardMask: string | null; refundedAt: Date | null; createdAt: Date;
+    amount: number; bankStatus: string | null; cardMask: string | null; refundedAt: Date | null; createdAt: Date; smsCount: number | null;
 };
 
 export async function getAdminBankAttempts(page: number, filters: AdminBankFilters) {
@@ -292,7 +292,7 @@ export async function getAdminBankAttempts(page: number, filters: AdminBankFilte
             `);
             const rows = await tx.$queryRaw<AdminBankRow[]>(sql`
                 SELECT p.id, p."businessId", b.name AS "businessName", p.kind::text AS kind, p.status::text AS status, p.plan::text AS plan,
-                    p.interval::text AS interval, p.amount::float AS amount, p."bankStatus", p."cardMask", p."refundedAt", p."createdAt"
+                    p.interval::text AS interval, p.amount::float AS amount, p."bankStatus", p."cardMask", p."refundedAt", p."createdAt", p."smsCount"
                 FROM "BankPayment" p LEFT JOIN "Business" b ON b.id = p."businessId"
                 WHERE ${where}
                 ORDER BY p."createdAt" DESC, p.id

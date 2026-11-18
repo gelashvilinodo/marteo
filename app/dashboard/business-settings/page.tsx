@@ -17,12 +17,13 @@ import SmsSettingsCard from "@/components/plans/SmsSettingsCard";
 import InvoiceSettingsCard from "@/components/dashboard/business/InvoiceSettingsCard";
 import { readInvoiceSettings } from "@/lib/business/invoice-settings-server";
 import { getSmsUsage, shippedMessage } from "@/lib/sms/order-sms";
+import { readCheckoutResult } from "@/lib/subscription/bank";
 import { businessFeatureMessage, type BusinessFeature } from "@/lib/business/business-mode";
 
 export const metadata = { title: "ბიზნესის პარამეტრები - MARTEO" };
 
-export default async function BusinessSettingsPage({ searchParams }: { searchParams: Promise<{ hidden?: string }> }) {
-    const { hidden } = await searchParams;
+export default async function BusinessSettingsPage({ searchParams }: { searchParams: Promise<{ hidden?: string; "sms-payment"?: string }> }) {
+    const { hidden, "sms-payment": smsPaymentId } = await searchParams;
     const hiddenFeature = hidden === "imports" || hidden === "manufacturing" ? (hidden as BusinessFeature) : null;
     await requireDashboardSection("/dashboard/business-settings");
     const user = await getCurrentUser();
@@ -72,6 +73,11 @@ export default async function BusinessSettingsPage({ searchParams }: { searchPar
         if (!business) redirect("/business/onboarding");
 
         await enforceTeamLimitsFor(prisma, [business.id]);
+        // ბანკის გვერდიდან დაბრუნება: სტატუსს ბანკს ვეკითხებით, რომ პაკეტი callback-ის მოლოდინის გარეშე დაემატოს.
+        const canBuySms = access.role === "OWNER";
+        const smsCheckout = canBuySms && smsPaymentId && /^[a-z0-9]{10,40}$/.test(smsPaymentId)
+            ? await readCheckoutResult(prisma, business.id, smsPaymentId) : null;
+        const smsPayment = smsCheckout?.kind === "SMS_PACK" ? { status: smsCheckout.status, amount: smsCheckout.amount, smsCount: smsCheckout.smsCount } : null;
         const [team, overview, sms, invoice] = await Promise.all([
             getTeamSnapshot(prisma, business.id, user.id),
             getBillingOverview(prisma, user.id, business.id),
@@ -99,7 +105,7 @@ export default async function BusinessSettingsPage({ searchParams }: { searchPar
                     />
                     <InvoiceSettingsCard initial={invoice} />
                     <PlanLimitsCard overview={overview} />
-                    <SmsSettingsCard initial={sms} preview={shippedMessage(business.name)} />
+                    <SmsSettingsCard initial={sms} preview={shippedMessage(business.name)} canBuy={canBuySms} payment={smsPayment} />
                     <TeamSection initialTeam={team} businessMode={business.mode} />
                     <AppearanceSettings />
 

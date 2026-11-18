@@ -46,7 +46,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
                         </Link>
                     </section>
 
-                    {result && <PaymentResult status={result.status} plan={result.plan} amount={result.amount} />}
+                    {result && result.kind !== "SMS_PACK" && <PaymentResult status={result.status} plan={result.plan} amount={result.amount} />}
 
                     <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
                         <section aria-labelledby="current-plan" className="rounded-2xl border border-border bg-surface p-5">

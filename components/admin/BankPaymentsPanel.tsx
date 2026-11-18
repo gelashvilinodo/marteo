@@ -70,7 +70,7 @@ export default function BankPaymentsPanel({ businessId, initial }: { businessId:
                     <div className="min-w-0 flex-1">
                         <p className="flex flex-wrap items-center gap-x-2 text-sm font-medium text-text-primary">
                             <span className={attempt.refundedAt ? "line-through text-text-secondary" : ""}>{money(attempt.amount)}</span>
-                            <span>· {attempt.plan} {INTERVAL[attempt.interval] ?? ""}</span>
+                            <span>· {attempt.kind === "SMS_PACK" ? `${attempt.smsCount ?? 0} SMS` : `${attempt.plan} ${INTERVAL[attempt.interval] ?? ""}`}</span>
                             <span className={`rounded-full px-2 py-0.5 text-[11px] ${badge.tone}`}>{badge.label}</span>
                         </p>
                         <p className="text-xs text-text-secondary">
@@ -84,7 +84,7 @@ export default function BankPaymentsPanel({ businessId, initial }: { businessId:
                             onClick={() => send(attempt.id, "sync")}
                             className="h-8 rounded-lg px-2 text-xs text-accent transition hover:bg-accent/10 disabled:opacity-40">{busy ? "..." : "ბანკთან შემოწმება"}</button>}
                         {attempt.status === "COMPLETED" && attempt.hasBankOrder && !attempt.refundedAt && <button type="button" disabled={Boolean(busyId) || !data.configured}
-                            onClick={() => { setError(""); setReason(""); setCode(""); setEndPlan(true); setRefunding(attempt); }}
+                            onClick={() => { setError(""); setReason(""); setCode(""); setEndPlan(attempt.kind !== "SMS_PACK"); setRefunding(attempt); }}
                             className="h-8 rounded-lg px-2 text-xs text-text-secondary transition hover:bg-danger/10 hover:text-danger disabled:opacity-40">თანხის დაბრუნება</button>}
                     </div>
                 </li>;
@@ -104,10 +104,12 @@ export default function BankPaymentsPanel({ businessId, initial }: { businessId:
             </span>
             <input value={reason} onChange={event => setReason(event.target.value)} maxLength={300} placeholder="მიზეზი (მაგ.: 3 დღეში მოითხოვა დაბრუნება)" aria-label="დაბრუნების მიზეზი"
                 className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-base text-text-primary outline-none transition focus:border-accent sm:text-sm" />
-            <label className="mt-3 flex items-start gap-2 text-sm text-text-primary">
+            {refunding?.kind === "SMS_PACK"
+                ? <span className="mt-3 block text-xs text-text-secondary">გეგმა უცვლელი რჩება. ბიზნესს ნაშთიდან დაუხარჯავი SMS გამოაკლდება (მაქსიმუმ {refunding.smsCount ?? 0}).</span>
+                : <label className="mt-3 flex items-start gap-2 text-sm text-text-primary">
                 <input type="checkbox" checked={endPlan} onChange={event => setEndPlan(event.target.checked)} className="mt-0.5" />
                 <span>გეგმის ახლავე შეწყვეტა და შენახული ბარათის მოხსნა<span className="block text-xs text-text-secondary">მონიშვნის გარეშე გეგმა ვადის ბოლომდე რჩება და ავტოგანახლებაც გაგრძელდება.</span></span>
-            </label>
+            </label>}
             <AdminCodeField value={code} onChange={setCode} />
         </ConfirmDialog>
     </div>;

@@ -12,10 +12,10 @@ import { applyPlanMode } from "@/lib/subscription/server";
 const ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 export type AdminBankAttempt = {
-    id: string; kind: "CHECKOUT" | "RENEWAL"; status: "PENDING" | "COMPLETED" | "REJECTED";
+    id: string; kind: "CHECKOUT" | "RENEWAL" | "SMS_PACK"; status: "PENDING" | "COMPLETED" | "REJECTED";
     plan: string; interval: string; amount: string; bankStatus: string | null; cardMask: string | null;
     hasBankOrder: boolean; refundedAmount: string; refundedAt: string | null;
-    createdAt: string; completedAt: string | null; renewsExpiresAt: string | null;
+    createdAt: string; completedAt: string | null; renewsExpiresAt: string | null; smsCount: number | null;
 };
 
 export type AdminBankCard = { mask: string | null; amount: string | null; interval: string; autoRenew: boolean } | null;
@@ -43,7 +43,7 @@ export async function getBankPanel(prisma: PrismaClient | Prisma.TransactionClie
             bankStatus: row.bankStatus, cardMask: row.cardMask, hasBankOrder: Boolean(row.bankOrderId),
             refundedAmount: row.refundedAmount.toFixed(2), refundedAt: row.refundedAt?.toISOString() ?? null,
             createdAt: row.createdAt.toISOString(), completedAt: row.completedAt?.toISOString() ?? null,
-            renewsExpiresAt: row.renewsExpiresAt?.toISOString() ?? null,
+            renewsExpiresAt: row.renewsExpiresAt?.toISOString() ?? null, smsCount: row.smsCount,
         })),
     };
 }
@@ -88,12 +88,14 @@ export async function refundBankPayment(prisma: PrismaClient, adminId: string, b
     const id = key(attemptId, "გადახდა ვერ მოიძებნა.");
     const reason = typeof input.reason === "string" ? input.reason.trim().slice(0, 300) : "";
     if (!reason) throw new AdminActionError("მიუთითეთ დაბრუნების მიზეზი.");
-    const endPlan = input.endPlan === true;
     if (!bogConfigured()) throw new AdminActionError("ბანკის გასაღებები არ არის დაყენებული.", 503);
 
     const row = await prisma.bankPayment.findFirst({ where: { id, businessId: business } });
     if (!row) throw new AdminActionError("გადახდა ვერ მოიძებნა.", 404);
     if (row.status !== "COMPLETED" || !row.bankOrderId) throw new AdminActionError("დაბრუნება მხოლოდ წარმატებულ გადახდაზეა შესაძლებელი.", 409);
+    // SMS პაკეტის დაბრუნება გეგმას არ ეხება: ნაშთს მხოლოდ ჯერ დაუხარჯავი SMS აკლდება.
+    const smsPack = row.kind === "SMS_PACK";
+    const endPlan = !smsPack && input.endPlan === true;
 
     // ჯერ ვიკავებთ (ორი ადმინი ან ორი დაჭერა ერთდროულად ვერ დააბრუნებს), მერე ბანკს ვთხოვთ.
     const claimed = await prisma.bankPayment.updateMany({
@@ -117,6 +119,19 @@ export async function refundBankPayment(prisma: PrismaClient, adminId: string, b
                 where: { id: row.subscriptionPaymentId, voidedAt: null },
                 data: { voidedAt: now, voidedById: adminId, voidReason: `თანხა დაბრუნდა ბარათზე: ${reason}`.slice(0, 300) },
             });
+        }
+        if (smsPack) {
+            const current = await tx.business.findUnique({ where: { id: business }, select: { smsBalance: true } });
+            const removed = Math.min(row.smsCount ?? 0, current?.smsBalance ?? 0);
+            const after = removed ? await tx.business.update({ where: { id: business }, data: { smsBalance: { decrement: removed } }, select: { smsBalance: true } }) : current;
+            await tx.adminAuditLog.create({
+                data: {
+                    adminId, action: "payment-refund", targetType: "BUSINESS", targetId: business,
+                    before: { smsBalance: current?.smsBalance ?? 0 },
+                    after: { smsBalance: after?.smsBalance ?? 0, smsRemoved: removed, smsCount: row.smsCount, amount: row.amount.toFixed(2), reason, attemptId: id },
+                },
+            });
+            return null;
         }
         const before = await tx.subscription.findUnique({ where: { businessId: business }, select: { plan: true, status: true, expiresAt: true, bankCardOrderId: true } });
         let after = before;
@@ -144,7 +159,9 @@ export async function refundBankPayment(prisma: PrismaClient, adminId: string, b
     });
     if (removeCard) await deleteSavedCard(removeCard).catch(() => console.error("BOG card delete after refund failed"));
 
-    const message = endPlan
+    const message = smsPack
+        ? `${row.amount.toFixed(2)} ₾ დაბრუნების მოთხოვნა ბანკს გაეგზავნა. ნაშთს დაუხარჯავი SMS გამოაკლდა (მაქსიმუმ ${row.smsCount ?? 0}).`
+        : endPlan
         ? `${row.amount.toFixed(2)} ₾ დაბრუნების მოთხოვნა ბანკს გაეგზავნა. გეგმა გაითიშა და შენახული ბარათი მოიხსნა.`
         : `${row.amount.toFixed(2)} ₾ დაბრუნების მოთხოვნა ბანკს გაეგზავნა. გეგმა უცვლელია.`;
     return panelResult(prisma, business, message);

@@ -12,6 +12,7 @@ import { PlanActionError, quoteForBusiness } from "./manage";
 import { notifyOwners, notifyPaymentFailed, queueNoticeChannels } from "./notices";
 import { addBillingMonths } from "./period";
 import { INTERVAL_ADJECTIVES, INTERVAL_LABELS, INTERVAL_MONTHS, isBillingInterval, isPaidTier, periodPrice, PLAN_ADJECTIVES, PLAN_LABELS, type BillingInterval, type PaidTier } from "./plans";
+import { SMS_PACKS } from "./plan-catalog";
 import { applyPlanMode } from "./server";
 import { sendAdminPush } from "@/lib/admin/admin-push";
 
@@ -59,6 +60,40 @@ export async function startCheckout(prisma: PrismaClient, userId: string, busine
     }
 }
 
+// SMS პაკეტის ყიდვა: ერთჯერადი გადახდა, ბარათი არ ინახება. პაკეტი მხოლოდ დადასტურებული გადახდის შემდეგ ემატება.
+// თანხა სერვერის ფასების სიიდან მოდის, კლიენტი მხოლოდ რაოდენობას ირჩევს.
+export async function startSmsPackCheckout(prisma: PrismaClient, userId: string, businessId: string, count: unknown) {
+    const pack = SMS_PACKS.find(item => item.count === count);
+    if (!pack) throw new PlanActionError("პაკეტი არასწორია.");
+    if (!bogConfigured()) throw new PlanActionError("ბარათით გადახდა დროებით მიუწვდომელია. სცადეთ მოგვიანებით.", 503);
+    const [business, subscription] = await Promise.all([
+        prisma.business.findUnique({ where: { id: businessId }, select: { name: true } }),
+        prisma.subscription.findUnique({ where: { businessId }, select: { plan: true } }),
+    ]);
+    const row = await prisma.bankPayment.create({
+        data: { businessId, userId, kind: "SMS_PACK", plan: subscription?.plan ?? "FREE", amount: pack.price.toFixed(2), smsCount: pack.count },
+        select: { id: true },
+    });
+    const back = `${getAppOrigin()}/dashboard/business-settings?sms-payment=${row.id}#sms-settings`;
+    try {
+        const order = await createBogOrder({
+            externalOrderId: row.id,
+            amount: pack.price,
+            itemId: `sms-${pack.count}`,
+            description: `MARTEO ${pack.count} SMS - ${business?.name ?? ""}`.slice(0, 120),
+            successUrl: back,
+            failUrl: back,
+            idempotencyKey: randomUUID(),
+        });
+        await prisma.bankPayment.update({ where: { id: row.id }, data: { bankOrderId: order.orderId } });
+        return order.redirectUrl;
+    } catch (error) {
+        await prisma.bankPayment.update({ where: { id: row.id }, data: { status: "REJECTED", bankStatus: "request_failed" } });
+        console.error("BOG SMS pack checkout failed", error instanceof BogError ? `${error.message} ${error.status}` : error instanceof Error ? error.name : "UnknownError");
+        throw new PlanActionError("ბანკთან დაკავშირება ვერ მოხერხდა. სცადეთ ხელახლა.", 502);
+    }
+}
+
 // ბანკის პასუხის (callback, დაბრუნება ან cron) დამუშავება. სტატუსი ყოველთვის ბანკის API-დან მოდის.
 // განმეორებით გამოძახება უსაფრთხოა: გადახდა მხოლოდ ერთხელ აღირიცხება.
 export async function applyBankReceipt(prisma: PrismaClient, receipt: BogReceipt) {
@@ -98,6 +133,25 @@ async function completePayment(prisma: PrismaClient, id: string, cardMask: strin
     let claimedHere = false;
     const replacedCard = await prisma.$transaction(async tx => {
         const row = await tx.bankPayment.findUniqueOrThrow({ where: { id } });
+        if (row.kind === "SMS_PACK" && row.businessId && row.smsCount) {
+            const businessId = row.businessId;
+            await tx.$queryRaw`SELECT id FROM "Business" WHERE id = ${businessId} FOR UPDATE`;
+            const claimed = await tx.bankPayment.updateMany({ where: { id, status: "PENDING" }, data: { status: "COMPLETED", bankStatus: "completed", completedAt: new Date(), cardMask } });
+            if (!claimed.count) return null;
+            claimedHere = true;
+            const before = await tx.business.findUniqueOrThrow({ where: { id: businessId }, select: { smsBalance: true } });
+            await tx.smsPackPurchase.create({
+                data: { businessId, count: row.smsCount, price: row.amount, note: `ბარათით · საქართველოს ბანკი${cardMask ? ` · ${cardMask}` : ""}`, createdById: null },
+            });
+            const after = await tx.business.update({ where: { id: businessId }, data: { smsBalance: { increment: row.smsCount } }, select: { smsBalance: true } });
+            await tx.adminAuditLog.create({
+                data: {
+                    adminId: null, action: "sms-pack", targetType: "BUSINESS", targetId: businessId,
+                    before: { balance: before.smsBalance }, after: { balance: after.smsBalance, count: row.smsCount, price: Number(row.amount), attemptId: id },
+                },
+            });
+            return null;
+        }
         if (!row.businessId || !isPaidTier(row.plan)) {
             const done = await tx.bankPayment.updateMany({ where: { id, status: "PENDING" }, data: { status: "COMPLETED", bankStatus: "completed", completedAt: new Date(), cardMask } });
             claimedHere = done.count > 0;
@@ -154,12 +208,14 @@ async function completePayment(prisma: PrismaClient, id: string, cardMask: strin
         // ახალი ბარათი ძველს ცვლის: ძველს ბანკშიც ვშლით.
         return row.kind === "CHECKOUT" && before?.bankCardOrderId && before.bankCardOrderId !== row.bankOrderId ? before.bankCardOrderId : null;
     });
-    const row = await prisma.bankPayment.findUnique({ where: { id }, select: { businessId: true, kind: true, plan: true, amount: true, interval: true, business: { select: { name: true } } } });
-    if (row?.businessId) void queueNoticeChannels(row.businessId);
+    const row = await prisma.bankPayment.findUnique({ where: { id }, select: { businessId: true, kind: true, plan: true, amount: true, interval: true, smsCount: true, business: { select: { name: true } } } });
+    if (row?.businessId && row.kind !== "SMS_PACK") void queueNoticeChannels(row.businessId);
     // ადმინს: ყოველი წარმატებული ბარათით გადახდა.
     if (row && claimedHere) await sendAdminPush(prisma, {
-        title: row.kind === "RENEWAL" ? "გადახდა: ავტოგანახლება" : "ახალი გადახდა ბარათით",
-        body: `${row.business?.name ?? "ბიზნესი"} · ${PLAN_LABELS[row.plan as PaidTier] ?? row.plan} ${INTERVAL_LABELS[row.interval]} · ${row.amount.toFixed(2)} ₾`,
+        title: row.kind === "RENEWAL" ? "გადახდა: ავტოგანახლება" : row.kind === "SMS_PACK" ? "SMS პაკეტი ბარათით" : "ახალი გადახდა ბარათით",
+        body: row.kind === "SMS_PACK"
+            ? `${row.business?.name ?? "ბიზნესი"} · ${row.smsCount ?? 0} SMS · ${row.amount.toFixed(2)} ₾`
+            : `${row.business?.name ?? "ბიზნესი"} · ${PLAN_LABELS[row.plan as PaidTier] ?? row.plan} ${INTERVAL_LABELS[row.interval]} · ${row.amount.toFixed(2)} ₾`,
         url: row.businessId ? `/admin/businesses/${row.businessId}` : "/admin/payments?view=bank", tag: `bank-${id}`,
     });
     if (replacedCard) await deleteSavedCard(replacedCard).catch(() => console.error("BOG old card delete failed"));
@@ -192,13 +248,13 @@ async function rejectPayment(prisma: PrismaClient, id: string, bankStatus: strin
 
 // დაბრუნების გვერდისთვის: მომხმარებელს ვაჩვენებთ მხოლოდ საკუთარი ბიზნესის გადახდას.
 export async function readCheckoutResult(prisma: PrismaClient, businessId: string, id: string) {
-    const row = await prisma.bankPayment.findFirst({ where: { id, businessId }, select: { id: true, status: true, bankOrderId: true, plan: true, amount: true } });
+    const row = await prisma.bankPayment.findFirst({ where: { id, businessId }, select: { id: true, kind: true, status: true, bankOrderId: true, plan: true, amount: true, smsCount: true } });
     if (!row) return null;
     let status = row.status;
     if (status === "PENDING" && row.bankOrderId && bogConfigured()) {
         status = await syncBankOrder(prisma, row.bankOrderId).catch(() => "PENDING" as const) as typeof status;
     }
-    return { status, plan: row.plan, amount: row.amount.toFixed(2) };
+    return { kind: row.kind, status, plan: row.plan, amount: row.amount.toFixed(2), smsCount: row.smsCount };
 }
 
 // საათობრივი cron: ვადაზე მისული გეგმების ჩამოჭრა შენახული ბარათიდან და დაკარგული პასუხების გადამოწმება.

@@ -2,7 +2,7 @@
 
 const STUCK_AFTER_MS = 30 * 60_000;
 
-export const BANK_KIND_LABELS: Record<string, string> = { CHECKOUT: "გადახდა ბარათით", RENEWAL: "ავტოგანახლება" };
+export const BANK_KIND_LABELS: Record<string, string> = { CHECKOUT: "გადახდა ბარათით", RENEWAL: "ავტოგანახლება", SMS_PACK: "SMS პაკეტი" };
 export const BANK_INTERVAL_LABELS: Record<string, string> = { MONTHLY: "თვიური", YEARLY: "წლიური" };
 
 // ბანკის ნედლი სტატუსი ადმინისთვის გასაგებად.

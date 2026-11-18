@@ -409,6 +409,7 @@ model Subscription {
 enum BankPaymentKind {
   CHECKOUT
   RENEWAL
+  SMS_PACK
 }
 
 enum BankPaymentStatus {
@@ -440,6 +441,8 @@ model BankPayment {
   refundedAt            DateTime?
   // ავტოგანახლება: რომელი ვადის გასაგრძელებლად (ერთ ვადაზე მაქსიმუმ 3 მცდელობა).
   renewsExpiresAt       DateTime?
+  // SMS პაკეტის ყიდვა (kind SMS_PACK): რამდენი SMS ემატება. plan აქ მხოლოდ იმ მომენტის გეგმაა.
+  smsCount              Int?
   createdAt             DateTime          @default(now())
   completedAt           DateTime?
 

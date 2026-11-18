@@ -22,7 +22,7 @@ const BANK_STATUS_OPTIONS = [
     { value: "STUCK", label: "გაჭედილი (30 წთ+)" }, { value: "PENDING", label: "მოლოდინში" }, { value: "COMPLETED", label: "წარმატებული" },
     { value: "REJECTED", label: "უარყოფილი" }, { value: "REFUNDED", label: "დაბრუნებული" },
 ];
-const BANK_KIND_OPTIONS = [{ value: "CHECKOUT", label: "გადახდა ბარათით" }, { value: "RENEWAL", label: "ავტოგანახლება" }];
+const BANK_KIND_OPTIONS = [{ value: "CHECKOUT", label: "გადახდა ბარათით" }, { value: "RENEWAL", label: "ავტოგანახლება" }, { value: "SMS_PACK", label: "SMS პაკეტი" }];
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -69,7 +69,7 @@ async function BankView({ params, page }: { params: SearchParams; page: number }
                     <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-text-primary">{row.businessName ?? "წაშლილი ბიზნესი"}</p>
                         <p className="mt-0.5 truncate text-xs text-text-secondary">
-                            {formatSupportDate(row.createdAt.toISOString())} · {BANK_KIND_LABELS[row.kind] ?? row.kind} · {row.plan}{row.cardMask ? ` · ${row.cardMask}` : ""}{raw ? ` · ${raw}` : ""}
+                            {formatSupportDate(row.createdAt.toISOString())} · {BANK_KIND_LABELS[row.kind] ?? row.kind} · {row.kind === "SMS_PACK" ? `${row.smsCount ?? 0} SMS` : row.plan}{row.cardMask ? ` · ${row.cardMask}` : ""}{raw ? ` · ${raw}` : ""}
                         </p>
                     </div>
                     <div className="shrink-0 text-right">
