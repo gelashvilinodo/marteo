@@ -14,6 +14,8 @@ import { enforceTeamLimitsFor } from "@/lib/business/team-manage";
 import { getBillingOverview } from "@/lib/subscription/billing";
 import PlanLimitsCard from "@/components/plans/PlanLimitsCard";
 import SmsSettingsCard from "@/components/plans/SmsSettingsCard";
+import InvoiceSettingsCard from "@/components/dashboard/business/InvoiceSettingsCard";
+import { readInvoiceSettings } from "@/lib/business/invoice-settings-server";
 import { getSmsUsage, shippedMessage } from "@/lib/sms/order-sms";
 import { businessFeatureMessage, type BusinessFeature } from "@/lib/business/business-mode";
 
@@ -70,10 +72,11 @@ export default async function BusinessSettingsPage({ searchParams }: { searchPar
         if (!business) redirect("/business/onboarding");
 
         await enforceTeamLimitsFor(prisma, [business.id]);
-        const [team, overview, sms] = await Promise.all([
+        const [team, overview, sms, invoice] = await Promise.all([
             getTeamSnapshot(prisma, business.id, user.id),
             getBillingOverview(prisma, user.id, business.id),
             getSmsUsage(prisma, business.id),
+            readInvoiceSettings(prisma, business.id),
         ]);
 
         return (
@@ -94,6 +97,7 @@ export default async function BusinessSettingsPage({ searchParams }: { searchPar
                             updatedAt: business.updatedAt.toISOString(),
                         }}
                     />
+                    <InvoiceSettingsCard initial={invoice} />
                     <PlanLimitsCard overview={overview} />
                     <SmsSettingsCard initial={sms} preview={shippedMessage(business.name)} />
                     <TeamSection initialTeam={team} businessMode={business.mode} />

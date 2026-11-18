@@ -137,10 +137,6 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
         let active = true;
         const controller = new AbortController();
         async function load() {
-            try {
-                const preference = localStorage.getItem("marteo.invoice-paper");
-                if (isInvoicePaper(preference)) setPaper(preference);
-            } catch { /* არჩევანი მაინც მუშაობს */ }
             const loaded: Entry[] = [];
             try {
                 let requestedIds = ids;
@@ -171,6 +167,8 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                     for (const entry of batch) {
                         const preparedInvoice = await prepareInvoiceQr(entry.invoice, controller.signal);
                         if (!active || controller.signal.aborted) return;
+                        // პირველი ინვოისიდან: ბიზნესის პარამეტრებში არჩეული ზომა.
+                        if (!loaded.length) setPaper(preparedInvoice.defaultPaper);
                         loaded.push({ id: entry.id, invoice: preparedInvoice });
                     }
                     setEntries([...loaded]);
@@ -421,7 +419,6 @@ export default function InvoiceBatchPrintPage({ ids = EMPTY_IDS, mode, selection
                 <select aria-label="ბეჭდვის ფორმატი" value={paper} disabled={busy} onChange={event => {
                     if (!isInvoicePaper(event.target.value)) return;
                     setPaper(event.target.value);
-                    try { localStorage.setItem("marteo.invoice-paper", event.target.value); } catch { /* არჩევანი მუშაობს */ }
                 }} className="h-11 rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary"><option value="a4">A4</option><option value="100x150">10 × 15 სმ</option><option value="80mm">80 მმ</option><option value="58mm">58 მმ</option></select>
                 <button
                     disabled={!printReady || busy}

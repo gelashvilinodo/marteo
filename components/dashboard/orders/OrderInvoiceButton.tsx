@@ -55,7 +55,7 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
             if (!response.ok || !data.success || !data.invoice) throw new Error(data.message || "ინვოისის მომზადება ვერ მოხერხდა.");
             const preparedInvoice = await prepareInvoiceQr(data.invoice, controller.signal);
             if (mounted.current && !controller.signal.aborted) {
-                try { const saved = localStorage.getItem("marteo.invoice-paper"); if (isInvoicePaper(saved)) setPaper(saved); } catch { /* გამოიყენება A4 */ }
+                setPaper(preparedInvoice.defaultPaper);
                 setInvoice(preparedInvoice);
             }
         } catch (cause: unknown) {
@@ -112,7 +112,6 @@ export default function OrderInvoiceButton({ orderId }: { orderId: string }) {
                         <select aria-label="ინვოისის ფორმატი" value={paper} onChange={event => {
                             if (!isInvoicePaper(event.target.value)) return;
                             setPaper(event.target.value);
-                            try { localStorage.setItem("marteo.invoice-paper", event.target.value); } catch { /* არჩევანი მაინც მუშაობს */ }
                         }} className="h-11 max-w-full rounded-xl border border-border bg-background px-3 text-[16px] text-text-primary lg:text-sm">
                             <option value="a4">A4</option><option value="100x150">10 × 15 სმ</option><option value="80mm">თერმული - 80 მმ</option><option value="58mm">თერმული - 58 მმ</option>
                         </select>

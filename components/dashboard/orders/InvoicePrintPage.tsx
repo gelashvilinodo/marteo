@@ -326,7 +326,6 @@ export default function InvoicePrintPage({ orderId, initialPaper }: { orderId: s
                 <select aria-label="ბეჭდვის ფორმატი" value={paper} disabled={printing || downloading} onChange={event => {
                     if (!isInvoicePaper(event.target.value)) return;
                     setPaper(event.target.value);
-                    try { localStorage.setItem("marteo.invoice-paper", event.target.value); } catch { /* არჩევანი მაინც მუშაობს */ }
                 }} className="h-11 rounded-xl border border-border bg-background px-3 text-[16px]">
                     <option value="a4">A4</option><option value="100x150">10 × 15 სმ</option><option value="80mm">თერმული - 80 მმ</option><option value="58mm">თერმული - 58 მმ</option>
                 </select>

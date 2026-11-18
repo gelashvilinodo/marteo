@@ -251,6 +251,12 @@ model Business {
   website     String?
   description String?
 
+  // ინვოისის პარამეტრები: ნაგულისხმევი ფორმატი (a4 | 80mm | 58mm | 100x150)
+  // და ინვოისზე ნომერი — ACCOUNT რეგისტრაციის ნომერი, CUSTOM invoicePhone, OFF არ ჩანს.
+  invoicePaper     String  @default("a4")
+  invoicePhoneMode String  @default("ACCOUNT")
+  invoicePhone     String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

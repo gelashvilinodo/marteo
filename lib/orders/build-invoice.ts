@@ -63,6 +63,7 @@ export function buildInvoice(order:NonNullable<Awaited<ReturnType<typeof getInvo
             status: order.status,
             paymentStatus: order.paymentStatus,
             business: order.business,
+            defaultPaper: order.defaultPaper,
             recipient: {
                 name: [order.recipientFirstName, order.recipientLastName].filter(Boolean).join(" "),
                 phone: order.recipientPhone,

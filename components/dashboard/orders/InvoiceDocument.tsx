@@ -3,20 +3,8 @@ import Image from "next/image";
 import type { OrderInvoiceData } from "@/lib/orders/invoice-types";
 import { productThumbnailUrl } from "@/lib/images/product-thumbnail-url";
 
-export type InvoicePaper =
-    | "a4"
-    | "80mm"
-    | "58mm"
-    | "100x150";
-
-export function isInvoicePaper(value: unknown): value is InvoicePaper {
-    return (
-        value === "a4" ||
-        value === "80mm" ||
-        value === "58mm" ||
-        value === "100x150"
-    );
-}
+import type { InvoicePaper } from "@/lib/orders/invoice-paper";
+export { isInvoicePaper, type InvoicePaper } from "@/lib/orders/invoice-paper";
 const statuses = { PROCESSING: "მუშავდება", SHIPPED: "გაგზავნილი", COMPLETED: "დასრულებული", RETURNED: "დაბრუნებული", CANCELED: "გაუქმებული" };
 const payments = {
     PAID: "გადახდილი",

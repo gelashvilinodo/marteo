@@ -1,6 +1,7 @@
 import { Decimal } from "@prisma/client-runtime-utils";
 import type { createPgReader } from "@/lib/database/pg-reader";
 import type { OrderInvoiceData } from "./invoice-types";
+import { isInvoicePaper } from "./invoice-paper";
 
 type InvoiceOrderRow = {
     id: string;
@@ -21,6 +22,7 @@ type InvoiceOrderRow = {
     lastPrintedInvoiceVersion: number | null;
     invoicePrintedAt: Date | null;
     business: OrderInvoiceData["business"];
+    defaultPaper: string;
     items: Array<{
         id: string;
         name: string;
@@ -54,9 +56,21 @@ export async function getInvoiceOrders(
             o."stockReturnedAt", o."fulfillmentCycle", o."publicAccessToken",
             o."invoiceVersion", o."lastPrintedInvoiceVersion", o."invoicePrintedAt",
             jsonb_build_object(
-                'name', b."name", 'logoUrl', b."logoUrl", 'phone', b."phone",
+                'name', b."name", 'logoUrl', b."logoUrl",
+                'phone', CASE b."invoicePhoneMode"
+                    WHEN 'OFF' THEN NULL
+                    WHEN 'CUSTOM' THEN b."invoicePhone"
+                    -- რეგისტრაციის ნომერი: ბიზნესის პირველი აქტიური მფლობელის ანგარიშიდან.
+                    ELSE (
+                        SELECT u."phone" FROM "BusinessMembership" m
+                        JOIN "User" u ON u."id" = m."userId"
+                        WHERE m."businessId" = b."id" AND m."role" = 'OWNER' AND m."status" = 'ACTIVE'
+                        ORDER BY m."createdAt", m."userId" LIMIT 1
+                    )
+                END,
                 'email', b."email", 'address', b."address"
             ) AS "business",
+            b."invoicePaper" AS "defaultPaper",
             COALESCE((
                 SELECT jsonb_agg(jsonb_build_object(
                     'id', i."id", 'name', i."name",
@@ -95,6 +109,7 @@ export async function getInvoiceOrders(
         id,
         order: {
             ...row,
+            defaultPaper: isInvoicePaper(row.defaultPaper) ? row.defaultPaper : "a4" as const,
             courierFee: new Decimal(row.courierFee),
             paidAmount: new Decimal(row.paidAmount),
             items: row.items.map(item => ({ ...item, unitPrice: new Decimal(item.unitPrice) })),

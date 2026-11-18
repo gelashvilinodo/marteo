@@ -1,9 +1,13 @@
+import type { InvoicePaper } from "./invoice-paper";
+
 export type OrderInvoiceData = {
     number: number | null;
     createdAt: string;
     notes: string;
     status: "PROCESSING" | "SHIPPED" | "COMPLETED" | "CANCELED" | "RETURNED";
     paymentStatus: "UNPAID" | "PAID" | "COURIER_ONLY_PAID" | "PARTIALLY_PAID" | "UNKNOWN";
+    // ბიზნესის პარამეტრებში არჩეული ზომა, რომლითაც ბეჭდვა იხსნება.
+    defaultPaper: InvoicePaper;
     business: { name: string; logoUrl: string | null; phone: string | null; email: string | null; address: string | null };
     recipient: { name: string; phone: string; address: string };
     items: {
