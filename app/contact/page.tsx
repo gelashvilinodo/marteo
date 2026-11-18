@@ -8,13 +8,19 @@ import { MARTEO_CONTACTS } from "@/lib/marteo-contacts";
 
 export const metadata = {
     title: "კონტაქტი - MARTEO",
-    description: "დაგვიკავშირდით ელფოსტით ან სოციალურ ქსელებში - Facebook, Instagram, TikTok.",
+    description: "დაგვიკავშირდით ტელეფონით, ელფოსტით ან სოციალურ ქსელებში. მისამართი: თბილისი, ანაკლიის ქ. 10.",
 };
 
 const socials = [
     { label: "Facebook", icon: "ri:facebook-fill", href: MARTEO_CONTACTS.facebook },
     { label: "Instagram", icon: "ri:instagram-line", href: MARTEO_CONTACTS.instagram },
     { label: "TikTok", icon: "ri:tiktok-fill", href: MARTEO_CONTACTS.tiktok },
+];
+
+const details = [
+    { label: "ტელეფონი", value: MARTEO_CONTACTS.phone, href: MARTEO_CONTACTS.phoneHref, icon: "solar:phone-calling-bold-duotone" },
+    { label: "მისამართი", value: MARTEO_CONTACTS.address, href: null, icon: "solar:map-point-bold-duotone" },
+    { label: "კომპანია", value: MARTEO_CONTACTS.legalName, href: null, icon: "solar:case-round-bold-duotone" },
 ];
 
 const helpLinks = [
@@ -95,6 +101,31 @@ export default function ContactPage() {
                         </a>
                         <CopyEmailButton email={MARTEO_CONTACTS.email} />
                     </div>
+                </section>
+
+                <section aria-labelledby="contact-details-title">
+                    <h2 id="contact-details-title" className="sr-only">
+                        საკონტაქტო ინფორმაცია
+                    </h2>
+                    <ul className="grid gap-3 sm:grid-cols-3">
+                        {details.map(item => (
+                            <li key={item.label} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+                                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                                    <Icon icon={item.icon} className="h-6 w-6" />
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                    <span className="block text-sm text-text-secondary">{item.label}</span>
+                                    {item.href ? (
+                                        <a href={item.href} className="inline-flex min-h-11 items-center font-semibold text-text-primary hover:text-accent">
+                                            {item.value}
+                                        </a>
+                                    ) : (
+                                        <span className="mt-0.5 block font-semibold text-text-primary">{item.value}</span>
+                                    )}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
                 </section>
 
                 <section aria-labelledby="contact-socials-title">

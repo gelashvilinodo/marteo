@@ -41,6 +41,7 @@ const columns = [
         links: [
             { label: "კონფიდენციალურობის პოლიტიკა", href: "/privacy" },
             { label: "მომსახურების პირობები", href: "/terms" },
+            { label: "მიწოდება და თანხის დაბრუნება", href: "/terms#delivery" },
             { label: "უსაფრთხოება", href: "/security" },
             { label: "ქუქი-ფაილები", href: "/cookies" },
         ],
@@ -52,6 +53,13 @@ const socialLinks = [
     { label: "Instagram", icon: "ri:instagram-line", href: MARTEO_CONTACTS.instagram },
     { label: "TikTok", icon: "ri:tiktok-fill", href: MARTEO_CONTACTS.tiktok },
     { label: "ელ-ფოსტა", icon: "ri:mail-line", href: `mailto:${MARTEO_CONTACTS.email}` },
+];
+
+const paymentLogos = [
+    { label: "Visa", icon: "logos:visa" },
+    { label: "Mastercard", icon: "logos:mastercard" },
+    { label: "Apple Pay", icon: "logos:apple-pay" },
+    { label: "Google Pay", icon: "logos:google-pay" },
 ];
 
 const themeOptions: { value: ThemePreference; label: string; icon: string }[] = [
@@ -89,6 +97,20 @@ export default function Footer() {
                             ბიზნესის მართვის პლატფორმა - შეკვეთები, მარაგი და
                             ფინანსები ერთ სივრცეში.
                         </p>
+
+                        <address className="mt-4 space-y-1 text-sm leading-relaxed text-text-secondary not-italic">
+                            <p>{MARTEO_CONTACTS.legalName}</p>
+                            <p>{MARTEO_CONTACTS.address}</p>
+                            <p>
+                                <a href={MARTEO_CONTACTS.phoneHref} className="transition-colors hover:text-accent">
+                                    {MARTEO_CONTACTS.phone}
+                                </a>
+                                {" · "}
+                                <a href={`mailto:${MARTEO_CONTACTS.email}`} className="break-all transition-colors hover:text-accent">
+                                    {MARTEO_CONTACTS.email}
+                                </a>
+                            </p>
+                        </address>
 
                         <ul className="mt-5 flex items-center gap-2">
                             {socialLinks.map(link => (
@@ -136,6 +158,18 @@ export default function Footer() {
                         </p>
                         <CookieSettingsButton className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 text-xs text-text-secondary transition-colors hover:text-accent" />
                     </div>
+
+                    <ul aria-label="გადახდის მეთოდები" className="flex flex-wrap items-center justify-center gap-2">
+                        {paymentLogos.map(logo => (
+                            <li
+                                key={logo.label}
+                                title={logo.label}
+                                className="flex h-8 w-12 items-center justify-center rounded-md border border-border bg-white"
+                            >
+                                <Icon icon={logo.icon} aria-label={logo.label} className="h-4 w-9" />
+                            </li>
+                        ))}
+                    </ul>
 
                     <ThemeSwitch />
                 </div>
