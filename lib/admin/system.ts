@@ -6,21 +6,22 @@ import { AdminActionError } from "./actions";
 import { createPgReader } from "@/lib/database/pg-reader";
 
 // The hourly cron's tasks (worker.mjs). Listed even before their first run, so a missing one stands out.
+// schedule: how often each task really runs (Tbilisi time), shown on its card.
 export const SYSTEM_JOBS = [
-    { name: "subscription-expiry", label: "პაკეტების ვადის შემოწმება" },
-    { name: "support-cleanup", label: "დახმარების ჩათის გასუფთავება (24 სთ)" },
-    { name: "system-log-prune", label: "ძველი ჩანაწერების წაშლა" },
-    { name: "admin-alerts", label: "ადმინის push: ახალი შეცდომები, ჩავარდნები, გაჭედილი გადახდები" },
-    { name: "unused-image-cleanup", label: "გამოუყენებელი ფოტოების წაშლა (დღეში ერთხელ)", lateAfterMs: 26 * 3600_000 },
-    { name: "unfinished-registration-cleanup", label: "დაუსრულებელი რეგისტრაციების წაშლა (7 დღე, დღეში ერთხელ)", lateAfterMs: 26 * 3600_000 },
-    { name: "ai-weekly-digest", label: "AI-ის კვირის მიმოხილვა (ორშაბათს დილით)", lateAfterMs: 7 * 24 * 3600_000 + 4 * 3600_000 },
-    { name: "stale-order-push", label: "7+ დღის დაუსრულებელი შეკვეთების პუში (დღეში ერთხელ)", lateAfterMs: 26 * 3600_000 },
+    { name: "subscription-expiry", label: "პაკეტების ვადის შემოწმება", schedule: "საათში ერთხელ" },
+    { name: "support-cleanup", label: "დახმარების ჩათის გასუფთავება (24 სთ)", schedule: "საათში ერთხელ" },
+    { name: "system-log-prune", label: "ძველი ჩანაწერების წაშლა", schedule: "საათში ერთხელ" },
+    { name: "admin-alerts", label: "ადმინის push: ახალი შეცდომები, ჩავარდნები, გაჭედილი გადახდები", schedule: "საათში ერთხელ" },
+    { name: "unused-image-cleanup", label: "გამოუყენებელი ფოტოების წაშლა", schedule: "დღეში ერთხელ, 07:00-ზე", lateAfterMs: 26 * 3600_000 },
+    { name: "unfinished-registration-cleanup", label: "დაუსრულებელი რეგისტრაციების წაშლა (7 დღე)", schedule: "დღეში ერთხელ, 07:00-ზე", lateAfterMs: 26 * 3600_000 },
+    { name: "ai-weekly-digest", label: "AI-ის კვირის მიმოხილვა", schedule: "კვირაში ერთხელ, ორშაბათს 10:00–12:00", lateAfterMs: 7 * 24 * 3600_000 + 4 * 3600_000 },
+    { name: "stale-order-push", label: "7+ დღის დაუსრულებელი შეკვეთების პუში", schedule: "დღეში ერთხელ, 10:00-ზე", lateAfterMs: 26 * 3600_000 },
 ] as const;
 
 const LATE_AFTER_MS = 2 * 3600_000;
 
 export type SystemJobView = {
-    name: string; label: string; state: "ok" | "failed" | "late" | "never";
+    name: string; label: string; schedule: string; state: "ok" | "failed" | "late" | "never";
     lastStartedAt: Date | null; lastFinishedAt: Date | null; lastError: string | null; lastResult: number | null; runs: number; failures: number;
 };
 export type SystemErrorView = { id: string; source: string; message: string; route: string | null; count: number; firstAt: Date; lastAt: Date; resolvedAt: Date | null };
@@ -61,12 +62,12 @@ export async function getSystemOverview(view: "open" | "resolved", page: number)
             const byName = new Map(jobs.map(job => [job.name, job as typeof job & { lastOk: boolean | null }]));
             return {
                 jobs: SYSTEM_JOBS.map((definition): SystemJobView => {
-                    const { name, label } = definition;
+                    const { name, label, schedule } = definition;
                     const lateAfterMs = "lateAfterMs" in definition ? definition.lateAfterMs : LATE_AFTER_MS;
                     const job = byName.get(name);
-                    if (!job?.lastStartedAt) return { name, label, state: "never", lastStartedAt: null, lastFinishedAt: null, lastError: null, lastResult: null, runs: 0, failures: 0 };
+                    if (!job?.lastStartedAt) return { name, label, schedule, state: "never", lastStartedAt: null, lastFinishedAt: null, lastError: null, lastResult: null, runs: 0, failures: 0 };
                     const state = job.lastOk === false ? "failed" : now.getTime() - job.lastStartedAt.getTime() > lateAfterMs ? "late" : "ok";
-                    return { name, label, state, lastStartedAt: job.lastStartedAt, lastFinishedAt: job.lastFinishedAt, lastError: job.lastError, lastResult: job.lastResult, runs: job.runs, failures: job.failures };
+                    return { name, label, schedule, state, lastStartedAt: job.lastStartedAt, lastFinishedAt: job.lastFinishedAt, lastError: job.lastError, lastResult: job.lastResult, runs: job.runs, failures: job.failures };
                 }),
                 counts: counts ?? { open: 0, resolved: 0, day: 0 },
                 emails: { failed: emails?.failed ?? 0 },

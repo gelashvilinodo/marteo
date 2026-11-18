@@ -57,7 +57,7 @@ export default async function AdminSystemPage({ searchParams }: { searchParams: 
                 return <section key={job.name} className="rounded-2xl border border-border bg-surface p-4">
                     <p className={`flex items-center gap-1.5 text-xs font-medium ${state.tone}`}><Icon icon={state.icon} className="h-4 w-4" aria-hidden="true" />{state.label}</p>
                     <h2 className="mt-2 text-sm font-semibold text-text-primary">{job.label}</h2>
-                    <p className="mt-1 text-xs text-text-secondary">{job.lastStartedAt ? `ბოლოს: ${when(job.lastStartedAt)}` : "გაეშვება deploy-ის შემდეგ, საათში ერთხელ."}</p>
+                    <p className="mt-1 text-xs text-text-secondary">{job.schedule}{job.lastStartedAt ? ` · ბოლოს: ${when(job.lastStartedAt)}` : " · ჯერ არ გაშვებულა"}</p>
                     {job.lastStartedAt && <p className="text-xs text-text-secondary">
                         {job.lastResult !== null ? `შედეგი: ${formatSupportCount(job.lastResult)} ჩანაწერი · ` : ""}{formatSupportCount(job.runs)} გაშვება{job.failures ? ` · ${job.failures} ჩავარდა` : ""}
                     </p>}
