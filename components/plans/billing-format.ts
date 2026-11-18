@@ -9,8 +9,13 @@ export function formatDay(iso: string) {
     return `${day} ${MONTHS[month - 1]} ${year}`;
 }
 
+const tbilisiDay = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tbilisi" });
+
+// კალენდარული დღეები თბილისის დროით: ვადის დღეს 0, წინა დღეს 1. საათებით დამრგვალება
+// ადმინის „დღის ბოლომდე“ ვადას ერთი დღით ზრდიდა (14-ის ნაცვლად 15).
 export function daysLeft(iso: string, now = Date.now()) {
-    return Math.max(0, Math.ceil((new Date(iso).getTime() - now) / 86_400_000));
+    const day = (time: number) => Date.parse(`${tbilisiDay.format(new Date(time))}T00:00:00Z`);
+    return Math.max(0, Math.round((day(new Date(iso).getTime()) - day(now)) / 86_400_000));
 }
 
 export const LOCK_LABELS: Record<string, string> = {

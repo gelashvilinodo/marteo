@@ -2,15 +2,22 @@
 
 import { Icon } from "@iconify/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { daysLeft } from "@/components/plans/billing-format";
 import { usePlan } from "./PlanContext";
 
-const DAY = 86_400_000;
+// საცდელის ზოლი მხოლოდ ბოლო 3 კალენდარულ დღეს ჩანს (2, 1 და ვადის დღე).
+const TRIAL_NOTICE_DAYS = 2;
+const HOUR = 3_600_000;
 
-// მხოლოდ ნახვის რეჟიმის ზოლი ყველა გვერდის თავზე; საცდელში მფლობელს დარჩენილ დღეებს აჩვენებს.
+// მხოლოდ ნახვის რეჟიმის ზოლი ყველა გვერდის თავზე; საცდელის ბოლო დღეებში მფლობელს დარჩენილ დროს აჩვენებს.
 export default function PlanLockBanner() {
     const { plan, isOwner, locked, openUpgrade } = usePlan();
-    const [now] = useState(() => Date.now());
+    const [now, setNow] = useState(() => Date.now());
+    useEffect(() => {
+        const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+        return () => window.clearInterval(timer);
+    }, []);
     if (!plan) return null;
 
     if (locked) {
@@ -26,11 +33,17 @@ export default function PlanLockBanner() {
     }
 
     if (plan.tier === "TRIAL" && isOwner && plan.expiresAt) {
-        const days = Math.max(0, Math.ceil((new Date(plan.expiresAt).getTime() - now) / DAY));
+        const days = daysLeft(plan.expiresAt, now);
+        if (days > TRIAL_NOTICE_DAYS) return null;
+        const hours = Math.ceil((new Date(plan.expiresAt).getTime() - now) / HOUR);
+        const left = days > 0 ? `დარჩა ${days} დღე`
+            : hours > 1 ? `დღეს მთავრდება, დარჩა ${hours} საათი`
+            : hours === 1 ? "მთავრდება 1 საათში"
+            : "დასრულდა";
         return <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-accent/20 bg-accent/5 px-4 py-2 text-sm sm:px-6 lg:px-8">
             <Icon icon="solar:gift-bold-duotone" className="h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
             <span className="min-w-0 flex-1 text-text-primary">
-                საცდელი პერიოდი: {days === 0 ? "დღეს მთავრდება" : `დარჩა ${days} დღე`}.
+                საცდელი პერიოდი: {left}.
             </span>
             <Link href="/dashboard/plans" className="relative font-semibold text-accent after:absolute after:-inset-y-3 after:-inset-x-1 after:content-[''] hover:underline">გეგმების ნახვა</Link>
         </div>;
