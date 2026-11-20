@@ -140,6 +140,6 @@ function PackPaymentResult({ payment }: { payment: SmsPackResult }) {
     </p>;
     return <p role="status" className="mt-3 flex items-start gap-2 rounded-xl bg-warning/10 p-3 text-sm text-text-primary">
         <Icon icon="solar:clock-circle-bold-duotone" className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
-        <span><b className="font-semibold">გადახდა მუშავდება.</b> ბანკის დადასტურების შემდეგ {count} SMS ავტომატურად დაემატება. რამდენიმე წუთში განაახლეთ გვერდი.</span>
+        <span><b className="font-semibold">გადახდა მუშავდება.</b> ბანკის დადასტურების შემდეგ {count} SMS ავტომატურად დაემატება. გვერდი თავად განახლდება, ჩვეულებრივ რამდენიმე წამში.</span>
     </p>;
 }

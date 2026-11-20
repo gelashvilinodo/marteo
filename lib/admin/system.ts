@@ -5,9 +5,10 @@ import { AdminAccessError } from "./overview";
 import { AdminActionError } from "./actions";
 import { createPgReader } from "@/lib/database/pg-reader";
 
-// The hourly cron's tasks (worker.mjs). Listed even before their first run, so a missing one stands out.
+// The cron's tasks (worker.mjs; every 5 minutes, most of them only at minute 0). Listed even before their first run, so a missing one stands out.
 // schedule: how often each task really runs (Tbilisi time), shown on its card.
 export const SYSTEM_JOBS = [
+    { name: "bank-sync", label: "ბანკის პასუხგაუცემელი გადახდების შემოწმება", schedule: "ყოველ 5 წუთში", lateAfterMs: 30 * 60_000 },
     { name: "subscription-expiry", label: "პაკეტების ვადის შემოწმება", schedule: "საათში ერთხელ" },
     { name: "support-cleanup", label: "დახმარების ჩათის გასუფთავება (24 სთ)", schedule: "საათში ერთხელ" },
     { name: "system-log-prune", label: "ძველი ჩანაწერების წაშლა", schedule: "საათში ერთხელ" },

@@ -12,6 +12,7 @@ import { daysLeft, formatDay, LOCK_LABELS, PAYMENT_METHOD_LABELS, planTitle } fr
 import { CancelPlanButton } from "@/components/plans/PlanActions";
 import UsageMeter from "@/components/plans/UsageMeter";
 import PaymentResult from "@/components/plans/PaymentResult";
+import PaymentStatusWatcher from "@/components/plans/PaymentStatusWatcher";
 
 export const metadata = { title: "პაკეტი და გადახდები - MARTEO", robots: { index: false, follow: false } };
 
@@ -47,6 +48,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
                     </section>
 
                     {result && result.kind !== "SMS_PACK" && <PaymentResult status={result.status} plan={result.plan} amount={result.amount} />}
+                    {result?.status === "PENDING" && paymentId && <PaymentStatusWatcher paymentId={paymentId} />}
 
                     <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
                         <section aria-labelledby="current-plan" className="rounded-2xl border border-border bg-surface p-5">

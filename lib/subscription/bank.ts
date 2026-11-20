@@ -21,7 +21,11 @@ const HOUR = 3_600_000;
 // ავტოგანახლება: ვადამდე 2 საათით ადრე, მერე 1 და 3 დღის შემდეგ. ამის შემდეგ მფლობელი ხელით იხდის.
 const RENEWAL_ATTEMPTS_AT = [-2 * HOUR, DAY, 3 * DAY];
 // ამაზე ძველი პასუხგაუცემელი მცდელობის სტატუსს ბანკს თავად ვეკითხებით (callback შეიძლება დაიკარგოს).
-const POLL_AFTER_MS = 5 * 60_000;
+const POLL_AFTER_MS = 60_000;
+// გეგმის ჩართვა ~15 მოთხოვნაა ბაზაში; Prisma-ს ნაგულისხმევი 5 წამი Cloudflare-დან შეიძლება არ ეყოს.
+const TX_OPTIONS = { maxWait: 10_000, timeout: 30_000 };
+// callback-ზე: თუ ბანკი სტატუსს ჯერ საბოლოოდ არ აჩვენებს, რამდენიმე წამში ისევ ვეკითხებით.
+const CALLBACK_RECHECK_MS = [2_000, 4_000];
 const REFUND_STATUSES = new Set(["refund_requested", "refunded", "refunded_partially"]);
 
 // გადახდის დაწყება: ბანკში იქმნება შეკვეთა, ბარათი ავტოგანახლებისთვის ინახება და მომხმარებელი
@@ -128,6 +132,22 @@ export async function syncBankOrder(prisma: PrismaClient, bankOrderId: string) {
     return applyBankReceipt(prisma, await getBogReceipt(bankOrderId));
 }
 
+// callback: ბანკი შეიძლება შეგვატყობინოს მანამ, სანამ ქვითარში სტატუსი "completed" გახდება.
+// ასეთ დროს ცოტა ხანს ველოდებით და ისევ ვამოწმებთ, რომ გეგმა cron-ის მოლოდინის გარეშე ჩაირთოს.
+export async function confirmBankOrder(prisma: PrismaClient, bankOrderId: string) {
+    let status = await syncBankOrder(prisma, bankOrderId);
+    for (const delay of CALLBACK_RECHECK_MS) {
+        if (status !== "PENDING") return status;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        status = await syncBankOrder(prisma, bankOrderId);
+    }
+    if (status === "PENDING") {
+        const row = await prisma.bankPayment.findUnique({ where: { bankOrderId }, select: { bankStatus: true } });
+        console.error("BOG callback left payment pending", row?.bankStatus ?? "no-status");
+    }
+    return status;
+}
+
 async function completePayment(prisma: PrismaClient, id: string, cardMask: string | null) {
     // claimed: ეს გამოძახება ამუშავებს (არა პარალელური callback/cron), მხოლოდ მაშინ ვაგზავნით push-ს.
     let claimedHere = false;
@@ -207,7 +227,7 @@ async function completePayment(prisma: PrismaClient, id: string, cardMask: strin
         await notifyPaymentConfirmed(tx, { businessId, plan, paymentId: payment.id, now });
         // ახალი ბარათი ძველს ცვლის: ძველს ბანკშიც ვშლით.
         return row.kind === "CHECKOUT" && before?.bankCardOrderId && before.bankCardOrderId !== row.bankOrderId ? before.bankCardOrderId : null;
-    });
+    }, TX_OPTIONS);
     const row = await prisma.bankPayment.findUnique({ where: { id }, select: { businessId: true, kind: true, plan: true, amount: true, interval: true, smsCount: true, business: { select: { name: true } } } });
     if (row?.businessId && row.kind !== "SMS_PACK") void queueNoticeChannels(row.businessId);
     // ადმინს: ყოველი წარმატებული ბარათით გადახდა.
@@ -231,7 +251,7 @@ async function rejectPayment(prisma: PrismaClient, id: string, bankStatus: strin
             await notifyPaymentFailed(tx, { businessId: row.businessId, attemptId: `${row.businessId}:${row.renewsExpiresAt?.toISOString() ?? id}`, plan: PLAN_LABELS[row.plan as PaidTier] ?? row.plan });
         }
         return true;
-    });
+    }, TX_OPTIONS);
     if (!claimedHere) return;
     const row = await prisma.bankPayment.findUnique({ where: { id }, select: { businessId: true, kind: true, plan: true, amount: true, renewsExpiresAt: true, business: { select: { name: true } } } });
     if (row?.kind === "RENEWAL" && row.businessId) {
@@ -252,23 +272,44 @@ export async function readCheckoutResult(prisma: PrismaClient, businessId: strin
     if (!row) return null;
     let status = row.status;
     if (status === "PENDING" && row.bankOrderId && bogConfigured()) {
-        status = await syncBankOrder(prisma, row.bankOrderId).catch(() => "PENDING" as const) as typeof status;
+        status = await syncBankOrder(prisma, row.bankOrderId).catch(error => {
+            console.error("BOG return page sync failed", error instanceof BogError ? `${error.message} ${error.status}` : error instanceof Error ? error.name : "UnknownError");
+            return "PENDING" as const;
+        }) as typeof status;
     }
     return { kind: row.kind, status, plan: row.plan, amount: row.amount.toFixed(2), smsCount: row.smsCount };
+}
+
+// 5-წუთიანი cron: პასუხგაუცემელი გადახდების სტატუსს ბანკს ვეკითხებით (callback შეიძლება დაიკარგოს ან ადრე მოვიდეს).
+// დაბრუნების მოთხოვნილ გადახდებსაც ვამოწმებთ, რომ ადმინ პანელში საბოლოო პასუხი ჩანდეს.
+export async function syncPendingBankPayments(prisma: PrismaClient, now = new Date()) {
+    if (!bogConfigured()) return 0;
+    let synced = 0;
+    const [pending, refunds] = await Promise.all([
+        prisma.bankPayment.findMany({
+            where: { status: "PENDING", bankOrderId: { not: null }, createdAt: { lt: new Date(now.getTime() - POLL_AFTER_MS), gt: new Date(now.getTime() - 2 * DAY) } },
+            select: { bankOrderId: true }, take: 100,
+        }),
+        prisma.bankPayment.findMany({
+            where: { status: "COMPLETED", bankStatus: "refund_requested", bankOrderId: { not: null }, refundedAt: { gt: new Date(now.getTime() - 14 * DAY) } },
+            select: { bankOrderId: true }, take: 50,
+        }),
+    ]);
+    for (const row of pending) {
+        try { if (await syncBankOrder(prisma, row.bankOrderId!) !== "PENDING") synced++; }
+        catch { console.error("BOG receipt sync failed"); }
+    }
+    for (const row of refunds) {
+        try { await syncBankOrder(prisma, row.bankOrderId!); }
+        catch { console.error("BOG refund sync failed"); }
+    }
+    return synced;
 }
 
 // საათობრივი cron: ვადაზე მისული გეგმების ჩამოჭრა შენახული ბარათიდან და დაკარგული პასუხების გადამოწმება.
 export async function runBankRenewals(prisma: PrismaClient, now = new Date()) {
     if (!bogConfigured()) return { charged: 0, synced: 0 };
-    let synced = 0;
-    const pending = await prisma.bankPayment.findMany({
-        where: { status: "PENDING", bankOrderId: { not: null }, createdAt: { lt: new Date(now.getTime() - POLL_AFTER_MS), gt: new Date(now.getTime() - 2 * DAY) } },
-        select: { bankOrderId: true }, take: 100,
-    });
-    for (const row of pending) {
-        try { if (await syncBankOrder(prisma, row.bankOrderId!) !== "PENDING") synced++; }
-        catch { console.error("BOG receipt sync failed"); }
-    }
+    const synced = await syncPendingBankPayments(prisma, now);
 
     let charged = 0;
     const due = await prisma.subscription.findMany({

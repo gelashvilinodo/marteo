@@ -14,6 +14,7 @@ import { enforceTeamLimitsFor } from "@/lib/business/team-manage";
 import { getBillingOverview } from "@/lib/subscription/billing";
 import PlanLimitsCard from "@/components/plans/PlanLimitsCard";
 import SmsSettingsCard from "@/components/plans/SmsSettingsCard";
+import PaymentStatusWatcher from "@/components/plans/PaymentStatusWatcher";
 import InvoiceSettingsCard from "@/components/dashboard/business/InvoiceSettingsCard";
 import { readInvoiceSettings } from "@/lib/business/invoice-settings-server";
 import { getSmsUsage, shippedMessage } from "@/lib/sms/order-sms";
@@ -106,6 +107,7 @@ export default async function BusinessSettingsPage({ searchParams }: { searchPar
                     <InvoiceSettingsCard initial={invoice} />
                     <PlanLimitsCard overview={overview} />
                     <SmsSettingsCard initial={sms} preview={shippedMessage(business.name)} canBuy={canBuySms} payment={smsPayment} />
+                    {smsPayment?.status === "PENDING" && smsPaymentId && <PaymentStatusWatcher paymentId={smsPaymentId} />}
                     <TeamSection initialTeam={team} businessMode={business.mode} />
                     <AppearanceSettings />
 

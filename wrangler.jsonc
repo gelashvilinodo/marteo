@@ -13,8 +13,9 @@
     "run_worker_first": ["/_csp-static/*"]
   },
   "triggers": {
-    // Hourly: clean up support chat messages and photos older than 24 hours, and update expired subscriptions.
-    "crons": ["0 * * * *"]
+    // Every 5 minutes: unanswered bank payments are re-checked. At minute 0 the hourly tasks run as well:
+    // support chat cleanup, expired subscriptions, plan reminders (see worker.mjs).
+    "crons": ["*/5 * * * *"]
   },
   "observability": {
     "enabled": true
